@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(rm -rf /tmp/claude-1001/-home-fabiane-Artur-Organizador-Airdrops/5f8c12db-a0e1-489c-aac5-e9e0719b7b55/scratchpad/airdrop-tracker/.git)",
-      "Bash(cp -r /tmp/claude-1001/-home-fabiane-Artur-Organizador-Airdrops/5f8c12db-a0e1-489c-aac5-e9e0719b7b55/scratchpad/airdrop-tracker/. '/home/fabiane/Artur/Organizador Airdrops/')"
-    ]
-  }
-}
