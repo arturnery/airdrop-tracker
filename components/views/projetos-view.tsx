@@ -2,16 +2,25 @@
 
 import Link from "next/link";
 
+import { Trash2 } from "lucide-react";
+
 import { useDados } from "@/components/data-provider";
+import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
 import { NovoProjeto } from "@/components/forms/dialogs";
+import { EditarProjeto } from "@/components/forms/editar";
 import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { PriorityMeter, ProjectStatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
 import { formatDateShort, relativeLabel } from "@/lib/dates";
-import { selectProjects } from "@/lib/selectors";
+import {
+  contarDependenciasProjeto,
+  descreverImpacto,
+  selectProjects,
+} from "@/lib/selectors";
 
 export function ProjetosView() {
-  const { dataset, hoje } = useDados();
+  const { dataset, hoje, acoes } = useDados();
   const projetos = selectProjects(dataset, hoje);
 
   return (
@@ -56,7 +65,33 @@ export function ProjetosView() {
                     {projeto.contas} {projeto.contas === 1 ? "conta" : "contas"}
                   </p>
                 </div>
-                <ProjectStatusBadge status={projeto.status} />
+                <div className="flex shrink-0 items-center gap-1">
+                  <ProjectStatusBadge status={projeto.status} />
+                  {/* z-10 tira os botões de baixo do stretched link do card,
+                      senão o clique abriria o projeto em vez de editar. */}
+                  <div className="relative z-10 flex items-center">
+                    <EditarProjeto projectId={projeto.id} />
+                    <ConfirmarExclusao
+                      titulo="Excluir projeto"
+                      alvo={projeto.nome}
+                      impacto={descreverImpacto(
+                        contarDependenciasProjeto(dataset, projeto.id),
+                      )}
+                      aoConfirmar={() => acoes.excluirProjeto(projeto.id)}
+                      gatilho={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:text-negative size-8"
+                          aria-label={`Excluir ${projeto.nome}`}
+                          title={`Excluir ${projeto.nome}`}
+                        >
+                          <Trash2 className="size-3.5" aria-hidden="true" />
+                        </Button>
+                      }
+                    />
+                  </div>
+                </div>
               </div>
 
               <dl className="mt-5 grid grid-cols-3 gap-3 text-sm">

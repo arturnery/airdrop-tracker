@@ -324,6 +324,7 @@ function montarTarefa(
 
   return {
     id: occ.id,
+    taskId: tarefa.id,
     titulo: tarefa.title,
     descricao: tarefa.description,
     projetoSlug: projeto.slug,
@@ -398,4 +399,77 @@ export function selectAccounts(ds: Dataset): AccountSummary[] {
       } satisfies AccountSummary;
     })
     .sort((a, b) => b.aportado - a.aportado);
+}
+
+// ------------------------------------------------------------- dependências
+
+/**
+ * O que uma exclusão leva junto.
+ *
+ * Serve para a confirmação dizer "isto apaga também 8 lançamentos e 2 tarefas"
+ * em vez de um genérico "tem certeza?". Espelha exatamente o que as ações de
+ * exclusão em cascata removem.
+ */
+export function contarDependenciasProjeto(ds: Dataset, projectId: string) {
+  const tarefas = ds.tasks.filter((t) => t.projectId === projectId);
+  const idsTarefas = new Set(tarefas.map((t) => t.id));
+  return {
+    contas: ds.projectAccounts.filter((p) => p.projectId === projectId).length,
+    lancamentos: ds.transactions.filter((t) => t.projectId === projectId).length,
+    saldos: ds.balanceSnapshots.filter((s) => s.projectId === projectId).length,
+    tarefas: tarefas.length,
+    ocorrencias: ds.taskOccurrences.filter((o) => idsTarefas.has(o.taskId)).length,
+    metas: ds.goals.filter((g) => g.projectId === projectId).length,
+    recebimentos: ds.airdropClaims.filter((c) => c.projectId === projectId).length,
+  };
+}
+
+export function contarDependenciasConta(ds: Dataset, accountId: string) {
+  return {
+    projetos: ds.projectAccounts.filter((p) => p.accountId === accountId).length,
+    lancamentos: ds.transactions.filter((t) => t.accountId === accountId).length,
+    saldos: ds.balanceSnapshots.filter((s) => s.accountId === accountId).length,
+    ocorrencias: ds.taskOccurrences.filter((o) => o.accountId === accountId).length,
+    recebimentos: ds.airdropClaims.filter((c) => c.accountId === accountId).length,
+  };
+}
+
+export function contarDependenciasVinculo(
+  ds: Dataset,
+  projectId: string,
+  accountId: string,
+) {
+  return {
+    lancamentos: ds.transactions.filter(
+      (t) => t.projectId === projectId && t.accountId === accountId,
+    ).length,
+    saldos: ds.balanceSnapshots.filter(
+      (s) => s.projectId === projectId && s.accountId === accountId,
+    ).length,
+  };
+}
+
+/** "3 lançamentos, 1 saldo e 2 tarefas" — some itens zerados. */
+export function descreverImpacto(contagem: Record<string, number>): string | null {
+  const rotulos: Record<string, [string, string]> = {
+    contas: ["vínculo de conta", "vínculos de conta"],
+    projetos: ["vínculo de projeto", "vínculos de projeto"],
+    lancamentos: ["lançamento", "lançamentos"],
+    saldos: ["saldo registrado", "saldos registrados"],
+    tarefas: ["tarefa", "tarefas"],
+    ocorrencias: ["ocorrência de tarefa", "ocorrências de tarefa"],
+    metas: ["meta", "metas"],
+    recebimentos: ["recebimento", "recebimentos"],
+  };
+
+  const partes = Object.entries(contagem)
+    .filter(([, n]) => n > 0)
+    .map(([chave, n]) => {
+      const [singular, plural] = rotulos[chave] ?? [chave, chave];
+      return `${n} ${n === 1 ? singular : plural}`;
+    });
+
+  if (partes.length === 0) return null;
+  if (partes.length === 1) return partes[0]!;
+  return `${partes.slice(0, -1).join(", ")} e ${partes.at(-1)}`;
 }

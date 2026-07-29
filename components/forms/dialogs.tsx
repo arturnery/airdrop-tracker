@@ -106,9 +106,14 @@ function Formulario({
 const texto = (dados: FormData, campo: string) => String(dados.get(campo) ?? "");
 const nulo = (valor: string) => (valor === "" ? null : valor);
 
-function BotaoNovo({ children }: { children: ReactNode }) {
+/**
+ * Precisa repassar `...props`: o DialogTrigger com `asChild` clona este
+ * elemento e injeta onClick, aria-* e ref nele. Sem o spread, o clique é
+ * descartado silenciosamente e o botão simplesmente não abre nada.
+ */
+function BotaoNovo({ children, ...props }: React.ComponentProps<typeof Button>) {
   return (
-    <Button size="sm">
+    <Button size="sm" {...props}>
       <Plus className="size-4" aria-hidden="true" />
       {children}
     </Button>

@@ -10,9 +10,10 @@ import {
   type ReactNode,
 } from "react";
 
-import { novoId, uniqueSlug, type Dataset } from "@/lib/dataset";
+import type { Dataset } from "@/lib/dataset";
 import { criarRelogio, DatasetStore } from "@/lib/local-store";
-import { toDbNumeric, type Cents } from "@/lib/money";
+import type { Cents } from "@/lib/money";
+import * as M from "@/lib/mutations";
 
 /**
  * Estado local da aplicação — modo de teste, sem backend.
@@ -92,6 +93,42 @@ type Acoes = {
     tokenAmount: string;
     priceUsd: string;
   }) => void;
+
+  // ------------------------------------------------------------ edição
+  atualizarProjeto: (
+    id: string,
+    dados: Partial<Omit<Dataset["projects"][number], "id" | "slug">>,
+  ) => void;
+  atualizarConta: (
+    id: string,
+    dados: Partial<Omit<Dataset["accounts"][number], "id">>,
+  ) => void;
+  atualizarTarefa: (
+    id: string,
+    dados: Partial<Omit<Dataset["tasks"][number], "id">>,
+  ) => void;
+  atualizarLancamento: (
+    id: string,
+    dados: { occurredAt: string; type: Dataset["transactions"][number]["type"]; amount: Cents; description: string | null },
+  ) => void;
+  atualizarSaldo: (id: string, dados: { takenAt: string; balance: Cents }) => void;
+  atualizarVinculo: (
+    projectId: string,
+    accountId: string,
+    dados: { status: "ativa" | "pausada" | "queimada"; startedAt: string },
+  ) => void;
+
+  // ----------------------------------------------------------- exclusão
+  excluirProjeto: (id: string) => void;
+  excluirConta: (id: string) => void;
+  excluirLancamento: (id: string) => void;
+  excluirSaldo: (id: string) => void;
+  excluirTarefa: (taskId: string) => void;
+  excluirOcorrencia: (id: string) => void;
+  excluirMeta: (id: string) => void;
+  excluirRecebimento: (id: string) => void;
+  desvincularConta: (projectId: string, accountId: string) => void;
+
   restaurarOriginal: () => void;
 };
 
@@ -138,238 +175,51 @@ export function DataProvider({
   const acoes = useMemo<Acoes>(
     () => ({
       criarProjeto: (dados) => {
-        const id = novoId("prj");
-        atualizar((atual) => ({
-          ...atual,
-          projects: [
-            ...atual.projects,
-            {
-              id,
-              slug: uniqueSlug(
-                dados.name,
-                atual.projects.map((p) => p.slug),
-              ),
-              name: dados.name,
-              status: dados.status,
-              chain: dados.chain,
-              priority: dados.priority,
-              websiteUrl: dados.websiteUrl,
-              discordUrl: dados.discordUrl,
-              twitterUrl: dados.twitterUrl,
-              docsUrl: dados.docsUrl,
-              expectedTgeDate: dados.expectedTgeDate,
-              notes: dados.notes,
-            },
-          ],
-        }));
+        let id = "";
+        atualizar((atual) => {
+          const r = M.criarProjeto(atual, dados);
+          id = r.id;
+          return r.dataset;
+        });
         return id;
       },
-
       criarConta: (dados) => {
-        const id = novoId("acc");
-        atualizar((atual) => ({
-          ...atual,
-          accounts: [
-            ...atual.accounts,
-            {
-              id,
-              label: dados.label,
-              walletAddress: dados.walletAddress,
-              email: dados.email,
-              isActive: true,
-            },
-          ],
-        }));
+        let id = "";
+        atualizar((atual) => {
+          const r = M.criarConta(atual, dados);
+          id = r.id;
+          return r.dataset;
+        });
         return id;
       },
+      vincularConta: (d) => atualizar((a) => M.vincularConta(a, d)),
+      criarLancamento: (d) => atualizar((a) => M.criarLancamento(a, d)),
+      registrarSaldo: (d) => atualizar((a) => M.registrarSaldo(a, d)),
+      criarTarefa: (d) => atualizar((a) => M.criarTarefa(a, d, hoje)),
+      alternarTarefa: (id) => atualizar((a) => M.alternarOcorrencia(a, id)),
+      criarMeta: (d) => atualizar((a) => M.criarMeta(a, d)),
+      registrarRecebimento: (d) => atualizar((a) => M.registrarRecebimento(a, d)),
 
-      vincularConta: (dados) => {
-        atualizar((atual) => {
-          const jaExiste = atual.projectAccounts.some(
-            (p) => p.projectId === dados.projectId && p.accountId === dados.accountId,
-          );
-          if (jaExiste) return atual;
-          return { ...atual, projectAccounts: [...atual.projectAccounts, dados] };
-        });
-      },
+      atualizarProjeto: (id, d) => atualizar((a) => M.atualizarProjeto(a, id, d)),
+      atualizarConta: (id, d) => atualizar((a) => M.atualizarConta(a, id, d)),
+      atualizarTarefa: (id, d) => atualizar((a) => M.atualizarTarefa(a, id, d)),
+      atualizarLancamento: (id, d) => atualizar((a) => M.atualizarLancamento(a, id, d)),
+      atualizarSaldo: (id, d) => atualizar((a) => M.atualizarSaldo(a, id, d)),
+      atualizarVinculo: (p, c, d) => atualizar((a) => M.atualizarVinculo(a, p, c, d)),
 
-      criarLancamento: (dados) => {
-        atualizar((atual) => ({
-          ...atual,
-          // Vincula a conta ao projeto se ainda não estiver: garante a mesma
-          // integridade que a FK composta impõe no banco (ARCHITECTURE.md §4.3-B).
-          projectAccounts: atual.projectAccounts.some(
-            (p) => p.projectId === dados.projectId && p.accountId === dados.accountId,
-          )
-            ? atual.projectAccounts
-            : [
-                ...atual.projectAccounts,
-                {
-                  projectId: dados.projectId,
-                  accountId: dados.accountId,
-                  status: "ativa" as const,
-                  startedAt: dados.occurredAt,
-                },
-              ],
-          transactions: [
-            ...atual.transactions,
-            {
-              id: novoId("tx"),
-              projectId: dados.projectId,
-              accountId: dados.accountId,
-              occurredAt: dados.occurredAt,
-              type: dados.type,
-              amountUsd: toDbNumeric(dados.amount),
-              description: dados.description,
-            },
-          ],
-        }));
-      },
+      excluirProjeto: (id) => atualizar((a) => M.excluirProjeto(a, id)),
+      excluirConta: (id) => atualizar((a) => M.excluirConta(a, id)),
+      excluirLancamento: (id) => atualizar((a) => M.excluirLancamento(a, id)),
+      excluirSaldo: (id) => atualizar((a) => M.excluirSaldo(a, id)),
+      excluirTarefa: (id) => atualizar((a) => M.excluirTarefa(a, id)),
+      excluirOcorrencia: (id) => atualizar((a) => M.excluirOcorrencia(a, id)),
+      excluirMeta: (id) => atualizar((a) => M.excluirMeta(a, id)),
+      excluirRecebimento: (id) => atualizar((a) => M.excluirRecebimento(a, id)),
+      desvincularConta: (p, c) => atualizar((a) => M.desvincularConta(a, p, c)),
 
-      registrarSaldo: (dados) => {
-        atualizar((atual) => ({
-          ...atual,
-          projectAccounts: atual.projectAccounts.some(
-            (p) => p.projectId === dados.projectId && p.accountId === dados.accountId,
-          )
-            ? atual.projectAccounts
-            : [
-                ...atual.projectAccounts,
-                {
-                  projectId: dados.projectId,
-                  accountId: dados.accountId,
-                  status: "ativa" as const,
-                  startedAt: dados.takenAt,
-                },
-              ],
-          // Um snapshot por par por dia — mesma regra do unique no banco.
-          balanceSnapshots: [
-            ...atual.balanceSnapshots.filter(
-              (s) =>
-                !(
-                  s.projectId === dados.projectId &&
-                  s.accountId === dados.accountId &&
-                  s.takenAt === dados.takenAt
-                ),
-            ),
-            {
-              id: novoId("snp"),
-              projectId: dados.projectId,
-              accountId: dados.accountId,
-              takenAt: dados.takenAt,
-              balanceUsd: toDbNumeric(dados.balance),
-            },
-          ],
-        }));
-      },
-
-      criarTarefa: (dados) => {
-        atualizar((atual) => {
-          const taskId = novoId("tsk");
-          // Conta nula = a tarefa vale para todas as contas do projeto.
-          const contasAlvo = dados.accountId
-            ? [dados.accountId]
-            : atual.projectAccounts
-                .filter((p) => p.projectId === dados.projectId)
-                .map((p) => p.accountId);
-
-          const vencimento =
-            dados.dueDate ??
-            new Date().toISOString().slice(0, 10);
-
-          return {
-            ...atual,
-            tasks: [
-              ...atual.tasks,
-              {
-                id: taskId,
-                projectId: dados.projectId,
-                accountId: dados.accountId,
-                title: dados.title,
-                description: dados.description,
-                recurrence: dados.recurrence,
-                intervalDays: dados.intervalDays,
-                dueDate: dados.dueDate,
-                isActive: true,
-              },
-            ],
-            taskOccurrences: [
-              ...atual.taskOccurrences,
-              ...contasAlvo.map((accountId) => ({
-                id: novoId("occ"),
-                taskId,
-                accountId,
-                dueDate: vencimento,
-                completedAt: null,
-                skipped: false,
-              })),
-            ],
-          };
-        });
-      },
-
-      alternarTarefa: (occurrenceId) => {
-        atualizar((atual) => ({
-          ...atual,
-          taskOccurrences: atual.taskOccurrences.map((o) =>
-            o.id === occurrenceId
-              ? {
-                  ...o,
-                  completedAt: o.completedAt ? null : new Date().toISOString(),
-                }
-              : o,
-          ),
-        }));
-      },
-
-      criarMeta: (dados) => {
-        atualizar((atual) => ({
-          ...atual,
-          goals: [
-            ...atual.goals,
-            {
-              id: novoId("gol"),
-              projectId: dados.projectId,
-              accountId: dados.accountId,
-              title: dados.title,
-              metric: dados.metric,
-              targetValue: toDbNumeric(dados.target),
-              deadline: dados.deadline,
-              achievedAt: null,
-            },
-          ],
-        }));
-      },
-
-      registrarRecebimento: (dados) => {
-        atualizar((atual) => {
-          const valor = (
-            Number(dados.tokenAmount) * Number(dados.priceUsd)
-          ).toFixed(2);
-          return {
-            ...atual,
-            airdropClaims: [
-              ...atual.airdropClaims,
-              {
-                id: novoId("clm"),
-                projectId: dados.projectId,
-                accountId: dados.accountId,
-                receivedAt: dados.receivedAt,
-                tokenSymbol: dados.tokenSymbol.toUpperCase(),
-                tokenAmount: dados.tokenAmount,
-                priceUsd: dados.priceUsd,
-                valueUsd: valor,
-              },
-            ],
-          };
-        });
-      },
-
-      restaurarOriginal: () => {
-        store.restaurar();
-      },
+      restaurarOriginal: () => store.restaurar(),
     }),
-    [atualizar, store],
+    [atualizar, store, hoje],
   );
 
   const valor = useMemo(

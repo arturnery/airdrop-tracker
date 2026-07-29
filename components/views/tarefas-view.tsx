@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Undo2 } from "lucide-react";
+import { Check, Trash2, Undo2 } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
+import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
 import { NovaTarefa } from "@/components/forms/dialogs";
+import { EditarTarefa } from "@/components/forms/editar";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { RecurrenceLabel, UrgencyBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -23,10 +25,14 @@ function Lista({
   tarefas,
   hoje,
   aoConcluir,
+  aoExcluir,
+  contarOcorrencias,
 }: {
   tarefas: TaskOccurrenceRow[];
   hoje: string;
   aoConcluir: (id: string) => void;
+  aoExcluir: (taskId: string) => void;
+  contarOcorrencias: (taskId: string) => number;
 }) {
   return (
     <ul className="border-border divide-border divide-y rounded-lg border">
@@ -62,14 +68,41 @@ function Lista({
               <p className="text-muted-foreground mt-1 text-xs">{tarefa.descricao}</p>
             ) : null}
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-1.5">
-            <UrgencyBadge urgency={tarefa.urgencia} />
-            <span className="text-muted-foreground tabular text-xs">
-              {formatDateBr(tarefa.vencimento)}
-            </span>
-            <span className="text-muted-foreground text-xs">
-              {relativeLabel(tarefa.vencimento, hoje)}
-            </span>
+          <div className="flex shrink-0 items-start gap-2">
+            <div className="flex flex-col items-end gap-1.5">
+              <UrgencyBadge urgency={tarefa.urgencia} />
+              <span className="text-muted-foreground tabular text-xs">
+                {formatDateBr(tarefa.vencimento)}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                {relativeLabel(tarefa.vencimento, hoje)}
+              </span>
+            </div>
+            <div className="flex items-center">
+              <EditarTarefa taskId={tarefa.taskId} />
+              <ConfirmarExclusao
+                titulo="Excluir tarefa"
+                alvo={tarefa.titulo}
+                impacto={(() => {
+                  const n = contarOcorrencias(tarefa.taskId);
+                  return n > 1
+                    ? `${n} ocorrências dessa tarefa, em todas as contas`
+                    : null;
+                })()}
+                aoConfirmar={() => aoExcluir(tarefa.taskId)}
+                gatilho={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:text-negative size-8"
+                    aria-label={`Excluir ${tarefa.titulo}`}
+                    title={`Excluir ${tarefa.titulo}`}
+                  >
+                    <Trash2 className="size-3.5" aria-hidden="true" />
+                  </Button>
+                }
+              />
+            </div>
           </div>
         </li>
       ))}
@@ -125,6 +158,10 @@ export function TarefasView() {
                   tarefas={lista}
                   hoje={hoje}
                   aoConcluir={acoes.alternarTarefa}
+                  aoExcluir={acoes.excluirTarefa}
+                  contarOcorrencias={(taskId) =>
+                    dataset.taskOccurrences.filter((o) => o.taskId === taskId).length
+                  }
                 />
               </section>
             );

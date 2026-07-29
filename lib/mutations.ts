@@ -1,0 +1,424 @@
+import { novoId, uniqueSlug, type Dataset } from "./dataset";
+import { toDbNumeric, type Cents } from "./money";
+
+/**
+ * Mutações do domínio. Toda função é pura: `(Dataset, dados) -> Dataset`.
+ *
+ * Ficam fora do React pelo mesmo motivo dos selectors: são regra de negócio,
+ * precisam de teste, e as Server Actions da fase de backend vão executar
+ * exatamente estas transformações contra o Postgres.
+ *
+ * As exclusões replicam o que as chaves estrangeiras fariam no banco. Apagar
+ * um projeto sem apagar suas transações deixaria lançamentos órfãos somando
+ * no total geral sem aparecer em tela nenhuma.
+ */
+
+type Projeto = Dataset["projects"][number];
+type Conta = Dataset["accounts"][number];
+type Tarefa = Dataset["tasks"][number];
+
+// ------------------------------------------------------------------ criação
+
+export function criarProjeto(
+  ds: Dataset,
+  dados: Omit<Projeto, "id" | "slug">,
+): { dataset: Dataset; id: string } {
+  const id = novoId("prj");
+  const slug = uniqueSlug(
+    dados.name,
+    ds.projects.map((p) => p.slug),
+  );
+  return {
+    dataset: { ...ds, projects: [...ds.projects, { ...dados, id, slug }] },
+    id,
+  };
+}
+
+export function criarConta(
+  ds: Dataset,
+  dados: Omit<Conta, "id" | "isActive">,
+): { dataset: Dataset; id: string } {
+  const id = novoId("acc");
+  return {
+    dataset: {
+      ...ds,
+      accounts: [...ds.accounts, { ...dados, id, isActive: true }],
+    },
+    id,
+  };
+}
+
+export function vincularConta(
+  ds: Dataset,
+  dados: Dataset["projectAccounts"][number],
+): Dataset {
+  const jaExiste = ds.projectAccounts.some(
+    (p) => p.projectId === dados.projectId && p.accountId === dados.accountId,
+  );
+  if (jaExiste) return ds;
+  return { ...ds, projectAccounts: [...ds.projectAccounts, dados] };
+}
+
+/**
+ * Garante o par projeto×conta antes de gravar um movimento — mesma integridade
+ * que a FK composta impõe no banco (ARCHITECTURE.md §4.3-B).
+ */
+function garantirVinculo(
+  ds: Dataset,
+  projectId: string,
+  accountId: string,
+  desde: string,
+): Dataset["projectAccounts"] {
+  const existe = ds.projectAccounts.some(
+    (p) => p.projectId === projectId && p.accountId === accountId,
+  );
+  if (existe) return ds.projectAccounts;
+  return [
+    ...ds.projectAccounts,
+    { projectId, accountId, status: "ativa" as const, startedAt: desde },
+  ];
+}
+
+export function criarLancamento(
+  ds: Dataset,
+  dados: {
+    projectId: string;
+    accountId: string;
+    occurredAt: string;
+    type: Dataset["transactions"][number]["type"];
+    amount: Cents;
+    description: string | null;
+  },
+): Dataset {
+  return {
+    ...ds,
+    projectAccounts: garantirVinculo(
+      ds,
+      dados.projectId,
+      dados.accountId,
+      dados.occurredAt,
+    ),
+    transactions: [
+      ...ds.transactions,
+      {
+        id: novoId("tx"),
+        projectId: dados.projectId,
+        accountId: dados.accountId,
+        occurredAt: dados.occurredAt,
+        type: dados.type,
+        amountUsd: toDbNumeric(dados.amount),
+        description: dados.description,
+      },
+    ],
+  };
+}
+
+export function registrarSaldo(
+  ds: Dataset,
+  dados: {
+    projectId: string;
+    accountId: string;
+    takenAt: string;
+    balance: Cents;
+  },
+): Dataset {
+  return {
+    ...ds,
+    projectAccounts: garantirVinculo(
+      ds,
+      dados.projectId,
+      dados.accountId,
+      dados.takenAt,
+    ),
+    // Um snapshot por par por dia — mesma regra do unique no banco.
+    balanceSnapshots: [
+      ...ds.balanceSnapshots.filter(
+        (s) =>
+          !(
+            s.projectId === dados.projectId &&
+            s.accountId === dados.accountId &&
+            s.takenAt === dados.takenAt
+          ),
+      ),
+      {
+        id: novoId("snp"),
+        projectId: dados.projectId,
+        accountId: dados.accountId,
+        takenAt: dados.takenAt,
+        balanceUsd: toDbNumeric(dados.balance),
+      },
+    ],
+  };
+}
+
+export function criarTarefa(
+  ds: Dataset,
+  dados: Omit<Tarefa, "id" | "isActive">,
+  hoje: string,
+): Dataset {
+  const taskId = novoId("tsk");
+  // Conta nula = a tarefa vale para todas as contas do projeto.
+  const contasAlvo = dados.accountId
+    ? [dados.accountId]
+    : ds.projectAccounts
+        .filter((p) => p.projectId === dados.projectId)
+        .map((p) => p.accountId);
+
+  const vencimento = dados.dueDate ?? hoje;
+
+  return {
+    ...ds,
+    tasks: [...ds.tasks, { ...dados, id: taskId, isActive: true }],
+    taskOccurrences: [
+      ...ds.taskOccurrences,
+      ...contasAlvo.map((accountId) => ({
+        id: novoId("occ"),
+        taskId,
+        accountId,
+        dueDate: vencimento,
+        completedAt: null,
+        skipped: false,
+      })),
+    ],
+  };
+}
+
+export function criarMeta(
+  ds: Dataset,
+  dados: {
+    projectId: string;
+    accountId: string | null;
+    title: string;
+    metric: Dataset["goals"][number]["metric"];
+    target: Cents;
+    deadline: string | null;
+  },
+): Dataset {
+  return {
+    ...ds,
+    goals: [
+      ...ds.goals,
+      {
+        id: novoId("gol"),
+        projectId: dados.projectId,
+        accountId: dados.accountId,
+        title: dados.title,
+        metric: dados.metric,
+        targetValue: toDbNumeric(dados.target),
+        deadline: dados.deadline,
+        achievedAt: null,
+      },
+    ],
+  };
+}
+
+export function registrarRecebimento(
+  ds: Dataset,
+  dados: {
+    projectId: string;
+    accountId: string;
+    receivedAt: string;
+    tokenSymbol: string;
+    tokenAmount: string;
+    priceUsd: string;
+  },
+): Dataset {
+  // Valor congelado no momento do registro — o preço muda depois, o histórico não.
+  const valueUsd = (Number(dados.tokenAmount) * Number(dados.priceUsd)).toFixed(2);
+  return {
+    ...ds,
+    airdropClaims: [
+      ...ds.airdropClaims,
+      {
+        id: novoId("clm"),
+        projectId: dados.projectId,
+        accountId: dados.accountId,
+        receivedAt: dados.receivedAt,
+        tokenSymbol: dados.tokenSymbol.toUpperCase(),
+        tokenAmount: dados.tokenAmount,
+        priceUsd: dados.priceUsd,
+        valueUsd,
+      },
+    ],
+  };
+}
+
+export function alternarOcorrencia(ds: Dataset, occurrenceId: string): Dataset {
+  return {
+    ...ds,
+    taskOccurrences: ds.taskOccurrences.map((o) =>
+      o.id === occurrenceId
+        ? { ...o, completedAt: o.completedAt ? null : new Date().toISOString() }
+        : o,
+    ),
+  };
+}
+
+// ------------------------------------------------------------------- edição
+
+export function atualizarProjeto(
+  ds: Dataset,
+  id: string,
+  dados: Partial<Omit<Projeto, "id" | "slug">>,
+): Dataset {
+  // O slug não muda: está na URL e em links já compartilhados.
+  return {
+    ...ds,
+    projects: ds.projects.map((p) => (p.id === id ? { ...p, ...dados } : p)),
+  };
+}
+
+export function atualizarConta(
+  ds: Dataset,
+  id: string,
+  dados: Partial<Omit<Conta, "id">>,
+): Dataset {
+  return {
+    ...ds,
+    accounts: ds.accounts.map((a) => (a.id === id ? { ...a, ...dados } : a)),
+  };
+}
+
+export function atualizarTarefa(
+  ds: Dataset,
+  id: string,
+  dados: Partial<Omit<Tarefa, "id">>,
+): Dataset {
+  return {
+    ...ds,
+    tasks: ds.tasks.map((t) => (t.id === id ? { ...t, ...dados } : t)),
+  };
+}
+
+export function atualizarLancamento(
+  ds: Dataset,
+  id: string,
+  dados: {
+    occurredAt: string;
+    type: Dataset["transactions"][number]["type"];
+    amount: Cents;
+    description: string | null;
+  },
+): Dataset {
+  return {
+    ...ds,
+    transactions: ds.transactions.map((t) =>
+      t.id === id
+        ? {
+            ...t,
+            occurredAt: dados.occurredAt,
+            type: dados.type,
+            amountUsd: toDbNumeric(dados.amount),
+            description: dados.description,
+          }
+        : t,
+    ),
+  };
+}
+
+export function atualizarSaldo(
+  ds: Dataset,
+  id: string,
+  dados: { takenAt: string; balance: Cents },
+): Dataset {
+  return {
+    ...ds,
+    balanceSnapshots: ds.balanceSnapshots.map((s) =>
+      s.id === id
+        ? { ...s, takenAt: dados.takenAt, balanceUsd: toDbNumeric(dados.balance) }
+        : s,
+    ),
+  };
+}
+
+export function atualizarVinculo(
+  ds: Dataset,
+  projectId: string,
+  accountId: string,
+  dados: { status: "ativa" | "pausada" | "queimada"; startedAt: string },
+): Dataset {
+  return {
+    ...ds,
+    projectAccounts: ds.projectAccounts.map((p) =>
+      p.projectId === projectId && p.accountId === accountId ? { ...p, ...dados } : p,
+    ),
+  };
+}
+
+// ----------------------------------------------------------------- exclusão
+
+export function excluirProjeto(ds: Dataset, id: string): Dataset {
+  const idsTarefas = new Set(
+    ds.tasks.filter((t) => t.projectId === id).map((t) => t.id),
+  );
+  return {
+    ...ds,
+    projects: ds.projects.filter((p) => p.id !== id),
+    projectAccounts: ds.projectAccounts.filter((p) => p.projectId !== id),
+    transactions: ds.transactions.filter((t) => t.projectId !== id),
+    balanceSnapshots: ds.balanceSnapshots.filter((s) => s.projectId !== id),
+    tasks: ds.tasks.filter((t) => t.projectId !== id),
+    taskOccurrences: ds.taskOccurrences.filter((o) => !idsTarefas.has(o.taskId)),
+    goals: ds.goals.filter((g) => g.projectId !== id),
+    airdropClaims: ds.airdropClaims.filter((c) => c.projectId !== id),
+  };
+}
+
+export function excluirConta(ds: Dataset, id: string): Dataset {
+  return {
+    ...ds,
+    accounts: ds.accounts.filter((a) => a.id !== id),
+    projectAccounts: ds.projectAccounts.filter((p) => p.accountId !== id),
+    transactions: ds.transactions.filter((t) => t.accountId !== id),
+    balanceSnapshots: ds.balanceSnapshots.filter((s) => s.accountId !== id),
+    taskOccurrences: ds.taskOccurrences.filter((o) => o.accountId !== id),
+    // A tarefa era específica desta conta: passa a valer para todas, em vez de
+    // sumir junto e levar embora a intenção de farming.
+    tasks: ds.tasks.map((t) => (t.accountId === id ? { ...t, accountId: null } : t)),
+    goals: ds.goals.map((g) => (g.accountId === id ? { ...g, accountId: null } : g)),
+    airdropClaims: ds.airdropClaims.filter((c) => c.accountId !== id),
+  };
+}
+
+export function excluirLancamento(ds: Dataset, id: string): Dataset {
+  return { ...ds, transactions: ds.transactions.filter((t) => t.id !== id) };
+}
+
+export function excluirSaldo(ds: Dataset, id: string): Dataset {
+  return { ...ds, balanceSnapshots: ds.balanceSnapshots.filter((s) => s.id !== id) };
+}
+
+export function excluirTarefa(ds: Dataset, taskId: string): Dataset {
+  return {
+    ...ds,
+    tasks: ds.tasks.filter((t) => t.id !== taskId),
+    taskOccurrences: ds.taskOccurrences.filter((o) => o.taskId !== taskId),
+  };
+}
+
+export function excluirOcorrencia(ds: Dataset, id: string): Dataset {
+  return { ...ds, taskOccurrences: ds.taskOccurrences.filter((o) => o.id !== id) };
+}
+
+export function excluirMeta(ds: Dataset, id: string): Dataset {
+  return { ...ds, goals: ds.goals.filter((g) => g.id !== id) };
+}
+
+export function excluirRecebimento(ds: Dataset, id: string): Dataset {
+  return { ...ds, airdropClaims: ds.airdropClaims.filter((c) => c.id !== id) };
+}
+
+export function desvincularConta(
+  ds: Dataset,
+  projectId: string,
+  accountId: string,
+): Dataset {
+  const doPar = (r: { projectId: string; accountId: string }) =>
+    r.projectId === projectId && r.accountId === accountId;
+  return {
+    ...ds,
+    projectAccounts: ds.projectAccounts.filter((p) => !doPar(p)),
+    transactions: ds.transactions.filter((t) => !doPar(t)),
+    balanceSnapshots: ds.balanceSnapshots.filter((s) => !doPar(s)),
+  };
+}

@@ -1,9 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, TriangleAlert } from "lucide-react";
+import { ExternalLink, Trash2, TriangleAlert, Unlink } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
+import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
+import {
+  EditarLancamento,
+  EditarProjeto,
+  EditarSaldo,
+  EditarTarefa,
+  EditarVinculo,
+} from "@/components/forms/editar";
+import { Button } from "@/components/ui/button";
 import {
   NovaMeta,
   NovaTarefa,
@@ -25,8 +34,28 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
 import { formatUsd } from "@/lib/money";
-import { selectProjectBySlug, selectTasksByProject } from "@/lib/selectors";
+import {
+  contarDependenciasVinculo,
+  descreverImpacto,
+  selectProjectBySlug,
+  selectTasksByProject,
+} from "@/lib/selectors";
 import type { TransactionRow } from "@/lib/types";
+
+/** Botão de lixeira das linhas de tabela — mesmo tamanho do de editar. */
+function BotaoLixeira({ rotulo }: { rotulo: string }) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="hover:text-negative size-8"
+      aria-label={rotulo}
+      title={rotulo}
+    >
+      <Trash2 className="size-3.5" aria-hidden="true" />
+    </Button>
+  );
+}
 
 const tipoLabels: Record<TransactionRow["tipo"], string> = {
   deposit: "Depósito",
@@ -38,7 +67,7 @@ const tipoLabels: Record<TransactionRow["tipo"], string> = {
 };
 
 export function ProjetoView({ slug }: { slug: string }) {
-  const { dataset, hoje } = useDados();
+  const { dataset, hoje, acoes } = useDados();
   const projeto = selectProjectBySlug(dataset, slug, hoje);
 
   if (!projeto) {
@@ -100,6 +129,7 @@ export function ProjetoView({ slug }: { slug: string }) {
           <div className="flex flex-wrap items-center gap-2">
             <PriorityMeter value={projeto.prioridade} />
             <ProjectStatusBadge status={projeto.status} />
+            <EditarProjeto projectId={projeto.id} />
             <NovoLancamento projectId={projeto.id} rotulo="Lançamento" />
           </div>
         }
@@ -181,6 +211,9 @@ export function ProjetoView({ slug }: { slug: string }) {
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">Saldo</th>
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">Resultado</th>
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">Pendências</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                      <span className="sr-only">Ações</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-border divide-y">
@@ -232,6 +265,39 @@ export function ProjetoView({ slug }: { slug: string }) {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
+                      <td className="px-2 py-2">
+                        <div className="flex items-center justify-end">
+                          <EditarVinculo
+                            projectId={projeto.id}
+                            accountId={conta.contaId}
+                          />
+                          <ConfirmarExclusao
+                            titulo="Desvincular conta"
+                            alvo={`${conta.label} em ${projeto.nome}`}
+                            impacto={descreverImpacto(
+                              contarDependenciasVinculo(
+                                dataset,
+                                projeto.id,
+                                conta.contaId,
+                              ),
+                            )}
+                            aoConfirmar={() =>
+                              acoes.desvincularConta(projeto.id, conta.contaId)
+                            }
+                            gatilho={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="hover:text-negative size-8"
+                                aria-label={`Desvincular ${conta.label}`}
+                                title={`Desvincular ${conta.label}`}
+                              >
+                                <Unlink className="size-3.5" aria-hidden="true" />
+                              </Button>
+                            }
+                          />
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -270,6 +336,9 @@ export function ProjetoView({ slug }: { slug: string }) {
                       <th scope="col" className="px-4 py-2.5 font-medium">Tipo</th>
                       <th scope="col" className="px-4 py-2.5 font-medium">Descrição</th>
                       <th scope="col" className="px-4 py-2.5 text-right font-medium">Valor</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                        <span className="sr-only">Ações</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-border divide-y">
@@ -299,6 +368,32 @@ export function ProjetoView({ slug }: { slug: string }) {
                             value={linha.valor}
                             tone={linha.isSnapshot ? "muted" : "neutral"}
                           />
+                        </td>
+                        <td className="px-2 py-2">
+                          <div className="flex items-center justify-end">
+                            {linha.isSnapshot ? (
+                              <>
+                                <EditarSaldo snapshotId={linha.id} />
+                                <ConfirmarExclusao
+                                  titulo="Excluir saldo registrado"
+                                  alvo={`Saldo de ${linha.contaLabel} em ${formatDateBr(linha.data)}`}
+                                  impacto="A exposição volta a ser estimada pelo aporte se este for o único saldo da conta"
+                                  aoConfirmar={() => acoes.excluirSaldo(linha.id)}
+                                  gatilho={<BotaoLixeira rotulo="Excluir saldo" />}
+                                />
+                              </>
+                            ) : (
+                              <>
+                                <EditarLancamento transactionId={linha.id} />
+                                <ConfirmarExclusao
+                                  titulo="Excluir lançamento"
+                                  alvo={`${tipoLabels[linha.tipo]} de ${linha.contaLabel} em ${formatDateBr(linha.data)}`}
+                                  aoConfirmar={() => acoes.excluirLancamento(linha.id)}
+                                  gatilho={<BotaoLixeira rotulo="Excluir lançamento" />}
+                                />
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -346,6 +441,21 @@ export function ProjetoView({ slug }: { slug: string }) {
                       {relativeLabel(tarefa.vencimento, hoje)}
                     </span>
                     <UrgencyBadge urgency={tarefa.urgencia} />
+                    <div className="flex items-center">
+                      <EditarTarefa taskId={tarefa.taskId} />
+                      <ConfirmarExclusao
+                        titulo="Excluir tarefa"
+                        alvo={tarefa.titulo}
+                        impacto={(() => {
+                          const n = dataset.taskOccurrences.filter(
+                            (o) => o.taskId === tarefa.taskId,
+                          ).length;
+                          return n > 1 ? `${n} ocorrências dessa tarefa` : null;
+                        })()}
+                        aoConfirmar={() => acoes.excluirTarefa(tarefa.taskId)}
+                        gatilho={<BotaoLixeira rotulo={`Excluir ${tarefa.titulo}`} />}
+                      />
+                    </div>
                   </div>
                 </li>
               ))}
@@ -372,12 +482,20 @@ export function ProjetoView({ slug }: { slug: string }) {
                             </span>
                           ) : null}
                         </span>
-                        <span className="tabular text-sm">
-                          {formatUsd(meta.atual)}
-                          <span className="text-muted-foreground">
-                            {" / "}
-                            {formatUsd(meta.alvo)}
+                        <span className="flex items-center gap-2">
+                          <span className="tabular text-sm">
+                            {formatUsd(meta.atual)}
+                            <span className="text-muted-foreground">
+                              {" / "}
+                              {formatUsd(meta.alvo)}
+                            </span>
                           </span>
+                          <ConfirmarExclusao
+                            titulo="Excluir meta"
+                            alvo={meta.titulo}
+                            aoConfirmar={() => acoes.excluirMeta(meta.id)}
+                            gatilho={<BotaoLixeira rotulo={`Excluir ${meta.titulo}`} />}
+                          />
                         </span>
                       </div>
                       <div className="bg-secondary h-2 overflow-hidden rounded-full">
@@ -420,6 +538,9 @@ export function ProjetoView({ slug }: { slug: string }) {
                     <th scope="col" className="px-4 py-2.5 font-medium">Token</th>
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">Quantidade</th>
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">Valor</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                      <span className="sr-only">Ações</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-border divide-y">
@@ -437,6 +558,16 @@ export function ProjetoView({ slug }: { slug: string }) {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Money value={claim.valor} tone="auto" />
+                      </td>
+                      <td className="px-2 py-2">
+                        <div className="flex items-center justify-end">
+                          <ConfirmarExclusao
+                            titulo="Excluir recebimento"
+                            alvo={`${claim.quantidade} ${claim.token} de ${claim.contaLabel}`}
+                            aoConfirmar={() => acoes.excluirRecebimento(claim.id)}
+                            gatilho={<BotaoLixeira rotulo="Excluir recebimento" />}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}

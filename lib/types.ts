@@ -159,7 +159,10 @@ export type ProjectDetail = ProjectSummary & {
 export type TaskUrgency = "atrasada" | "hoje" | "proxima";
 
 export type TaskOccurrenceRow = {
+  /** Id da ocorrência (o item do dia). */
   id: string;
+  /** Id da tarefa que gerou a ocorrência — o que se edita ou exclui. */
+  taskId: string;
   titulo: string;
   descricao: string | null;
   projetoSlug: string;

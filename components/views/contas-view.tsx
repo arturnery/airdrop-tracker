@@ -1,16 +1,25 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
+
 import { useDados } from "@/components/data-provider";
+import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
 import { NovaConta, VincularConta } from "@/components/forms/dialogs";
+import { EditarConta } from "@/components/forms/editar";
 import { Money } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
+import { Button } from "@/components/ui/button";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
 import { cents } from "@/lib/money";
-import { selectAccounts } from "@/lib/selectors";
+import {
+  contarDependenciasConta,
+  descreverImpacto,
+  selectAccounts,
+} from "@/lib/selectors";
 
 export function ContasView() {
-  const { dataset, hoje } = useDados();
+  const { dataset, hoje, acoes } = useDados();
   const contas = selectAccounts(dataset);
 
   const totalAportado = cents(contas.reduce((acc, c) => acc + c.aportado, 0));
@@ -94,6 +103,9 @@ export function ContasView() {
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Resultado</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Pendências</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Atividade</th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    <span className="sr-only">Ações</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-border divide-y">
@@ -139,6 +151,30 @@ export function ContasView() {
                       ) : (
                         "—"
                       )}
+                    </td>
+                    <td className="px-2 py-2">
+                      <div className="flex items-center justify-end">
+                        <EditarConta accountId={conta.id} />
+                        <ConfirmarExclusao
+                          titulo="Excluir conta"
+                          alvo={conta.label}
+                          impacto={descreverImpacto(
+                            contarDependenciasConta(dataset, conta.id),
+                          )}
+                          aoConfirmar={() => acoes.excluirConta(conta.id)}
+                          gatilho={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="hover:text-negative size-8"
+                              aria-label={`Excluir ${conta.label}`}
+                              title={`Excluir ${conta.label}`}
+                            >
+                              <Trash2 className="size-3.5" aria-hidden="true" />
+                            </Button>
+                          }
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
