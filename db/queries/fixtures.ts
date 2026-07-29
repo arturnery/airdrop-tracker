@@ -565,3 +565,23 @@ export type RawAirdropClaim = {
 
 /** Vazio de propósito: nenhum TGE aconteceu ainda. Exercita o estado vazio. */
 export const rawAirdropClaims: RawAirdropClaim[] = [];
+
+/**
+ * Dataset inicial entregue ao provider client.
+ *
+ * As cópias impedem que uma mutação acidental no navegador altere os módulos
+ * importados — o "restaurar dados originais" precisa de uma base intacta.
+ */
+export function datasetInicial() {
+  return {
+    accounts: [...rawAccounts],
+    projects: [...rawProjects],
+    projectAccounts: [...rawProjectAccounts],
+    transactions: [...rawTransactions],
+    balanceSnapshots: [...rawBalanceSnapshots],
+    tasks: [...rawTasks],
+    taskOccurrences: [...rawTaskOccurrences],
+    goals: [...rawGoals],
+    airdropClaims: [...rawAirdropClaims],
+  };
+}

@@ -1,0 +1,147 @@
+import { z } from "zod";
+
+import { parseUserInput } from "./money";
+
+/**
+ * Schemas de entrada dos formulários.
+ *
+ * Os mesmos schemas passam a validar as Server Actions na fase de backend —
+ * é o ganho de manter validação separada da UI.
+ */
+
+/** Aceita "$20.00", "20", "1.234,56"; devolve centavos inteiros. */
+const valorUsd = z.string().transform((raw, ctx) => {
+  const parsed = parseUserInput(raw);
+  if (!parsed.ok) {
+    ctx.addIssue({ code: "custom", message: parsed.error });
+    return z.NEVER;
+  }
+  return parsed.value;
+});
+
+const dataIso = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Informe uma data válida.");
+
+const urlOpcional = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .refine(
+    (v) => v === null || /^https?:\/\/.+/.test(v),
+    "O endereço precisa começar com http:// ou https://",
+  );
+
+const textoOpcional = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? null : v))
+  .nullable();
+
+export const projetoSchema = z.object({
+  name: z.string().trim().min(1, "Dê um nome ao projeto.").max(80),
+  status: z.enum([
+    "pesquisando",
+    "ativo",
+    "pausado",
+    "tge_anunciado",
+    "distribuido",
+    "descartado",
+  ]),
+  chain: textoOpcional,
+  priority: z.coerce.number().int().min(1).max(5),
+  websiteUrl: urlOpcional,
+  discordUrl: urlOpcional,
+  twitterUrl: urlOpcional,
+  docsUrl: urlOpcional,
+  expectedTgeDate: dataIso.nullable().or(z.literal("").transform(() => null)),
+  notes: textoOpcional,
+});
+export type ProjetoInput = z.input<typeof projetoSchema>;
+
+export const contaSchema = z.object({
+  label: z.string().trim().min(1, "Dê um nome à conta.").max(60),
+  walletAddress: textoOpcional,
+  email: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .refine((v) => v === null || z.email().safeParse(v).success, "E-mail inválido."),
+});
+
+export const vinculoSchema = z.object({
+  projectId: z.string().min(1, "Escolha o projeto."),
+  accountId: z.string().min(1, "Escolha a conta."),
+  status: z.enum(["ativa", "pausada", "queimada"]),
+  startedAt: dataIso,
+});
+
+export const lancamentoSchema = z.object({
+  projectId: z.string().min(1, "Escolha o projeto."),
+  accountId: z.string().min(1, "Escolha a conta."),
+  occurredAt: dataIso,
+  type: z.enum([
+    "deposit",
+    "withdrawal",
+    "trade_pnl",
+    "fee_gas",
+    "volume_traded",
+    "other",
+  ]),
+  amount: valorUsd,
+  description: textoOpcional,
+});
+
+export const saldoSchema = z.object({
+  projectId: z.string().min(1, "Escolha o projeto."),
+  accountId: z.string().min(1, "Escolha a conta."),
+  takenAt: dataIso,
+  balance: valorUsd,
+});
+
+export const tarefaSchema = z.object({
+  projectId: z.string().min(1, "Escolha o projeto."),
+  accountId: z.string().nullable(),
+  title: z.string().trim().min(1, "Descreva a tarefa.").max(100),
+  description: textoOpcional,
+  recurrence: z.enum(["none", "daily", "weekly", "monthly", "every_n_days"]),
+  intervalDays: z.coerce.number().int().min(1).max(365).nullable(),
+  dueDate: dataIso.nullable().or(z.literal("").transform(() => null)),
+});
+
+export const metaSchema = z.object({
+  projectId: z.string().min(1, "Escolha o projeto."),
+  accountId: z.string().nullable(),
+  title: z.string().trim().min(1, "Descreva a meta.").max(100),
+  metric: z.enum(["volume_usd", "balance_usd", "tx_count", "days_active"]),
+  target: valorUsd,
+  deadline: dataIso.nullable().or(z.literal("").transform(() => null)),
+});
+
+export const recebimentoSchema = z.object({
+  projectId: z.string().min(1, "Escolha o projeto."),
+  accountId: z.string().min(1, "Escolha a conta."),
+  receivedAt: dataIso,
+  tokenSymbol: z.string().trim().min(1, "Informe o símbolo do token.").max(20),
+  tokenAmount: z
+    .string()
+    .trim()
+    .refine((v) => /^\d+(\.\d+)?$/.test(v), "Quantidade inválida."),
+  priceUsd: z
+    .string()
+    .trim()
+    .refine((v) => /^\d+(\.\d+)?$/.test(v), "Preço inválido."),
+});
+
+/** Converte os erros do Zod no formato { campo: mensagem } que os forms usam. */
+export function erros(resultado: z.ZodSafeParseResult<unknown>) {
+  if (resultado.success) return {};
+  const mapa: Record<string, string> = {};
+  for (const issue of resultado.error.issues) {
+    const campo = issue.path.join(".");
+    if (campo && !mapa[campo]) mapa[campo] = issue.message;
+  }
+  return mapa;
+}

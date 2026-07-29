@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  ListChecks,
   Layers,
-  Wallet,
+  ListChecks,
   Upload,
+  Wallet,
 } from "lucide-react";
 
+import { useDados } from "@/components/data-provider";
+import { selectPendingTasks } from "@/lib/selectors";
 import { cn } from "@/lib/utils";
 
 const itens = [
@@ -20,8 +22,13 @@ const itens = [
   { href: "/importar", label: "Importar", icon: Upload },
 ] as const;
 
-export function Nav({ tarefasPendentes }: { tarefasPendentes: number }) {
+export function Nav() {
   const pathname = usePathname();
+  const { dataset, hoje } = useDados();
+
+  const urgentes = selectPendingTasks(dataset, hoje).filter(
+    (t) => t.urgencia === "atrasada" || t.urgencia === "hoje",
+  ).length;
 
   const estaAtivo = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -39,7 +46,7 @@ export function Nav({ tarefasPendentes }: { tarefasPendentes: number }) {
                 aria-current={ativo ? "page" : undefined}
                 className={cn(
                   "flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm transition-colors lg:justify-start",
-                  "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
+                  "focus-visible:ring-ring focus-visible:ring-offset-sidebar focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                   ativo
                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
@@ -47,9 +54,9 @@ export function Nav({ tarefasPendentes }: { tarefasPendentes: number }) {
               >
                 <Icon className="size-4 shrink-0" aria-hidden="true" />
                 <span className="hidden sm:inline">{item.label}</span>
-                {item.href === "/tarefas" && tarefasPendentes > 0 ? (
-                  <span className="bg-caution/15 text-caution ml-auto hidden rounded px-1.5 py-0.5 text-xs font-medium tabular lg:inline">
-                    {tarefasPendentes}
+                {item.href === "/tarefas" && urgentes > 0 ? (
+                  <span className="bg-caution/15 text-caution tabular ml-auto hidden rounded px-1.5 py-0.5 text-xs font-medium lg:inline">
+                    {urgentes}
                   </span>
                 ) : null}
               </Link>
