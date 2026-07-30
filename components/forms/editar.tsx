@@ -121,6 +121,7 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
           name: texto(dados, "name"),
           status: texto(dados, "status"),
           category: texto(dados, "category"),
+          pointsLabel: texto(dados, "pointsLabel"),
           chain: texto(dados, "chain"),
           priority: texto(dados, "priority"),
           websiteUrl: texto(dados, "websiteUrl"),
@@ -183,6 +184,14 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
               }))}
             />
           </div>
+          <CampoTexto
+            label="Programa de pontos"
+            name="pointsLabel"
+            defaultValue={projeto.pointsLabel ?? ""}
+            erro={e.pointsLabel}
+            ajuda="Nome do programa (Pontos, XP, Marks). Em branco = o projeto não tem."
+            placeholder="Pontos"
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoTexto
               label="Rede"
@@ -397,34 +406,45 @@ export function EditarSaldo({ snapshotId }: { snapshotId: string }) {
           accountId: saldo.accountId,
           takenAt: texto(dados, "takenAt"),
           balance: texto(dados, "balance"),
+          note: texto(dados, "note"),
         });
         if (!resultado.success) return erros(resultado);
         acoes.atualizarSaldo(snapshotId, {
           takenAt: resultado.data.takenAt,
           balance: resultado.data.balance,
+          note: resultado.data.note,
         });
         return null;
       }}
     >
       {({ erros: e }) => (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoTexto
+              label="Data"
+              name="takenAt"
+              type="date"
+              obrigatorio
+              defaultValue={saldo.takenAt}
+              erro={e.takenAt}
+            />
+            <CampoTexto
+              label="Saldo"
+              name="balance"
+              obrigatorio
+              defaultValue={saldo.balanceUsd}
+              erro={e.balance}
+              inputMode="decimal"
+            />
+          </div>
           <CampoTexto
-            label="Data"
-            name="takenAt"
-            type="date"
-            obrigatorio
-            defaultValue={saldo.takenAt}
-            erro={e.takenAt}
+            label="O que mudou"
+            name="note"
+            defaultValue={saldo.note ?? ""}
+            erro={e.note}
+            ajuda="Explica a variação em relação ao saldo anterior."
           />
-          <CampoTexto
-            label="Saldo"
-            name="balance"
-            obrigatorio
-            defaultValue={saldo.balanceUsd}
-            erro={e.balance}
-            inputMode="decimal"
-          />
-        </div>
+        </>
       )}
     </DialogoEdicao>
   );

@@ -55,6 +55,11 @@ export type RawProject = {
   status: "pesquisando" | "ativo" | "pausado" | "tge_anunciado" | "distribuido" | "descartado";
   /** Como o projeto é farmado — define a rotina de trabalho. */
   category: "liquidez" | "interacoes" | "perps" | null;
+  /**
+   * Nome do programa de pontos ("Pontos", "XP", "Marks"). `null` = o projeto
+   * não tem programa. Serve de rótulo e de chave para exibir a aba de pontos.
+   */
+  pointsLabel: string | null;
   chain: string | null;
   priority: number;
   websiteUrl: string | null;
@@ -72,6 +77,7 @@ export const rawProjects: RawProject[] = [
     name: "Nansen",
     status: "ativo",
     category: "interacoes",
+    pointsLabel: null,
     chain: "Multi-chain",
     priority: 3,
     websiteUrl: "https://nansen.ai",
@@ -87,6 +93,7 @@ export const rawProjects: RawProject[] = [
     name: "Minara",
     status: "ativo",
     category: "interacoes",
+    pointsLabel: null,
     chain: null,
     priority: 2,
     websiteUrl: null,
@@ -102,6 +109,7 @@ export const rawProjects: RawProject[] = [
     name: "Ondo Perp",
     status: "ativo",
     category: "perps",
+    pointsLabel: "Pontos",
     chain: "Ondo Chain",
     priority: 5,
     websiteUrl: null,
@@ -117,6 +125,7 @@ export const rawProjects: RawProject[] = [
     name: "Lighter",
     status: "ativo",
     category: "perps",
+    pointsLabel: "Pontos",
     chain: "zkSync Era",
     priority: 3,
     websiteUrl: null,
@@ -132,6 +141,7 @@ export const rawProjects: RawProject[] = [
     name: "Saturn",
     status: "ativo",
     category: "liquidez",
+    pointsLabel: "XP",
     chain: null,
     priority: 4,
     websiteUrl: null,
@@ -320,6 +330,8 @@ export type RawBalanceSnapshot = {
   accountId: string;
   takenAt: string;
   balanceUsd: string;
+  /** Explica a variação em relação ao saldo anterior. */
+  note: string | null;
 };
 
 export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
@@ -331,6 +343,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-brave",
     takenAt: "2026-07-01",
     balanceUsd: "15.00",
+    note: null,
   },
   {
     id: "snp-02",
@@ -338,6 +351,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-brave",
     takenAt: "2026-07-07",
     balanceUsd: "7.33",
+    note: "Perda em trade",
   },
   // Exemplos.
   {
@@ -346,6 +360,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-email",
     takenAt: "2026-07-27",
     balanceUsd: "21.40",
+    note: "Rendimento do DeFi",
   },
   {
     id: "snp-04",
@@ -353,6 +368,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-chrome",
     takenAt: "2026-07-27",
     balanceUsd: "8.60",
+    note: null,
   },
   {
     id: "snp-05",
@@ -360,6 +376,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-brave",
     takenAt: "2026-07-26",
     balanceUsd: "13.10",
+    note: null,
   },
   {
     id: "snp-06",
@@ -367,6 +384,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-chrome",
     takenAt: "2026-07-26",
     balanceUsd: "9.45",
+    note: null,
   },
   {
     id: "snp-07",
@@ -374,6 +392,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-brave",
     takenAt: "2026-07-27",
     balanceUsd: "22.80",
+    note: null,
   },
   {
     id: "snp-08",
@@ -381,6 +400,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-chrome",
     takenAt: "2026-07-27",
     balanceUsd: "41.50",
+    note: null,
   },
   {
     id: "snp-09",
@@ -388,6 +408,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-chrome-1",
     takenAt: "2026-07-25",
     balanceUsd: "4.80",
+    note: null,
   },
   {
     id: "snp-10",
@@ -395,6 +416,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-chrome-2",
     takenAt: "2026-07-25",
     balanceUsd: "5.30",
+    note: null,
   },
   {
     id: "snp-11",
@@ -402,6 +424,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
     accountId: "acc-chrome",
     takenAt: "2026-07-26",
     balanceUsd: "18.90",
+    note: null,
   },
   // Saturn/mbox de propósito sem snapshot: exercita o estado "aporte sem saldo
   // confirmado" e o indicador de cobertura do dashboard.
@@ -589,6 +612,41 @@ export function datasetInicial() {
     tasks: [...rawTasks],
     taskOccurrences: [...rawTaskOccurrences],
     goals: [...rawGoals],
+    pointsSnapshots: [...rawPointsSnapshots],
     airdropClaims: [...rawAirdropClaims],
   };
 }
+
+export type RawPointsSnapshot = {
+  id: string;
+  projectId: string;
+  accountId: string;
+  takenAt: string;
+  /** `numeric` como string, igual aos demais valores. */
+  points: string;
+  note: string | null;
+};
+
+/**
+ * Fotos do saldo de pontos. Mesmo princípio dos saldos em dólar: o programa
+ * mostra um acumulado, não um extrato — então o que se registra é o total do
+ * dia, e o ganho do período sai da diferença entre duas fotos.
+ *
+ * Dados de exemplo.
+ */
+export const rawPointsSnapshots: RawPointsSnapshot[] = [
+  // Ondo Perp — quatro contas, duas medições
+  { id: "pts-01", projectId: "prj-ondo", accountId: "acc-brave", takenAt: "2026-07-20", points: "8400.0000", note: null },
+  { id: "pts-02", projectId: "prj-ondo", accountId: "acc-chrome", takenAt: "2026-07-20", points: "15200.0000", note: null },
+  { id: "pts-03", projectId: "prj-ondo", accountId: "acc-chrome-1", takenAt: "2026-07-20", points: "1100.0000", note: null },
+  { id: "pts-04", projectId: "prj-ondo", accountId: "acc-chrome-2", takenAt: "2026-07-20", points: "1250.0000", note: null },
+  { id: "pts-05", projectId: "prj-ondo", accountId: "acc-brave", takenAt: "2026-07-27", points: "11750.0000", note: "Semana de volume alto" },
+  { id: "pts-06", projectId: "prj-ondo", accountId: "acc-chrome", takenAt: "2026-07-27", points: "21400.0000", note: null },
+  { id: "pts-07", projectId: "prj-ondo", accountId: "acc-chrome-1", takenAt: "2026-07-27", points: "1480.0000", note: null },
+  { id: "pts-08", projectId: "prj-ondo", accountId: "acc-chrome-2", takenAt: "2026-07-27", points: "1620.0000", note: null },
+  // Lighter — uma conta
+  { id: "pts-09", projectId: "prj-lighter", accountId: "acc-chrome", takenAt: "2026-07-19", points: "3200.0000", note: null },
+  { id: "pts-10", projectId: "prj-lighter", accountId: "acc-chrome", takenAt: "2026-07-26", points: "4850.5000", note: "Bônus de maker" },
+  // Saturn — programa recém-iniciado, só uma medição
+  { id: "pts-11", projectId: "prj-saturn", accountId: "acc-mbox", takenAt: "2026-07-28", points: "500.0000", note: "Pontos de entrada" },
+];

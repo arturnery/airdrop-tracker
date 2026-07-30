@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { parseUserInput } from "./money";
+import { parsePointsInput } from "./points";
 
 /**
  * Schemas de entrada dos formulários.
@@ -50,6 +51,7 @@ export const projetoSchema = z.object({
     "descartado",
   ]),
   category: z.enum(["liquidez", "interacoes", "perps"]),
+  pointsLabel: textoOpcional,
   chain: textoOpcional,
   priority: z.coerce.number().int().min(1).max(5),
   websiteUrl: urlOpcional,
@@ -100,6 +102,26 @@ export const saldoSchema = z.object({
   accountId: z.string().min(1, "Escolha a conta."),
   takenAt: dataIso,
   balance: valorUsd,
+  /** Explica a variação: "rendimento do DeFi", "perda no trade", "migrado". */
+  note: textoOpcional,
+});
+
+/** Pontos usam escala própria — ver lib/points.ts. */
+const quantidadePontos = z.string().transform((raw, ctx) => {
+  const parsed = parsePointsInput(raw);
+  if (!parsed.ok) {
+    ctx.addIssue({ code: "custom", message: parsed.error });
+    return z.NEVER;
+  }
+  return parsed.value;
+});
+
+export const pontosSchema = z.object({
+  projectId: z.string().min(1, "Escolha o projeto."),
+  accountId: z.string().min(1, "Escolha a conta."),
+  takenAt: dataIso,
+  points: quantidadePontos,
+  note: textoOpcional,
 });
 
 export const tarefaSchema = z.object({

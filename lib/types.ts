@@ -1,4 +1,5 @@
 import type { Cents } from "./money";
+import type { Points } from "./points";
 
 /**
  * View models consumidos pelas telas.
@@ -224,4 +225,50 @@ export type AtividadeRow = {
   titulo: string;
   detalhe: string | null;
   valor: Cents | null;
+};
+
+// --------------------------------------------------------------------- pontos
+
+/** Uma conta dentro de um programa de pontos. */
+export type PointsAccountRow = {
+  contaId: string;
+  label: string;
+  /** null quando a conta nunca teve registro de pontos. */
+  total: Points | null;
+  atualizadoEm: IsoDate | null;
+  /** Variação desde o registro anterior desta conta. */
+  variacao: Points | null;
+  desdeEm: IsoDate | null;
+  nota: string | null;
+};
+
+/**
+ * Programa de pontos de um projeto.
+ *
+ * O total só faz sentido dentro do projeto: pontos de programas diferentes são
+ * unidades diferentes e nunca são somados entre si.
+ */
+export type PointsProgramRow = {
+  projetoId: string;
+  projetoSlug: string;
+  projetoNome: string;
+  /** Nome do programa: "Pontos", "XP", "Marks". */
+  rotulo: string;
+  total: Points;
+  /** Total na medição anterior, para comparar. */
+  totalAnterior: Points | null;
+  variacao: Points | null;
+  crescimento: number | null;
+  atualizadoEm: IsoDate | null;
+  contas: PointsAccountRow[];
+};
+
+export type PointsSnapshotRow = {
+  id: string;
+  data: IsoDate;
+  contaId: string;
+  contaLabel: string;
+  total: Points;
+  variacao: Points | null;
+  nota: string | null;
 };

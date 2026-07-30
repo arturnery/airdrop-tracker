@@ -17,6 +17,7 @@ import {
   NovaMeta,
   NovaTarefa,
   NovoLancamento,
+  RegistrarPontos,
   RegistrarRecebimento,
   RegistrarSaldo,
   VincularConta,
@@ -39,9 +40,13 @@ import { formatUsd } from "@/lib/money";
 import {
   contarDependenciasVinculo,
   descreverImpacto,
+  selectHistoricoDePontos,
+  selectProgramaDePontos,
   selectProjectBySlug,
   selectTasksByProject,
 } from "@/lib/selectors";
+import { formatPoints, formatPointsDelta, ZERO_PONTOS } from "@/lib/points";
+import { cn } from "@/lib/utils";
 import type { TransactionRow } from "@/lib/types";
 
 /** Botão de lixeira das linhas de tabela — mesmo tamanho do de editar. */
@@ -93,6 +98,10 @@ export function ProjetoView({ slug }: { slug: string }) {
   }
 
   const tarefas = selectTasksByProject(dataset, projeto.id, hoje);
+  const programa = selectProgramaDePontos(dataset, projeto.id);
+  const historicoPontos = programa
+    ? selectHistoricoDePontos(dataset, projeto.id)
+    : [];
   const semSaldo = projeto.contasDetalhe.filter((c) => c.saldo === null);
   const links = [
     { href: projeto.links.website, label: "Site" },
@@ -184,6 +193,9 @@ export function ProjetoView({ slug }: { slug: string }) {
           <TabsTrigger value="contas">Contas</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
           <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
+          {programa ? (
+            <TabsTrigger value="pontos">{programa.rotulo}</TabsTrigger>
+          ) : null}
           <TabsTrigger value="airdrop">Airdrop</TabsTrigger>
           <TabsTrigger value="info">Informações</TabsTrigger>
         </TabsList>
@@ -518,6 +530,172 @@ export function ProjetoView({ slug }: { slug: string }) {
             </section>
           ) : null}
         </TabsContent>
+
+        {/* ----------------------------------------------------------- pontos */}
+        {programa ? (
+          <TabsContent value="pontos" className="mt-6">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-muted-foreground text-xs tracking-wider uppercase">
+                  Total acumulado
+                </p>
+                <p className="font-numeric mt-1 text-4xl leading-none font-semibold">
+                  {formatPoints(programa.total)}
+                </p>
+                {programa.variacao !== null ? (
+                  <p className="mt-2 text-xs">
+                    <span
+                      className={cn(
+                        "tabular font-medium",
+                        programa.variacao > ZERO_PONTOS && "text-positive",
+                        programa.variacao < ZERO_PONTOS && "text-negative",
+                      )}
+                    >
+                      {formatPointsDelta(programa.variacao)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      desde a medição anterior
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    Primeira medição — registre de novo depois para ver o ganho.
+                  </p>
+                )}
+              </div>
+              <RegistrarPontos projectId={projeto.id} />
+            </div>
+
+            <h3 className="mb-3 text-sm font-medium">Por conta</h3>
+            <div className="border-border overflow-x-auto rounded-lg border">
+              <table className="w-full min-w-160 text-sm">
+                <caption className="sr-only">
+                  Pontos acumulados por conta neste projeto
+                </caption>
+                <thead>
+                  <tr className="border-border text-muted-foreground border-b text-left text-xs">
+                    <th scope="col" className="px-4 py-2.5 font-medium">Conta</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Acumulado</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Variação</th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">Observação</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Medido</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-border divide-y">
+                  {programa.contas.map((conta) => (
+                    <tr key={conta.contaId} className="hover:bg-accent/40 transition-colors">
+                      <th scope="row" className="px-4 py-3 text-left font-medium">
+                        {conta.label}
+                      </th>
+                      <td className="tabular px-4 py-3 text-right">
+                        {conta.total === null ? (
+                          <span className="text-muted-foreground text-xs">
+                            sem registro
+                          </span>
+                        ) : (
+                          formatPoints(conta.total)
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {conta.variacao === null ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          <span
+                            className={cn(
+                              "tabular",
+                              conta.variacao > ZERO_PONTOS && "text-positive",
+                              conta.variacao < ZERO_PONTOS && "text-negative",
+                            )}
+                          >
+                            {formatPointsDelta(conta.variacao)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="text-muted-foreground px-4 py-3 text-xs">
+                        {conta.nota ?? "—"}
+                      </td>
+                      <td className="text-muted-foreground px-4 py-3 text-right text-xs">
+                        {conta.atualizadoEm
+                          ? relativeLabel(conta.atualizadoEm, hoje)
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="mt-8 mb-3 text-sm font-medium">Histórico de medições</h3>
+            {historicoPontos.length === 0 ? (
+              <EmptyState
+                title="Nenhuma medição registrada"
+                description="Registre o total acumulado periodicamente; o ganho do período sai da diferença entre duas medições."
+              />
+            ) : (
+              <div className="border-border overflow-x-auto rounded-lg border">
+                <table className="w-full min-w-160 text-sm">
+                  <caption className="sr-only">Medições de pontos ao longo do tempo</caption>
+                  <thead>
+                    <tr className="border-border text-muted-foreground border-b text-left text-xs">
+                      <th scope="col" className="px-4 py-2.5 font-medium">Data</th>
+                      <th scope="col" className="px-4 py-2.5 font-medium">Conta</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">Acumulado</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">Ganho</th>
+                      <th scope="col" className="px-4 py-2.5 font-medium">Observação</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                        <span className="sr-only">Ações</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-border divide-y">
+                    {historicoPontos.map((registro) => (
+                      <tr key={registro.id} className="hover:bg-accent/40 transition-colors">
+                        <td className="text-muted-foreground tabular px-4 py-3">
+                          {formatDateBr(registro.data)}
+                        </td>
+                        <td className="px-4 py-3">{registro.contaLabel}</td>
+                        <td className="tabular px-4 py-3 text-right">
+                          {formatPoints(registro.total)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {registro.variacao === null ? (
+                            <span className="text-muted-foreground text-xs">
+                              primeira
+                            </span>
+                          ) : (
+                            <span
+                              className={cn(
+                                "tabular",
+                                registro.variacao > ZERO_PONTOS && "text-positive",
+                                registro.variacao < ZERO_PONTOS && "text-negative",
+                              )}
+                            >
+                              {formatPointsDelta(registro.variacao)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="text-muted-foreground px-4 py-3 text-xs">
+                          {registro.nota ?? "—"}
+                        </td>
+                        <td className="px-2 py-2">
+                          <div className="flex items-center justify-end">
+                            <ConfirmarExclusao
+                              titulo="Excluir medição"
+                              alvo={`${formatPoints(registro.total)} ${programa.rotulo} de ${registro.contaLabel} em ${formatDateBr(registro.data)}`}
+                              aoConfirmar={() => acoes.excluirPontos(registro.id)}
+                              gatilho={<BotaoLixeira rotulo="Excluir medição" />}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </TabsContent>
+        ) : null}
 
         {/* ---------------------------------------------------------- airdrop */}
         <TabsContent value="airdrop" className="mt-6">

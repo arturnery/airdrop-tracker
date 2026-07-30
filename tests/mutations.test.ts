@@ -14,6 +14,7 @@ describe("criação", () => {
       name: "Nansen",
       status: "ativo",
       category: "perps",
+      pointsLabel: null,
       chain: null,
       priority: 3,
       websiteUrl: null,
@@ -61,12 +62,14 @@ describe("criação", () => {
       accountId: "acc-mbox",
       takenAt: HOJE,
       balance: cents(9000),
+      note: null,
     });
     ds = M.registrarSaldo(ds, {
       projectId: "prj-saturn",
       accountId: "acc-mbox",
       takenAt: HOJE,
       balance: cents(9500),
+      note: null,
     });
     const doDia = ds.balanceSnapshots.filter(
       (s) =>

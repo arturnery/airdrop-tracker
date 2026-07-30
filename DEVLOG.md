@@ -340,19 +340,87 @@ não fica embutida numa escolha única.
 
 ---
 
+## Marco 7 — Programas de pontos e descrição nos saldos
+
+Dois pedidos: acompanhar os programas de pontos (para uma live semanal com a comunidade,
+mostrando a evolução do acúmulo) e um campo de descrição ao registrar saldo.
+
+### A armadilha resolvida antes de codar
+
+O pedido foi *"igual tem do capital, coloque uma parte de pontos"*, o que sugeriria
+espelhar a estrutura do dinheiro — inclusive um indicador de total.
+
+**Não funciona.** Mil pontos do Ondo e mil do Lighter são unidades diferentes; somá-los
+é como somar moedas sem câmbio. O total geral seria um número sem significado exibido com
+aparência de precisão.
+
+**Decisão:** agregação só **dentro** do projeto, entre suas contas. Entre projetos, o que
+se compara é a **variação**, não o acumulado. A interface não tem, em lugar nenhum, um
+indicador de "total de pontos".
+
+### Aritmética própria em vez de reaproveitar `money.ts`
+
+Reusar `Cents` teria sido menos código, com três problemas:
+
+| | Dinheiro | Pontos |
+|---|---|---|
+| Escala | 2 casas | 4 casas, valores maiores |
+| Unidade | única (USD) | uma por projeto |
+| Entra em P&L | sim | **nunca** |
+
+O terceiro item decidiu: com tipos separados, somar ponto com dinheiro é **erro de
+compilação**. Compartilhando o tipo, seria um bug silencioso esperando acontecer.
+
+### Modelo: foto, não extrato
+
+Programas de pontos exibem um acumulado ("você tem 12.450 pontos"), não um histórico de
+ganhos. Então o modelo é o mesmo dos saldos em dólar: registra-se o total do dia, e o
+ganho do período é a diferença entre duas medições.
+
+**Detalhe que exigiu cuidado:** as contas nem sempre são medidas no mesmo dia. Comparar
+"total de hoje" com "total de uma semana atrás" misturaria contas medidas em momentos
+diferentes. A variação é calculada **conta a conta** e só depois somada.
+
+Também: um programa com uma única medição devolve variação `null`, não zero — exibir
+"+0" na estreia sugeriria estagnação onde só falta base de comparação.
+
+### O teste encontrou outro bug de parsing
+
+`parsePointsInput("1.5,5")` era aceito como 15,5. O parser separava inteiro e decimal
+corretamente mas não validava o **agrupamento de milhar** da parte inteira — `"1.5"` não
+é agrupamento válido, porque milhar exige grupos de exatos 3 dígitos.
+
+É exatamente o mesmo defeito que `money.ts` teve no Marco 1, cometido de novo em código
+novo. Corrigido com a mesma validação de agrupamento.
+
+**Lição:** ao escrever um segundo parser com regra parecida, revisar os casos-limite que o
+primeiro já resolveu — a memória de ter corrigido não impede repetir.
+
+### Descrição nos saldos
+
+O campo `note` já existia no schema documentado, mas não no formulário. Ao registrar um
+saldo, agora se explica **o que mudou** em relação ao anterior: "rendimento do DeFi",
+"perda no trade", "migrado do capital de farm".
+
+A nota aparece no histórico do projeto e no feed de atividade, substituindo o rótulo
+genérico "Saldo atualizado" quando existe. Um saldo que caiu passa a dizer por quê.
+
+---
+
 ## Estado atual
 
 | | |
 |---|---|
 | Telas | Visão geral, tarefas, projetos, aba do projeto, contas, histórico, importar |
+| Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | CRUD | Completo em modo local (localStorage), com edição e exclusão em cascata |
-| Testes | 91, cobrindo aritmética monetária, agregação financeira, seletores e mutações |
+| Testes | 122, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
 | Backend | Não iniciado — fixtures atrás da interface definitiva |
 
 ### Pendências conhecidas
 
-- Meta e recebimento só podem ser criados e excluídos, não editados.
+- Meta, recebimento e medição de pontos só podem ser criados e excluídos, não editados.
 - Categorias das fixtures são um palpite e precisam de conferência.
 - A data no HTML estático fica congelada na constante das fixtures; o navegador corrige ao
   hidratar. Usar `new Date()` no servidor congelaria a data no momento do *build*, o que

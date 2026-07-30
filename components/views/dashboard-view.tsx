@@ -5,8 +5,13 @@ import { ArrowRight, TriangleAlert } from "lucide-react";
 
 import { CapitalPorProjetoChart } from "@/components/capital-chart";
 import { ListaAtividade } from "@/components/historico";
+import { CardPrograma } from "@/components/pontos";
 import { useDados } from "@/components/data-provider";
-import { NovoLancamento, RegistrarSaldo } from "@/components/forms/dialogs";
+import {
+  NovoLancamento,
+  RegistrarPontos,
+  RegistrarSaldo,
+} from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -17,6 +22,7 @@ import {
   selectCapitalPorProjeto,
   selectDashboardSummary,
   selectPendingTasks,
+  selectProgramasDePontos,
   selectProjects,
 } from "@/lib/selectors";
 
@@ -28,6 +34,7 @@ export function DashboardView() {
   const projetos = selectProjects(dataset, hoje);
   const tarefas = selectPendingTasks(dataset, hoje);
   const atividade = selectAtividade(dataset, 10);
+  const programas = selectProgramasDePontos(dataset);
 
   const urgentes = tarefas.filter(
     (t) => t.urgencia === "atrasada" || t.urgencia === "hoje",
@@ -41,6 +48,7 @@ export function DashboardView() {
         description={`Posição consolidada em ${formatDateBr(hoje)}.`}
         actions={
           <>
+            <RegistrarPontos />
             <RegistrarSaldo />
             <NovoLancamento />
           </>
@@ -243,6 +251,28 @@ export function DashboardView() {
           </div>
         )}
       </section>
+
+      {/* ------------------------------------------------------------- pontos */}
+      {programas.length > 0 ? (
+        <section aria-labelledby="titulo-pontos" className="mt-10">
+          <h2 id="titulo-pontos" className="text-lg font-medium">
+            Programas de pontos
+          </h2>
+          <p className="text-muted-foreground mt-1 mb-4 text-sm">
+            Cada programa tem unidade própria e por isso não existe total geral —
+            o que se compara entre projetos é o ganho, não o acumulado.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {programas.map((programa) => (
+              <CardPrograma
+                key={programa.projetoId}
+                programa={programa}
+                hoje={hoje}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* ---------------------------------------------------------- histórico */}
       <section aria-labelledby="titulo-historico" className="mt-10">

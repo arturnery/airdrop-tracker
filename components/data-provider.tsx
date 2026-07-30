@@ -13,6 +13,7 @@ import {
 import type { Dataset } from "@/lib/dataset";
 import { criarRelogio, DatasetStore } from "@/lib/local-store";
 import type { Cents } from "@/lib/money";
+import type { Points } from "@/lib/points";
 import * as M from "@/lib/mutations";
 
 /**
@@ -34,6 +35,7 @@ type Acoes = {
     name: string;
     status: Dataset["projects"][number]["status"];
     category: Dataset["projects"][number]["category"];
+    pointsLabel: string | null;
     chain: string | null;
     priority: number;
     websiteUrl: string | null;
@@ -67,6 +69,7 @@ type Acoes = {
     accountId: string;
     takenAt: string;
     balance: Cents;
+    note: string | null;
   }) => void;
   criarTarefa: (dados: {
     projectId: string;
@@ -94,6 +97,18 @@ type Acoes = {
     tokenAmount: string;
     priceUsd: string;
   }) => void;
+  registrarPontos: (dados: {
+    projectId: string;
+    accountId: string;
+    takenAt: string;
+    points: Points;
+    note: string | null;
+  }) => void;
+  atualizarPontos: (
+    id: string,
+    dados: { takenAt: string; points: Points; note: string | null },
+  ) => void;
+  excluirPontos: (id: string) => void;
 
   // ------------------------------------------------------------ edição
   atualizarProjeto: (
@@ -112,7 +127,10 @@ type Acoes = {
     id: string,
     dados: { occurredAt: string; type: Dataset["transactions"][number]["type"]; amount: Cents; description: string | null },
   ) => void;
-  atualizarSaldo: (id: string, dados: { takenAt: string; balance: Cents }) => void;
+  atualizarSaldo: (
+    id: string,
+    dados: { takenAt: string; balance: Cents; note: string | null },
+  ) => void;
   atualizarVinculo: (
     projectId: string,
     accountId: string,
@@ -200,6 +218,9 @@ export function DataProvider({
       alternarTarefa: (id) => atualizar((a) => M.alternarOcorrencia(a, id)),
       criarMeta: (d) => atualizar((a) => M.criarMeta(a, d)),
       registrarRecebimento: (d) => atualizar((a) => M.registrarRecebimento(a, d)),
+      registrarPontos: (d) => atualizar((a) => M.registrarPontos(a, d)),
+      atualizarPontos: (id, d) => atualizar((a) => M.atualizarPontos(a, id, d)),
+      excluirPontos: (id) => atualizar((a) => M.excluirPontos(a, id)),
 
       atualizarProjeto: (id, d) => atualizar((a) => M.atualizarProjeto(a, id, d)),
       atualizarConta: (id, d) => atualizar((a) => M.atualizarConta(a, id, d)),

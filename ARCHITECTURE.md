@@ -3,7 +3,7 @@
 Documento de arquitetura do sistema. Escrito **antes** da implementação, para servir como
 referência de decisões e como material de portfólio.
 
-**Revisão 4** — categoria de projeto e modelo de perfis compartilhados (§9.2).
+**Revisão 5** — programas de pontos (§4.4) e descrição nos saldos.
 
 ---
 
@@ -223,7 +223,8 @@ project_id        uuid FK -> projects   ─┐ FK composta ->
 account_id        uuid FK -> accounts   ─┘ project_accounts
 taken_at          date NOT NULL
 balance_usd       numeric(18,2) NOT NULL
-note              text NULL
+note              text NULL       -- explica a variação: "rendimento do DeFi",
+                                  -- "perda no trade", "migrado do capital"
 import_batch_id   uuid FK -> import_batches NULL
 dedupe_key        text NULL
 unique(project_id, account_id, taken_at)   -- um snapshot por dia por par
@@ -341,6 +342,45 @@ não se deriva de depósito. Furo corrigido:
 | `balance_usd` | `balance_snapshots` | último valor |
 | `tx_count` | `transactions` | COUNT |
 | `days_active` | `transactions` | COUNT(DISTINCT occurred_at) |
+
+### 4.4. Programas de pontos
+
+Muitos projetos distribuem pontos antes do token. O acompanhamento é análogo ao do saldo
+em dólar — a plataforma mostra um **acumulado**, não um extrato, então o que se registra
+é a foto do total e o ganho do período sai da diferença entre duas fotos.
+
+```
+projects.points_label   text NULL   -- "Pontos", "XP", "Marks"
+                                    -- NULL = o projeto não tem programa
+```
+
+#### `points_snapshots`
+```
+id           uuid PK
+user_id      uuid FK -> users
+project_id   uuid FK -> projects   ─┐ FK composta ->
+account_id   uuid FK -> accounts   ─┘ project_accounts
+taken_at     date NOT NULL
+points       numeric(24,4) NOT NULL
+note         text NULL
+unique(project_id, account_id, taken_at)   -- uma medição por dia por par
+```
+
+**Pontos nunca são somados entre projetos.** Mil pontos do Ondo e mil do Lighter são
+unidades distintas; somá-los não produz informação. Só existe agregação **dentro** de um
+projeto, entre suas contas. Por isso não há indicador de "total de pontos" em lugar
+nenhum da interface — o que se compara entre projetos é a **variação**, não o acumulado.
+
+**Aritmética separada** (`lib/points.ts`, não `lib/money.ts`): escala de 4 casas em vez de
+2, valores muito maiores, e — o mais importante — ponto nunca entra em aporte, exposição,
+P&L ou ROI. Compartilhar o tipo `Cents` abriria a porta para somar ponto com dinheiro sem
+que o compilador reclamasse.
+
+**Comparação conta a conta.** As contas nem sempre são medidas no mesmo dia. Comparar o
+total de duas datas misturaria contas medidas em momentos diferentes; a variação é
+calculada por conta e só depois somada.
+
+---
 
 ---
 
@@ -643,7 +683,10 @@ parar de manter as duas coisas em paralelo. Fases 1+2 são o MVP real.
 15. **Visibilidade por campo, com endereço de carteira à parte** — rótulo de conta ensina
     a estratégia sem custo; endereço permite correlacionar as contas entre si e pode
     queimar o farming. São decisões diferentes e ficam em chaves diferentes.
-16. **Autorização no servidor, não na interface** — esconder o botão de editar é conforto
+16. **Pontos com tipo e aritmética próprios** (§4.4) — unidade por projeto, escala
+    diferente e nunca somáveis entre si nem com dinheiro; o tipo separado impede a soma
+    indevida em tempo de compilação.
+17. **Autorização no servidor, não na interface** — esconder o botão de editar é conforto
     visual; a recusa que vale é a da Server Action. Campo não permitido não sai da query,
     em vez de sair e ser ocultado por CSS.
 

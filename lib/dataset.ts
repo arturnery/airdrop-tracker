@@ -3,6 +3,7 @@ import type {
   RawAirdropClaim,
   RawBalanceSnapshot,
   RawGoal,
+  RawPointsSnapshot,
   RawProject,
   RawProjectAccount,
   RawTask,
@@ -33,6 +34,7 @@ export type Dataset = {
   tasks: RawTask[];
   taskOccurrences: RawTaskOccurrence[];
   goals: RawGoal[];
+  pointsSnapshots: RawPointsSnapshot[];
   airdropClaims: RawAirdropClaim[];
 };
 
@@ -45,6 +47,7 @@ export const emptyDataset = (): Dataset => ({
   tasks: [],
   taskOccurrences: [],
   goals: [],
+  pointsSnapshots: [],
   airdropClaims: [],
 });
 

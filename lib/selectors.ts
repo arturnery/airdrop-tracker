@@ -10,6 +10,14 @@ import {
   type PairExposure,
 } from "./finance";
 import { addCents, cents, fromDbNumeric, percentOf, subtractCents, ZERO, type Cents } from "./money";
+import {
+  addPoints,
+  fromDbPoints,
+  percentGrowth,
+  subtractPoints,
+  ZERO_PONTOS,
+  type Points,
+} from "./points";
 import type {
   AccountSummary,
   AirdropClaimRow,
@@ -19,6 +27,9 @@ import type {
   GoalRow,
   ProjectAccountRow,
   ProjectDetail,
+  PointsAccountRow,
+  PointsProgramRow,
+  PointsSnapshotRow,
   ProjectSummary,
   TaskOccurrenceRow,
   TipoAtividade,
@@ -235,7 +246,8 @@ export function selectProjectBySlug(
       contaLabel: labelDaConta(ds, s.accountId),
       tipo: "other" as const,
       valor: fromDbNumeric(s.balanceUsd),
-      descricao: "Saldo atualizado",
+      // A nota explica a variação; sem ela, o rótulo genérico.
+      descricao: s.note ?? "Saldo atualizado",
       isSnapshot: true,
     })),
   ].sort((a, b) => b.data.localeCompare(a.data));
@@ -533,7 +545,7 @@ export function selectAtividade(ds: Dataset, limite?: number): AtividadeRow[] {
       projetoNome: projeto.name,
       contaLabel: labelDaConta(ds, s.accountId),
       titulo: "Saldo atualizado",
-      detalhe: null,
+      detalhe: s.note,
       valor: fromDbNumeric(s.balanceUsd),
     });
   }
@@ -589,4 +601,127 @@ export function agruparAtividadePorDia(linhas: AtividadeRow[]) {
     mapa.set(linha.data, doDia);
   }
   return [...mapa.entries()].map(([data, itens]) => ({ data, itens }));
+}
+
+// --------------------------------------------------------------------- pontos
+
+/** Registros de pontos de um par projeto×conta, do mais antigo ao mais recente. */
+function pontosDoPar(ds: Dataset, projectId: string, accountId: string) {
+  return ds.pointsSnapshots
+    .filter((p) => p.projectId === projectId && p.accountId === accountId)
+    .sort((a, b) => a.takenAt.localeCompare(b.takenAt));
+}
+
+/**
+ * Programas de pontos, um por projeto que tenha `pointsLabel`.
+ *
+ * Regra central: **pontos nunca são somados entre projetos.** Cada programa é
+ * uma unidade própria — 1.000 pontos do Ondo e 1.000 do Lighter não formam
+ * 2.000 de coisa alguma. Só há soma entre as contas de um mesmo projeto.
+ *
+ * A variação compara o total atual com o total na medição anterior de cada
+ * conta. Como as contas nem sempre são medidas no mesmo dia, a comparação é
+ * feita conta a conta e depois somada — comparar o total de duas datas
+ * misturaria contas medidas em momentos diferentes.
+ */
+export function selectProgramasDePontos(ds: Dataset): PointsProgramRow[] {
+  return ds.projects
+    .filter((projeto) => projeto.pointsLabel !== null)
+    .map((projeto) => {
+      const pares = ds.projectAccounts.filter((p) => p.projectId === projeto.id);
+
+      const contas: PointsAccountRow[] = pares
+        .map((par) => {
+          const registros = pontosDoPar(ds, projeto.id, par.accountId);
+          const atual = registros.at(-1);
+          const anterior = registros.at(-2);
+
+          return {
+            contaId: par.accountId,
+            label: labelDaConta(ds, par.accountId),
+            total: atual ? fromDbPoints(atual.points) : null,
+            atualizadoEm: atual?.takenAt ?? null,
+            variacao:
+              atual && anterior
+                ? subtractPoints(fromDbPoints(atual.points), fromDbPoints(anterior.points))
+                : null,
+            desdeEm: anterior?.takenAt ?? null,
+            nota: atual?.note ?? null,
+          } satisfies PointsAccountRow;
+        })
+        .sort((a, b) => (b.total ?? 0) - (a.total ?? 0));
+
+      const total = contas.reduce<Points>(
+        (acc, c) => addPoints(acc, c.total ?? ZERO_PONTOS),
+        ZERO_PONTOS,
+      );
+
+      // Só conta como "anterior" quem tem duas medições; do contrário a
+      // variação exibiria crescimento infinito na estreia do programa.
+      const comHistorico = contas.filter((c) => c.variacao !== null);
+      const variacao =
+        comHistorico.length > 0
+          ? comHistorico.reduce<Points>(
+              (acc, c) => addPoints(acc, c.variacao ?? ZERO_PONTOS),
+              ZERO_PONTOS,
+            )
+          : null;
+      const totalAnterior = variacao !== null ? subtractPoints(total, variacao) : null;
+
+      const datas = contas
+        .map((c) => c.atualizadoEm)
+        .filter((d): d is string => d !== null);
+
+      return {
+        projetoId: projeto.id,
+        projetoSlug: projeto.slug,
+        projetoNome: projeto.name,
+        rotulo: projeto.pointsLabel!,
+        total,
+        totalAnterior,
+        variacao,
+        crescimento:
+          totalAnterior !== null ? percentGrowth(total, totalAnterior) : null,
+        atualizadoEm:
+          datas.length > 0
+            ? datas.reduce((maior, atual) => (atual > maior ? atual : maior))
+            : null,
+        contas,
+      } satisfies PointsProgramRow;
+    })
+    .sort((a, b) => (b.variacao ?? 0) - (a.variacao ?? 0));
+}
+
+export function selectProgramaDePontos(
+  ds: Dataset,
+  projectId: string,
+): PointsProgramRow | null {
+  return selectProgramasDePontos(ds).find((p) => p.projetoId === projectId) ?? null;
+}
+
+/** Histórico de medições de um projeto, do mais recente para o mais antigo. */
+export function selectHistoricoDePontos(
+  ds: Dataset,
+  projectId: string,
+): PointsSnapshotRow[] {
+  return ds.pointsSnapshots
+    .filter((p) => p.projectId === projectId)
+    .sort((a, b) => b.takenAt.localeCompare(a.takenAt))
+    .map((registro) => {
+      const daConta = pontosDoPar(ds, projectId, registro.accountId);
+      const posicao = daConta.findIndex((r) => r.id === registro.id);
+      const anterior = posicao > 0 ? daConta[posicao - 1] : undefined;
+
+      return {
+        id: registro.id,
+        data: registro.takenAt,
+        contaId: registro.accountId,
+        contaLabel: labelDaConta(ds, registro.accountId),
+        total: fromDbPoints(registro.points),
+        variacao: anterior
+          ? subtractPoints(fromDbPoints(registro.points), fromDbPoints(anterior.points))
+          : null,
+        nota: registro.note,
+      } satisfies PointsSnapshotRow;
+    });
 }

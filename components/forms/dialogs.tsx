@@ -20,6 +20,7 @@ import {
   erros,
   lancamentoSchema,
   metaSchema,
+  pontosSchema,
   projetoSchema,
   recebimentoSchema,
   saldoSchema,
@@ -135,6 +136,7 @@ export function NovoProjeto() {
           name: texto(dados, "name"),
           status: texto(dados, "status"),
           category: texto(dados, "category"),
+          pointsLabel: texto(dados, "pointsLabel"),
           chain: texto(dados, "chain"),
           priority: texto(dados, "priority"),
           websiteUrl: texto(dados, "websiteUrl"),
@@ -198,6 +200,14 @@ export function NovoProjeto() {
               }))}
             />
           </div>
+          <CampoTexto
+            label="Programa de pontos"
+            name="pointsLabel"
+            
+            erro={e.pointsLabel}
+            ajuda="Nome do programa (Pontos, XP, Marks). Em branco = o projeto não tem."
+            placeholder="Pontos"
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoTexto
               label="Rede"
@@ -433,6 +443,7 @@ export function RegistrarSaldo({ projectId }: { projectId?: string }) {
           accountId: texto(dados, "accountId"),
           takenAt: texto(dados, "takenAt"),
           balance: texto(dados, "balance"),
+          note: texto(dados, "note"),
         });
         if (!resultado.success) return erros(resultado);
         acoes.registrarSaldo(resultado.data);
@@ -476,6 +487,94 @@ export function RegistrarSaldo({ projectId }: { projectId?: string }) {
               inputMode="decimal"
             />
           </div>
+          <CampoTexto
+            label="O que mudou"
+            name="note"
+            erro={e.note}
+            ajuda="Explica a variação em relação ao saldo anterior."
+            placeholder="Rendimento do DeFi, perda no trade, migrado do capital…"
+          />
+        </>
+      )}
+    </Formulario>
+  );
+}
+
+// -------------------------------------------------------------------- pontos
+
+export function RegistrarPontos({ projectId }: { projectId?: string }) {
+  const { dataset, acoes, hoje } = useDados();
+  const { contas } = useOpcoes();
+
+  // Só projetos que declararam ter programa de pontos.
+  const comPrograma = dataset.projects
+    .filter((p) => p.pointsLabel !== null)
+    .map((p) => ({ valor: p.id, rotulo: `${p.name} — ${p.pointsLabel}` }));
+
+  if (comPrograma.length === 0) return null;
+
+  return (
+    <Formulario
+      titulo="Registrar pontos"
+      descricao="O total acumulado que a plataforma mostra hoje. O ganho do período sai da diferença entre dois registros."
+      gatilho={<BotaoNovo>Registrar pontos</BotaoNovo>}
+      aoEnviar={(dados) => {
+        const resultado = pontosSchema.safeParse({
+          projectId: texto(dados, "projectId"),
+          accountId: texto(dados, "accountId"),
+          takenAt: texto(dados, "takenAt"),
+          points: texto(dados, "points"),
+          note: texto(dados, "note"),
+        });
+        if (!resultado.success) return erros(resultado);
+        acoes.registrarPontos(resultado.data);
+        return null;
+      }}
+    >
+      {({ erros: e }) => (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoSelecao
+              label="Projeto"
+              name="projectId"
+              obrigatorio
+              defaultValue={projectId}
+              erro={e.projectId}
+              opcoes={comPrograma}
+            />
+            <CampoSelecao
+              label="Conta"
+              name="accountId"
+              obrigatorio
+              erro={e.accountId}
+              opcoes={contas}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoTexto
+              label="Total acumulado"
+              name="points"
+              obrigatorio
+              erro={e.points}
+              ajuda="O número que a plataforma exibe, não o ganho."
+              placeholder="12.450"
+              inputMode="decimal"
+            />
+            <CampoTexto
+              label="Data"
+              name="takenAt"
+              type="date"
+              obrigatorio
+              defaultValue={hoje}
+              erro={e.takenAt}
+            />
+          </div>
+          <CampoTexto
+            label="Observação"
+            name="note"
+            erro={e.note}
+            placeholder="Semana de volume alto, bônus de maker…"
+          />
         </>
       )}
     </Formulario>

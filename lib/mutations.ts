@@ -1,5 +1,6 @@
 import { novoId, uniqueSlug, type Dataset } from "./dataset";
 import { toDbNumeric, type Cents } from "./money";
+import { toDbPoints, type Points } from "./points";
 
 /**
  * Mutações do domínio. Toda função é pura: `(Dataset, dados) -> Dataset`.
@@ -120,6 +121,7 @@ export function registrarSaldo(
     accountId: string;
     takenAt: string;
     balance: Cents;
+    note: string | null;
   },
 ): Dataset {
   return {
@@ -146,6 +148,7 @@ export function registrarSaldo(
         accountId: dados.accountId,
         takenAt: dados.takenAt,
         balanceUsd: toDbNumeric(dados.balance),
+        note: dados.note,
       },
     ],
   };
@@ -319,13 +322,18 @@ export function atualizarLancamento(
 export function atualizarSaldo(
   ds: Dataset,
   id: string,
-  dados: { takenAt: string; balance: Cents },
+  dados: { takenAt: string; balance: Cents; note: string | null },
 ): Dataset {
   return {
     ...ds,
     balanceSnapshots: ds.balanceSnapshots.map((s) =>
       s.id === id
-        ? { ...s, takenAt: dados.takenAt, balanceUsd: toDbNumeric(dados.balance) }
+        ? {
+            ...s,
+            takenAt: dados.takenAt,
+            balanceUsd: toDbNumeric(dados.balance),
+            note: dados.note,
+          }
         : s,
     ),
   };
@@ -421,4 +429,71 @@ export function desvincularConta(
     transactions: ds.transactions.filter((t) => !doPar(t)),
     balanceSnapshots: ds.balanceSnapshots.filter((s) => !doPar(s)),
   };
+}
+
+// ------------------------------------------------------------------- pontos
+
+export function registrarPontos(
+  ds: Dataset,
+  dados: {
+    projectId: string;
+    accountId: string;
+    takenAt: string;
+    points: Points;
+    note: string | null;
+  },
+): Dataset {
+  return {
+    ...ds,
+    projectAccounts: garantirVinculo(
+      ds,
+      dados.projectId,
+      dados.accountId,
+      dados.takenAt,
+    ),
+    // Uma medição por par por dia, como nos saldos: registrar de novo no mesmo
+    // dia corrige o valor em vez de criar uma variação fantasma de zero.
+    pointsSnapshots: [
+      ...ds.pointsSnapshots.filter(
+        (p) =>
+          !(
+            p.projectId === dados.projectId &&
+            p.accountId === dados.accountId &&
+            p.takenAt === dados.takenAt
+          ),
+      ),
+      {
+        id: novoId("pts"),
+        projectId: dados.projectId,
+        accountId: dados.accountId,
+        takenAt: dados.takenAt,
+        points: toDbPoints(dados.points),
+        note: dados.note,
+      },
+    ],
+  };
+}
+
+export function atualizarPontos(
+  ds: Dataset,
+  id: string,
+  dados: { takenAt: string; points: Points; note: string | null },
+): Dataset {
+  return {
+    ...ds,
+    pointsSnapshots: ds.pointsSnapshots.map((p) =>
+      p.id === id
+        ? {
+            ...p,
+            takenAt: dados.takenAt,
+            points: toDbPoints(dados.points),
+            note: dados.note,
+          }
+        : p,
+    ),
+  };
+}
+
+export function excluirPontos(ds: Dataset, id: string): Dataset {
+  return { ...ds, pointsSnapshots: ds.pointsSnapshots.filter((p) => p.id !== id) };
 }
