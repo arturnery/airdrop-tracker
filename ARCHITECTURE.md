@@ -3,7 +3,7 @@
 Documento de arquitetura do sistema. Escrito **antes** da implementação, para servir como
 referência de decisões e como material de portfólio.
 
-**Revisão 3** — versões fixadas conforme instalado na Fase 0.
+**Revisão 4** — categoria de projeto e modelo de perfis compartilhados (§9.2).
 
 ---
 
@@ -125,8 +125,23 @@ Existe desde o início mesmo sem tela de login.
 ```
 id            uuid PK
 email         text unique
+handle        text unique   -- usado na URL do perfil: /u/artur
+display_name  text          -- como aparece para os outros
 name          text
 created_at    timestamptz
+```
+
+#### `profile_settings` — o que o perfil mostra para os outros
+Um registro por usuário, criado junto com a conta. Ver §9.2.
+```
+user_id        uuid PK FK -> users
+is_shared      boolean default false  -- perfil visível para membros logados
+show_projects  boolean default true   -- projetos, status, categoria, prioridade
+show_tasks     boolean default true   -- rotina: o que faz e com que frequência
+show_values    boolean default false  -- valores em dólar
+show_accounts  boolean default false  -- rótulos das contas ("chrome (Perfil 1)")
+show_wallets   boolean default false  -- endereços 0x… — ver o aviso em §9.2
+updated_at     timestamptz
 ```
 
 #### `accounts` — suas carteiras / perfis
@@ -151,6 +166,8 @@ slug              text          -- "ondo-perp" (usado na URL)
 name              text          -- "Ondo Perp"
 status            enum          -- pesquisando | ativo | pausado |
                                 -- tge_anunciado | distribuido | descartado
+category          enum NULL     -- liquidez | interacoes | perps
+                                -- como o projeto é farmado; define a rotina
 chain             text NULL     -- "Arbitrum", "Solana"
 priority          smallint      -- 1..5, definido por você
 website_url       text NULL
@@ -504,27 +521,79 @@ Vitest dão mais retorno.
 
 ---
 
-## 9. Multi-tenant sem login
+## 9. Identidade, isolamento e perfis compartilhados
 
-Todas as tabelas raiz têm `user_id` desde a primeira migração. Enquanto não há login:
+### 9.1. Isolamento
 
-```ts
-// lib/auth.ts
-export async function getCurrentUserId(): Promise<string> {
-  return process.env.SEED_USER_ID!   // fase 1..4
-  // fase 5: const session = await auth(); return session.user.id
-}
+Todas as tabelas raiz têm `user_id` desde a primeira migração. Enquanto não há login, a
+identidade vem de variável de ambiente; com o Auth.js, da sessão. Trocar isso é trocar
+uma função — nenhuma query, nenhuma tabela, nenhuma migração.
+
+### 9.2. Perfil compartilhado
+
+A ferramenta não é só individual: cada pessoa administra o próprio farming e pode abrir o
+perfil para os outros membros **em modo leitura**. Ninguém edita o perfil de ninguém.
+
+Isso descarta um audit log ("quem alterou o quê"): como só o dono escreve nos próprios
+registros, o autor de qualquer alteração é sempre o dono. O `user_id` já responde a
+pergunta; uma tabela de auditoria seria redundante.
+
+Em compensação, introduz uma distinção que o modelo de dono único não tinha:
+
+| | Significado |
+|---|---|
+| **viewer** | quem está com a sessão aberta |
+| **owner** | de quem são os dados sendo exibidos |
+
+Toda leitura passa a precisar dos dois. Hoje `db/queries` assume `viewer === owner` e
+filtra por `getCurrentUserId()`; na fase 6 passa a receber `ownerId` explicitamente e a
+consultar a permissão. É a mudança de maior alcance da fase, e o motivo de estar
+registrada antes de começar.
+
+**Decisões tomadas:**
+
+- **Só membros logados.** Sem sessão, o perfil não abre — nem com o link. Evita
+  indexação por buscador e mantém a lista de quem tem acesso sob controle.
+- **Todos podem compartilhar**, não só o dono da comunidade. `is_shared` é do usuário.
+- **Visibilidade por campo**, não um interruptor único. Cada `show_*` é uma decisão
+  separada porque os riscos são muito diferentes entre si.
+
+**Sobre `show_wallets`, que nasce desligado.** Rótulo de conta e endereço de carteira
+foram separados de propósito. O rótulo (`chrome (Perfil 1)`) comunica a estratégia
+multi-conta, que é o conteúdo útil para a comunidade, e não expõe nada. O endereço
+(`0x…`) permite a qualquer visitante ler todo o histórico on-chain, estimar patrimônio e
+— o mais grave no contexto — **correlacionar as contas entre si**. Vários projetos usam
+análise de cluster para desqualificar farming multi-conta; publicar os endereços juntos
+entrega esse agrupamento pronto. Continua sendo escolha do usuário, mas exige um ato
+explícito.
+
+### 9.3. Onde a autorização é aplicada
+
+```
+Rota /u/[handle]
+   ↓
+resolverAcesso(viewer, handle)  →  { ownerId, podeEditar, campos } | 404
+   ↓
+db/queries.*(ownerId, …)        →  filtra por ownerId, respeita `campos`
+   ↓
+Server Actions                  →  RECUSAM se viewer !== ownerId
 ```
 
-Toda query filtra por esse id. Quando o Auth.js entrar, muda-se **uma função** — nenhuma
-query, nenhuma tabela, nenhuma migração. Sem isso, abrir para a comunidade significaria
-migrar 11 tabelas e reescrever todas as queries.
+Duas regras que não podem ser confundidas:
 
-**Na fase 5:** o isolamento continua na aplicação (filtro por `user_id` em `db/queries`),
-com uma suíte de testes que tenta acessar dados de outro usuário por cada rota e espera
-falha. Row Level Security do Postgres fica como reforço opcional — bom argumento de
-entrevista, mas com Server Components a query já nasce no servidor com o id da sessão, e
-RLS adiciona complexidade de conexão no Neon sem eliminar a necessidade dos testes.
+1. **Esconder botão de editar na interface não é segurança.** É conforto visual. A
+   verificação que vale é a da Server Action, no servidor, comparando `viewer` com o dono
+   do registro que está sendo alterado. Um perfil em modo leitura que só oculta botões
+   continua editável por quem souber montar a requisição.
+2. **Campo escondido não é campo filtrado.** Se `show_values` está desligado, os valores
+   não podem ser enviados ao cliente e apenas ocultados por CSS — precisam não sair da
+   query. Caso contrário estão no HTML, visíveis a qualquer um que abra o inspetor.
+
+Na fase 6 entra uma suíte que, para cada rota e cada Server Action, tenta agir como outro
+usuário e espera falha — incluindo o caso do visitante de perfil compartilhado tentando
+escrever. Row Level Security do Postgres fica como reforço opcional: com Server
+Components a query já nasce no servidor com o id da sessão, e RLS adiciona complexidade
+de conexão no Neon sem substituir os testes.
 
 ---
 
@@ -532,13 +601,14 @@ RLS adiciona complexidade de conexão no Neon sem eliminar a necessidade dos tes
 
 | Fase | Entrega | Estado ao fim |
 |---|---|---|
-| **0** | Setup: Next 15, TS strict, Drizzle, Neon, Tailwind, shadcn, Vitest, deploy Vercel | App no ar, vazio |
+| **0** | Setup: Next 16, TS strict, Drizzle, Neon, Tailwind, shadcn, Vitest, deploy Vercel | App no ar, vazio |
 | **1** | `users`, `accounts`, `projects`, `project_accounts`, `transactions`, `balance_snapshots` + CRUD + Dashboard geral | Números batendo |
 | **2** | Importação da planilha: parser, prévia, gravação transacional, undo | **Histórico dentro, planilha aposentada** |
 | **3** | Aba do projeto: informações, tabela conta por conta, histórico filtrável | Navegação completa |
 | **4** | `tasks` + `task_occurrences` + motor de recorrência + painel "O que fazer hoje" | Deixa de ser só registro |
 | **5** | `goals` + `goal_entries` + `airdrop_claims` + P&L completo e gráficos | Ciclo fechado |
-| **6** | Auth.js, cadastro, isolamento por usuário + testes de vazamento | Aberto para a comunidade |
+| **6** | Auth.js, cadastro, isolamento por usuário + testes de vazamento | Cada um com seu perfil |
+| **7** | Perfis compartilhados: `/u/[handle]`, `profile_settings`, modo leitura | Comunidade acompanha |
 
 A importação virou fase 2 (logo após a fundação) e não uma etapa final: é o que permite
 parar de manter as duas coisas em paralelo. Fases 1+2 são o MVP real.
@@ -565,6 +635,17 @@ parar de manter as duas coisas em paralelo. Fases 1+2 são o MVP real.
     servidor.
 11. **`server-only` em toda a camada de dados** — impede vazamento de credencial no bundle.
 12. **Server Actions em vez de tRPC** — tRPC já comprovado no LVL; aqui o ganho é Next.js.
+13. **Sem tabela de auditoria** — como só o dono escreve nos próprios registros, o autor
+    de qualquer alteração é sempre o dono; `user_id` já responde "quem". Auditoria só
+    faria sentido se várias pessoas editassem o mesmo perfil.
+14. **`viewer` separado de `owner`** (§9.2) — ler o perfil de outra pessoa quebra a
+    premissa de dono único; as queries recebem `ownerId` em vez de assumir a sessão.
+15. **Visibilidade por campo, com endereço de carteira à parte** — rótulo de conta ensina
+    a estratégia sem custo; endereço permite correlacionar as contas entre si e pode
+    queimar o farming. São decisões diferentes e ficam em chaves diferentes.
+16. **Autorização no servidor, não na interface** — esconder o botão de editar é conforto
+    visual; a recusa que vale é a da Server Action. Campo não permitido não sai da query,
+    em vez de sair e ser ocultado por CSS.
 
 ---
 
