@@ -13,6 +13,7 @@ describe("criação", () => {
     const { dataset, id } = M.criarProjeto(base(), {
       name: "Nansen",
       status: "ativo",
+      category: "perps",
       chain: null,
       priority: 3,
       websiteUrl: null,

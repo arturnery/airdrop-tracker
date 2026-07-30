@@ -26,6 +26,8 @@ import { EmptyState, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import {
   AccountStatusBadge,
+  CategoryBadge,
+  categoryDescriptions,
   PriorityMeter,
   ProjectStatusBadge,
   RecurrenceLabel,
@@ -127,6 +129,7 @@ export function ProjetoView({ slug }: { slug: string }) {
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <CategoryBadge category={projeto.categoria} />
             <PriorityMeter value={projeto.prioridade} />
             <ProjectStatusBadge status={projeto.status} />
             <EditarProjeto projectId={projeto.id} />
@@ -590,6 +593,17 @@ export function ProjetoView({ slug }: { slug: string }) {
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Status</dt>
                   <dd><ProjectStatusBadge status={projeto.status} /></dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Categoria</dt>
+                  <dd className="text-right">
+                    <CategoryBadge category={projeto.categoria} />
+                    {projeto.categoria ? (
+                      <span className="text-muted-foreground mt-1 block text-xs">
+                        {categoryDescriptions[projeto.categoria]}
+                      </span>
+                    ) : null}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Prioridade</dt>

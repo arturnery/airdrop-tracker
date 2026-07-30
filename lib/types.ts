@@ -18,6 +18,9 @@ export type ProjectStatus =
 
 export type ProjectAccountStatus = "ativa" | "pausada" | "queimada";
 
+/** Como o projeto é farmado. Define a rotina e permite filtrar por tipo de esforço. */
+export type ProjectCategory = "liquidez" | "interacoes" | "perps";
+
 export type TransactionType =
   | "deposit"
   | "withdrawal"
@@ -77,6 +80,7 @@ export type ProjectSummary = {
   slug: string;
   nome: string;
   status: ProjectStatus;
+  categoria: ProjectCategory | null;
   chain: string | null;
   prioridade: number;
   aportado: Cents;
@@ -190,4 +194,34 @@ export type AccountSummary = {
   resultado: Cents;
   tarefasPendentes: number;
   ultimaAtividade: IsoDate | null;
+};
+
+// ------------------------------------------------------------------ histórico
+
+export type TipoAtividade =
+  | "deposito"
+  | "retirada"
+  | "trade"
+  | "taxa"
+  | "volume"
+  | "saldo"
+  | "recebimento"
+  | "tarefa";
+
+/**
+ * Uma linha do histórico de atividade.
+ *
+ * Derivada dos próprios registros — não é uma tabela de auditoria. Mostra o que
+ * foi feito (aportes, saldos, tarefas cumpridas), não quem editou o quê.
+ */
+export type AtividadeRow = {
+  id: string;
+  tipo: TipoAtividade;
+  data: IsoDate;
+  projetoSlug: string;
+  projetoNome: string;
+  contaLabel: string;
+  titulo: string;
+  detalhe: string | null;
+  valor: Cents | null;
 };

@@ -49,6 +49,7 @@ export const projetoSchema = z.object({
     "distribuido",
     "descartado",
   ]),
+  category: z.enum(["liquidez", "interacoes", "perps"]),
   chain: textoOpcional,
   priority: z.coerce.number().int().min(1).max(5),
   websiteUrl: urlOpcional,

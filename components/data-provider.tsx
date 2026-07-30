@@ -33,6 +33,7 @@ type Acoes = {
   criarProjeto: (dados: {
     name: string;
     status: Dataset["projects"][number]["status"];
+    category: Dataset["projects"][number]["category"];
     chain: string | null;
     priority: number;
     websiteUrl: string | null;

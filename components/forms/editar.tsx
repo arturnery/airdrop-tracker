@@ -120,6 +120,7 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
         const resultado = projetoSchema.safeParse({
           name: texto(dados, "name"),
           status: texto(dados, "status"),
+          category: texto(dados, "category"),
           chain: texto(dados, "chain"),
           priority: texto(dados, "priority"),
           websiteUrl: texto(dados, "websiteUrl"),
@@ -144,7 +145,7 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
             defaultValue={projeto.name}
             erro={e.name}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <CampoSelecao
               label="Status"
               name="status"
@@ -157,6 +158,18 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
                 { valor: "tge_anunciado", rotulo: "TGE anunciado" },
                 { valor: "distribuido", rotulo: "Distribuído" },
                 { valor: "descartado", rotulo: "Descartado" },
+              ]}
+            />
+            <CampoSelecao
+              label="Categoria"
+              name="category"
+              defaultValue={projeto.category ?? "interacoes"}
+              erro={e.category}
+              ajuda="Como esse projeto é farmado."
+              opcoes={[
+                { valor: "liquidez", rotulo: "Liquidez (farm passivo)" },
+                { valor: "interacoes", rotulo: "Interações semanais" },
+                { valor: "perps", rotulo: "Perps" },
               ]}
             />
             <CampoSelecao

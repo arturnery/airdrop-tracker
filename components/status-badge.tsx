@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import type {
   ProjectAccountStatus,
+  ProjectCategory,
   ProjectStatus,
   Recurrence,
   TaskUrgency,
@@ -125,3 +126,45 @@ export function PriorityMeter({ value }: { value: number }) {
     </span>
   );
 }
+
+const categoryLabels: Record<ProjectCategory, string> = {
+  liquidez: "Liquidez",
+  interacoes: "Interações",
+  perps: "Perps",
+};
+
+/** Descrição longa, usada em tooltip e nos formulários. */
+export const categoryDescriptions: Record<ProjectCategory, string> = {
+  liquidez: "Farm passivo — capital parado rendendo",
+  interacoes: "Interações semanais — exige rotina de uso",
+  perps: "Perps — volume operado é o que conta",
+};
+
+const categoryStyles: Record<ProjectCategory, string> = {
+  liquidez: "border-chart-2/40 text-chart-2 bg-chart-2/10",
+  interacoes: "border-chart-3/40 text-chart-3 bg-chart-3/10",
+  perps: "border-chart-4/40 text-chart-4 bg-chart-4/10",
+};
+
+export function CategoryBadge({ category }: { category: ProjectCategory | null }) {
+  if (!category) {
+    return (
+      <span className="text-muted-foreground border-border inline-flex items-center rounded-md border border-dashed px-2 py-0.5 text-xs">
+        sem categoria
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+        categoryStyles[category],
+      )}
+      title={categoryDescriptions[category]}
+    >
+      {categoryLabels[category]}
+    </span>
+  );
+}
+
+export { categoryLabels };

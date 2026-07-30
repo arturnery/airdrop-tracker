@@ -53,6 +53,8 @@ export type RawProject = {
   slug: string;
   name: string;
   status: "pesquisando" | "ativo" | "pausado" | "tge_anunciado" | "distribuido" | "descartado";
+  /** Como o projeto é farmado — define a rotina de trabalho. */
+  category: "liquidez" | "interacoes" | "perps" | null;
   chain: string | null;
   priority: number;
   websiteUrl: string | null;
@@ -69,6 +71,7 @@ export const rawProjects: RawProject[] = [
     slug: "nansen",
     name: "Nansen",
     status: "ativo",
+    category: "interacoes",
     chain: "Multi-chain",
     priority: 3,
     websiteUrl: "https://nansen.ai",
@@ -83,6 +86,7 @@ export const rawProjects: RawProject[] = [
     slug: "minara",
     name: "Minara",
     status: "ativo",
+    category: "interacoes",
     chain: null,
     priority: 2,
     websiteUrl: null,
@@ -97,6 +101,7 @@ export const rawProjects: RawProject[] = [
     slug: "ondo-perp",
     name: "Ondo Perp",
     status: "ativo",
+    category: "perps",
     chain: "Ondo Chain",
     priority: 5,
     websiteUrl: null,
@@ -111,6 +116,7 @@ export const rawProjects: RawProject[] = [
     slug: "lighter",
     name: "Lighter",
     status: "ativo",
+    category: "perps",
     chain: "zkSync Era",
     priority: 3,
     websiteUrl: null,
@@ -125,6 +131,7 @@ export const rawProjects: RawProject[] = [
     slug: "saturn",
     name: "Saturn",
     status: "ativo",
+    category: "liquidez",
     chain: null,
     priority: 4,
     websiteUrl: null,

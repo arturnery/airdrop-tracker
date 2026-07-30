@@ -13,6 +13,7 @@ import { addCents, cents, fromDbNumeric, percentOf, subtractCents, ZERO, type Ce
 import type {
   AccountSummary,
   AirdropClaimRow,
+  AtividadeRow,
   CapitalPorProjeto,
   DashboardSummary,
   GoalRow,
@@ -20,6 +21,7 @@ import type {
   ProjectDetail,
   ProjectSummary,
   TaskOccurrenceRow,
+  TipoAtividade,
   TransactionRow,
 } from "./types";
 
@@ -147,6 +149,7 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         slug: projeto.slug,
         nome: projeto.name,
         status: projeto.status,
+        categoria: projeto.category,
         chain: projeto.chain,
         prioridade: projeto.priority,
         aportado,
@@ -284,6 +287,7 @@ export function selectProjectBySlug(
     slug: projeto.slug,
     nome: projeto.name,
     status: projeto.status,
+    categoria: projeto.category,
     chain: projeto.chain,
     prioridade: projeto.priority,
     aportado: financeiro.aportado,
@@ -472,4 +476,117 @@ export function descreverImpacto(contagem: Record<string, number>): string | nul
   if (partes.length === 0) return null;
   if (partes.length === 1) return partes[0]!;
   return `${partes.slice(0, -1).join(", ")} e ${partes.at(-1)}`;
+}
+
+// ------------------------------------------------------------------ histórico
+
+const rotuloPorTipo: Record<string, { titulo: string; tipo: TipoAtividade }> = {
+  deposit: { titulo: "Depósito", tipo: "deposito" },
+  withdrawal: { titulo: "Retirada", tipo: "retirada" },
+  trade_pnl: { titulo: "Resultado de trade", tipo: "trade" },
+  fee_gas: { titulo: "Taxa / gas", tipo: "taxa" },
+  volume_traded: { titulo: "Volume operado", tipo: "volume" },
+  other: { titulo: "Lançamento", tipo: "deposito" },
+};
+
+/**
+ * Histórico unificado: tudo que aconteceu, em ordem cronológica.
+ *
+ * Junta lançamentos, saldos registrados, airdrops recebidos e tarefas
+ * concluídas num feed único. É derivado dos registros existentes, então
+ * funciona retroativamente sobre dados já cadastrados — diferente de uma
+ * tabela de auditoria, que só passa a valer a partir do dia em que existe.
+ *
+ * Por isso não mostra edições nem exclusões: o rastro de "quem mudou o quê"
+ * exigiria gravar cada ação, o que é decisão da fase de backend.
+ */
+export function selectAtividade(ds: Dataset, limite?: number): AtividadeRow[] {
+  const nomeProjeto = (id: string) => ds.projects.find((p) => p.id === id);
+
+  const linhas: AtividadeRow[] = [];
+
+  for (const t of ds.transactions) {
+    const projeto = nomeProjeto(t.projectId);
+    if (!projeto) continue;
+    const rotulo = rotuloPorTipo[t.type] ?? rotuloPorTipo.other!;
+    linhas.push({
+      id: `tx-${t.id}`,
+      tipo: rotulo.tipo,
+      data: t.occurredAt,
+      projetoSlug: projeto.slug,
+      projetoNome: projeto.name,
+      contaLabel: labelDaConta(ds, t.accountId),
+      titulo: rotulo.titulo,
+      detalhe: t.description,
+      valor: fromDbNumeric(t.amountUsd),
+    });
+  }
+
+  for (const s of ds.balanceSnapshots) {
+    const projeto = nomeProjeto(s.projectId);
+    if (!projeto) continue;
+    linhas.push({
+      id: `snp-${s.id}`,
+      tipo: "saldo",
+      data: s.takenAt,
+      projetoSlug: projeto.slug,
+      projetoNome: projeto.name,
+      contaLabel: labelDaConta(ds, s.accountId),
+      titulo: "Saldo atualizado",
+      detalhe: null,
+      valor: fromDbNumeric(s.balanceUsd),
+    });
+  }
+
+  for (const c of ds.airdropClaims) {
+    const projeto = nomeProjeto(c.projectId);
+    if (!projeto) continue;
+    linhas.push({
+      id: `clm-${c.id}`,
+      tipo: "recebimento",
+      data: c.receivedAt,
+      projetoSlug: projeto.slug,
+      projetoNome: projeto.name,
+      contaLabel: labelDaConta(ds, c.accountId),
+      titulo: "Airdrop recebido",
+      detalhe: `${c.tokenAmount} ${c.tokenSymbol}`,
+      valor: fromDbNumeric(c.valueUsd),
+    });
+  }
+
+  for (const o of ds.taskOccurrences) {
+    if (!o.completedAt) continue;
+    const tarefa = ds.tasks.find((t) => t.id === o.taskId);
+    if (!tarefa) continue;
+    const projeto = nomeProjeto(tarefa.projectId);
+    if (!projeto) continue;
+    linhas.push({
+      id: `occ-${o.id}`,
+      tipo: "tarefa",
+      // A conclusão é um instante ISO; o feed trabalha em dias.
+      data: o.completedAt.slice(0, 10),
+      projetoSlug: projeto.slug,
+      projetoNome: projeto.name,
+      contaLabel: labelDaConta(ds, o.accountId),
+      titulo: "Tarefa concluída",
+      detalhe: tarefa.title,
+      valor: null,
+    });
+  }
+
+  const ordenado = linhas.sort(
+    (a, b) => b.data.localeCompare(a.data) || a.projetoNome.localeCompare(b.projetoNome),
+  );
+  return limite ? ordenado.slice(0, limite) : ordenado;
+}
+
+/** Agrupa o feed por dia, para a interface renderizar com cabeçalho de data. */
+export function agruparAtividadePorDia(linhas: AtividadeRow[]) {
+  const mapa = new Map<string, AtividadeRow[]>();
+  for (const linha of linhas) {
+    const doDia = mapa.get(linha.data) ?? [];
+    doDia.push(linha);
+    mapa.set(linha.data, doDia);
+  }
+  return [...mapa.entries()].map(([data, itens]) => ({ data, itens }));
 }

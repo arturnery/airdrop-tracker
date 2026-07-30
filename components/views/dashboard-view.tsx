@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, TriangleAlert } from "lucide-react";
 
 import { CapitalPorProjetoChart } from "@/components/capital-chart";
+import { ListaAtividade } from "@/components/historico";
 import { useDados } from "@/components/data-provider";
 import { NovoLancamento, RegistrarSaldo } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
@@ -12,6 +13,7 @@ import { StatCard } from "@/components/stat-card";
 import { ProjectStatusBadge, UrgencyBadge } from "@/components/status-badge";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
 import {
+  selectAtividade,
   selectCapitalPorProjeto,
   selectDashboardSummary,
   selectPendingTasks,
@@ -25,6 +27,7 @@ export function DashboardView() {
   const capital = selectCapitalPorProjeto(dataset);
   const projetos = selectProjects(dataset, hoje);
   const tarefas = selectPendingTasks(dataset, hoje);
+  const atividade = selectAtividade(dataset, 10);
 
   const urgentes = tarefas.filter(
     (t) => t.urgencia === "atrasada" || t.urgencia === "hoje",
@@ -238,6 +241,34 @@ export function DashboardView() {
               </tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      {/* ---------------------------------------------------------- histórico */}
+      <section aria-labelledby="titulo-historico" className="mt-10">
+        <div className="mb-1 flex items-baseline justify-between gap-4">
+          <h2 id="titulo-historico" className="text-lg font-medium">
+            Histórico
+          </h2>
+          <Link
+            href="/historico"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex items-center gap-1 rounded-sm text-sm focus-visible:ring-2 focus-visible:outline-none"
+          >
+            Ver tudo
+            <ArrowRight className="size-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+        <p className="text-muted-foreground mb-4 text-sm">
+          Tudo que foi feito, do mais recente para o mais antigo.
+        </p>
+
+        {atividade.length === 0 ? (
+          <EmptyState
+            title="Nada registrado ainda"
+            description="Depósitos, saldos, tarefas concluídas e airdrops recebidos aparecem aqui conforme você registra."
+          />
+        ) : (
+          <ListaAtividade itens={atividade} hoje={hoje} />
         )}
       </section>
     </>
