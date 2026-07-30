@@ -60,7 +60,7 @@ describe("selectAtividade", () => {
 
   it("registra o que foi criado agora", () => {
     const ds = M.criarLancamento(base(), {
-      projectId: "prj-saturn",
+      projectId: "prj-nebula",
       accountId: "acc-mbox",
       occurredAt: HOJE,
       type: "deposit",
@@ -81,9 +81,9 @@ describe("selectAtividade", () => {
 
   it("ignora movimento de projeto que não existe mais", () => {
     // excluirProjeto remove tudo em cascata; nada deve sobrar no feed.
-    const ds = M.excluirProjeto(base(), "prj-ondo");
+    const ds = M.excluirProjeto(base(), "prj-vertex");
     const feedFiltrado = selectAtividade(ds);
-    expect(feedFiltrado.every((f) => f.projetoSlug !== "ondo-perp")).toBe(true);
+    expect(feedFiltrado.every((f) => f.projetoSlug !== "vertex-perp")).toBe(true);
   });
 });
 
@@ -107,10 +107,10 @@ describe("categoria de projeto", () => {
   it("expõe a categoria em cada projeto", () => {
     const projetos = selectProjects(base(), HOJE);
     const porNome = Object.fromEntries(projetos.map((p) => [p.nome, p.categoria]));
-    expect(porNome["Ondo Perp"]).toBe("perps");
-    expect(porNome["Lighter"]).toBe("perps");
-    expect(porNome["Nansen"]).toBe("interacoes");
-    expect(porNome["Saturn"]).toBe("liquidez");
+    expect(porNome["Vertex Perp"]).toBe("perps");
+    expect(porNome["Prisma DEX"]).toBe("perps");
+    expect(porNome["Meridian"]).toBe("interacoes");
+    expect(porNome["Nebula"]).toBe("liquidez");
   });
 
   it("permite filtrar por categoria", () => {
@@ -119,8 +119,8 @@ describe("categoria de projeto", () => {
   });
 
   it("mantém a categoria ao editar outro campo", () => {
-    const ds = M.atualizarProjeto(base(), "prj-ondo", { priority: 1 });
-    const projeto = ds.projects.find((p) => p.id === "prj-ondo")!;
+    const ds = M.atualizarProjeto(base(), "prj-vertex", { priority: 1 });
+    const projeto = ds.projects.find((p) => p.id === "prj-vertex")!;
     expect(projeto.category).toBe("perps");
     expect(projeto.priority).toBe(1);
   });

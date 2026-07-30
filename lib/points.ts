@@ -3,7 +3,7 @@
  *
  * Separado de `money.ts` de propósito, e não por duplicação:
  *
- *  - **Unidade diferente por projeto.** Ponto do Ondo e ponto do Lighter não
+ *  - **Unidade diferente por projeto.** Ponto de um projeto e de outro não
  *    são a mesma coisa; somá-los não significa nada. Só existe soma DENTRO de
  *    um projeto. Não há nada equivalente a "total de pontos da carteira".
  *  - **Escala diferente.** Dinheiro tem 2 casas; programas de pontos costumam

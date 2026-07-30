@@ -11,7 +11,7 @@ const HOJE = "2026-07-29";
 describe("criação", () => {
   it("gera slug único ao criar projeto com nome repetido", () => {
     const { dataset, id } = M.criarProjeto(base(), {
-      name: "Nansen",
+      name: "Meridian",
       status: "ativo",
       category: "perps",
       pointsLabel: null,
@@ -25,13 +25,13 @@ describe("criação", () => {
       notes: null,
     });
     const criado = dataset.projects.find((p) => p.id === id)!;
-    expect(criado.slug).toBe("nansen-2");
+    expect(criado.slug).toBe("meridian-2");
   });
 
   it("vincula a conta ao projeto ao lançar em par inexistente", () => {
-    // acc-mbox nunca farmou Lighter.
+    // acc-mbox nunca farmou o Prisma DEX.
     const ds = M.criarLancamento(base(), {
-      projectId: "prj-lighter",
+      projectId: "prj-prisma",
       accountId: "acc-mbox",
       occurredAt: HOJE,
       type: "deposit",
@@ -39,7 +39,7 @@ describe("criação", () => {
       description: null,
     });
     const par = ds.projectAccounts.find(
-      (p) => p.projectId === "prj-lighter" && p.accountId === "acc-mbox",
+      (p) => p.projectId === "prj-prisma" && p.accountId === "acc-mbox",
     );
     expect(par).toBeDefined();
     expect(par?.startedAt).toBe(HOJE);
@@ -48,7 +48,7 @@ describe("criação", () => {
   it("não duplica vínculo existente", () => {
     const antes = base().projectAccounts.length;
     const ds = M.vincularConta(base(), {
-      projectId: "prj-nansen",
+      projectId: "prj-meridian",
       accountId: "acc-brave",
       status: "ativa",
       startedAt: HOJE,
@@ -58,14 +58,14 @@ describe("criação", () => {
 
   it("substitui o saldo do mesmo par no mesmo dia em vez de duplicar", () => {
     let ds = M.registrarSaldo(base(), {
-      projectId: "prj-saturn",
+      projectId: "prj-nebula",
       accountId: "acc-mbox",
       takenAt: HOJE,
       balance: cents(9000),
       note: null,
     });
     ds = M.registrarSaldo(ds, {
-      projectId: "prj-saturn",
+      projectId: "prj-nebula",
       accountId: "acc-mbox",
       takenAt: HOJE,
       balance: cents(9500),
@@ -73,7 +73,7 @@ describe("criação", () => {
     });
     const doDia = ds.balanceSnapshots.filter(
       (s) =>
-        s.projectId === "prj-saturn" &&
+        s.projectId === "prj-nebula" &&
         s.accountId === "acc-mbox" &&
         s.takenAt === HOJE,
     );
@@ -85,7 +85,7 @@ describe("criação", () => {
     const ds = M.criarTarefa(
       base(),
       {
-        projectId: "prj-ondo",
+        projectId: "prj-vertex",
         accountId: null,
         title: "Nova rotina",
         description: null,
@@ -97,35 +97,35 @@ describe("criação", () => {
     );
     const tarefa = ds.tasks.find((t) => t.title === "Nova rotina")!;
     const ocorrencias = ds.taskOccurrences.filter((o) => o.taskId === tarefa.id);
-    // Ondo Perp tem 4 contas vinculadas.
+    // Vertex Perp tem 4 contas vinculadas.
     expect(ocorrencias).toHaveLength(4);
     expect(ocorrencias.every((o) => o.dueDate === HOJE)).toBe(true);
   });
 
   it("congela o valor do airdrop no momento do registro", () => {
     const ds = M.registrarRecebimento(base(), {
-      projectId: "prj-ondo",
+      projectId: "prj-vertex",
       accountId: "acc-brave",
       receivedAt: HOJE,
-      tokenSymbol: "ondo",
+      tokenSymbol: "vtx",
       tokenAmount: "1250",
       priceUsd: "0.42",
     });
     const claim = ds.airdropClaims[0]!;
-    expect(claim.tokenSymbol).toBe("ONDO");
+    expect(claim.tokenSymbol).toBe("VTX");
     expect(claim.valueUsd).toBe("525.00");
   });
 });
 
 describe("exclusão em cascata", () => {
   it("apagar projeto leva junto tudo que dependia dele", () => {
-    const ds = M.excluirProjeto(base(), "prj-ondo");
+    const ds = M.excluirProjeto(base(), "prj-vertex");
 
-    expect(ds.projects.find((p) => p.id === "prj-ondo")).toBeUndefined();
-    expect(ds.projectAccounts.filter((p) => p.projectId === "prj-ondo")).toHaveLength(0);
-    expect(ds.transactions.filter((t) => t.projectId === "prj-ondo")).toHaveLength(0);
-    expect(ds.balanceSnapshots.filter((s) => s.projectId === "prj-ondo")).toHaveLength(0);
-    expect(ds.goals.filter((g) => g.projectId === "prj-ondo")).toHaveLength(0);
+    expect(ds.projects.find((p) => p.id === "prj-vertex")).toBeUndefined();
+    expect(ds.projectAccounts.filter((p) => p.projectId === "prj-vertex")).toHaveLength(0);
+    expect(ds.transactions.filter((t) => t.projectId === "prj-vertex")).toHaveLength(0);
+    expect(ds.balanceSnapshots.filter((s) => s.projectId === "prj-vertex")).toHaveLength(0);
+    expect(ds.goals.filter((g) => g.projectId === "prj-vertex")).toHaveLength(0);
 
     // Nenhuma ocorrência órfã: as tarefas do projeto sumiram com elas.
     const idsRestantes = new Set(ds.tasks.map((t) => t.id));
@@ -134,8 +134,8 @@ describe("exclusão em cascata", () => {
 
   it("o total geral cai exatamente o que o projeto tinha", () => {
     const antes = selectDashboardSummary(base(), HOJE);
-    const depois = selectDashboardSummary(M.excluirProjeto(base(), "prj-saturn"), HOJE);
-    // Saturn tinha $100 aportados e nenhum outro projeto é afetado.
+    const depois = selectDashboardSummary(M.excluirProjeto(base(), "prj-nebula"), HOJE);
+    // Nebula tinha $100 aportados e nenhum outro projeto é afetado.
     expect(toDbNumeric(antes.aportado)).toBe("242.00");
     expect(toDbNumeric(depois.aportado)).toBe("142.00");
     expect(depois.paresTotal).toBe(antes.paresTotal - 1);
@@ -154,25 +154,25 @@ describe("exclusão em cascata", () => {
   });
 
   it("tarefa específica de uma conta apagada vira tarefa de todas", () => {
-    // tsk-03 é do Lighter e específica de acc-chrome.
+    // tsk-03 é do Prisma DEX e específica de acc-chrome.
     const ds = M.excluirConta(base(), "acc-chrome");
     const tarefa = ds.tasks.find((t) => t.id === "tsk-03")!;
     expect(tarefa.accountId).toBeNull();
   });
 
   it("desvincular conta remove só os movimentos daquele par", () => {
-    const ds = M.desvincularConta(base(), "prj-ondo", "acc-chrome");
+    const ds = M.desvincularConta(base(), "prj-vertex", "acc-chrome");
 
-    // Somem os de Ondo Perp com chrome...
+    // Somem os do Vertex Perp com chrome...
     expect(
       ds.transactions.filter(
-        (t) => t.projectId === "prj-ondo" && t.accountId === "acc-chrome",
+        (t) => t.projectId === "prj-vertex" && t.accountId === "acc-chrome",
       ),
     ).toHaveLength(0);
-    // ...mas chrome continua em Lighter.
+    // ...mas chrome continua no Prisma DEX.
     expect(
       ds.transactions.filter(
-        (t) => t.projectId === "prj-lighter" && t.accountId === "acc-chrome",
+        (t) => t.projectId === "prj-prisma" && t.accountId === "acc-chrome",
       ),
     ).toHaveLength(2);
   });
@@ -184,11 +184,11 @@ describe("exclusão em cascata", () => {
   });
 
   it("apagar o único saldo faz a conta voltar a ser estimada", () => {
-    const antes = selectProjectBySlug(base(), "lighter", HOJE)!;
+    const antes = selectProjectBySlug(base(), "prisma-dex", HOJE)!;
     expect(antes.contasDetalhe[0]?.saldo).not.toBeNull();
 
     const ds = M.excluirSaldo(base(), "snp-11");
-    const depois = selectProjectBySlug(ds, "lighter", HOJE)!;
+    const depois = selectProjectBySlug(ds, "prisma-dex", HOJE)!;
     expect(depois.contasDetalhe[0]?.saldo).toBeNull();
     // Sem snapshot, a exposição passa a ser o aporte líquido.
     expect(toDbNumeric(depois.exposicao)).toBe("20.00");
@@ -197,10 +197,10 @@ describe("exclusão em cascata", () => {
 
 describe("edição", () => {
   it("preserva o slug ao renomear o projeto", () => {
-    const ds = M.atualizarProjeto(base(), "prj-ondo", { name: "Ondo Perpétuos" });
-    const projeto = ds.projects.find((p) => p.id === "prj-ondo")!;
-    expect(projeto.name).toBe("Ondo Perpétuos");
-    expect(projeto.slug).toBe("ondo-perp");
+    const ds = M.atualizarProjeto(base(), "prj-vertex", { name: "Vertex Perpétuos" });
+    const projeto = ds.projects.find((p) => p.id === "prj-vertex")!;
+    expect(projeto.name).toBe("Vertex Perpétuos");
+    expect(projeto.slug).toBe("vertex-perp");
   });
 
   it("recalcula os totais depois de corrigir um lançamento", () => {
@@ -211,7 +211,7 @@ describe("edição", () => {
       description: "Valor corrigido",
     });
     const resumo = selectDashboardSummary(ds, HOJE);
-    // Saturn era $100; virou $50.
+    // Nebula era $100; virou $50.
     expect(toDbNumeric(resumo.aportado)).toBe("192.00");
   });
 
@@ -228,9 +228,9 @@ describe("imutabilidade", () => {
   it("não altera o dataset original", () => {
     const original = base();
     const copia = JSON.stringify(original);
-    M.excluirProjeto(original, "prj-ondo");
+    M.excluirProjeto(original, "prj-vertex");
     M.criarLancamento(original, {
-      projectId: "prj-ondo",
+      projectId: "prj-vertex",
       accountId: "acc-brave",
       occurredAt: HOJE,
       type: "deposit",

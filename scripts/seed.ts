@@ -19,8 +19,8 @@ if (!url) {
   process.exit(1);
 }
 
-const EMAIL = process.env.SEED_USER_EMAIL ?? "arturnery97@gmail.com";
-const NAME = process.env.SEED_USER_NAME ?? "Artur";
+const EMAIL = process.env.SEED_USER_EMAIL ?? "voce@exemplo.com";
+const NAME = process.env.SEED_USER_NAME ?? "Usuário";
 
 async function main() {
   const db = drizzle(neon(url!));

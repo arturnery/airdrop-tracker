@@ -162,8 +162,8 @@ unique(user_id, label)
 ```
 id                uuid PK
 user_id           uuid FK -> users
-slug              text          -- "ondo-perp" (usado na URL)
-name              text          -- "Ondo Perp"
+slug              text          -- "vertex-perp" (usado na URL)
+name              text          -- "Vertex Perp"
 status            enum          -- pesquisando | ativo | pausado |
                                 -- tge_anunciado | distribuido | descartado
 category          enum NULL     -- liquidez | interacoes | perps
@@ -366,7 +366,7 @@ note         text NULL
 unique(project_id, account_id, taken_at)   -- uma medição por dia por par
 ```
 
-**Pontos nunca são somados entre projetos.** Mil pontos do Ondo e mil do Lighter são
+**Pontos nunca são somados entre projetos.** Mil pontos de um projeto e mil de outro são
 unidades distintas; somá-los não produz informação. Só existe agregação **dentro** de um
 projeto, entre suas contas. Por isso não há indicador de "total de pontos" em lugar
 nenhum da interface — o que se compara entre projetos é a **variação**, não o acumulado.

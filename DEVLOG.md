@@ -152,7 +152,7 @@ incerteza fica visível, não escondida.**
 
 ### Dados reais expuseram uma inconsistência real
 
-Nas transcrições da planilha, `Nansen / brave` tem dois snapshots de saldo e **nenhum
+Nas transcrições da planilha, `Meridian / navegador` tem dois snapshots de saldo e **nenhum
 depósito registrado**. A interface mostra o saldo sem aporte em vez de corrigir ou
 esconder — é informação legítima para o dono decidir o que fazer.
 
@@ -239,7 +239,7 @@ Trocado por `AlertDialogTrigger asChild` sobre um `<button>` real.
 Replicando o que as FKs fariam no banco, com duas escolhas que não são óbvias:
 
 - **Desvincular conta de um projeto** remove só os movimentos daquele par. Tirar `chrome`
-  do Ondo Perp não mexe no `chrome` do Lighter.
+  de um projeto não mexe no `chrome` de outro.
 - **Apagar uma conta** converte suas tarefas específicas em tarefas de todas as contas,
   em vez de apagá-las. A intenção de farming sobrevive à conta.
 
@@ -254,7 +254,7 @@ casca fina de delegação, e entraram 17 testes que antes não existiam — incl
 garante que nenhuma mutação altera o dataset original.
 
 São as mesmas transformações que as Server Actions vão executar contra o Postgres. O teste
-que diz "apagar Saturn faz o total cair de $242 para $142" continua valendo depois da
+que diz "apagar um projeto faz o total cair de $242 para $142" continua valendo depois da
 migração.
 
 ---
@@ -350,7 +350,7 @@ mostrando a evolução do acúmulo) e um campo de descrição ao registrar saldo
 O pedido foi *"igual tem do capital, coloque uma parte de pontos"*, o que sugeriria
 espelhar a estrutura do dinheiro — inclusive um indicador de total.
 
-**Não funciona.** Mil pontos do Ondo e mil do Lighter são unidades diferentes; somá-los
+**Não funciona.** Mil pontos de um projeto e mil de outro são unidades diferentes; somá-los
 é como somar moedas sem câmbio. O total geral seria um número sem significado exibido com
 aparência de precisão.
 

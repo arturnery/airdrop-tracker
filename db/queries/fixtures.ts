@@ -6,9 +6,9 @@
  * sobre o formato real, então a troca por SQL não muda a lógica.
  *
  * PROCEDÊNCIA DOS DADOS
- *  - Transações e os dois snapshots de Nansen/brave: reais, vindos da planilha.
+ *  - Transações e os dois snapshots de Meridian/navegador-1: reais, vindos da planilha.
  *  - Demais snapshots, tarefas e metas: exemplos para dar o que ver às telas.
- *  - `chain` dos projetos: placeholder — conferir antes de levar a sério.
+ *  - `chain` dos projetos: exemplo — conferir antes de levar a sério.
  */
 
 export const HOJE = "2026-07-28";
@@ -24,9 +24,9 @@ export type RawAccount = {
 export const rawAccounts: RawAccount[] = [
   {
     id: "acc-email",
-    label: "arturnery97@gmail.com",
+    label: "conta principal",
     walletAddress: null,
-    email: "arturnery97@gmail.com",
+    email: "principal@exemplo.com",
     isActive: true,
   },
   { id: "acc-brave", label: "brave", walletAddress: null, email: null, isActive: true },
@@ -72,25 +72,25 @@ export type RawProject = {
 
 export const rawProjects: RawProject[] = [
   {
-    id: "prj-nansen",
-    slug: "nansen",
-    name: "Nansen",
+    id: "prj-meridian",
+    slug: "meridian",
+    name: "Meridian",
     status: "ativo",
     category: "interacoes",
     pointsLabel: null,
     chain: "Multi-chain",
     priority: 3,
-    websiteUrl: "https://nansen.ai",
+    websiteUrl: "https://exemplo.com",
     discordUrl: null,
-    twitterUrl: "https://x.com/nansen_ai",
+    twitterUrl: "https://x.com/exemplo",
     docsUrl: null,
     expectedTgeDate: null,
     notes: "Conta de e-mail é a principal. Perfis de navegador entraram depois.",
   },
   {
-    id: "prj-minara",
-    slug: "minara",
-    name: "Minara",
+    id: "prj-solstice",
+    slug: "solstice",
+    name: "Solstice",
     status: "ativo",
     category: "interacoes",
     pointsLabel: null,
@@ -104,13 +104,13 @@ export const rawProjects: RawProject[] = [
     notes: null,
   },
   {
-    id: "prj-ondo",
-    slug: "ondo-perp",
-    name: "Ondo Perp",
+    id: "prj-vertex",
+    slug: "vertex-perp",
+    name: "Vertex Perp",
     status: "ativo",
     category: "perps",
     pointsLabel: "Pontos",
-    chain: "Ondo Chain",
+    chain: "Arbitrum",
     priority: 5,
     websiteUrl: null,
     discordUrl: null,
@@ -120,9 +120,9 @@ export const rawProjects: RawProject[] = [
     notes: "Maior alocação e mais contas. Volume é o critério que importa aqui.",
   },
   {
-    id: "prj-lighter",
-    slug: "lighter",
-    name: "Lighter",
+    id: "prj-prisma",
+    slug: "prisma-dex",
+    name: "Prisma DEX",
     status: "ativo",
     category: "perps",
     pointsLabel: "Pontos",
@@ -136,9 +136,9 @@ export const rawProjects: RawProject[] = [
     notes: null,
   },
   {
-    id: "prj-saturn",
-    slug: "saturn",
-    name: "Saturn",
+    id: "prj-nebula",
+    slug: "nebula",
+    name: "Nebula",
     status: "ativo",
     category: "liquidez",
     pointsLabel: "XP",
@@ -161,17 +161,17 @@ export type RawProjectAccount = {
 };
 
 export const rawProjectAccounts: RawProjectAccount[] = [
-  { projectId: "prj-nansen", accountId: "acc-email", status: "ativa", startedAt: "2026-06-25" },
-  { projectId: "prj-nansen", accountId: "acc-chrome", status: "ativa", startedAt: "2026-06-25" },
-  { projectId: "prj-nansen", accountId: "acc-brave", status: "ativa", startedAt: "2026-06-25" },
-  { projectId: "prj-minara", accountId: "acc-brave", status: "ativa", startedAt: "2026-06-25" },
-  { projectId: "prj-minara", accountId: "acc-chrome", status: "ativa", startedAt: "2026-06-25" },
-  { projectId: "prj-ondo", accountId: "acc-brave", status: "ativa", startedAt: "2026-07-01" },
-  { projectId: "prj-ondo", accountId: "acc-chrome", status: "ativa", startedAt: "2026-07-01" },
-  { projectId: "prj-ondo", accountId: "acc-chrome-1", status: "ativa", startedAt: "2026-07-14" },
-  { projectId: "prj-ondo", accountId: "acc-chrome-2", status: "ativa", startedAt: "2026-07-13" },
-  { projectId: "prj-lighter", accountId: "acc-chrome", status: "ativa", startedAt: "2026-07-08" },
-  { projectId: "prj-saturn", accountId: "acc-mbox", status: "ativa", startedAt: "2026-07-28" },
+  { projectId: "prj-meridian", accountId: "acc-email", status: "ativa", startedAt: "2026-06-25" },
+  { projectId: "prj-meridian", accountId: "acc-chrome", status: "ativa", startedAt: "2026-06-25" },
+  { projectId: "prj-meridian", accountId: "acc-brave", status: "ativa", startedAt: "2026-06-25" },
+  { projectId: "prj-solstice", accountId: "acc-brave", status: "ativa", startedAt: "2026-06-25" },
+  { projectId: "prj-solstice", accountId: "acc-chrome", status: "ativa", startedAt: "2026-06-25" },
+  { projectId: "prj-vertex", accountId: "acc-brave", status: "ativa", startedAt: "2026-07-01" },
+  { projectId: "prj-vertex", accountId: "acc-chrome", status: "ativa", startedAt: "2026-07-01" },
+  { projectId: "prj-vertex", accountId: "acc-chrome-1", status: "ativa", startedAt: "2026-07-14" },
+  { projectId: "prj-vertex", accountId: "acc-chrome-2", status: "ativa", startedAt: "2026-07-13" },
+  { projectId: "prj-prisma", accountId: "acc-chrome", status: "ativa", startedAt: "2026-07-08" },
+  { projectId: "prj-nebula", accountId: "acc-mbox", status: "ativa", startedAt: "2026-07-28" },
 ];
 
 export type RawTransaction = {
@@ -188,7 +188,7 @@ export type RawTransaction = {
 export const rawTransactions: RawTransaction[] = [
   {
     id: "tx-01",
-    projectId: "prj-nansen",
+    projectId: "prj-meridian",
     accountId: "acc-email",
     occurredAt: "2026-06-25",
     type: "deposit",
@@ -197,7 +197,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-02",
-    projectId: "prj-minara",
+    projectId: "prj-solstice",
     accountId: "acc-brave",
     occurredAt: "2026-06-25",
     type: "deposit",
@@ -206,7 +206,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-03",
-    projectId: "prj-minara",
+    projectId: "prj-solstice",
     accountId: "acc-chrome",
     occurredAt: "2026-06-25",
     type: "deposit",
@@ -215,7 +215,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-04",
-    projectId: "prj-nansen",
+    projectId: "prj-meridian",
     accountId: "acc-chrome",
     occurredAt: "2026-06-25",
     type: "deposit",
@@ -224,7 +224,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-05",
-    projectId: "prj-nansen",
+    projectId: "prj-meridian",
     accountId: "acc-chrome",
     occurredAt: "2026-07-01",
     type: "trade_pnl",
@@ -233,7 +233,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-06",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-brave",
     occurredAt: "2026-07-01",
     type: "deposit",
@@ -242,7 +242,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-07",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-chrome",
     occurredAt: "2026-07-01",
     type: "deposit",
@@ -251,7 +251,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-08",
-    projectId: "prj-lighter",
+    projectId: "prj-prisma",
     accountId: "acc-chrome",
     occurredAt: "2026-07-08",
     type: "deposit",
@@ -260,7 +260,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-09",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-chrome-2",
     occurredAt: "2026-07-13",
     type: "deposit",
@@ -269,7 +269,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-10",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-chrome-1",
     occurredAt: "2026-07-14",
     type: "deposit",
@@ -278,7 +278,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-11",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-chrome",
     occurredAt: "2026-07-24",
     type: "deposit",
@@ -287,7 +287,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-12",
-    projectId: "prj-saturn",
+    projectId: "prj-nebula",
     accountId: "acc-mbox",
     occurredAt: "2026-07-28",
     type: "deposit",
@@ -297,7 +297,7 @@ export const rawTransactions: RawTransaction[] = [
   // Volume operado: não é caixa, alimenta metas (ARCHITECTURE.md §4.3-C).
   {
     id: "tx-13",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-chrome",
     occurredAt: "2026-07-25",
     type: "volume_traded",
@@ -306,7 +306,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-14",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-brave",
     occurredAt: "2026-07-26",
     type: "volume_traded",
@@ -315,7 +315,7 @@ export const rawTransactions: RawTransaction[] = [
   },
   {
     id: "tx-15",
-    projectId: "prj-lighter",
+    projectId: "prj-prisma",
     accountId: "acc-chrome",
     occurredAt: "2026-07-26",
     type: "volume_traded",
@@ -339,7 +339,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   // a interface mostra "saldo sem aporte" em vez de esconder a inconsistência.
   {
     id: "snp-01",
-    projectId: "prj-nansen",
+    projectId: "prj-meridian",
     accountId: "acc-brave",
     takenAt: "2026-07-01",
     balanceUsd: "15.00",
@@ -347,7 +347,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   },
   {
     id: "snp-02",
-    projectId: "prj-nansen",
+    projectId: "prj-meridian",
     accountId: "acc-brave",
     takenAt: "2026-07-07",
     balanceUsd: "7.33",
@@ -356,7 +356,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   // Exemplos.
   {
     id: "snp-03",
-    projectId: "prj-nansen",
+    projectId: "prj-meridian",
     accountId: "acc-email",
     takenAt: "2026-07-27",
     balanceUsd: "21.40",
@@ -364,7 +364,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   },
   {
     id: "snp-04",
-    projectId: "prj-nansen",
+    projectId: "prj-meridian",
     accountId: "acc-chrome",
     takenAt: "2026-07-27",
     balanceUsd: "8.60",
@@ -372,7 +372,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   },
   {
     id: "snp-05",
-    projectId: "prj-minara",
+    projectId: "prj-solstice",
     accountId: "acc-brave",
     takenAt: "2026-07-26",
     balanceUsd: "13.10",
@@ -380,7 +380,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   },
   {
     id: "snp-06",
-    projectId: "prj-minara",
+    projectId: "prj-solstice",
     accountId: "acc-chrome",
     takenAt: "2026-07-26",
     balanceUsd: "9.45",
@@ -388,7 +388,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   },
   {
     id: "snp-07",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-brave",
     takenAt: "2026-07-27",
     balanceUsd: "22.80",
@@ -396,7 +396,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   },
   {
     id: "snp-08",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-chrome",
     takenAt: "2026-07-27",
     balanceUsd: "41.50",
@@ -404,7 +404,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   },
   {
     id: "snp-09",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-chrome-1",
     takenAt: "2026-07-25",
     balanceUsd: "4.80",
@@ -412,7 +412,7 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   },
   {
     id: "snp-10",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-chrome-2",
     takenAt: "2026-07-25",
     balanceUsd: "5.30",
@@ -420,13 +420,13 @@ export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
   },
   {
     id: "snp-11",
-    projectId: "prj-lighter",
+    projectId: "prj-prisma",
     accountId: "acc-chrome",
     takenAt: "2026-07-26",
     balanceUsd: "18.90",
     note: null,
   },
-  // Saturn/mbox de propósito sem snapshot: exercita o estado "aporte sem saldo
+  // Nebula/mbox de propósito sem snapshot: exercita o estado "aporte sem saldo
   // confirmado" e o indicador de cobertura do dashboard.
 ];
 
@@ -445,7 +445,7 @@ export type RawTask = {
 export const rawTasks: RawTask[] = [
   {
     id: "tsk-01",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: null,
     title: "Executar 3 trades",
     description: "Volume conta para o critério de elegibilidade.",
@@ -456,7 +456,7 @@ export const rawTasks: RawTask[] = [
   },
   {
     id: "tsk-02",
-    projectId: "prj-nansen",
+    projectId: "prj-meridian",
     accountId: null,
     title: "Check-in diário",
     description: null,
@@ -467,7 +467,7 @@ export const rawTasks: RawTask[] = [
   },
   {
     id: "tsk-03",
-    projectId: "prj-lighter",
+    projectId: "prj-prisma",
     accountId: "acc-chrome",
     title: "Fechar volume da semana",
     description: "Meta semanal de volume no perp.",
@@ -478,7 +478,7 @@ export const rawTasks: RawTask[] = [
   },
   {
     id: "tsk-04",
-    projectId: "prj-minara",
+    projectId: "prj-solstice",
     accountId: null,
     title: "Quest de testnet encerra",
     description: "Última janela para completar as tarefas da testnet.",
@@ -489,7 +489,7 @@ export const rawTasks: RawTask[] = [
   },
   {
     id: "tsk-05",
-    projectId: "prj-saturn",
+    projectId: "prj-nebula",
     accountId: "acc-mbox",
     title: "Conferir saldo depois do depósito",
     description: "Registrar o saldo assim que a plataforma creditar.",
@@ -500,7 +500,7 @@ export const rawTasks: RawTask[] = [
   },
   {
     id: "tsk-06",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: "acc-chrome",
     title: "Reforçar colateral",
     description: null,
@@ -522,7 +522,7 @@ export type RawTaskOccurrence = {
 };
 
 export const rawTaskOccurrences: RawTaskOccurrence[] = [
-  // Ondo Perp — "Executar 3 trades", 4 contas
+  // Vertex Perp — "Executar 3 trades", 4 contas
   { id: "occ-01", taskId: "tsk-01", accountId: "acc-brave", dueDate: "2026-07-28", completedAt: null, skipped: false },
   { id: "occ-02", taskId: "tsk-01", accountId: "acc-chrome", dueDate: "2026-07-28", completedAt: null, skipped: false },
   { id: "occ-03", taskId: "tsk-01", accountId: "acc-chrome-1", dueDate: "2026-07-28", completedAt: null, skipped: false },
@@ -532,19 +532,19 @@ export const rawTaskOccurrences: RawTaskOccurrence[] = [
   { id: "occ-06", taskId: "tsk-01", accountId: "acc-chrome-2", dueDate: "2026-07-27", completedAt: null, skipped: false },
   { id: "occ-07", taskId: "tsk-01", accountId: "acc-brave", dueDate: "2026-07-27", completedAt: "2026-07-27T18:20:00Z", skipped: false },
   { id: "occ-08", taskId: "tsk-01", accountId: "acc-chrome", dueDate: "2026-07-27", completedAt: "2026-07-27T18:35:00Z", skipped: false },
-  // Nansen — check-in diário, 3 contas
+  // Meridian — check-in diário, 3 contas
   { id: "occ-09", taskId: "tsk-02", accountId: "acc-email", dueDate: "2026-07-28", completedAt: null, skipped: false },
   { id: "occ-10", taskId: "tsk-02", accountId: "acc-chrome", dueDate: "2026-07-28", completedAt: null, skipped: false },
   { id: "occ-11", taskId: "tsk-02", accountId: "acc-brave", dueDate: "2026-07-28", completedAt: "2026-07-28T09:10:00Z", skipped: false },
   { id: "occ-12", taskId: "tsk-02", accountId: "acc-email", dueDate: "2026-07-26", completedAt: null, skipped: false },
-  // Lighter — semanal
+  // Prisma DEX — semanal
   { id: "occ-13", taskId: "tsk-03", accountId: "acc-chrome", dueDate: "2026-08-02", completedAt: null, skipped: false },
-  // Minara — prazo fixo
+  // Solstice — prazo fixo
   { id: "occ-14", taskId: "tsk-04", accountId: "acc-brave", dueDate: "2026-08-15", completedAt: null, skipped: false },
   { id: "occ-15", taskId: "tsk-04", accountId: "acc-chrome", dueDate: "2026-08-15", completedAt: null, skipped: false },
-  // Saturn — prazo fixo próximo
+  // Nebula — prazo fixo próximo
   { id: "occ-16", taskId: "tsk-05", accountId: "acc-mbox", dueDate: "2026-07-30", completedAt: null, skipped: false },
-  // Ondo Perp — a cada 10 dias
+  // Vertex Perp — a cada 10 dias
   { id: "occ-17", taskId: "tsk-06", accountId: "acc-chrome", dueDate: "2026-08-03", completedAt: null, skipped: false },
 ];
 
@@ -562,7 +562,7 @@ export type RawGoal = {
 export const rawGoals: RawGoal[] = [
   {
     id: "gol-01",
-    projectId: "prj-ondo",
+    projectId: "prj-vertex",
     accountId: null,
     title: "Volume acumulado no perp",
     metric: "volume_usd",
@@ -572,7 +572,7 @@ export const rawGoals: RawGoal[] = [
   },
   {
     id: "gol-02",
-    projectId: "prj-lighter",
+    projectId: "prj-prisma",
     accountId: "acc-chrome",
     title: "Volume mínimo para elegibilidade",
     metric: "volume_usd",
@@ -635,18 +635,18 @@ export type RawPointsSnapshot = {
  * Dados de exemplo.
  */
 export const rawPointsSnapshots: RawPointsSnapshot[] = [
-  // Ondo Perp — quatro contas, duas medições
-  { id: "pts-01", projectId: "prj-ondo", accountId: "acc-brave", takenAt: "2026-07-20", points: "8400.0000", note: null },
-  { id: "pts-02", projectId: "prj-ondo", accountId: "acc-chrome", takenAt: "2026-07-20", points: "15200.0000", note: null },
-  { id: "pts-03", projectId: "prj-ondo", accountId: "acc-chrome-1", takenAt: "2026-07-20", points: "1100.0000", note: null },
-  { id: "pts-04", projectId: "prj-ondo", accountId: "acc-chrome-2", takenAt: "2026-07-20", points: "1250.0000", note: null },
-  { id: "pts-05", projectId: "prj-ondo", accountId: "acc-brave", takenAt: "2026-07-27", points: "11750.0000", note: "Semana de volume alto" },
-  { id: "pts-06", projectId: "prj-ondo", accountId: "acc-chrome", takenAt: "2026-07-27", points: "21400.0000", note: null },
-  { id: "pts-07", projectId: "prj-ondo", accountId: "acc-chrome-1", takenAt: "2026-07-27", points: "1480.0000", note: null },
-  { id: "pts-08", projectId: "prj-ondo", accountId: "acc-chrome-2", takenAt: "2026-07-27", points: "1620.0000", note: null },
-  // Lighter — uma conta
-  { id: "pts-09", projectId: "prj-lighter", accountId: "acc-chrome", takenAt: "2026-07-19", points: "3200.0000", note: null },
-  { id: "pts-10", projectId: "prj-lighter", accountId: "acc-chrome", takenAt: "2026-07-26", points: "4850.5000", note: "Bônus de maker" },
-  // Saturn — programa recém-iniciado, só uma medição
-  { id: "pts-11", projectId: "prj-saturn", accountId: "acc-mbox", takenAt: "2026-07-28", points: "500.0000", note: "Pontos de entrada" },
+  // Vertex Perp — quatro contas, duas medições
+  { id: "pts-01", projectId: "prj-vertex", accountId: "acc-brave", takenAt: "2026-07-20", points: "8400.0000", note: null },
+  { id: "pts-02", projectId: "prj-vertex", accountId: "acc-chrome", takenAt: "2026-07-20", points: "15200.0000", note: null },
+  { id: "pts-03", projectId: "prj-vertex", accountId: "acc-chrome-1", takenAt: "2026-07-20", points: "1100.0000", note: null },
+  { id: "pts-04", projectId: "prj-vertex", accountId: "acc-chrome-2", takenAt: "2026-07-20", points: "1250.0000", note: null },
+  { id: "pts-05", projectId: "prj-vertex", accountId: "acc-brave", takenAt: "2026-07-27", points: "11750.0000", note: "Semana de volume alto" },
+  { id: "pts-06", projectId: "prj-vertex", accountId: "acc-chrome", takenAt: "2026-07-27", points: "21400.0000", note: null },
+  { id: "pts-07", projectId: "prj-vertex", accountId: "acc-chrome-1", takenAt: "2026-07-27", points: "1480.0000", note: null },
+  { id: "pts-08", projectId: "prj-vertex", accountId: "acc-chrome-2", takenAt: "2026-07-27", points: "1620.0000", note: null },
+  // Prisma DEX — uma conta
+  { id: "pts-09", projectId: "prj-prisma", accountId: "acc-chrome", takenAt: "2026-07-19", points: "3200.0000", note: null },
+  { id: "pts-10", projectId: "prj-prisma", accountId: "acc-chrome", takenAt: "2026-07-26", points: "4850.5000", note: "Bônus de maker" },
+  // Nebula — programa recém-iniciado, só uma medição
+  { id: "pts-11", projectId: "prj-nebula", accountId: "acc-mbox", takenAt: "2026-07-28", points: "500.0000", note: "Pontos de entrada" },
 ];

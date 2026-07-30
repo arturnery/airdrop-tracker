@@ -28,7 +28,7 @@ describe("selectDashboardSummary", () => {
   });
 
   it("reporta a cobertura de saldo confirmado", () => {
-    // Saturn/mbox tem aporte mas nenhum snapshot.
+    // Nebula/mbox tem aporte mas nenhum snapshot.
     expect(resumo.paresComSaldo).toBe(10);
     expect(resumo.paresTotal).toBe(11);
   });
@@ -43,22 +43,22 @@ describe("selectProjects", () => {
   const projetos = selectProjects(ds, HOJE);
 
   it("ordena por prioridade", () => {
-    expect(projetos[0]?.nome).toBe("Ondo Perp");
+    expect(projetos[0]?.nome).toBe("Vertex Perp");
     expect(projetos[0]?.prioridade).toBe(5);
   });
 
   it("calcula o resultado de cada projeto", () => {
     const porNome = Object.fromEntries(projetos.map((p) => [p.nome, p]));
-    expect(toDbNumeric(porNome["Ondo Perp"]!.aportado)).toBe("70.00");
-    expect(toDbNumeric(porNome["Ondo Perp"]!.resultado)).toBe("4.40");
-    expect(toDbNumeric(porNome["Nansen"]!.resultado)).toBe("8.33");
-    expect(toDbNumeric(porNome["Lighter"]!.resultado)).toBe("-1.10");
+    expect(toDbNumeric(porNome["Vertex Perp"]!.aportado)).toBe("70.00");
+    expect(toDbNumeric(porNome["Vertex Perp"]!.resultado)).toBe("4.40");
+    expect(toDbNumeric(porNome["Meridian"]!.resultado)).toBe("8.33");
+    expect(toDbNumeric(porNome["Prisma DEX"]!.resultado)).toBe("-1.10");
   });
 
   it("não conta volume operado como capital", () => {
-    // Ondo Perp tem $3.450 de volume registrado e só $70 aportados.
-    const ondo = projetos.find((p) => p.slug === "ondo-perp");
-    expect(toDbNumeric(ondo!.aportado)).toBe("70.00");
+    // Vertex Perp tem $3.450 de volume registrado e só $70 aportados.
+    const projeto = projetos.find((p) => p.slug === "vertex-perp");
+    expect(toDbNumeric(projeto!.aportado)).toBe("70.00");
   });
 });
 
@@ -68,31 +68,31 @@ describe("selectProjectBySlug", () => {
   });
 
   it("marca conta sem snapshot com saldo nulo, não zero", () => {
-    const saturn = selectProjectBySlug(ds, "saturn", HOJE)!;
-    const mbox = saturn.contasDetalhe.find((c) => c.label === "mbox")!;
+    const nebula = selectProjectBySlug(ds, "nebula", HOJE)!;
+    const mbox = nebula.contasDetalhe.find((c) => c.label === "mbox")!;
     expect(mbox.saldo).toBeNull();
     expect(mbox.resultado).toBeNull();
     expect(toDbNumeric(mbox.aportado)).toBe("100.00");
   });
 
   it("expõe o saldo real quando existe snapshot", () => {
-    const nansen = selectProjectBySlug(ds, "nansen", HOJE)!;
-    const brave = nansen.contasDetalhe.find((c) => c.label === "brave")!;
+    const meridian = selectProjectBySlug(ds, "meridian", HOJE)!;
+    const brave = meridian.contasDetalhe.find((c) => c.label === "brave")!;
     // Dois snapshots na planilha: 15.00 em 01/07 e 7.33 em 07/07.
     expect(toDbNumeric(brave.saldo!)).toBe("7.33");
     expect(brave.saldoEm).toBe("2026-07-07");
   });
 
   it("inclui snapshots no histórico marcados como tal", () => {
-    const nansen = selectProjectBySlug(ds, "nansen", HOJE)!;
-    const snapshots = nansen.historico.filter((h) => h.isSnapshot);
+    const meridian = selectProjectBySlug(ds, "meridian", HOJE)!;
+    const snapshots = meridian.historico.filter((h) => h.isSnapshot);
     expect(snapshots).toHaveLength(4);
-    expect(nansen.historico[0]?.data).toBe("2026-07-27"); // mais recente primeiro
+    expect(meridian.historico[0]?.data).toBe("2026-07-27"); // mais recente primeiro
   });
 
   it("calcula progresso de meta a partir do volume operado", () => {
-    const ondo = selectProjectBySlug(ds, "ondo-perp", HOJE)!;
-    const meta = ondo.metas[0]!;
+    const projeto = selectProjectBySlug(ds, "vertex-perp", HOJE)!;
+    const meta = projeto.metas[0]!;
     expect(toDbNumeric(meta.alvo)).toBe("10000.00");
     expect(toDbNumeric(meta.atual)).toBe("3450.00");
   });
@@ -102,7 +102,7 @@ describe("selectAccounts", () => {
   it("soma uma conta atravessando todos os projetos", () => {
     const contas = selectAccounts(ds);
     const chrome = contas.find((c) => c.label === "chrome")!;
-    // Minara 9 + Nansen 9 + Ondo 40 + Lighter 20
+    // Solstice 9 + Meridian 9 + Vertex 40 + Prisma 20
     expect(toDbNumeric(chrome.aportado)).toBe("78.00");
     expect(chrome.projetos).toBe(4);
   });
@@ -128,7 +128,7 @@ describe("selectPendingTasks", () => {
 describe("selectCapitalPorProjeto", () => {
   it("ordena por capital e ignora projeto sem aporte", () => {
     const capital = selectCapitalPorProjeto(ds);
-    expect(capital[0]?.nome).toBe("Saturn");
+    expect(capital[0]?.nome).toBe("Nebula");
     expect(toDbNumeric(capital[0]!.aportado)).toBe("100.00");
     expect(capital).toHaveLength(5);
   });
@@ -136,13 +136,13 @@ describe("selectCapitalPorProjeto", () => {
 
 describe("helpers de dataset", () => {
   it("gera slug a partir do nome", () => {
-    expect(slugify("Ondo Perp")).toBe("ondo-perp");
+    expect(slugify("Vertex Perp")).toBe("vertex-perp");
     expect(slugify("Éther Fi!")).toBe("ether-fi");
   });
 
   it("evita colisão de slug", () => {
-    expect(uniqueSlug("Nansen", ["nansen"])).toBe("nansen-2");
-    expect(uniqueSlug("Nansen", ["nansen", "nansen-2"])).toBe("nansen-3");
+    expect(uniqueSlug("Meridian", ["meridian"])).toBe("meridian-2");
+    expect(uniqueSlug("Meridian", ["meridian", "meridian-2"])).toBe("meridian-3");
   });
 
   it("gera ids distintos", () => {

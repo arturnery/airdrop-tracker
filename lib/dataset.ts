@@ -51,7 +51,7 @@ export const emptyDataset = (): Dataset => ({
   airdropClaims: [],
 });
 
-/** Slug a partir do nome: "Ondo Perp" -> "ondo-perp". */
+/** Slug a partir do nome: "Vertex Perp" -> "vertex-perp". */
 export function slugify(nome: string): string {
   return nome
     .normalize("NFD")

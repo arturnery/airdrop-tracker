@@ -616,7 +616,7 @@ function pontosDoPar(ds: Dataset, projectId: string, accountId: string) {
  * Programas de pontos, um por projeto que tenha `pointsLabel`.
  *
  * Regra central: **pontos nunca são somados entre projetos.** Cada programa é
- * uma unidade própria — 1.000 pontos do Ondo e 1.000 do Lighter não formam
+ * uma unidade própria — 1.000 pontos de um projeto e 1.000 de outro não formam
  * 2.000 de coisa alguma. Só há soma entre as contas de um mesmo projeto.
  *
  * A variação compara o total atual com o total na medição anterior de cada

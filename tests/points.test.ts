@@ -107,84 +107,84 @@ describe("selectProgramasDePontos", () => {
   const programas = selectProgramasDePontos(base());
 
   it("inclui só projetos com programa declarado", () => {
-    // Nansen e Minara não têm pointsLabel.
+    // Meridian e Solstice não têm pointsLabel.
     expect(programas.map((p) => p.projetoNome).sort()).toEqual([
-      "Lighter",
-      "Ondo Perp",
-      "Saturn",
+      "Nebula",
+      "Prisma DEX",
+      "Vertex Perp",
     ]);
   });
 
   it("soma as contas dentro do projeto", () => {
-    const ondo = programas.find((p) => p.projetoSlug === "ondo-perp")!;
+    const projeto = programas.find((p) => p.projetoSlug === "vertex-perp")!;
     // 11750 + 21400 + 1480 + 1620
-    expect(formatPoints(ondo.total)).toBe("36.250");
+    expect(formatPoints(projeto.total)).toBe("36.250");
   });
 
   it("calcula a variação desde a medição anterior de cada conta", () => {
-    const ondo = programas.find((p) => p.projetoSlug === "ondo-perp")!;
+    const projeto = programas.find((p) => p.projetoSlug === "vertex-perp")!;
     // (11750-8400) + (21400-15200) + (1480-1100) + (1620-1250)
-    expect(formatPoints(ondo.variacao!)).toBe("10.300");
-    expect(formatPoints(ondo.totalAnterior!)).toBe("25.950");
+    expect(formatPoints(projeto.variacao!)).toBe("10.300");
+    expect(formatPoints(projeto.totalAnterior!)).toBe("25.950");
   });
 
   it("devolve variação nula quando o programa tem uma medição só", () => {
-    const saturn = programas.find((p) => p.projetoSlug === "saturn")!;
-    expect(saturn.variacao).toBeNull();
-    expect(saturn.crescimento).toBeNull();
-    expect(formatPoints(saturn.total)).toBe("500");
+    const nebula = programas.find((p) => p.projetoSlug === "nebula")!;
+    expect(nebula.variacao).toBeNull();
+    expect(nebula.crescimento).toBeNull();
+    expect(formatPoints(nebula.total)).toBe("500");
   });
 
   it("usa o rótulo que o projeto definiu", () => {
-    expect(programas.find((p) => p.projetoSlug === "saturn")?.rotulo).toBe("XP");
-    expect(programas.find((p) => p.projetoSlug === "lighter")?.rotulo).toBe("Pontos");
+    expect(programas.find((p) => p.projetoSlug === "nebula")?.rotulo).toBe("XP");
+    expect(programas.find((p) => p.projetoSlug === "prisma-dex")?.rotulo).toBe("Pontos");
   });
 
   it("ordena pelo maior ganho", () => {
-    expect(programas[0]?.projetoSlug).toBe("ondo-perp");
+    expect(programas[0]?.projetoSlug).toBe("vertex-perp");
   });
 
   it("marca conta sem registro como nula, não como zero", () => {
-    // Vincula uma conta nova ao Lighter, sem registrar pontos.
+    // Vincula uma conta nova ao Prisma DEX, sem registrar pontos.
     const ds = M.vincularConta(base(), {
-      projectId: "prj-lighter",
+      projectId: "prj-prisma",
       accountId: "acc-brave",
       status: "ativa",
       startedAt: HOJE,
     });
-    const lighter = selectProgramaDePontos(ds, "prj-lighter")!;
-    const brave = lighter.contas.find((c) => c.label === "brave")!;
+    const prisma = selectProgramaDePontos(ds, "prj-prisma")!;
+    const brave = prisma.contas.find((c) => c.label === "brave")!;
     expect(brave.total).toBeNull();
     // O total do projeto não muda por causa de uma conta sem medição.
-    expect(formatPoints(lighter.total)).toBe("4.850,5");
+    expect(formatPoints(prisma.total)).toBe("4.850,5");
   });
 });
 
 describe("registro de pontos", () => {
   it("acrescenta uma medição e recalcula o ganho", () => {
     const ds = M.registrarPontos(base(), {
-      projectId: "prj-lighter",
+      projectId: "prj-prisma",
       accountId: "acc-chrome",
       takenAt: HOJE,
       points: points(60_000_000), // 6.000
       note: "Semana boa",
     });
-    const lighter = selectProgramaDePontos(ds, "prj-lighter")!;
-    expect(formatPoints(lighter.total)).toBe("6.000");
+    const prisma = selectProgramaDePontos(ds, "prj-prisma")!;
+    expect(formatPoints(prisma.total)).toBe("6.000");
     // 6000 − 4850,5
-    expect(formatPoints(lighter.variacao!)).toBe("1.149,5");
+    expect(formatPoints(prisma.variacao!)).toBe("1.149,5");
   });
 
   it("substitui a medição do mesmo dia em vez de duplicar", () => {
     let ds = M.registrarPontos(base(), {
-      projectId: "prj-saturn",
+      projectId: "prj-nebula",
       accountId: "acc-mbox",
       takenAt: "2026-07-28",
       points: points(9_000_000),
       note: null,
     });
     ds = M.registrarPontos(ds, {
-      projectId: "prj-saturn",
+      projectId: "prj-nebula",
       accountId: "acc-mbox",
       takenAt: "2026-07-28",
       points: points(9_500_000),
@@ -192,7 +192,7 @@ describe("registro de pontos", () => {
     });
     const doDia = ds.pointsSnapshots.filter(
       (p) =>
-        p.projectId === "prj-saturn" &&
+        p.projectId === "prj-nebula" &&
         p.accountId === "acc-mbox" &&
         p.takenAt === "2026-07-28",
     );
@@ -202,7 +202,7 @@ describe("registro de pontos", () => {
 
   it("pontos não afetam nenhum número financeiro", () => {
     const ds = M.registrarPontos(base(), {
-      projectId: "prj-ondo",
+      projectId: "prj-vertex",
       accountId: "acc-brave",
       takenAt: HOJE,
       points: points(999_000_000),
@@ -215,16 +215,16 @@ describe("registro de pontos", () => {
 
   it("excluir medição remove o ganho correspondente", () => {
     const ds = M.excluirPontos(base(), "pts-05");
-    const ondo = selectProgramaDePontos(ds, "prj-ondo")!;
+    const projeto = selectProgramaDePontos(ds, "prj-vertex")!;
     // brave volta a ter só a medição de 20/07, sem variação.
-    const brave = ondo.contas.find((c) => c.label === "brave")!;
+    const brave = projeto.contas.find((c) => c.label === "brave")!;
     expect(brave.variacao).toBeNull();
     expect(formatPoints(brave.total!)).toBe("8.400");
   });
 });
 
 describe("histórico de medições", () => {
-  const historico = selectHistoricoDePontos(base(), "prj-ondo");
+  const historico = selectHistoricoDePontos(base(), "prj-vertex");
 
   it("lista do mais recente para o mais antigo", () => {
     const datas = historico.map((h) => h.data);
@@ -254,22 +254,22 @@ describe("histórico de medições", () => {
 describe("descrição no saldo em dólar", () => {
   it("grava a nota junto do saldo", () => {
     const ds = M.registrarSaldo(base(), {
-      projectId: "prj-saturn",
+      projectId: "prj-nebula",
       accountId: "acc-mbox",
       takenAt: HOJE,
       balance: 10_500 as never,
       note: "Rendimento do DeFi",
     });
     const registro = ds.balanceSnapshots.find(
-      (s) => s.projectId === "prj-saturn" && s.takenAt === HOJE,
+      (s) => s.projectId === "prj-nebula" && s.takenAt === HOJE,
     )!;
     expect(registro.note).toBe("Rendimento do DeFi");
   });
 
   it("a nota aparece no histórico do projeto", async () => {
     const { selectProjectBySlug } = await import("@/lib/selectors");
-    const nansen = selectProjectBySlug(base(), "nansen", HOJE)!;
-    const comNota = nansen.historico.find((h) => h.descricao === "Perda em trade");
+    const meridian = selectProjectBySlug(base(), "meridian", HOJE)!;
+    const comNota = meridian.historico.find((h) => h.descricao === "Perda em trade");
     expect(comNota?.isSnapshot).toBe(true);
   });
 });

@@ -158,7 +158,7 @@ export function NovoProjeto() {
             name="name"
             obrigatorio
             erro={e.name}
-            placeholder="Ondo Perp"
+            placeholder="Vertex Perp"
             autoFocus
           />
           <div className="grid gap-4 sm:grid-cols-3">
@@ -889,7 +889,7 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
               name="tokenSymbol"
               obrigatorio
               erro={e.tokenSymbol}
-              placeholder="ONDO"
+              placeholder="VTX"
             />
             <CampoTexto
               label="Quantidade"

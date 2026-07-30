@@ -11,7 +11,7 @@ import type { PointsProgramRow } from "@/lib/types";
  * Cartão de um programa de pontos.
  *
  * Cada programa é uma unidade própria: nunca há um total somando projetos
- * diferentes, porque 1.000 pontos do Ondo e 1.000 do Lighter não formam 2.000
+ * diferentes, porque 1.000 pontos de um projeto e 1.000 de outro não formam 2.000
  * de nada. O que se compara entre projetos é a **variação**, não o acumulado.
  */
 export function CardPrograma({

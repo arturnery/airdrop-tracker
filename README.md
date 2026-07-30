@@ -21,15 +21,33 @@ decisão central do modelo de dados.
 | Testes | Vitest |
 | Deploy | Vercel |
 
+## Estado do projeto
+
+A interface está completa e navegável, **rodando sem backend**: os dados vêm de fixtures
+e tudo que você cadastra fica no `localStorage` do navegador. Dá para criar, editar e
+excluir projetos, contas, lançamentos, saldos, tarefas, metas e pontos.
+
+Os projetos e valores que aparecem são **dados de demonstração**, não reais.
+
+O banco entra na fase seguinte. A agregação já está isolada em funções puras
+(`lib/selectors`, `lib/mutations`) que não sabem de onde vêm os dados, então a troca por
+Drizzle + Neon não altera regra de negócio nem nenhuma tela — ver
+[`ARCHITECTURE.md`](ARCHITECTURE.md) §10.
+
 ## Começando
 
 ```bash
 npm install
+npm run dev          # http://localhost:3000
+```
+
+Nada além disso é necessário enquanto o backend não entra. Para a fase de banco:
+
+```bash
 cp .env.example .env.local     # preencha DATABASE_URL com a string do Neon
 npm run db:push                # cria as tabelas
 npm run db:seed                # cria o usuário local e imprime o SEED_USER_ID
 # cole o SEED_USER_ID em .env.local
-npm run dev
 ```
 
 ## Scripts
