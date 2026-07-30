@@ -22,8 +22,15 @@ const projectStyles: Record<ProjectStatus, string> = {
   pausado: "border-caution/40 text-caution bg-caution/10",
   tge_anunciado: "border-caution/40 text-caution bg-caution/10",
   distribuido: "border-primary/40 text-primary bg-primary/10",
-  descartado: "border-border text-muted-foreground line-through",
+  descartado: "border-border text-muted-foreground",
 };
+
+/**
+ * O risco pertence ao nome do projeto, não ao rótulo do status — riscar a
+ * palavra "Descartado" apenas tornava o próprio rótulo difícil de ler.
+ */
+export const nomeRiscado = (status: ProjectStatus) =>
+  status === "descartado" ? "line-through decoration-muted-foreground/60" : "";
 
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
   return (

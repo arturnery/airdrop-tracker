@@ -29,6 +29,7 @@ import {
   AccountStatusBadge,
   CategoryBadge,
   categoryDescriptions,
+  nomeRiscado,
   PriorityMeter,
   ProjectStatusBadge,
   RecurrenceLabel,
@@ -120,11 +121,14 @@ export function ProjetoView({ slug }: { slug: string }) {
           Projetos
         </Link>
         <span className="mx-2" aria-hidden="true">/</span>
-        <span className="text-foreground">{projeto.nome}</span>
+        <span className={cn("text-foreground", nomeRiscado(projeto.status))}>
+          {projeto.nome}
+        </span>
       </nav>
 
       <PageHeader
         title={projeto.nome}
+        titleClassName={nomeRiscado(projeto.status)}
         description={
           [
             projeto.chain,

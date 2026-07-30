@@ -15,8 +15,13 @@ import {
 import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
-import { ProjectStatusBadge, UrgencyBadge } from "@/components/status-badge";
+import {
+  nomeRiscado,
+  ProjectStatusBadge,
+  UrgencyBadge,
+} from "@/components/status-badge";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 import {
   selectAtividade,
   selectCapitalPorProjeto,
@@ -219,7 +224,10 @@ export function DashboardView() {
                     <th scope="row" className="px-4 py-3 text-left font-normal">
                       <Link
                         href={`/projetos/${projeto.slug}`}
-                        className="focus-visible:ring-ring rounded-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                        className={cn(
+                          "focus-visible:ring-ring rounded-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none",
+                          nomeRiscado(projeto.status),
+                        )}
                       >
                         {projeto.nome}
                       </Link>

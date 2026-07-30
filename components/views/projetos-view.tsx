@@ -13,11 +13,13 @@ import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import {
   CategoryBadge,
+  nomeRiscado,
   PriorityMeter,
   ProjectStatusBadge,
 } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { formatDateShort, relativeLabel } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 import {
   contarDependenciasProjeto,
   descreverImpacto,
@@ -56,7 +58,10 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
           <h3 className="text-base font-medium">
             <Link
               href={`/projetos/${projeto.slug}`}
-              className="after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none"
+              className={cn(
+                "after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none",
+                nomeRiscado(projeto.status),
+              )}
             >
               {projeto.nome}
             </Link>

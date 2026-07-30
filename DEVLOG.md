@@ -405,6 +405,16 @@ saldo, agora se explica **o que mudou** em relação ao anterior: "rendimento do
 A nota aparece no histórico do projeto e no feed de atividade, substituindo o rótulo
 genérico "Saldo atualizado" quando existe. Um saldo que caiu passa a dizer por quê.
 
+### Correção: o risco estava no lugar errado
+
+Projeto com status `descartado` aparecia com a **palavra "Descartado" riscada** dentro do
+badge, em vez do nome do projeto. O `line-through` tinha ido parar no estilo do rótulo —
+o que, além de não comunicar nada, deixava o próprio rótulo difícil de ler.
+
+O risco pertence ao **nome**: é ele que representa a coisa abandonada. Extraído para um
+helper `nomeRiscado(status)` aplicado no card, na tabela do dashboard, no cabeçalho e na
+trilha do projeto, com teste travando o comportamento.
+
 ---
 
 ## Estado atual
@@ -414,7 +424,7 @@ genérico "Saldo atualizado" quando existe. Um saldo que caiu passa a dizer por 
 | Telas | Visão geral, tarefas, projetos, aba do projeto, contas, histórico, importar |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | CRUD | Completo em modo local (localStorage), com edição e exclusão em cascata |
-| Testes | 122, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
+| Testes | 125, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
 | Backend | Não iniciado — fixtures atrás da interface definitiva |
 
