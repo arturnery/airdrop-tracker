@@ -69,8 +69,10 @@ Duas regras de fronteira:
 
 ## Documentação
 
-[`ARCHITECTURE.md`](ARCHITECTURE.md) traz o modelo de dados completo, as fórmulas
-financeiras, o motor de recorrência, o fluxo de importação e as decisões registradas.
+| Documento | O que traz |
+|---|---|
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Como o sistema é: modelo de dados, fórmulas financeiras, motor de recorrência, fluxo de importação, autorização e decisões registradas |
+| [`DEVLOG.md`](DEVLOG.md) | Como se chegou até aqui: trade-offs considerados, alternativas descartadas e os bugs encontrados no caminho |
 
 ## Estado
 
