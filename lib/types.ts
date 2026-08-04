@@ -296,3 +296,27 @@ export type PointsSnapshotRow = {
   variacao: Points | null;
   nota: string | null;
 };
+
+// -------------------------------------------------------------------- membros
+
+export type MemberStatus = "pendente" | "aprovado" | "recusado";
+
+export type MemberRow = {
+  id: string;
+  nome: string;
+  email: string;
+  status: MemberStatus;
+  cadastradoEm: IsoDate;
+  revisadoEm: IsoDate | null;
+  nota: string | null;
+  /** Dias desde o cadastro — quem espera há mais tempo aparece primeiro. */
+  diasEsperando: number;
+};
+
+export type MembersSummary = {
+  pendentes: number;
+  aprovados: number;
+  recusados: number;
+  /** Maior espera entre os pendentes, para dimensionar o atraso. */
+  esperaMaisLonga: number | null;
+};

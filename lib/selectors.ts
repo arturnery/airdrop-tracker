@@ -26,6 +26,8 @@ import type {
   CapitalPorProjeto,
   DashboardSummary,
   GoalRow,
+  MemberRow,
+  MembersSummary,
   ProjectAccountRow,
   ProjectDetail,
   PointsAccountRow,
@@ -797,4 +799,42 @@ export function selectTokensSemCotacao(ds: Dataset): string[] {
       .map((t) => t.tokenSymbol!.toUpperCase()),
   );
   return [...usados].filter((s) => !comPreco.has(s));
+}
+
+// -------------------------------------------------------------------- membros
+
+/**
+ * Solicitações de acesso, das que esperam há mais tempo para as mais recentes.
+ *
+ * A ordem é deliberada: quem se cadastrou primeiro está esperando há mais e
+ * some do topo se a lista for por data decrescente.
+ */
+export function selectMembros(ds: Dataset, hoje: string): MemberRow[] {
+  return ds.members
+    .map((membro) => ({
+      id: membro.id,
+      nome: membro.name,
+      email: membro.email,
+      status: membro.status,
+      cadastradoEm: membro.registeredAt,
+      revisadoEm: membro.reviewedAt,
+      nota: membro.note,
+      diasEsperando: Math.abs(daysBetween(hoje, membro.registeredAt)),
+    }))
+    .sort((a, b) => a.cadastradoEm.localeCompare(b.cadastradoEm));
+}
+
+export function selectResumoMembros(ds: Dataset, hoje: string): MembersSummary {
+  const membros = selectMembros(ds, hoje);
+  const pendentes = membros.filter((m) => m.status === "pendente");
+
+  return {
+    pendentes: pendentes.length,
+    aprovados: membros.filter((m) => m.status === "aprovado").length,
+    recusados: membros.filter((m) => m.status === "recusado").length,
+    esperaMaisLonga:
+      pendentes.length > 0
+        ? Math.max(...pendentes.map((m) => m.diasEsperando))
+        : null,
+  };
 }

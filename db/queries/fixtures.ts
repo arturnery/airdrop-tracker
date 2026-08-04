@@ -440,6 +440,7 @@ export function datasetInicial() {
     taskOccurrences: [...rawTaskOccurrences],
     goals: [...rawGoals],
     tokenPrices: [...rawTokenPrices],
+    members: [...rawMembers],
     pointsSnapshots: [...rawPointsSnapshots],
     airdropClaims: [...rawAirdropClaims],
   };
@@ -477,4 +478,35 @@ export const rawPointsSnapshots: RawPointsSnapshot[] = [
   { id: "pts-10", projectId: "prj-prisma", accountId: "acc-chrome", takenAt: "2026-07-26", points: "4850.5000", note: "Bônus de maker" },
   // Nebula — programa recém-iniciado, só uma medição
   { id: "pts-11", projectId: "prj-nebula", accountId: "acc-mbox", takenAt: "2026-07-28", points: "500.0000", note: "Pontos de entrada" },
+];
+
+/**
+ * Solicitações de acesso.
+ *
+ * O controle escolhido é cadastro livre com aprovação manual: qualquer pessoa
+ * se cadastra e fica em `pendente` até ser liberada. Ver ARCHITECTURE.md §9.4.
+ *
+ * Dados de demonstração.
+ */
+export type RawMember = {
+  id: string;
+  name: string;
+  email: string;
+  status: "pendente" | "aprovado" | "recusado";
+  /** Quando a pessoa se cadastrou. */
+  registeredAt: string;
+  /** Quando foi aprovada ou recusada; null enquanto pendente. */
+  reviewedAt: string | null;
+  /** Observação de quem revisou — por que recusou, de onde veio, etc. */
+  note: string | null;
+};
+
+export const rawMembers: RawMember[] = [
+  { id: "mem-01", name: "Camila Duarte", email: "camila.duarte@exemplo.com", status: "pendente", registeredAt: "2026-07-27", reviewedAt: null, note: null },
+  { id: "mem-02", name: "Rafael Lima", email: "rafael.lima@exemplo.com", status: "pendente", registeredAt: "2026-07-26", reviewedAt: null, note: null },
+  { id: "mem-03", name: "Ana Beatriz", email: "ana.beatriz@exemplo.com", status: "pendente", registeredAt: "2026-07-25", reviewedAt: null, note: null },
+  { id: "mem-04", name: "Diego Ramos", email: "diego.ramos@exemplo.com", status: "aprovado", registeredAt: "2026-07-10", reviewedAt: "2026-07-11", note: null },
+  { id: "mem-05", name: "Juliana Alves", email: "juliana.alves@exemplo.com", status: "aprovado", registeredAt: "2026-07-05", reviewedAt: "2026-07-05", note: null },
+  { id: "mem-06", name: "Marcos Vinícius", email: "marcos.v@exemplo.com", status: "aprovado", registeredAt: "2026-06-20", reviewedAt: "2026-06-21", note: null },
+  { id: "mem-07", name: "Teste Teste", email: "teste@teste.com", status: "recusado", registeredAt: "2026-07-22", reviewedAt: "2026-07-22", note: "Sem assinatura ativa" },
 ];

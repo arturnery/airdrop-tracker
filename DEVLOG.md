@@ -559,6 +559,27 @@ Estruturalmente, as rotas foram separadas em dois grupos: `app/(app)` com barra 
 `app/(auth)` sem — quem ainda não entrou não tem para onde navegar, e oferecer menu daria
 caminhos que terminam em erro de permissão.
 
+### Área de administração
+
+A tela de aprovação (`/membros`) fechou o fluxo. Três decisões de produto nela:
+
+**Ordem por quem espera há mais tempo**, não por cadastro mais recente. Numa fila de
+aprovação, o mais antigo é o mais urgente — e é justamente ele que some do topo se a
+ordenação for decrescente.
+
+**Recusar pede um motivo**, guardado só para o administrador. Meses depois, "por que
+recusei essa pessoa?" é uma pergunta real, e sem a nota a resposta se perde.
+
+**Recusa não apaga.** O registro sai da fila mas fica no histórico: quem foi recusado não
+volta como cadastro novo, e dá para reconsiderar com o motivo à vista.
+
+Revogar acesso e reconsiderar uma recusa acabaram sendo a **mesma operação** — devolver
+para a fila limpando a decisão anterior. Uma função, dois botões com rótulos diferentes.
+
+A tela também obrigou a registrar um conceito que faltava na arquitetura: **papel**.
+Alguém precisa aprovar, e essa pessoa vê e-mails que os demais não veem. `users.role` e a
+verificação no servidor entraram no documento (§9.3) antes de existirem no código.
+
 ---
 
 ## Estado atual
@@ -567,10 +588,11 @@ caminhos que terminam em erro de permissão.
 |---|---|
 | Telas | Visão geral, tarefas, projetos, aba do projeto, contas, cotações, histórico, importar |
 | Entrada | Login, cadastro, recuperação e espera por aprovação — desenhadas, sem verificar credencial |
+| Administração | Fila de aprovação, membros com acesso e histórico de recusas |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo em modo local (localStorage), com edição e exclusão em cascata |
-| Testes | 138, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
+| Testes | 148, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
 | Backend | Não iniciado — fixtures atrás da interface definitiva |
 

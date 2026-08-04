@@ -475,3 +475,41 @@ export function excluirCotacao(ds: Dataset, symbol: string): Dataset {
     tokenPrices: ds.tokenPrices.filter((p) => p.symbol.toUpperCase() !== simbolo),
   };
 }
+
+// ------------------------------------------------------------------ membros
+
+/**
+ * Revisão de uma solicitação de acesso.
+ *
+ * Aprovar e recusar são a mesma operação com estado diferente, e nenhuma delas
+ * apaga o registro: manter o histórico permite reconsiderar depois e evita que
+ * a pessoa recusada apareça de novo como cadastro novo.
+ */
+export function revisarMembro(
+  ds: Dataset,
+  id: string,
+  dados: { status: "aprovado" | "recusado"; note: string | null; revisadoEm: string },
+): Dataset {
+  return {
+    ...ds,
+    members: ds.members.map((m) =>
+      m.id === id
+        ? { ...m, status: dados.status, note: dados.note, reviewedAt: dados.revisadoEm }
+        : m,
+    ),
+  };
+}
+
+/** Devolve um membro revisado para a fila, desfazendo a decisão. */
+export function reabrirMembro(ds: Dataset, id: string): Dataset {
+  return {
+    ...ds,
+    members: ds.members.map((m) =>
+      m.id === id ? { ...m, status: "pendente" as const, reviewedAt: null, note: null } : m,
+    ),
+  };
+}
+
+export function excluirMembro(ds: Dataset, id: string): Dataset {
+  return { ...ds, members: ds.members.filter((m) => m.id !== id) };
+}

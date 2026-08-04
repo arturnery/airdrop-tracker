@@ -3,7 +3,7 @@
 Documento de arquitetura do sistema. Escrito **antes** da implementação, para servir como
 referência de decisões e como material de portfólio.
 
-**Revisão 6** — modelo de livro-razão e aportes em token.
+**Revisão 7** — papel de administrador e fila de aprovação (§9.4).
 
 ---
 
@@ -609,7 +609,42 @@ análise de cluster para desqualificar farming multi-conta; publicar os endereç
 entrega esse agrupamento pronto. Continua sendo escolha do usuário, mas exige um ato
 explícito.
 
-### 9.3. Onde a autorização é aplicada
+### 9.3. Papel e fila de aprovação
+
+O controle de acesso escolhido é **cadastro livre com aprovação manual**: qualquer pessoa
+cria conta e fica em `pendente` até ser liberada. Isso introduz duas coisas que o modelo
+não tinha.
+
+**Papel.** Alguém precisa aprovar, e essa pessoa vê dados que os demais não veem — a lista
+de quem pediu acesso, com e-mails. `users.role` (`admin` | `membro`) resolve, e a rota de
+administração exige `admin` **no servidor**: esconder o link do menu não é controle, é
+decoração.
+
+```
+users.role   enum default 'membro'   -- admin | membro
+```
+
+#### `members` — solicitações de acesso
+Na fase de backend isto se funde a `users`: a solicitação vira o próprio usuário com
+`status`. Enquanto não há login, existe como coleção separada para desenhar a tela.
+```
+id            uuid PK
+name          text
+email         text unique
+status        enum         -- pendente | aprovado | recusado
+registered_at date
+reviewed_at   date NULL
+note          text NULL    -- por que foi recusado; visível só para o admin
+```
+
+**Recusa não apaga o registro.** Some da fila mas fica no histórico, por dois motivos:
+quem foi recusado não reaparece como cadastro novo, e a decisão pode ser revista com o
+motivo à vista.
+
+**Revogar acesso e reconsiderar recusa são a mesma operação**: devolver para `pendente`,
+limpando a decisão anterior. Uma função só, dois botões.
+
+### 9.4. Onde a autorização é aplicada
 
 ```
 Rota /u/[handle]
@@ -650,7 +685,8 @@ de conexão no Neon sem substituir os testes.
 | **4** | `tasks` + `task_occurrences` + motor de recorrência + painel "O que fazer hoje" | Deixa de ser só registro |
 | **5** | `goals` + `goal_entries` + `airdrop_claims` + P&L completo e gráficos | Ciclo fechado |
 | **6** | Auth.js, cadastro, isolamento por usuário + testes de vazamento | Cada um com seu perfil |
-| **7** | Perfis compartilhados: `/u/[handle]`, `profile_settings`, modo leitura | Comunidade acompanha |
+| **7** | Auth.js, fila de aprovação, papel de admin | Comunidade entra |
+| **8** | Perfis compartilhados: `/u/[handle]`, `profile_settings`, modo leitura | Comunidade acompanha |
 
 A importação virou fase 2 (logo após a fundação) e não uma etapa final: é o que permite
 parar de manter as duas coisas em paralelo. Fases 1+2 são o MVP real.

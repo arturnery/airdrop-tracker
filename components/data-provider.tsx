@@ -135,6 +135,12 @@ type Acoes = {
     updatedAt: string;
   }) => void;
   excluirCotacao: (symbol: string) => void;
+  revisarMembro: (
+    id: string,
+    dados: { status: "aprovado" | "recusado"; note: string | null; revisadoEm: string },
+  ) => void;
+  reabrirMembro: (id: string) => void;
+  excluirMembro: (id: string) => void;
   atualizarVinculo: (
     projectId: string,
     accountId: string,
@@ -222,6 +228,9 @@ export function DataProvider({
       registrarRecebimento: (d) => atualizar((a) => M.registrarRecebimento(a, d)),
       definirCotacao: (d) => atualizar((a) => M.definirCotacao(a, d)),
       excluirCotacao: (sym) => atualizar((a) => M.excluirCotacao(a, sym)),
+      revisarMembro: (id, d) => atualizar((a) => M.revisarMembro(a, id, d)),
+      reabrirMembro: (id) => atualizar((a) => M.reabrirMembro(a, id)),
+      excluirMembro: (id) => atualizar((a) => M.excluirMembro(a, id)),
       registrarPontos: (d) => atualizar((a) => M.registrarPontos(a, d)),
       atualizarPontos: (id, d) => atualizar((a) => M.atualizarPontos(a, id, d)),
       excluirPontos: (id) => atualizar((a) => M.excluirPontos(a, id)),

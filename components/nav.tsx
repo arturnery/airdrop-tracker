@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   CircleDollarSign,
   History,
+  UserCheck,
   LayoutDashboard,
   Layers,
   ListChecks,
@@ -13,7 +14,7 @@ import {
 } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
-import { selectPendingTasks } from "@/lib/selectors";
+import { selectPendingTasks, selectResumoMembros } from "@/lib/selectors";
 import { cn } from "@/lib/utils";
 
 const itens = [
@@ -24,6 +25,7 @@ const itens = [
   { href: "/cotacoes", label: "Cotações", icon: CircleDollarSign },
   { href: "/historico", label: "Histórico", icon: History },
   { href: "/importar", label: "Importar", icon: Upload },
+  { href: "/membros", label: "Membros", icon: UserCheck },
 ] as const;
 
 export function Nav() {
@@ -33,6 +35,10 @@ export function Nav() {
   const urgentes = selectPendingTasks(dataset, hoje).filter(
     (t) => t.urgencia === "atrasada" || t.urgencia === "hoje",
   ).length;
+  const membrosPendentes = selectResumoMembros(dataset, hoje).pendentes;
+
+  const contagem = (href: string) =>
+    href === "/tarefas" ? urgentes : href === "/membros" ? membrosPendentes : 0;
 
   const estaAtivo = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -58,9 +64,9 @@ export function Nav() {
               >
                 <Icon className="size-4 shrink-0" aria-hidden="true" />
                 <span className="hidden sm:inline">{item.label}</span>
-                {item.href === "/tarefas" && urgentes > 0 ? (
+                {contagem(item.href) > 0 ? (
                   <span className="bg-caution/15 text-caution tabular ml-auto hidden rounded px-1.5 py-0.5 text-xs font-medium lg:inline">
-                    {urgentes}
+                    {contagem(item.href)}
                   </span>
                 ) : null}
               </Link>
