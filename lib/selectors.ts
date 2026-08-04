@@ -2,11 +2,12 @@ import type { Dataset } from "./dataset";
 import { daysBetween, urgencyOf } from "./dates";
 import {
   exposureForPair,
-  latestSnapshotByPair,
   netFlowByPair,
   pairKey,
+  priceMap,
   sumOfType,
   summarizeFinancials,
+  tokenPositionsByPair,
   type PairExposure,
 } from "./finance";
 import { addCents, cents, fromDbNumeric, percentOf, subtractCents, ZERO, type Cents } from "./money";
@@ -33,6 +34,8 @@ import type {
   ProjectSummary,
   TaskOccurrenceRow,
   TipoAtividade,
+  TokenPositionRow,
+  TokenPriceRow2,
   TransactionRow,
 } from "./types";
 
@@ -47,8 +50,9 @@ import type {
 
 function contexto(ds: Dataset) {
   return {
-    snaps: latestSnapshotByPair(ds.balanceSnapshots),
     net: netFlowByPair(ds.transactions),
+    pos: tokenPositionsByPair(ds.transactions),
+    precos: priceMap(ds.tokenPrices),
   };
 }
 
@@ -57,15 +61,20 @@ function exposicaoDoPar(
   projectId: string,
   accountId: string,
 ): PairExposure {
-  const { snaps, net } = contexto(ds);
-  return exposureForPair(pairKey(projectId, accountId), snaps, net);
+  const { net, pos, precos } = contexto(ds);
+  return exposureForPair(pairKey(projectId, accountId), net, pos, precos);
 }
 
 function exposicaoAgrupada(ds: Dataset, por: "project" | "account"): Map<string, Cents> {
-  const { snaps, net } = contexto(ds);
+  const { net, pos, precos } = contexto(ds);
   const result = new Map<string, Cents>();
   for (const par of ds.projectAccounts) {
-    const exposure = exposureForPair(pairKey(par.projectId, par.accountId), snaps, net);
+    const exposure = exposureForPair(
+      pairKey(par.projectId, par.accountId),
+      net,
+      pos,
+      precos,
+    );
     const chave = por === "project" ? par.projectId : par.accountId;
     result.set(chave, addCents(result.get(chave) ?? ZERO, exposure.value));
   }
@@ -79,10 +88,7 @@ function ultimaAtividade(
   ds: Dataset,
   filtro: (row: { projectId: string; accountId: string }) => boolean,
 ): string | null {
-  const datas = [
-    ...ds.transactions.filter(filtro).map((t) => t.occurredAt),
-    ...ds.balanceSnapshots.filter(filtro).map((s) => s.takenAt),
-  ];
+  const datas = ds.transactions.filter(filtro).map((t) => t.occurredAt);
   if (datas.length === 0) return null;
   return datas.reduce((maior, atual) => (atual > maior ? atual : maior));
 }
@@ -99,7 +105,7 @@ function ocorrenciasPendentes(ds: Dataset) {
 export function selectDashboardSummary(ds: Dataset, hoje: string): DashboardSummary {
   const financeiro = summarizeFinancials({
     movements: ds.transactions,
-    snapshots: ds.balanceSnapshots,
+    prices: ds.tokenPrices,
     pairs: ds.projectAccounts,
     airdropsUsd: ds.airdropClaims.map((c) => c.valueUsd),
   });
@@ -189,12 +195,11 @@ export function selectProjectBySlug(
 
   const pares = ds.projectAccounts.filter((p) => p.projectId === projeto.id);
   const movimentos = ds.transactions.filter((t) => t.projectId === projeto.id);
-  const snaps = ds.balanceSnapshots.filter((s) => s.projectId === projeto.id);
   const claims = ds.airdropClaims.filter((c) => c.projectId === projeto.id);
 
   const financeiro = summarizeFinancials({
     movements: movimentos,
-    snapshots: snaps,
+    prices: ds.tokenPrices,
     pairs: pares,
     airdropsUsd: claims.map((c) => c.valueUsd),
   });
@@ -215,9 +220,8 @@ export function selectProjectBySlug(
         label: labelDaConta(ds, par.accountId),
         status: par.status,
         aportado,
-        saldo: exposure.confirmed ? exposure.value : null,
-        saldoEm: exposure.takenAt,
-        resultado: exposure.confirmed ? subtractCents(exposure.value, aportado) : null,
+        saldo: exposure.value,
+        resultado: subtractCents(exposure.value, aportado),
         tarefasPendentes: pendentes.filter((o) => o.accountId === par.accountId).length,
         ultimaAtividade: ultimaAtividade(
           ds,
@@ -227,8 +231,8 @@ export function selectProjectBySlug(
     })
     .sort((a, b) => b.aportado - a.aportado);
 
-  const historico: TransactionRow[] = [
-    ...movimentos.map((t) => ({
+  const historico: TransactionRow[] = movimentos
+    .map((t) => ({
       id: t.id,
       data: t.occurredAt,
       projetoSlug: projeto.slug,
@@ -237,20 +241,10 @@ export function selectProjectBySlug(
       tipo: t.type,
       valor: fromDbNumeric(t.amountUsd),
       descricao: t.description,
-    })),
-    ...snaps.map((s) => ({
-      id: s.id,
-      data: s.takenAt,
-      projetoSlug: projeto.slug,
-      projetoNome: projeto.name,
-      contaLabel: labelDaConta(ds, s.accountId),
-      tipo: "other" as const,
-      valor: fromDbNumeric(s.balanceUsd),
-      // A nota explica a variação; sem ela, o rótulo genérico.
-      descricao: s.note ?? "Saldo atualizado",
-      isSnapshot: true,
-    })),
-  ].sort((a, b) => b.data.localeCompare(a.data));
+      tokenSymbol: t.tokenSymbol,
+      tokenAmount: t.tokenAmount,
+    }))
+    .sort((a, b) => b.data.localeCompare(a.data));
 
   const metas: GoalRow[] = ds.goals
     .filter((g) => g.projectId === projeto.id)
@@ -294,6 +288,44 @@ export function selectProjectBySlug(
     valor: fromDbNumeric(c.valueUsd),
   }));
 
+  // Posições em token do projeto, revalorizadas pela cotação informada.
+  const precos = priceMap(ds.tokenPrices);
+  const posicoesPorSimbolo = new Map<string, { qtd: number; investido: Cents }>();
+  for (const par of pares) {
+    const doPar = tokenPositionsByPair(movimentos).get(
+      pairKey(projeto.id, par.accountId),
+    );
+    if (!doPar) continue;
+    for (const posicao of doPar.values()) {
+      const atual = posicoesPorSimbolo.get(posicao.symbol) ?? {
+        qtd: 0,
+        investido: ZERO,
+      };
+      posicoesPorSimbolo.set(posicao.symbol, {
+        qtd: atual.qtd + posicao.amount,
+        investido: addCents(atual.investido, posicao.investedUsd),
+      });
+    }
+  }
+
+  const posicoesToken: TokenPositionRow[] = [...posicoesPorSimbolo.entries()].map(
+    ([symbol, dados]) => {
+      const preco = precos.get(symbol) ?? null;
+      const valorAtual =
+        preco === null ? dados.investido : cents(Math.round(dados.qtd * preco));
+      return {
+        symbol,
+        quantidade: dados.qtd,
+        investidoUsd: dados.investido,
+        valorAtualUsd: valorAtual,
+        precoUsd: preco,
+        valorizacao: preco === null ? null : subtractCents(valorAtual, dados.investido),
+        valorizacaoPercent:
+          preco === null ? null : percentOf(subtractCents(valorAtual, dados.investido), dados.investido),
+      } satisfies TokenPositionRow;
+    },
+  );
+
   return {
     id: projeto.id,
     slug: projeto.slug,
@@ -319,6 +351,7 @@ export function selectProjectBySlug(
       docs: projeto.docsUrl,
     },
     notas: projeto.notes,
+    posicoesToken,
     contasDetalhe,
     historico,
     metas,
@@ -432,10 +465,10 @@ export function contarDependenciasProjeto(ds: Dataset, projectId: string) {
   return {
     contas: ds.projectAccounts.filter((p) => p.projectId === projectId).length,
     lancamentos: ds.transactions.filter((t) => t.projectId === projectId).length,
-    saldos: ds.balanceSnapshots.filter((s) => s.projectId === projectId).length,
     tarefas: tarefas.length,
     ocorrencias: ds.taskOccurrences.filter((o) => idsTarefas.has(o.taskId)).length,
     metas: ds.goals.filter((g) => g.projectId === projectId).length,
+    medicoes: ds.pointsSnapshots.filter((p) => p.projectId === projectId).length,
     recebimentos: ds.airdropClaims.filter((c) => c.projectId === projectId).length,
   };
 }
@@ -444,8 +477,8 @@ export function contarDependenciasConta(ds: Dataset, accountId: string) {
   return {
     projetos: ds.projectAccounts.filter((p) => p.accountId === accountId).length,
     lancamentos: ds.transactions.filter((t) => t.accountId === accountId).length,
-    saldos: ds.balanceSnapshots.filter((s) => s.accountId === accountId).length,
     ocorrencias: ds.taskOccurrences.filter((o) => o.accountId === accountId).length,
+    medicoes: ds.pointsSnapshots.filter((p) => p.accountId === accountId).length,
     recebimentos: ds.airdropClaims.filter((c) => c.accountId === accountId).length,
   };
 }
@@ -459,19 +492,19 @@ export function contarDependenciasVinculo(
     lancamentos: ds.transactions.filter(
       (t) => t.projectId === projectId && t.accountId === accountId,
     ).length,
-    saldos: ds.balanceSnapshots.filter(
-      (s) => s.projectId === projectId && s.accountId === accountId,
+    medicoes: ds.pointsSnapshots.filter(
+      (p) => p.projectId === projectId && p.accountId === accountId,
     ).length,
   };
 }
 
-/** "3 lançamentos, 1 saldo e 2 tarefas" — some itens zerados. */
+/** "3 lançamentos e 2 tarefas" — some itens zerados. */
 export function descreverImpacto(contagem: Record<string, number>): string | null {
   const rotulos: Record<string, [string, string]> = {
     contas: ["vínculo de conta", "vínculos de conta"],
     projetos: ["vínculo de projeto", "vínculos de projeto"],
     lancamentos: ["lançamento", "lançamentos"],
-    saldos: ["saldo registrado", "saldos registrados"],
+    medicoes: ["medição de pontos", "medições de pontos"],
     tarefas: ["tarefa", "tarefas"],
     ocorrencias: ["ocorrência de tarefa", "ocorrências de tarefa"],
     metas: ["meta", "metas"],
@@ -496,6 +529,7 @@ const rotuloPorTipo: Record<string, { titulo: string; tipo: TipoAtividade }> = {
   deposit: { titulo: "Depósito", tipo: "deposito" },
   withdrawal: { titulo: "Retirada", tipo: "retirada" },
   trade_pnl: { titulo: "Resultado de trade", tipo: "trade" },
+  yield: { titulo: "Rendimento", tipo: "rendimento" },
   fee_gas: { titulo: "Taxa / gas", tipo: "taxa" },
   volume_traded: { titulo: "Volume operado", tipo: "volume" },
   other: { titulo: "Lançamento", tipo: "deposito" },
@@ -529,24 +563,11 @@ export function selectAtividade(ds: Dataset, limite?: number): AtividadeRow[] {
       projetoNome: projeto.name,
       contaLabel: labelDaConta(ds, t.accountId),
       titulo: rotulo.titulo,
-      detalhe: t.description,
+      detalhe:
+        t.tokenSymbol && t.tokenAmount
+          ? `${t.tokenAmount} ${t.tokenSymbol}${t.description ? ` · ${t.description}` : ""}`
+          : t.description,
       valor: fromDbNumeric(t.amountUsd),
-    });
-  }
-
-  for (const s of ds.balanceSnapshots) {
-    const projeto = nomeProjeto(s.projectId);
-    if (!projeto) continue;
-    linhas.push({
-      id: `snp-${s.id}`,
-      tipo: "saldo",
-      data: s.takenAt,
-      projetoSlug: projeto.slug,
-      projetoNome: projeto.name,
-      contaLabel: labelDaConta(ds, s.accountId),
-      titulo: "Saldo atualizado",
-      detalhe: s.note,
-      valor: fromDbNumeric(s.balanceUsd),
     });
   }
 
@@ -724,4 +745,53 @@ export function selectHistoricoDePontos(
         nota: registro.note,
       } satisfies PointsSnapshotRow;
     });
+}
+
+// ----------------------------------------------------------------- cotações
+
+/**
+ * Cotações informadas, com quantos projetos usam cada token.
+ *
+ * Inclui também os tokens que aparecem em lançamentos mas ainda não têm preço,
+ * com `precoUsd: null` — é o que permite à interface pedir a atualização em vez
+ * de silenciosamente subestimar a posição.
+ */
+export function selectCotacoes(ds: Dataset): TokenPriceRow2[] {
+  const usados = new Map<string, Set<string>>();
+  for (const t of ds.transactions) {
+    if (!t.tokenSymbol) continue;
+    const simbolo = t.tokenSymbol.toUpperCase();
+    const projetos = usados.get(simbolo) ?? new Set<string>();
+    projetos.add(t.projectId);
+    usados.set(simbolo, projetos);
+  }
+
+  const comPreco = ds.tokenPrices.map((p) => ({
+    symbol: p.symbol.toUpperCase(),
+    precoUsd: fromDbNumeric(p.priceUsd),
+    atualizadoEm: p.updatedAt,
+    usadoEm: usados.get(p.symbol.toUpperCase())?.size ?? 0,
+  }));
+
+  const semPreco = [...usados.entries()]
+    .filter(([simbolo]) => !comPreco.some((p) => p.symbol === simbolo))
+    .map(([simbolo, projetos]) => ({
+      symbol: simbolo,
+      precoUsd: ZERO,
+      atualizadoEm: "",
+      usadoEm: projetos.size,
+    }));
+
+  return [...comPreco, ...semPreco].sort((a, b) => b.usadoEm - a.usadoEm);
+}
+
+/** Tokens que aparecem em lançamentos e ainda não têm cotação informada. */
+export function selectTokensSemCotacao(ds: Dataset): string[] {
+  const comPreco = new Set(ds.tokenPrices.map((p) => p.symbol.toUpperCase()));
+  const usados = new Set(
+    ds.transactions
+      .filter((t) => t.tokenSymbol)
+      .map((t) => t.tokenSymbol!.toUpperCase()),
+  );
+  return [...usados].filter((s) => !comPreco.has(s));
 }

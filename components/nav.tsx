@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CircleDollarSign,
   History,
   LayoutDashboard,
   Layers,
@@ -20,6 +21,7 @@ const itens = [
   { href: "/tarefas", label: "Tarefas", icon: ListChecks },
   { href: "/projetos", label: "Projetos", icon: Layers },
   { href: "/contas", label: "Contas", icon: Wallet },
+  { href: "/cotacoes", label: "Cotações", icon: CircleDollarSign },
   { href: "/historico", label: "Histórico", icon: History },
   { href: "/importar", label: "Importar", icon: Upload },
 ] as const;

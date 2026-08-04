@@ -62,14 +62,9 @@ type Acoes = {
     occurredAt: string;
     type: Dataset["transactions"][number]["type"];
     amount: Cents;
+    tokenSymbol: string | null;
+    tokenAmount: string | null;
     description: string | null;
-  }) => void;
-  registrarSaldo: (dados: {
-    projectId: string;
-    accountId: string;
-    takenAt: string;
-    balance: Cents;
-    note: string | null;
   }) => void;
   criarTarefa: (dados: {
     projectId: string;
@@ -125,12 +120,21 @@ type Acoes = {
   ) => void;
   atualizarLancamento: (
     id: string,
-    dados: { occurredAt: string; type: Dataset["transactions"][number]["type"]; amount: Cents; description: string | null },
+    dados: {
+      occurredAt: string;
+      type: Dataset["transactions"][number]["type"];
+      amount: Cents;
+      tokenSymbol: string | null;
+      tokenAmount: string | null;
+      description: string | null;
+    },
   ) => void;
-  atualizarSaldo: (
-    id: string,
-    dados: { takenAt: string; balance: Cents; note: string | null },
-  ) => void;
+  definirCotacao: (dados: {
+    symbol: string;
+    priceUsd: Cents;
+    updatedAt: string;
+  }) => void;
+  excluirCotacao: (symbol: string) => void;
   atualizarVinculo: (
     projectId: string,
     accountId: string,
@@ -141,7 +145,6 @@ type Acoes = {
   excluirProjeto: (id: string) => void;
   excluirConta: (id: string) => void;
   excluirLancamento: (id: string) => void;
-  excluirSaldo: (id: string) => void;
   excluirTarefa: (taskId: string) => void;
   excluirOcorrencia: (id: string) => void;
   excluirMeta: (id: string) => void;
@@ -213,11 +216,12 @@ export function DataProvider({
       },
       vincularConta: (d) => atualizar((a) => M.vincularConta(a, d)),
       criarLancamento: (d) => atualizar((a) => M.criarLancamento(a, d)),
-      registrarSaldo: (d) => atualizar((a) => M.registrarSaldo(a, d)),
       criarTarefa: (d) => atualizar((a) => M.criarTarefa(a, d, hoje)),
       alternarTarefa: (id) => atualizar((a) => M.alternarOcorrencia(a, id)),
       criarMeta: (d) => atualizar((a) => M.criarMeta(a, d)),
       registrarRecebimento: (d) => atualizar((a) => M.registrarRecebimento(a, d)),
+      definirCotacao: (d) => atualizar((a) => M.definirCotacao(a, d)),
+      excluirCotacao: (sym) => atualizar((a) => M.excluirCotacao(a, sym)),
       registrarPontos: (d) => atualizar((a) => M.registrarPontos(a, d)),
       atualizarPontos: (id, d) => atualizar((a) => M.atualizarPontos(a, id, d)),
       excluirPontos: (id) => atualizar((a) => M.excluirPontos(a, id)),
@@ -226,13 +230,11 @@ export function DataProvider({
       atualizarConta: (id, d) => atualizar((a) => M.atualizarConta(a, id, d)),
       atualizarTarefa: (id, d) => atualizar((a) => M.atualizarTarefa(a, id, d)),
       atualizarLancamento: (id, d) => atualizar((a) => M.atualizarLancamento(a, id, d)),
-      atualizarSaldo: (id, d) => atualizar((a) => M.atualizarSaldo(a, id, d)),
       atualizarVinculo: (p, c, d) => atualizar((a) => M.atualizarVinculo(a, p, c, d)),
 
       excluirProjeto: (id) => atualizar((a) => M.excluirProjeto(a, id)),
       excluirConta: (id) => atualizar((a) => M.excluirConta(a, id)),
       excluirLancamento: (id) => atualizar((a) => M.excluirLancamento(a, id)),
-      excluirSaldo: (id) => atualizar((a) => M.excluirSaldo(a, id)),
       excluirTarefa: (id) => atualizar((a) => M.excluirTarefa(a, id)),
       excluirOcorrencia: (id) => atualizar((a) => M.excluirOcorrencia(a, id)),
       excluirMeta: (id) => atualizar((a) => M.excluirMeta(a, id)),

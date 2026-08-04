@@ -5,10 +5,10 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Check,
-  Coins,
   Fuel,
   Gift,
   Repeat,
+  Sprout,
   TrendingUp,
 } from "lucide-react";
 
@@ -29,9 +29,9 @@ const icones: Record<TipoAtividade, typeof ArrowDownLeft> = {
   deposito: ArrowDownLeft,
   retirada: ArrowUpRight,
   trade: TrendingUp,
+  rendimento: Sprout,
   taxa: Fuel,
   volume: Repeat,
-  saldo: Coins,
   recebimento: Gift,
   tarefa: Check,
 };
@@ -40,15 +40,15 @@ const coresIcone: Record<TipoAtividade, string> = {
   deposito: "text-primary bg-primary/10",
   retirada: "text-caution bg-caution/10",
   trade: "text-muted-foreground bg-secondary",
+  rendimento: "text-positive bg-positive/10",
   taxa: "text-negative bg-negative/10",
   volume: "text-muted-foreground bg-secondary",
-  saldo: "text-muted-foreground bg-secondary",
   recebimento: "text-positive bg-positive/10",
   tarefa: "text-positive bg-positive/10",
 };
 
-/** Saldo e volume não são caixa: o valor aparece apagado para não parecer aporte. */
-const valorApagado = new Set<TipoAtividade>(["saldo", "volume"]);
+/** Volume operado não é caixa: aparece apagado para não parecer aporte. */
+const valorApagado = new Set<TipoAtividade>(["volume"]);
 
 export function LinhaAtividade({
   item,

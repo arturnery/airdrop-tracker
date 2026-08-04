@@ -19,7 +19,6 @@ import {
   erros,
   lancamentoSchema,
   projetoSchema,
-  saldoSchema,
   tarefaSchema,
   vinculoSchema,
   contaSchema,
@@ -331,6 +330,8 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
           occurredAt: texto(dados, "occurredAt"),
           type: texto(dados, "type"),
           amount: texto(dados, "amount"),
+          tokenSymbol: texto(dados, "tokenSymbol"),
+          tokenAmount: texto(dados, "tokenAmount"),
           description: texto(dados, "description"),
         });
         if (!resultado.success) return erros(resultado);
@@ -338,6 +339,8 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
           occurredAt: resultado.data.occurredAt,
           type: resultado.data.type,
           amount: resultado.data.amount,
+          tokenSymbol: resultado.data.tokenSymbol,
+          tokenAmount: resultado.data.tokenAmount,
           description: resultado.data.description,
         });
         return null;
@@ -354,6 +357,7 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
               opcoes={[
                 { valor: "deposit", rotulo: "Depósito" },
                 { valor: "withdrawal", rotulo: "Retirada" },
+                { valor: "yield", rotulo: "Rendimento" },
                 { valor: "trade_pnl", rotulo: "Resultado de trade" },
                 { valor: "fee_gas", rotulo: "Taxa / gas" },
                 { valor: "volume_traded", rotulo: "Volume operado" },
@@ -370,79 +374,37 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
             />
           </div>
           <CampoTexto
-            label="Valor"
+            label="Valor em dólar"
             name="amount"
             obrigatorio
             defaultValue={lancamento.amountUsd}
             erro={e.amount}
             inputMode="decimal"
           />
+          <fieldset className="border-border grid gap-4 rounded-md border p-3 sm:grid-cols-2">
+            <legend className="text-muted-foreground px-1 text-xs">
+              Foi em token? (opcional)
+            </legend>
+            <CampoTexto
+              label="Token"
+              name="tokenSymbol"
+              defaultValue={lancamento.tokenSymbol ?? ""}
+              erro={e.tokenSymbol}
+              placeholder="SOL"
+            />
+            <CampoTexto
+              label="Quantidade"
+              name="tokenAmount"
+              defaultValue={lancamento.tokenAmount ?? ""}
+              erro={e.tokenAmount}
+              inputMode="decimal"
+            />
+          </fieldset>
           <CampoTexto
             label="Descrição"
             name="description"
             defaultValue={lancamento.description ?? ""}
             erro={e.description}
-          />
-        </>
-      )}
-    </DialogoEdicao>
-  );
-}
-
-// --------------------------------------------------------------------- saldo
-
-export function EditarSaldo({ snapshotId }: { snapshotId: string }) {
-  const { dataset, acoes } = useDados();
-  const saldo = dataset.balanceSnapshots.find((s) => s.id === snapshotId);
-  if (!saldo) return null;
-
-  return (
-    <DialogoEdicao
-      titulo="Editar saldo registrado"
-      rotuloGatilho="Editar saldo"
-      aoEnviar={(dados) => {
-        const resultado = saldoSchema.safeParse({
-          projectId: saldo.projectId,
-          accountId: saldo.accountId,
-          takenAt: texto(dados, "takenAt"),
-          balance: texto(dados, "balance"),
-          note: texto(dados, "note"),
-        });
-        if (!resultado.success) return erros(resultado);
-        acoes.atualizarSaldo(snapshotId, {
-          takenAt: resultado.data.takenAt,
-          balance: resultado.data.balance,
-          note: resultado.data.note,
-        });
-        return null;
-      }}
-    >
-      {({ erros: e }) => (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CampoTexto
-              label="Data"
-              name="takenAt"
-              type="date"
-              obrigatorio
-              defaultValue={saldo.takenAt}
-              erro={e.takenAt}
-            />
-            <CampoTexto
-              label="Saldo"
-              name="balance"
-              obrigatorio
-              defaultValue={saldo.balanceUsd}
-              erro={e.balance}
-              inputMode="decimal"
-            />
-          </div>
-          <CampoTexto
-            label="O que mudou"
-            name="note"
-            defaultValue={saldo.note ?? ""}
-            erro={e.note}
-            ajuda="Explica a variação em relação ao saldo anterior."
           />
         </>
       )}

@@ -89,21 +89,43 @@ export const lancamentoSchema = z.object({
     "deposit",
     "withdrawal",
     "trade_pnl",
+    "yield",
     "fee_gas",
     "volume_traded",
     "other",
   ]),
   amount: valorUsd,
+  /** Opcionais: quando preenchidos, a posição é revalorizada pela cotação. */
+  tokenSymbol: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? null : v.toUpperCase()))
+    .nullable()
+    .refine(
+      (v) => v === null || /^[A-Z0-9]{1,12}$/.test(v),
+      "Use só letras e números, até 12 caracteres.",
+    ),
+  tokenAmount: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .refine(
+      (v) => v === null || /^\d+(\.\d+)?$/.test(v),
+      "Quantidade inválida.",
+    ),
   description: textoOpcional,
 });
 
-export const saldoSchema = z.object({
-  projectId: z.string().min(1, "Escolha o projeto."),
-  accountId: z.string().min(1, "Escolha a conta."),
-  takenAt: dataIso,
-  balance: valorUsd,
-  /** Explica a variação: "rendimento do DeFi", "perda no trade", "migrado". */
-  note: textoOpcional,
+export const cotacaoSchema = z.object({
+  symbol: z
+    .string()
+    .trim()
+    .min(1, "Informe o símbolo do token.")
+    .max(12)
+    .transform((v) => v.toUpperCase()),
+  priceUsd: valorUsd,
+  updatedAt: dataIso,
 });
 
 /** Pontos usam escala própria — ver lib/points.ts. */

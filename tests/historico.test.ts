@@ -19,7 +19,6 @@ describe("selectAtividade", () => {
     const ds = base();
     const esperado =
       ds.transactions.length +
-      ds.balanceSnapshots.length +
       ds.airdropClaims.length +
       ds.taskOccurrences.filter((o) => o.completedAt).length;
     expect(feed).toHaveLength(esperado);
@@ -34,7 +33,7 @@ describe("selectAtividade", () => {
   it("classifica cada tipo de evento", () => {
     const tipos = new Set(feed.map((f) => f.tipo));
     expect(tipos.has("deposito")).toBe(true);
-    expect(tipos.has("saldo")).toBe(true);
+    expect(tipos.has("rendimento")).toBe(true);
     expect(tipos.has("volume")).toBe(true);
     expect(tipos.has("tarefa")).toBe(true);
   });
@@ -65,6 +64,8 @@ describe("selectAtividade", () => {
       occurredAt: HOJE,
       type: "deposit",
       amount: cents(2500),
+      tokenSymbol: null,
+      tokenAmount: null,
       description: "Aporte de teste",
     });
     const feedNovo = selectAtividade(ds);

@@ -36,6 +36,8 @@ describe("criação", () => {
       occurredAt: HOJE,
       type: "deposit",
       amount: cents(5000),
+      tokenSymbol: null,
+      tokenAmount: null,
       description: null,
     });
     const par = ds.projectAccounts.find(
@@ -56,29 +58,21 @@ describe("criação", () => {
     expect(ds.projectAccounts).toHaveLength(antes);
   });
 
-  it("substitui o saldo do mesmo par no mesmo dia em vez de duplicar", () => {
-    let ds = M.registrarSaldo(base(), {
+  it("guarda token e quantidade quando o aporte foi em cripto", () => {
+    const ds = M.criarLancamento(base(), {
       projectId: "prj-nebula",
       accountId: "acc-mbox",
-      takenAt: HOJE,
-      balance: cents(9000),
-      note: null,
+      occurredAt: HOJE,
+      type: "deposit",
+      amount: cents(18000),
+      tokenSymbol: "sol",
+      tokenAmount: "1",
+      description: null,
     });
-    ds = M.registrarSaldo(ds, {
-      projectId: "prj-nebula",
-      accountId: "acc-mbox",
-      takenAt: HOJE,
-      balance: cents(9500),
-      note: null,
-    });
-    const doDia = ds.balanceSnapshots.filter(
-      (s) =>
-        s.projectId === "prj-nebula" &&
-        s.accountId === "acc-mbox" &&
-        s.takenAt === HOJE,
-    );
-    expect(doDia).toHaveLength(1);
-    expect(doDia[0]?.balanceUsd).toBe("95.00");
+    const criado = ds.transactions.at(-1)!;
+    // Símbolo normalizado para maiúsculo na gravação.
+    expect(criado.tokenSymbol).toBe("SOL");
+    expect(criado.tokenAmount).toBe("1");
   });
 
   it("expande tarefa sem conta para todas as contas do projeto", () => {
@@ -124,7 +118,6 @@ describe("exclusão em cascata", () => {
     expect(ds.projects.find((p) => p.id === "prj-vertex")).toBeUndefined();
     expect(ds.projectAccounts.filter((p) => p.projectId === "prj-vertex")).toHaveLength(0);
     expect(ds.transactions.filter((t) => t.projectId === "prj-vertex")).toHaveLength(0);
-    expect(ds.balanceSnapshots.filter((s) => s.projectId === "prj-vertex")).toHaveLength(0);
     expect(ds.goals.filter((g) => g.projectId === "prj-vertex")).toHaveLength(0);
 
     // Nenhuma ocorrência órfã: as tarefas do projeto sumiram com elas.
@@ -135,10 +128,9 @@ describe("exclusão em cascata", () => {
   it("o total geral cai exatamente o que o projeto tinha", () => {
     const antes = selectDashboardSummary(base(), HOJE);
     const depois = selectDashboardSummary(M.excluirProjeto(base(), "prj-nebula"), HOJE);
-    // Nebula tinha $100 aportados e nenhum outro projeto é afetado.
-    expect(toDbNumeric(antes.aportado)).toBe("242.00");
-    expect(toDbNumeric(depois.aportado)).toBe("142.00");
-    expect(depois.paresTotal).toBe(antes.paresTotal - 1);
+    // Nebula tinha $180 aportados e nenhum outro projeto é afetado.
+    expect(toDbNumeric(antes.aportado)).toBe("337.00");
+    expect(toDbNumeric(depois.aportado)).toBe("157.00");
   });
 
   it("apagar conta remove seus movimentos sem deixar par órfão", () => {
@@ -169,12 +161,12 @@ describe("exclusão em cascata", () => {
         (t) => t.projectId === "prj-vertex" && t.accountId === "acc-chrome",
       ),
     ).toHaveLength(0);
-    // ...mas chrome continua no Prisma DEX.
+    // ...mas chrome continua no Prisma DEX: depósito, volume e perda.
     expect(
       ds.transactions.filter(
         (t) => t.projectId === "prj-prisma" && t.accountId === "acc-chrome",
       ),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
   });
 
   it("apagar tarefa remove suas ocorrências", () => {
@@ -183,14 +175,16 @@ describe("exclusão em cascata", () => {
     expect(ds.tasks.find((t) => t.id === "tsk-01")).toBeUndefined();
   });
 
-  it("apagar o único saldo faz a conta voltar a ser estimada", () => {
+  it("apagar um lançamento muda o saldo, porque o saldo é a soma", () => {
     const antes = selectProjectBySlug(base(), "prisma-dex", HOJE)!;
-    expect(antes.contasDetalhe[0]?.saldo).not.toBeNull();
+    expect(toDbNumeric(antes.exposicao)).toBe("18.90");
 
-    const ds = M.excluirSaldo(base(), "snp-11");
-    const depois = selectProjectBySlug(ds, "prisma-dex", HOJE)!;
-    expect(depois.contasDetalhe[0]?.saldo).toBeNull();
-    // Sem snapshot, a exposição passa a ser o aporte líquido.
+    // tx-24 é a perda de $1,10 do Prisma DEX.
+    const depois = selectProjectBySlug(
+      M.excluirLancamento(base(), "tx-24"),
+      "prisma-dex",
+      HOJE,
+    )!;
     expect(toDbNumeric(depois.exposicao)).toBe("20.00");
   });
 });
@@ -204,15 +198,20 @@ describe("edição", () => {
   });
 
   it("recalcula os totais depois de corrigir um lançamento", () => {
-    const ds = M.atualizarLancamento(base(), "tx-12", {
+    // tx-25 é o aporte de 1 SOL do Nebula, registrado a $180.
+    const ds = M.atualizarLancamento(base(), "tx-25", {
       occurredAt: "2026-07-28",
       type: "deposit",
-      amount: cents(5000),
+      amount: cents(10000),
+      tokenSymbol: "SOL",
+      tokenAmount: "1",
       description: "Valor corrigido",
     });
     const resumo = selectDashboardSummary(ds, HOJE);
-    // Nebula era $100; virou $50.
-    expect(toDbNumeric(resumo.aportado)).toBe("192.00");
+    // 337 − 180 + 100
+    expect(toDbNumeric(resumo.aportado)).toBe("257.00");
+    // A exposição não muda: continua 1 SOL a $195.
+    expect(toDbNumeric(resumo.exposicao)).toBe("348.18");
   });
 
   it("tarefa inativa some das pendências sem apagar o registro", () => {
@@ -235,6 +234,8 @@ describe("imutabilidade", () => {
       occurredAt: HOJE,
       type: "deposit",
       amount: cents(100),
+      tokenSymbol: null,
+      tokenAmount: null,
       description: null,
     });
     expect(JSON.stringify(original)).toBe(copia);

@@ -14,7 +14,7 @@ import type { TipoAtividade } from "@/lib/types";
 const tiposDisponiveis: { valor: TipoAtividade; rotulo: string }[] = [
   { valor: "deposito", rotulo: "Depósitos" },
   { valor: "retirada", rotulo: "Retiradas" },
-  { valor: "saldo", rotulo: "Saldos" },
+  { valor: "rendimento", rotulo: "Rendimentos" },
   { valor: "trade", rotulo: "Trades" },
   { valor: "volume", rotulo: "Volume" },
   { valor: "taxa", rotulo: "Taxas" },

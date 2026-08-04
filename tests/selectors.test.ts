@@ -6,10 +6,12 @@ import { toDbNumeric } from "@/lib/money";
 import {
   selectAccounts,
   selectCapitalPorProjeto,
+  selectCotacoes,
   selectDashboardSummary,
   selectPendingTasks,
   selectProjectBySlug,
   selectProjects,
+  selectTokensSemCotacao,
 } from "@/lib/selectors";
 
 const ds = datasetInicial();
@@ -17,20 +19,25 @@ const ds = datasetInicial();
 describe("selectDashboardSummary", () => {
   const resumo = selectDashboardSummary(ds, HOJE);
 
-  it("soma o capital aportado da planilha", () => {
-    expect(toDbNumeric(resumo.aportado)).toBe("242.00");
+  it("soma o capital aportado", () => {
+    // 44 Meridian + 23 Solstice + 70 Vertex + 20 Prisma + 180 Nebula
+    expect(toDbNumeric(resumo.aportado)).toBe("337.00");
   });
 
-  it("calcula exposição e resultado", () => {
-    expect(toDbNumeric(resumo.exposicao)).toBe("253.18");
+  it("exposição é a soma dos lançamentos, com token revalorizado", () => {
+    // Nebula entra com 1 SOL a $195, não com os $180 aportados.
+    expect(toDbNumeric(resumo.exposicao)).toBe("348.18");
     expect(toDbNumeric(resumo.resultado)).toBe("11.18");
-    expect(resumo.roi).toBe(4.6);
+    expect(resumo.roi).toBe(3.3);
   });
 
-  it("reporta a cobertura de saldo confirmado", () => {
-    // Nebula/mbox tem aporte mas nenhum snapshot.
-    expect(resumo.paresComSaldo).toBe(10);
-    expect(resumo.paresTotal).toBe(11);
+  it("separa rendimentos do capital aportado", () => {
+    // 1,40 + 0,45 + 0,30 + 2,80 + 1,50
+    expect(toDbNumeric(resumo.rendimentos)).toBe("6.45");
+  });
+
+  it("não reporta token sem cotação quando todos têm preço", () => {
+    expect(resumo.tokensSemCotacao).toEqual([]);
   });
 
   it("conta contas e projetos ativos", () => {
@@ -51,14 +58,21 @@ describe("selectProjects", () => {
     const porNome = Object.fromEntries(projetos.map((p) => [p.nome, p]));
     expect(toDbNumeric(porNome["Vertex Perp"]!.aportado)).toBe("70.00");
     expect(toDbNumeric(porNome["Vertex Perp"]!.resultado)).toBe("4.40");
-    expect(toDbNumeric(porNome["Meridian"]!.resultado)).toBe("8.33");
+    expect(toDbNumeric(porNome["Meridian"]!.resultado)).toBe("-6.67");
     expect(toDbNumeric(porNome["Prisma DEX"]!.resultado)).toBe("-1.10");
   });
 
+  it("token valorizado aparece como resultado positivo", () => {
+    const nebula = projetos.find((p) => p.slug === "nebula")!;
+    // Aportou $180 em 1 SOL, que hoje vale $195.
+    expect(toDbNumeric(nebula.aportado)).toBe("180.00");
+    expect(toDbNumeric(nebula.exposicao)).toBe("195.00");
+    expect(toDbNumeric(nebula.resultado)).toBe("15.00");
+  });
+
   it("não conta volume operado como capital", () => {
-    // Vertex Perp tem $3.450 de volume registrado e só $70 aportados.
-    const projeto = projetos.find((p) => p.slug === "vertex-perp");
-    expect(toDbNumeric(projeto!.aportado)).toBe("70.00");
+    const vertex = projetos.find((p) => p.slug === "vertex-perp");
+    expect(toDbNumeric(vertex!.aportado)).toBe("70.00");
   });
 });
 
@@ -67,32 +81,47 @@ describe("selectProjectBySlug", () => {
     expect(selectProjectBySlug(ds, "nao-existe", HOJE)).toBeNull();
   });
 
-  it("marca conta sem snapshot com saldo nulo, não zero", () => {
-    const nebula = selectProjectBySlug(ds, "nebula", HOJE)!;
-    const mbox = nebula.contasDetalhe.find((c) => c.label === "mbox")!;
-    expect(mbox.saldo).toBeNull();
-    expect(mbox.resultado).toBeNull();
-    expect(toDbNumeric(mbox.aportado)).toBe("100.00");
-  });
-
-  it("expõe o saldo real quando existe snapshot", () => {
+  it("saldo da conta é a soma dos lançamentos dela", () => {
     const meridian = selectProjectBySlug(ds, "meridian", HOJE)!;
     const brave = meridian.contasDetalhe.find((c) => c.label === "brave")!;
-    // Dois snapshots na planilha: 15.00 em 01/07 e 7.33 em 07/07.
-    expect(toDbNumeric(brave.saldo!)).toBe("7.33");
-    expect(brave.saldoEm).toBe("2026-07-07");
+    // Depósito de 15 menos perda de 7,67.
+    expect(toDbNumeric(brave.aportado)).toBe("15.00");
+    expect(toDbNumeric(brave.saldo)).toBe("7.33");
+    expect(toDbNumeric(brave.resultado)).toBe("-7.67");
   });
 
-  it("inclui snapshots no histórico marcados como tal", () => {
+  it("expõe a posição em token do projeto", () => {
+    const nebula = selectProjectBySlug(ds, "nebula", HOJE)!;
+    expect(nebula.posicoesToken).toHaveLength(1);
+    const sol = nebula.posicoesToken[0]!;
+    expect(sol.symbol).toBe("SOL");
+    expect(sol.quantidade).toBe(1);
+    expect(toDbNumeric(sol.investidoUsd)).toBe("180.00");
+    expect(toDbNumeric(sol.valorAtualUsd)).toBe("195.00");
+    expect(toDbNumeric(sol.valorizacao!)).toBe("15.00");
+    expect(sol.valorizacaoPercent).toBe(8.3);
+  });
+
+  it("projeto sem token não tem posição", () => {
+    expect(selectProjectBySlug(ds, "vertex-perp", HOJE)!.posicoesToken).toHaveLength(0);
+  });
+
+  it("histórico traz só lançamentos, do mais recente ao mais antigo", () => {
     const meridian = selectProjectBySlug(ds, "meridian", HOJE)!;
-    const snapshots = meridian.historico.filter((h) => h.isSnapshot);
-    expect(snapshots).toHaveLength(4);
-    expect(meridian.historico[0]?.data).toBe("2026-07-27"); // mais recente primeiro
+    expect(meridian.historico).toHaveLength(6);
+    expect(meridian.historico[0]?.data).toBe("2026-07-27");
+  });
+
+  it("histórico preserva token e quantidade", () => {
+    const nebula = selectProjectBySlug(ds, "nebula", HOJE)!;
+    const lancamento = nebula.historico[0]!;
+    expect(lancamento.tokenSymbol).toBe("SOL");
+    expect(lancamento.tokenAmount).toBe("1");
   });
 
   it("calcula progresso de meta a partir do volume operado", () => {
-    const projeto = selectProjectBySlug(ds, "vertex-perp", HOJE)!;
-    const meta = projeto.metas[0]!;
+    const vertex = selectProjectBySlug(ds, "vertex-perp", HOJE)!;
+    const meta = vertex.metas[0]!;
     expect(toDbNumeric(meta.alvo)).toBe("10000.00");
     expect(toDbNumeric(meta.atual)).toBe("3450.00");
   });
@@ -102,7 +131,7 @@ describe("selectAccounts", () => {
   it("soma uma conta atravessando todos os projetos", () => {
     const contas = selectAccounts(ds);
     const chrome = contas.find((c) => c.label === "chrome")!;
-    // Solstice 9 + Meridian 9 + Vertex 40 + Prisma 20
+    // Meridian 9 + Solstice 9 + Vertex 40 + Prisma 20
     expect(toDbNumeric(chrome.aportado)).toBe("78.00");
     expect(chrome.projetos).toBe(4);
   });
@@ -129,8 +158,43 @@ describe("selectCapitalPorProjeto", () => {
   it("ordena por capital e ignora projeto sem aporte", () => {
     const capital = selectCapitalPorProjeto(ds);
     expect(capital[0]?.nome).toBe("Nebula");
-    expect(toDbNumeric(capital[0]!.aportado)).toBe("100.00");
+    expect(toDbNumeric(capital[0]!.aportado)).toBe("180.00");
     expect(capital).toHaveLength(5);
+  });
+});
+
+describe("cotações", () => {
+  it("lista os tokens em uso com o preço informado", () => {
+    const cotacoes = selectCotacoes(ds);
+    const sol = cotacoes.find((c) => c.symbol === "SOL")!;
+    expect(toDbNumeric(sol.precoUsd)).toBe("195.00");
+    expect(sol.usadoEm).toBe(1);
+  });
+
+  it("não há token pendente de cotação nos dados iniciais", () => {
+    expect(selectTokensSemCotacao(ds)).toEqual([]);
+  });
+
+  it("token usado sem preço aparece como pendente", () => {
+    const comArb = {
+      ...ds,
+      transactions: [
+        ...ds.transactions,
+        {
+          id: "tx-teste",
+          projectId: "prj-vertex",
+          accountId: "acc-brave",
+          occurredAt: HOJE,
+          type: "deposit" as const,
+          amountUsd: "50.00",
+          tokenSymbol: "ARB",
+          tokenAmount: "40",
+          description: null,
+        },
+      ],
+    };
+    expect(selectTokensSemCotacao(comArb)).toEqual(["ARB"]);
+    expect(selectCotacoes(comArb).find((c) => c.symbol === "ARB")?.atualizadoEm).toBe("");
   });
 });
 

@@ -26,6 +26,7 @@ export type TransactionType =
   | "deposit"
   | "withdrawal"
   | "trade_pnl"
+  | "yield"
   | "fee_gas"
   | "volume_traded"
   | "other";
@@ -49,6 +50,7 @@ export type FinancialSummary = {
   retirado: Cents;
   taxas: Cents;
   pnlTrades: Cents;
+  rendimentos: Cents;
   airdrops: Cents;
   exposicao: Cents;
   resultado: Cents;
@@ -62,9 +64,8 @@ export type DashboardSummary = FinancialSummary & {
   contasAtivas: number;
   tarefasHoje: number;
   tarefasAtrasadas: number;
-  /** Pares projeto×conta com saldo registrado, para medir confiança na exposição. */
-  paresComSaldo: number;
-  paresTotal: number;
+  /** Símbolos sem cotação informada — a interface pede a atualização. */
+  tokensSemCotacao: string[];
 };
 
 export type CapitalPorProjeto = {
@@ -108,10 +109,9 @@ export type ProjectAccountRow = {
   label: string;
   status: ProjectAccountStatus;
   aportado: Cents;
-  /** null quando nunca houve snapshot — diferente de zero. */
-  saldo: Cents | null;
-  saldoEm: IsoDate | null;
-  resultado: Cents | null;
+  /** Soma de tudo que foi lançado nesta conta, com token revalorizado. */
+  saldo: Cents;
+  resultado: Cents;
   tarefasPendentes: number;
   ultimaAtividade: IsoDate | null;
 };
@@ -125,8 +125,29 @@ export type TransactionRow = {
   tipo: TransactionType;
   valor: Cents;
   descricao: string | null;
-  /** Snapshot de saldo entra no histórico mas não soma no caixa. */
-  isSnapshot?: boolean;
+  /** Preenchidos quando o lançamento foi em token. */
+  tokenSymbol: string | null;
+  tokenAmount: string | null;
+};
+
+/** Posição em token de um projeto, revalorizada pela cotação atual. */
+export type TokenPositionRow = {
+  symbol: string;
+  quantidade: number;
+  investidoUsd: Cents;
+  valorAtualUsd: Cents;
+  /** null quando não há cotação informada. */
+  precoUsd: Cents | null;
+  valorizacao: Cents | null;
+  valorizacaoPercent: number | null;
+};
+
+export type TokenPriceRow2 = {
+  symbol: string;
+  precoUsd: Cents;
+  atualizadoEm: IsoDate;
+  /** Em quantos projetos esse token aparece. */
+  usadoEm: number;
 };
 
 export type GoalRow = {
@@ -153,6 +174,7 @@ export type AirdropClaimRow = {
 export type ProjectDetail = ProjectSummary & {
   links: ProjectLinks;
   notas: string | null;
+  posicoesToken: TokenPositionRow[];
   contasDetalhe: ProjectAccountRow[];
   historico: TransactionRow[];
   metas: GoalRow[];
@@ -203,9 +225,9 @@ export type TipoAtividade =
   | "deposito"
   | "retirada"
   | "trade"
+  | "rendimento"
   | "taxa"
   | "volume"
-  | "saldo"
   | "recebimento"
   | "tarefa";
 

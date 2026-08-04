@@ -179,255 +179,83 @@ export type RawTransaction = {
   projectId: string;
   accountId: string;
   occurredAt: string;
-  type: "deposit" | "withdrawal" | "trade_pnl" | "fee_gas" | "volume_traded" | "other";
+  type:
+    | "deposit"
+    | "withdrawal"
+    | "trade_pnl"
+    | "yield"
+    | "fee_gas"
+    | "volume_traded"
+    | "other";
+  /** Valor em dólar na data do lançamento. */
   amountUsd: string;
+  /** Preenchidos quando o aporte foi em token: "SOL", "1.5". */
+  tokenSymbol: string | null;
+  tokenAmount: string | null;
   description: string | null;
 };
 
-/** Reais, transcritas da planilha. */
-export const rawTransactions: RawTransaction[] = [
-  {
-    id: "tx-01",
-    projectId: "prj-meridian",
-    accountId: "acc-email",
-    occurredAt: "2026-06-25",
-    type: "deposit",
-    amountUsd: "20.00",
-    description: "Depósito na plataforma",
-  },
-  {
-    id: "tx-02",
-    projectId: "prj-solstice",
-    accountId: "acc-brave",
-    occurredAt: "2026-06-25",
-    type: "deposit",
-    amountUsd: "14.00",
-    description: "Depósito na plataforma",
-  },
-  {
-    id: "tx-03",
-    projectId: "prj-solstice",
-    accountId: "acc-chrome",
-    occurredAt: "2026-06-25",
-    type: "deposit",
-    amountUsd: "9.00",
-    description: "Saldo restante",
-  },
-  {
-    id: "tx-04",
-    projectId: "prj-meridian",
-    accountId: "acc-chrome",
-    occurredAt: "2026-06-25",
-    type: "deposit",
-    amountUsd: "9.00",
-    description: "Novo aporte",
-  },
-  {
-    id: "tx-05",
-    projectId: "prj-meridian",
-    accountId: "acc-chrome",
-    occurredAt: "2026-07-01",
-    type: "trade_pnl",
-    amountUsd: "0.00",
-    description: "Perda em trade",
-  },
-  {
-    id: "tx-06",
-    projectId: "prj-vertex",
-    accountId: "acc-brave",
-    occurredAt: "2026-07-01",
-    type: "deposit",
-    amountUsd: "20.00",
-    description: "Depósito na plataforma",
-  },
-  {
-    id: "tx-07",
-    projectId: "prj-vertex",
-    accountId: "acc-chrome",
-    occurredAt: "2026-07-01",
-    type: "deposit",
-    amountUsd: "20.00",
-    description: "Depósito na plataforma",
-  },
-  {
-    id: "tx-08",
-    projectId: "prj-prisma",
-    accountId: "acc-chrome",
-    occurredAt: "2026-07-08",
-    type: "deposit",
-    amountUsd: "20.00",
-    description: "Depósito na plataforma",
-  },
-  {
-    id: "tx-09",
-    projectId: "prj-vertex",
-    accountId: "acc-chrome-2",
-    occurredAt: "2026-07-13",
-    type: "deposit",
-    amountUsd: "5.00",
-    description: "Depósito na plataforma",
-  },
-  {
-    id: "tx-10",
-    projectId: "prj-vertex",
-    accountId: "acc-chrome-1",
-    occurredAt: "2026-07-14",
-    type: "deposit",
-    amountUsd: "5.00",
-    description: "Depósito na plataforma",
-  },
-  {
-    id: "tx-11",
-    projectId: "prj-vertex",
-    accountId: "acc-chrome",
-    occurredAt: "2026-07-24",
-    type: "deposit",
-    amountUsd: "20.00",
-    description: "Depósito na plataforma",
-  },
-  {
-    id: "tx-12",
-    projectId: "prj-nebula",
-    accountId: "acc-mbox",
-    occurredAt: "2026-07-28",
-    type: "deposit",
-    amountUsd: "100.00",
-    description: "Depósito na plataforma",
-  },
-  // Volume operado: não é caixa, alimenta metas (ARCHITECTURE.md §4.3-C).
-  {
-    id: "tx-13",
-    projectId: "prj-vertex",
-    accountId: "acc-chrome",
-    occurredAt: "2026-07-25",
-    type: "volume_traded",
-    amountUsd: "2100.00",
-    description: "Volume acumulado na semana",
-  },
-  {
-    id: "tx-14",
-    projectId: "prj-vertex",
-    accountId: "acc-brave",
-    occurredAt: "2026-07-26",
-    type: "volume_traded",
-    amountUsd: "1350.00",
-    description: "Volume acumulado na semana",
-  },
-  {
-    id: "tx-15",
-    projectId: "prj-prisma",
-    accountId: "acc-chrome",
-    occurredAt: "2026-07-26",
-    type: "volume_traded",
-    amountUsd: "1200.00",
-    description: "Volume acumulado na semana",
-  },
-];
-
-export type RawBalanceSnapshot = {
-  id: string;
-  projectId: string;
-  accountId: string;
-  takenAt: string;
-  balanceUsd: string;
-  /** Explica a variação em relação ao saldo anterior. */
-  note: string | null;
+/**
+ * Cotação informada manualmente.
+ *
+ * Sem API externa por decisão de projeto: o usuário atualiza quando quiser
+ * (tipicamente antes da live semanal). Um token sem cotação cai de volta para
+ * o valor em dólar registrado na data, e a interface avisa.
+ */
+export type RawTokenPrice = {
+  symbol: string;
+  priceUsd: string;
+  updatedAt: string;
 };
 
-export const rawBalanceSnapshots: RawBalanceSnapshot[] = [
-  // Reais — da planilha. Note que não há depósito registrado para este par:
-  // a interface mostra "saldo sem aporte" em vez de esconder a inconsistência.
-  {
-    id: "snp-01",
-    projectId: "prj-meridian",
-    accountId: "acc-brave",
-    takenAt: "2026-07-01",
-    balanceUsd: "15.00",
-    note: null,
-  },
-  {
-    id: "snp-02",
-    projectId: "prj-meridian",
-    accountId: "acc-brave",
-    takenAt: "2026-07-07",
-    balanceUsd: "7.33",
-    note: "Perda em trade",
-  },
-  // Exemplos.
-  {
-    id: "snp-03",
-    projectId: "prj-meridian",
-    accountId: "acc-email",
-    takenAt: "2026-07-27",
-    balanceUsd: "21.40",
-    note: "Rendimento do DeFi",
-  },
-  {
-    id: "snp-04",
-    projectId: "prj-meridian",
-    accountId: "acc-chrome",
-    takenAt: "2026-07-27",
-    balanceUsd: "8.60",
-    note: null,
-  },
-  {
-    id: "snp-05",
-    projectId: "prj-solstice",
-    accountId: "acc-brave",
-    takenAt: "2026-07-26",
-    balanceUsd: "13.10",
-    note: null,
-  },
-  {
-    id: "snp-06",
-    projectId: "prj-solstice",
-    accountId: "acc-chrome",
-    takenAt: "2026-07-26",
-    balanceUsd: "9.45",
-    note: null,
-  },
-  {
-    id: "snp-07",
-    projectId: "prj-vertex",
-    accountId: "acc-brave",
-    takenAt: "2026-07-27",
-    balanceUsd: "22.80",
-    note: null,
-  },
-  {
-    id: "snp-08",
-    projectId: "prj-vertex",
-    accountId: "acc-chrome",
-    takenAt: "2026-07-27",
-    balanceUsd: "41.50",
-    note: null,
-  },
-  {
-    id: "snp-09",
-    projectId: "prj-vertex",
-    accountId: "acc-chrome-1",
-    takenAt: "2026-07-25",
-    balanceUsd: "4.80",
-    note: null,
-  },
-  {
-    id: "snp-10",
-    projectId: "prj-vertex",
-    accountId: "acc-chrome-2",
-    takenAt: "2026-07-25",
-    balanceUsd: "5.30",
-    note: null,
-  },
-  {
-    id: "snp-11",
-    projectId: "prj-prisma",
-    accountId: "acc-chrome",
-    takenAt: "2026-07-26",
-    balanceUsd: "18.90",
-    note: null,
-  },
-  // Nebula/mbox de propósito sem snapshot: exercita o estado "aporte sem saldo
-  // confirmado" e o indicador de cobertura do dashboard.
+export const rawTokenPrices: RawTokenPrice[] = [
+  { symbol: "SOL", priceUsd: "195.00", updatedAt: "2026-08-04" },
+];
+
+/**
+ * Lançamentos. No modelo de razão, o saldo de cada par projeto×conta é a soma
+ * de tudo que foi lançado — não existe registro de saldo em separado.
+ *
+ * Dados de demonstração.
+ */
+export const rawTransactions: RawTransaction[] = [
+  // ---------------------------------------------------------------- Meridian
+  { id: "tx-01", projectId: "prj-meridian", accountId: "acc-email", occurredAt: "2026-06-25", type: "deposit", amountUsd: "20.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-02", projectId: "prj-meridian", accountId: "acc-chrome", occurredAt: "2026-06-25", type: "deposit", amountUsd: "9.00", tokenSymbol: null, tokenAmount: null, description: "Novo aporte" },
+  { id: "tx-03", projectId: "prj-meridian", accountId: "acc-brave", occurredAt: "2026-07-01", type: "deposit", amountUsd: "15.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-04", projectId: "prj-meridian", accountId: "acc-brave", occurredAt: "2026-07-07", type: "trade_pnl", amountUsd: "-7.67", tokenSymbol: null, tokenAmount: null, description: "Perda em trade" },
+  { id: "tx-05", projectId: "prj-meridian", accountId: "acc-email", occurredAt: "2026-07-27", type: "yield", amountUsd: "1.40", tokenSymbol: null, tokenAmount: null, description: "Rendimento acumulado" },
+  { id: "tx-06", projectId: "prj-meridian", accountId: "acc-chrome", occurredAt: "2026-07-27", type: "trade_pnl", amountUsd: "-0.40", tokenSymbol: null, tokenAmount: null, description: "Ajuste de posição" },
+
+  // ---------------------------------------------------------------- Solstice
+  { id: "tx-07", projectId: "prj-solstice", accountId: "acc-brave", occurredAt: "2026-06-25", type: "deposit", amountUsd: "14.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-08", projectId: "prj-solstice", accountId: "acc-chrome", occurredAt: "2026-06-25", type: "deposit", amountUsd: "9.00", tokenSymbol: null, tokenAmount: null, description: "Saldo restante" },
+  { id: "tx-09", projectId: "prj-solstice", accountId: "acc-brave", occurredAt: "2026-07-26", type: "trade_pnl", amountUsd: "-0.90", tokenSymbol: null, tokenAmount: null, description: "Perda em trade" },
+  { id: "tx-10", projectId: "prj-solstice", accountId: "acc-chrome", occurredAt: "2026-07-26", type: "yield", amountUsd: "0.45", tokenSymbol: null, tokenAmount: null, description: "Rendimento da pool" },
+
+  // ------------------------------------------------------------- Vertex Perp
+  { id: "tx-11", projectId: "prj-vertex", accountId: "acc-brave", occurredAt: "2026-07-01", type: "deposit", amountUsd: "20.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-12", projectId: "prj-vertex", accountId: "acc-chrome", occurredAt: "2026-07-01", type: "deposit", amountUsd: "20.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-13", projectId: "prj-vertex", accountId: "acc-chrome-2", occurredAt: "2026-07-13", type: "deposit", amountUsd: "5.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-14", projectId: "prj-vertex", accountId: "acc-chrome-1", occurredAt: "2026-07-14", type: "deposit", amountUsd: "5.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-15", projectId: "prj-vertex", accountId: "acc-chrome", occurredAt: "2026-07-24", type: "deposit", amountUsd: "20.00", tokenSymbol: null, tokenAmount: null, description: "Reforço de colateral" },
+  // Volume operado não é caixa: alimenta metas e fica fora do saldo (§5).
+  { id: "tx-16", projectId: "prj-vertex", accountId: "acc-chrome", occurredAt: "2026-07-25", type: "volume_traded", amountUsd: "2100.00", tokenSymbol: null, tokenAmount: null, description: "Volume acumulado na semana" },
+  { id: "tx-17", projectId: "prj-vertex", accountId: "acc-brave", occurredAt: "2026-07-26", type: "volume_traded", amountUsd: "1350.00", tokenSymbol: null, tokenAmount: null, description: "Volume acumulado na semana" },
+  { id: "tx-18", projectId: "prj-vertex", accountId: "acc-chrome-1", occurredAt: "2026-07-25", type: "trade_pnl", amountUsd: "-0.20", tokenSymbol: null, tokenAmount: null, description: "Perda em trade" },
+  { id: "tx-19", projectId: "prj-vertex", accountId: "acc-chrome-2", occurredAt: "2026-07-25", type: "yield", amountUsd: "0.30", tokenSymbol: null, tokenAmount: null, description: "Funding recebido" },
+  { id: "tx-20", projectId: "prj-vertex", accountId: "acc-brave", occurredAt: "2026-07-27", type: "yield", amountUsd: "2.80", tokenSymbol: null, tokenAmount: null, description: "Funding recebido" },
+  { id: "tx-21", projectId: "prj-vertex", accountId: "acc-chrome", occurredAt: "2026-07-27", type: "yield", amountUsd: "1.50", tokenSymbol: null, tokenAmount: null, description: "Funding recebido" },
+
+  // -------------------------------------------------------------- Prisma DEX
+  { id: "tx-22", projectId: "prj-prisma", accountId: "acc-chrome", occurredAt: "2026-07-08", type: "deposit", amountUsd: "20.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-23", projectId: "prj-prisma", accountId: "acc-chrome", occurredAt: "2026-07-26", type: "volume_traded", amountUsd: "1200.00", tokenSymbol: null, tokenAmount: null, description: "Volume acumulado na semana" },
+  { id: "tx-24", projectId: "prj-prisma", accountId: "acc-chrome", occurredAt: "2026-07-26", type: "trade_pnl", amountUsd: "-1.10", tokenSymbol: null, tokenAmount: null, description: "Perda em trade" },
+
+  // ------------------------------------------------------------------ Nebula
+  // Aporte em token: o dólar fica congelado na data, mas a posição de 1 SOL é
+  // revalorizada pela cotação atual — é o que revela ganho de preço.
+  { id: "tx-25", projectId: "prj-nebula", accountId: "acc-mbox", occurredAt: "2026-07-28", type: "deposit", amountUsd: "180.00", tokenSymbol: "SOL", tokenAmount: "1", description: "Depósito de 1 SOL a $180" },
 ];
 
 export type RawTask = {
@@ -608,10 +436,10 @@ export function datasetInicial() {
     projects: [...rawProjects],
     projectAccounts: [...rawProjectAccounts],
     transactions: [...rawTransactions],
-    balanceSnapshots: [...rawBalanceSnapshots],
     tasks: [...rawTasks],
     taskOccurrences: [...rawTaskOccurrences],
     goals: [...rawGoals],
+    tokenPrices: [...rawTokenPrices],
     pointsSnapshots: [...rawPointsSnapshots],
     airdropClaims: [...rawAirdropClaims],
   };

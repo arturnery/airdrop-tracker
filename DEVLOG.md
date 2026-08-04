@@ -415,16 +415,97 @@ O risco pertence ao **nome**: é ele que representa a coisa abandonada. Extraíd
 helper `nomeRiscado(status)` aplicado no card, na tabela do dashboard, no cabeçalho e na
 trilha do projeto, com teste travando o comportamento.
 
+## Marco 8 — Livro-razão e aportes em token
+
+Pergunta do usuário: *"qual seria a diferença de registrar saldo para novo lançamento?"*
+
+A dúvida em si já era o diagnóstico. Se quem construiu a rotina não sabe qual usar,
+a interface não está comunicando — e essa era a distinção central do modelo.
+
+### A decisão: um só caminho de entrada
+
+Em vez de explicar melhor a diferença, o usuário preferiu eliminá-la: **tudo vira
+lançamento**, e o saldo passa a ser a soma deles. A motivação é boa — o histórico passa a
+explicar cada centavo, em vez de o saldo aparecer sem origem.
+
+O risco foi apontado antes de executar: **variação não registrada nunca aparece**. Com
+foto de saldo, bastava olhar a plataforma e corrigir; com razão puro, é preciso descobrir
+o que faltou. Ofereci um tipo "Ajuste de saldo" (digita o total, o sistema grava a
+diferença) como meio-termo, e o usuário optou pelo modelo puro, ciente da contrapartida.
+
+Consequências no código:
+
+- `balance_snapshots` desapareceu do modelo, das telas e dos testes;
+- entrou o tipo `yield` (rendimento) — era o caso de uso concreto: *"dia 15 olhei e rendeu
+  $1, adiciono $1 de rendimento"*;
+- `exposureForPair` deixou de escolher entre snapshot e estimativa: é soma direta;
+- todo o aparato de "cobertura de saldo confirmado" saiu, porque não existe mais saldo
+  não confirmado.
+
+### O erro que quase passou na fórmula
+
+Ao reescrever o resumo financeiro, escrevi:
+
+```
+resultado = exposição + airdrops − aportado − |taxas|
+```
+
+Errado. No razão, a retirada já **reduziu** a exposição por ser um movimento negativo —
+mas o dinheiro sacado continua sendo do usuário. Aportar 100 e sacar 30 deixa 70 na
+plataforma e 30 no bolso: resultado **zero**, e a fórmula acima diria prejuízo de 30.
+
+```
+resultado = exposição + |retirado| + airdrops − aportado − |taxas|
+```
+
+A retirada entra duas vezes de propósito. Está comentado no código e travado por teste,
+porque parece erro para quem lê rápido.
+
+### Aportes em token
+
+Pedido: *"depositei $100 ou 1 SOL — assim podemos saber se estamos ganhando no valor do
+token ou não"*.
+
+Modelo escolhido: cada lançamento pode ter `tokenSymbol` e `tokenAmount` além do valor em
+dólar. O dólar fica **congelado na data** (foi o que se aportou); a posição em token é
+**revalorizada** pela cotação atual. A diferença entre os dois é exatamente o ganho de
+preço.
+
+| | |
+|---|---|
+| Aportado | $180 (1 SOL a $180, congelado) |
+| Exposição | $195 (1 SOL × cotação atual) |
+| Resultado | +$15 (+8,3%) |
+
+**Cotação manual, sem API.** O usuário informa o preço em `/cotacoes` e atualiza quando
+quiser — tipicamente antes da live semanal. Escolhido em vez de CoinGecko para não
+adicionar dependência externa, chave e ponto de falha a um app que roda sem backend.
+
+Duas decisões de honestidade:
+
+- **Token sem cotação não é avaliado a zero nem a preço inventado**: mantém o valor
+  aportado e a interface avisa quais símbolos estão pendentes. Subestimar seria tão errado
+  quanto chutar.
+- **A data da cotação fica visível.** Preço de duas semanas atrás avaliando a posição de
+  hoje é pior que nenhum, e só dá para perceber isso se a data estiver à vista.
+
+### Por que `fee_gas` saiu do saldo
+
+Aproveitei a reescrita para separar: gas sai do bolso, não da posição na plataforma. Antes
+era somado junto; agora entra no resultado como custo, mas não reduz a exposição. Um teste
+fixa isso.
+
 ---
 
 ## Estado atual
 
 | | |
 |---|---|
-| Telas | Visão geral, tarefas, projetos, aba do projeto, contas, histórico, importar |
+| Telas | Visão geral, tarefas, projetos, aba do projeto, contas, cotações, histórico, importar |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
+| Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo em modo local (localStorage), com edição e exclusão em cascata |
-| Testes | 125, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
+| Testes | 136, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
 | Backend | Não iniciado — fixtures atrás da interface definitiva |
 

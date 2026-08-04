@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Trash2, TriangleAlert, Unlink } from "lucide-react";
+import { ExternalLink, Trash2, Unlink } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
 import {
   EditarLancamento,
   EditarProjeto,
-  EditarSaldo,
   EditarTarefa,
   EditarVinculo,
 } from "@/components/forms/editar";
@@ -19,7 +18,6 @@ import {
   NovoLancamento,
   RegistrarPontos,
   RegistrarRecebimento,
-  RegistrarSaldo,
   VincularConta,
 } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
@@ -68,6 +66,7 @@ function BotaoLixeira({ rotulo }: { rotulo: string }) {
 const tipoLabels: Record<TransactionRow["tipo"], string> = {
   deposit: "Depósito",
   withdrawal: "Retirada",
+  yield: "Rendimento",
   trade_pnl: "Resultado de trade",
   fee_gas: "Taxa / gas",
   volume_traded: "Volume operado",
@@ -103,7 +102,7 @@ export function ProjetoView({ slug }: { slug: string }) {
   const historicoPontos = programa
     ? selectHistoricoDePontos(dataset, projeto.id)
     : [];
-  const semSaldo = projeto.contasDetalhe.filter((c) => c.saldo === null);
+
   const links = [
     { href: projeto.links.website, label: "Site" },
     { href: projeto.links.docs, label: "Docs" },
@@ -164,11 +163,7 @@ export function ProjetoView({ slug }: { slug: string }) {
           label="Exposição"
           accent="idle"
           value={<Money value={projeto.exposicao} />}
-          hint={
-            semSaldo.length > 0
-              ? `${projeto.contas - semSaldo.length} de ${projeto.contas} confirmadas`
-              : "Todas confirmadas"
-          }
+          hint="soma dos lançamentos"
         />
         <StatCard
           label="Resultado"
@@ -208,8 +203,52 @@ export function ProjetoView({ slug }: { slug: string }) {
         <TabsContent value="contas" className="mt-6">
           <div className="mb-4 flex flex-wrap gap-2">
             <VincularConta projectId={projeto.id} />
-            <RegistrarSaldo projectId={projeto.id} />
           </div>
+
+          {projeto.posicoesToken.length > 0 ? (
+            <div className="mb-6 grid gap-3 sm:grid-cols-2">
+              {projeto.posicoesToken.map((posicao) => (
+                <div
+                  key={posicao.symbol}
+                  className="bg-card border-border rounded-lg border p-4"
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm font-medium">
+                      {posicao.quantidade} {posicao.symbol}
+                    </span>
+                    {posicao.precoUsd === null ? (
+                      <Link
+                        href="/cotacoes"
+                        className="text-caution text-xs underline underline-offset-4"
+                      >
+                        informar cotação
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">
+                        a <Money value={posicao.precoUsd} /> cada
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-numeric mt-2 text-2xl leading-none font-semibold">
+                    <Money value={posicao.valorAtualUsd} />
+                  </p>
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    aportado <Money value={posicao.investidoUsd} />
+                    {posicao.valorizacao !== null ? (
+                      <>
+                        {" · "}
+                        <Money value={posicao.valorizacao} tone="auto" signed />
+                        {posicao.valorizacaoPercent !== null ? (
+                          <> ({posicao.valorizacaoPercent > 0 ? "+" : ""}
+                          {posicao.valorizacaoPercent.toFixed(1)}%)</>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           {projeto.contasDetalhe.length === 0 ? (
             <EmptyState
@@ -251,31 +290,10 @@ export function ProjetoView({ slug }: { slug: string }) {
                         <Money value={conta.aportado} />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {conta.saldo === null ? (
-                          <span
-                            className="text-caution inline-flex items-center gap-1.5 text-xs"
-                            title="Nenhum saldo registrado para esta conta"
-                          >
-                            <TriangleAlert className="size-3.5" aria-hidden="true" />
-                            não confirmado
-                          </span>
-                        ) : (
-                          <span className="inline-flex flex-col items-end">
-                            <Money value={conta.saldo} />
-                            {conta.saldoEm ? (
-                              <span className="text-muted-foreground text-xs">
-                                {relativeLabel(conta.saldoEm, hoje)}
-                              </span>
-                            ) : null}
-                          </span>
-                        )}
+                        <Money value={conta.saldo} />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {conta.resultado === null ? (
-                          <span className="text-muted-foreground">—</span>
-                        ) : (
-                          <Money value={conta.resultado} tone="auto" signed />
-                        )}
+                        <Money value={conta.resultado} tone="auto" signed />
                       </td>
                       <td className="px-4 py-3 text-right">
                         {conta.tarefasPendentes > 0 ? (
@@ -324,17 +342,13 @@ export function ProjetoView({ slug }: { slug: string }) {
             </div>
           )}
 
-          {semSaldo.length > 0 ? (
-            <p className="text-muted-foreground mt-3 text-xs">
-              {semSaldo.length}{" "}
-              {semSaldo.length === 1 ? "conta ainda não tem" : "contas ainda não têm"}{" "}
-              saldo registrado; para elas a exposição usa o valor aportado como
-              estimativa.
-            </p>
-          ) : null}
+          <p className="text-muted-foreground mt-3 text-xs">
+            O saldo de cada conta é a soma dos lançamentos dela — todo valor aqui tem
+            um lançamento no histórico que o explica.
+          </p>
         </TabsContent>
 
-        {/* -------------------------------------------------------- histórico */}
+        {/* --------------------------------------------------------- histórico */}
         <TabsContent value="historico" className="mt-6">
           {projeto.historico.length === 0 ? (
             <EmptyState
@@ -371,47 +385,30 @@ export function ProjetoView({ slug }: { slug: string }) {
                         </td>
                         <td className="px-4 py-3">{linha.contaLabel}</td>
                         <td className="px-4 py-3">
-                          {linha.isSnapshot ? (
-                            <span className="text-muted-foreground border-border rounded border px-1.5 py-0.5 text-xs">
-                              Saldo
-                            </span>
-                          ) : (
-                            <span className="text-xs">{tipoLabels[linha.tipo]}</span>
-                          )}
+                          <span className="text-xs">{tipoLabels[linha.tipo]}</span>
                         </td>
                         <td className="text-muted-foreground px-4 py-3 text-xs">
-                          {linha.descricao ?? "—"}
+                          {linha.tokenAmount && linha.tokenSymbol ? (
+                            <span className="text-foreground">
+                              {linha.tokenAmount} {linha.tokenSymbol}
+                            </span>
+                          ) : null}
+                          {linha.tokenAmount && linha.descricao ? " · " : null}
+                          {linha.descricao ?? (linha.tokenAmount ? "" : "—")}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Money
-                            value={linha.valor}
-                            tone={linha.isSnapshot ? "muted" : "neutral"}
-                          />
+                          <Money value={linha.valor} />
                         </td>
                         <td className="px-2 py-2">
                           <div className="flex items-center justify-end">
-                            {linha.isSnapshot ? (
-                              <>
-                                <EditarSaldo snapshotId={linha.id} />
-                                <ConfirmarExclusao
-                                  titulo="Excluir saldo registrado"
-                                  alvo={`Saldo de ${linha.contaLabel} em ${formatDateBr(linha.data)}`}
-                                  impacto="A exposição volta a ser estimada pelo aporte se este for o único saldo da conta"
-                                  aoConfirmar={() => acoes.excluirSaldo(linha.id)}
-                                  gatilho={<BotaoLixeira rotulo="Excluir saldo" />}
-                                />
-                              </>
-                            ) : (
-                              <>
-                                <EditarLancamento transactionId={linha.id} />
-                                <ConfirmarExclusao
-                                  titulo="Excluir lançamento"
-                                  alvo={`${tipoLabels[linha.tipo]} de ${linha.contaLabel} em ${formatDateBr(linha.data)}`}
-                                  aoConfirmar={() => acoes.excluirLancamento(linha.id)}
-                                  gatilho={<BotaoLixeira rotulo="Excluir lançamento" />}
-                                />
-                              </>
-                            )}
+                            <EditarLancamento transactionId={linha.id} />
+                            <ConfirmarExclusao
+                              titulo="Excluir lançamento"
+                              alvo={`${tipoLabels[linha.tipo]} de ${linha.contaLabel} em ${formatDateBr(linha.data)}`}
+                              impacto="O saldo da conta muda, porque é a soma dos lançamentos"
+                              aoConfirmar={() => acoes.excluirLancamento(linha.id)}
+                              gatilho={<BotaoLixeira rotulo="Excluir lançamento" />}
+                            />
                           </div>
                         </td>
                       </tr>
@@ -420,9 +417,8 @@ export function ProjetoView({ slug }: { slug: string }) {
                 </table>
               </div>
               <p className="text-muted-foreground mt-3 text-xs">
-                Linhas marcadas como{" "}
-                <strong className="text-foreground">Saldo</strong> são fotos do saldo,
-                não movimentação — por isso não entram na soma de capital aportado.
+                O saldo do projeto é a soma destes lançamentos. Volume operado aparece
+                aqui mas fica fora do caixa — é atividade, não dinheiro movimentado.
               </p>
             </>
           )}

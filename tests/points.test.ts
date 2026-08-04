@@ -210,7 +210,7 @@ describe("registro de pontos", () => {
     });
     // Aporte, exposição e resultado permanecem intactos.
     expect(ds.transactions).toEqual(base().transactions);
-    expect(ds.balanceSnapshots).toEqual(base().balanceSnapshots);
+    expect(ds.tokenPrices).toEqual(base().tokenPrices);
   });
 
   it("excluir medição remove o ganho correspondente", () => {
@@ -248,28 +248,5 @@ describe("histórico de medições", () => {
   it("preserva a observação", () => {
     const comNota = historico.find((h) => h.nota !== null);
     expect(comNota?.nota).toBe("Semana de volume alto");
-  });
-});
-
-describe("descrição no saldo em dólar", () => {
-  it("grava a nota junto do saldo", () => {
-    const ds = M.registrarSaldo(base(), {
-      projectId: "prj-nebula",
-      accountId: "acc-mbox",
-      takenAt: HOJE,
-      balance: 10_500 as never,
-      note: "Rendimento do DeFi",
-    });
-    const registro = ds.balanceSnapshots.find(
-      (s) => s.projectId === "prj-nebula" && s.takenAt === HOJE,
-    )!;
-    expect(registro.note).toBe("Rendimento do DeFi");
-  });
-
-  it("a nota aparece no histórico do projeto", async () => {
-    const { selectProjectBySlug } = await import("@/lib/selectors");
-    const meridian = selectProjectBySlug(base(), "meridian", HOJE)!;
-    const comNota = meridian.historico.find((h) => h.descricao === "Perda em trade");
-    expect(comNota?.isSnapshot).toBe(true);
   });
 });

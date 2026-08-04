@@ -3,7 +3,7 @@
 Documento de arquitetura do sistema. Escrito **antes** da implementação, para servir como
 referência de decisões e como material de portfólio.
 
-**Revisão 5** — programas de pontos (§4.4) e descrição nos saldos.
+**Revisão 6** — modelo de livro-razão e aportes em token.
 
 ---
 
@@ -39,7 +39,9 @@ ser uma entidade própria.
 (uma **foto do saldo**, não somável). Se você somar a coluna de valor, o número está
 errado: está somando dinheiro que entrou com dinheiro que já estava lá.
 
-> Essa é a correção mais importante do modelo. Fluxo e saldo vão para tabelas separadas.
+> **Resolvido virando livro-razão** (revisão 6): só existe lançamento, e o saldo é a soma
+> deles. Foto de saldo deixou de existir, então não há o que misturar. O custo é que toda
+> variação precisa ser lançada — inclusive rendimento, que ganhou tipo próprio.
 
 **2.3. `Status: Pendente` significa duas coisas diferentes.** Às vezes é "ainda não
 executei essa ação" (uma tarefa), às vezes é "o airdrop ainda não caiu" (estado do

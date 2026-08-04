@@ -7,11 +7,7 @@ import { CapitalPorProjetoChart } from "@/components/capital-chart";
 import { ListaAtividade } from "@/components/historico";
 import { CardPrograma } from "@/components/pontos";
 import { useDados } from "@/components/data-provider";
-import {
-  NovoLancamento,
-  RegistrarPontos,
-  RegistrarSaldo,
-} from "@/components/forms/dialogs";
+import { NovoLancamento, RegistrarPontos } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -44,7 +40,7 @@ export function DashboardView() {
   const urgentes = tarefas.filter(
     (t) => t.urgencia === "atrasada" || t.urgencia === "hoje",
   );
-  const semSaldo = resumo.paresTotal - resumo.paresComSaldo;
+  const semCotacao = resumo.tokensSemCotacao;
 
   return (
     <>
@@ -54,7 +50,6 @@ export function DashboardView() {
         actions={
           <>
             <RegistrarPontos />
-            <RegistrarSaldo />
             <NovoLancamento />
           </>
         }
@@ -76,9 +71,9 @@ export function DashboardView() {
           accent="idle"
           value={<Money value={resumo.exposicao} />}
           hint={
-            semSaldo > 0
-              ? `${resumo.paresComSaldo} de ${resumo.paresTotal} contas com saldo confirmado`
-              : "Todas as contas com saldo confirmado"
+            semCotacao.length > 0
+              ? `${semCotacao.join(", ")} sem cotação`
+              : "soma de todos os lançamentos"
           }
         />
         <StatCard
@@ -103,7 +98,7 @@ export function DashboardView() {
         />
       </section>
 
-      {semSaldo > 0 ? (
+      {semCotacao.length > 0 ? (
         <p className="border-caution/30 bg-caution/5 text-muted-foreground mt-4 flex items-start gap-2 rounded-md border px-4 py-3 text-sm">
           <TriangleAlert
             className="text-caution mt-0.5 size-4 shrink-0"
@@ -111,11 +106,14 @@ export function DashboardView() {
           />
           <span>
             <strong className="text-foreground font-medium">
-              {semSaldo} {semSaldo === 1 ? "conta está" : "contas estão"} sem saldo
-              confirmado.
+              {semCotacao.join(", ")} sem cotação informada.
             </strong>{" "}
-            A exposição dessas contas usa o valor aportado como estimativa, então o
-            resultado acima é otimista até você registrar o saldo real.
+            A posição nesses tokens está avaliada pelo valor do aporte, sem ganho nem
+            perda de preço.{" "}
+            <Link href="/cotacoes" className="text-foreground underline underline-offset-4">
+              Informar agora
+            </Link>
+            .
           </span>
         </p>
       ) : null}

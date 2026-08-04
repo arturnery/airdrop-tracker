@@ -88,6 +88,8 @@ export function criarLancamento(
     occurredAt: string;
     type: Dataset["transactions"][number]["type"];
     amount: Cents;
+    tokenSymbol: string | null;
+    tokenAmount: string | null;
     description: string | null;
   },
 ): Dataset {
@@ -108,51 +110,14 @@ export function criarLancamento(
         occurredAt: dados.occurredAt,
         type: dados.type,
         amountUsd: toDbNumeric(dados.amount),
+        tokenSymbol: dados.tokenSymbol?.toUpperCase() ?? null,
+        tokenAmount: dados.tokenAmount,
         description: dados.description,
       },
     ],
   };
 }
 
-export function registrarSaldo(
-  ds: Dataset,
-  dados: {
-    projectId: string;
-    accountId: string;
-    takenAt: string;
-    balance: Cents;
-    note: string | null;
-  },
-): Dataset {
-  return {
-    ...ds,
-    projectAccounts: garantirVinculo(
-      ds,
-      dados.projectId,
-      dados.accountId,
-      dados.takenAt,
-    ),
-    // Um snapshot por par por dia — mesma regra do unique no banco.
-    balanceSnapshots: [
-      ...ds.balanceSnapshots.filter(
-        (s) =>
-          !(
-            s.projectId === dados.projectId &&
-            s.accountId === dados.accountId &&
-            s.takenAt === dados.takenAt
-          ),
-      ),
-      {
-        id: novoId("snp"),
-        projectId: dados.projectId,
-        accountId: dados.accountId,
-        takenAt: dados.takenAt,
-        balanceUsd: toDbNumeric(dados.balance),
-        note: dados.note,
-      },
-    ],
-  };
-}
 
 export function criarTarefa(
   ds: Dataset,
@@ -300,6 +265,8 @@ export function atualizarLancamento(
     occurredAt: string;
     type: Dataset["transactions"][number]["type"];
     amount: Cents;
+    tokenSymbol: string | null;
+    tokenAmount: string | null;
     description: string | null;
   },
 ): Dataset {
@@ -312,6 +279,8 @@ export function atualizarLancamento(
             occurredAt: dados.occurredAt,
             type: dados.type,
             amountUsd: toDbNumeric(dados.amount),
+            tokenSymbol: dados.tokenSymbol?.toUpperCase() ?? null,
+            tokenAmount: dados.tokenAmount,
             description: dados.description,
           }
         : t,
@@ -319,25 +288,6 @@ export function atualizarLancamento(
   };
 }
 
-export function atualizarSaldo(
-  ds: Dataset,
-  id: string,
-  dados: { takenAt: string; balance: Cents; note: string | null },
-): Dataset {
-  return {
-    ...ds,
-    balanceSnapshots: ds.balanceSnapshots.map((s) =>
-      s.id === id
-        ? {
-            ...s,
-            takenAt: dados.takenAt,
-            balanceUsd: toDbNumeric(dados.balance),
-            note: dados.note,
-          }
-        : s,
-    ),
-  };
-}
 
 export function atualizarVinculo(
   ds: Dataset,
@@ -364,7 +314,6 @@ export function excluirProjeto(ds: Dataset, id: string): Dataset {
     projects: ds.projects.filter((p) => p.id !== id),
     projectAccounts: ds.projectAccounts.filter((p) => p.projectId !== id),
     transactions: ds.transactions.filter((t) => t.projectId !== id),
-    balanceSnapshots: ds.balanceSnapshots.filter((s) => s.projectId !== id),
     tasks: ds.tasks.filter((t) => t.projectId !== id),
     taskOccurrences: ds.taskOccurrences.filter((o) => !idsTarefas.has(o.taskId)),
     goals: ds.goals.filter((g) => g.projectId !== id),
@@ -378,7 +327,6 @@ export function excluirConta(ds: Dataset, id: string): Dataset {
     accounts: ds.accounts.filter((a) => a.id !== id),
     projectAccounts: ds.projectAccounts.filter((p) => p.accountId !== id),
     transactions: ds.transactions.filter((t) => t.accountId !== id),
-    balanceSnapshots: ds.balanceSnapshots.filter((s) => s.accountId !== id),
     taskOccurrences: ds.taskOccurrences.filter((o) => o.accountId !== id),
     // A tarefa era específica desta conta: passa a valer para todas, em vez de
     // sumir junto e levar embora a intenção de farming.
@@ -392,9 +340,6 @@ export function excluirLancamento(ds: Dataset, id: string): Dataset {
   return { ...ds, transactions: ds.transactions.filter((t) => t.id !== id) };
 }
 
-export function excluirSaldo(ds: Dataset, id: string): Dataset {
-  return { ...ds, balanceSnapshots: ds.balanceSnapshots.filter((s) => s.id !== id) };
-}
 
 export function excluirTarefa(ds: Dataset, taskId: string): Dataset {
   return {
@@ -427,7 +372,6 @@ export function desvincularConta(
     ...ds,
     projectAccounts: ds.projectAccounts.filter((p) => !doPar(p)),
     transactions: ds.transactions.filter((t) => !doPar(t)),
-    balanceSnapshots: ds.balanceSnapshots.filter((s) => !doPar(s)),
   };
 }
 
@@ -496,4 +440,38 @@ export function atualizarPontos(
 
 export function excluirPontos(ds: Dataset, id: string): Dataset {
   return { ...ds, pointsSnapshots: ds.pointsSnapshots.filter((p) => p.id !== id) };
+}
+
+// ----------------------------------------------------------------- cotações
+
+/**
+ * Define ou atualiza a cotação de um token.
+ *
+ * Sem API externa por decisão de projeto: o preço é informado pelo usuário e
+ * vale até ele atualizar. Um símbolo por registro — reinformar substitui.
+ */
+export function definirCotacao(
+  ds: Dataset,
+  dados: { symbol: string; priceUsd: Cents; updatedAt: string },
+): Dataset {
+  const simbolo = dados.symbol.trim().toUpperCase();
+  return {
+    ...ds,
+    tokenPrices: [
+      ...ds.tokenPrices.filter((p) => p.symbol.toUpperCase() !== simbolo),
+      {
+        symbol: simbolo,
+        priceUsd: toDbNumeric(dados.priceUsd),
+        updatedAt: dados.updatedAt,
+      },
+    ],
+  };
+}
+
+export function excluirCotacao(ds: Dataset, symbol: string): Dataset {
+  const simbolo = symbol.toUpperCase();
+  return {
+    ...ds,
+    tokenPrices: ds.tokenPrices.filter((p) => p.symbol.toUpperCase() !== simbolo),
+  };
 }

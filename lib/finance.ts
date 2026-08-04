@@ -1,9 +1,14 @@
 import { addCents, cents, fromDbNumeric, percentOf, ZERO, type Cents } from "./money";
-import type { FinancialSummary, IsoDate } from "./types";
+import type { FinancialSummary } from "./types";
 
 /**
  * Agregação financeira. Módulo puro: recebe linhas no formato que o banco
  * devolve e devolve totais. Sem Drizzle, sem React — testável direto.
+ *
+ * O sistema é um **livro-razão**: o saldo de um par projeto×conta é a soma de
+ * tudo que foi lançado nele. Não existe registro de saldo em separado, então
+ * todo centavo em tela tem um lançamento que o explica. A contrapartida é que
+ * variação não registrada não aparece — quem lança é o usuário.
  *
  * As fórmulas estão em ARCHITECTURE.md §5.
  */
@@ -13,13 +18,13 @@ export type MovementRow = {
   accountId: string;
   type: string;
   amountUsd: string;
+  tokenSymbol?: string | null;
+  tokenAmount?: string | null;
 };
 
-export type SnapshotRow = {
-  projectId: string;
-  accountId: string;
-  takenAt: IsoDate;
-  balanceUsd: string;
+export type TokenPriceRow = {
+  symbol: string;
+  priceUsd: string;
 };
 
 export type PairKey = string;
@@ -28,40 +33,16 @@ export const pairKey = (projectId: string, accountId: string): PairKey =>
   `${projectId}::${accountId}`;
 
 /**
- * Último snapshot de cada par projeto×conta.
- * Só o mais recente vale — snapshot é foto, não fluxo (ARCHITECTURE.md §2.2).
+ * Movimentos que alteram o saldo dentro da plataforma.
+ *
+ * `volume_traded` fica de fora: é métrica de atividade, não de caixa — somá-lo
+ * inflaria o capital. `fee_gas` também fica de fora do saldo porque sai do
+ * bolso, não da posição; entra no resultado como custo (§5).
  */
-export function latestSnapshotByPair(
-  snapshots: SnapshotRow[],
-): Map<PairKey, { balance: Cents; takenAt: IsoDate }> {
-  const result = new Map<PairKey, { balance: Cents; takenAt: IsoDate }>();
-  for (const snap of snapshots) {
-    const key = pairKey(snap.projectId, snap.accountId);
-    const current = result.get(key);
-    // Datas ISO comparam corretamente como string.
-    if (!current || snap.takenAt > current.takenAt) {
-      result.set(key, {
-        balance: fromDbNumeric(snap.balanceUsd),
-        takenAt: snap.takenAt,
-      });
-    }
-  }
-  return result;
-}
+const CASH_TYPES = ["deposit", "withdrawal", "trade_pnl", "yield"] as const;
 
-/** Soma um tipo de movimento por par. `volume_traded` nunca entra em caixa. */
-export function sumByPair(
-  movements: MovementRow[],
-  types: readonly string[],
-): Map<PairKey, Cents> {
-  const result = new Map<PairKey, Cents>();
-  for (const mov of movements) {
-    if (!types.includes(mov.type)) continue;
-    const key = pairKey(mov.projectId, mov.accountId);
-    const previous = result.get(key) ?? ZERO;
-    result.set(key, addCents(previous, fromDbNumeric(mov.amountUsd)));
-  }
-  return result;
+export function isCashType(type: string): boolean {
+  return (CASH_TYPES as readonly string[]).includes(type);
 }
 
 export function sumOfType(movements: MovementRow[], type: string): Cents {
@@ -72,80 +53,169 @@ export function sumOfType(movements: MovementRow[], type: string): Cents {
   );
 }
 
+/** Soma em dólar dos movimentos de caixa, por par. */
+export function netFlowByPair(movements: MovementRow[]): Map<PairKey, Cents> {
+  const result = new Map<PairKey, Cents>();
+  for (const mov of movements) {
+    if (!isCashType(mov.type)) continue;
+    const key = pairKey(mov.projectId, mov.accountId);
+    result.set(key, addCents(result.get(key) ?? ZERO, fromDbNumeric(mov.amountUsd)));
+  }
+  return result;
+}
+
+// ------------------------------------------------------------------- tokens
+
+/** Quantidade líquida de cada token, por par. Chave: `par::SÍMBOLO`. */
+export type TokenPositionKey = string;
+
+export type TokenPosition = {
+  symbol: string;
+  /** Quantidade acumulada. String para não perder precisão de token. */
+  amount: number;
+  /** Dólar efetivamente aportado nesta posição, na data de cada lançamento. */
+  investedUsd: Cents;
+};
+
+export function tokenPositionsByPair(
+  movements: MovementRow[],
+): Map<PairKey, Map<string, TokenPosition>> {
+  const result = new Map<PairKey, Map<string, TokenPosition>>();
+
+  for (const mov of movements) {
+    if (!isCashType(mov.type)) continue;
+    if (!mov.tokenSymbol || !mov.tokenAmount) continue;
+
+    const key = pairKey(mov.projectId, mov.accountId);
+    const simbolo = mov.tokenSymbol.toUpperCase();
+    const porToken = result.get(key) ?? new Map<string, TokenPosition>();
+    const atual = porToken.get(simbolo) ?? {
+      symbol: simbolo,
+      amount: 0,
+      investedUsd: ZERO,
+    };
+
+    porToken.set(simbolo, {
+      symbol: simbolo,
+      amount: atual.amount + Number(mov.tokenAmount),
+      investedUsd: addCents(atual.investedUsd, fromDbNumeric(mov.amountUsd)),
+    });
+    result.set(key, porToken);
+  }
+  return result;
+}
+
+export function priceMap(prices: TokenPriceRow[]): Map<string, Cents> {
+  return new Map(
+    prices.map((p) => [p.symbol.toUpperCase(), fromDbNumeric(p.priceUsd)]),
+  );
+}
+
 export type PairExposure = {
   value: Cents;
-  /** true = veio de snapshot; false = estimado pelo aporte líquido. */
-  confirmed: boolean;
-  takenAt: IsoDate | null;
+  /** Parte do valor que veio de posição em token revalorizada. */
+  tokenValue: Cents;
+  /** Tokens sem cotação informada — a interface avisa em vez de fingir preço. */
+  semCotacao: string[];
 };
 
 /**
  * Exposição de um par projeto×conta.
  *
- * Com snapshot, usa o snapshot. Sem snapshot, estima pelo aporte líquido —
- * o dinheiro foi depositado e não foi retirado, então essa é a melhor
- * informação disponível. Tratar como zero produziria prejuízo fictício de
- * 100% em todo projeto recém-aportado.
+ * Lançamentos em dólar entram pelo valor lançado. Lançamentos em token são
+ * revalorizados pela cotação atual: é isso que revela ganho ou perda no preço
+ * do token, e não apenas o que foi aportado.
  *
- * `confirmed` propaga a diferença até a interface, que mostra a cobertura
- * ("N de M contas com saldo confirmado") em vez de fingir precisão.
+ * Sem cotação informada para um token, o valor em dólar do aporte é mantido —
+ * subestimar seria tão errado quanto inventar preço — e o símbolo é reportado
+ * para que a interface peça a atualização.
  */
 export function exposureForPair(
   key: PairKey,
-  snapshots: Map<PairKey, { balance: Cents; takenAt: IsoDate }>,
   netFlow: Map<PairKey, Cents>,
+  positions: Map<PairKey, Map<string, TokenPosition>>,
+  prices: Map<string, Cents>,
 ): PairExposure {
-  const snapshot = snapshots.get(key);
-  if (snapshot) {
-    return { value: snapshot.balance, confirmed: true, takenAt: snapshot.takenAt };
+  const totalUsd = netFlow.get(key) ?? ZERO;
+  const doPar = positions.get(key);
+
+  if (!doPar || doPar.size === 0) {
+    return { value: totalUsd, tokenValue: ZERO, semCotacao: [] };
   }
-  return { value: netFlow.get(key) ?? ZERO, confirmed: false, takenAt: null };
-}
 
-/** Movimentos que afetam o saldo dentro da plataforma. */
-const CASH_TYPES = ["deposit", "withdrawal", "trade_pnl"] as const;
+  let investidoEmToken = ZERO;
+  let valorAtualToken = ZERO;
+  const semCotacao: string[] = [];
 
-export function netFlowByPair(movements: MovementRow[]): Map<PairKey, Cents> {
-  return sumByPair(movements, CASH_TYPES);
+  for (const posicao of doPar.values()) {
+    investidoEmToken = addCents(investidoEmToken, posicao.investedUsd);
+    const preco = prices.get(posicao.symbol);
+    if (preco === undefined) {
+      semCotacao.push(posicao.symbol);
+      valorAtualToken = addCents(valorAtualToken, posicao.investedUsd);
+      continue;
+    }
+    valorAtualToken = addCents(valorAtualToken, cents(Math.round(posicao.amount * preco)));
+  }
+
+  // Troca a parcela aportada em token pela parcela revalorizada.
+  const emDolar = cents(totalUsd - investidoEmToken);
+  return {
+    value: addCents(emDolar, valorAtualToken),
+    tokenValue: valorAtualToken,
+    semCotacao,
+  };
 }
 
 export type SummaryInput = {
   movements: MovementRow[];
-  snapshots: SnapshotRow[];
+  prices: TokenPriceRow[];
   /** Pares ativos. Um par pode existir sem movimento (conta recém-vinculada). */
   pairs: { projectId: string; accountId: string }[];
   airdropsUsd?: string[];
 };
 
 export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
-  paresComSaldo: number;
-  paresTotal: number;
+  tokensSemCotacao: string[];
 } {
-  const { movements, snapshots, pairs, airdropsUsd = [] } = input;
+  const { movements, prices, pairs, airdropsUsd = [] } = input;
 
   const aportado = sumOfType(movements, "deposit");
   const retirado = sumOfType(movements, "withdrawal");
   const taxas = sumOfType(movements, "fee_gas");
   const pnlTrades = sumOfType(movements, "trade_pnl");
+  const rendimentos = sumOfType(movements, "yield");
   const airdrops = cents(
     airdropsUsd.reduce<number>((acc, v) => acc + fromDbNumeric(v), 0),
   );
 
-  const snapshotMap = latestSnapshotByPair(snapshots);
   const netMap = netFlowByPair(movements);
+  const posMap = tokenPositionsByPair(movements);
+  const precos = priceMap(prices);
 
   let exposicao = ZERO;
-  let paresComSaldo = 0;
+  const semCotacao = new Set<string>();
   for (const pair of pairs) {
-    const key = pairKey(pair.projectId, pair.accountId);
-    const exposure = exposureForPair(key, snapshotMap, netMap);
+    const exposure = exposureForPair(
+      pairKey(pair.projectId, pair.accountId),
+      netMap,
+      posMap,
+      precos,
+    );
     exposicao = addCents(exposicao, exposure.value);
-    if (exposure.confirmed) paresComSaldo += 1;
+    for (const simbolo of exposure.semCotacao) semCotacao.add(simbolo);
   }
 
-  // Resultado = (retirado + exposição + airdrops) − aportado − |taxas|
+  /*
+   * Resultado = exposição + |retirado| + airdrops − aportado − |taxas|
+   *
+   * A retirada entra duas vezes de propósito: ela já reduziu a exposição (é um
+   * movimento negativo no razão), mas o dinheiro sacado continua sendo do
+   * usuário. Aportar 100 e sacar 30 deixa 70 na plataforma e 30 no bolso —
+   * resultado zero, não prejuízo de 30.
+   */
   const resultado = cents(
-    retirado + exposicao + airdrops - aportado - Math.abs(taxas),
+    exposicao + Math.abs(retirado) + airdrops - aportado - Math.abs(taxas),
   );
 
   return {
@@ -153,11 +223,11 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
     retirado,
     taxas,
     pnlTrades,
+    rendimentos,
     airdrops,
     exposicao,
     resultado,
     roi: percentOf(resultado, aportado),
-    paresComSaldo,
-    paresTotal: pairs.length,
+    tokensSemCotacao: [...semCotacao],
   };
 }
