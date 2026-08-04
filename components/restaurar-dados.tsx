@@ -1,6 +1,7 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { LogOut, RotateCcw } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { Button } from "@/components/ui/button";
@@ -13,10 +14,23 @@ import { Button } from "@/components/ui/button";
  */
 export function RestaurarDados() {
   const { modificado, acoes } = useDados();
-  if (!modificado) return null;
 
   return (
     <div className="border-border border-t p-3">
+      <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+        <Link href="/entrar">
+          <LogOut className="size-4" aria-hidden="true" />
+          Sair
+        </Link>
+      </Button>
+      {modificado ? <SecaoRestaurar aoRestaurar={acoes.restaurarOriginal} /> : null}
+    </div>
+  );
+}
+
+function SecaoRestaurar({ aoRestaurar }: { aoRestaurar: () => void }) {
+  return (
+    <div className="border-border mt-3 border-t pt-3">
       <p className="text-muted-foreground mb-2 px-1 text-xs">
         Alterações salvas neste navegador.
       </p>
@@ -30,7 +44,7 @@ export function RestaurarDados() {
               "Descartar tudo que você cadastrou e voltar aos dados originais?",
             )
           ) {
-            acoes.restaurarOriginal();
+            aoRestaurar();
           }
         }}
       >

@@ -190,3 +190,60 @@ export function erros(resultado: z.ZodSafeParseResult<unknown>) {
   }
   return mapa;
 }
+
+// -------------------------------------------------------------- autenticação
+
+/**
+ * Schemas das telas de entrada.
+ *
+ * A validação de formato é definitiva e roda no cliente. A verificação de
+ * credencial — se a senha confere, se o e-mail existe, se a conta foi aprovada
+ * — é responsabilidade do servidor e entra com o backend (ARCHITECTURE.md §9).
+ */
+
+const email = z
+  .string()
+  .trim()
+  .min(1, "Informe seu e-mail.")
+  .pipe(z.email("E-mail inválido."))
+  .transform((v) => v.toLowerCase());
+
+/**
+ * Comprimento mínimo em vez de exigir símbolo e maiúscula: regra complexa
+ * empurra a pessoa para senha previsível ou anotada no papel. O que protege
+ * de verdade é o hash no servidor e o limite de tentativas.
+ */
+const senha = z
+  .string()
+  .min(8, "A senha precisa de pelo menos 8 caracteres.")
+  .max(200, "Senha longa demais.");
+
+export const loginSchema = z.object({
+  email,
+  password: z.string().min(1, "Informe sua senha."),
+});
+
+export const cadastroSchema = z
+  .object({
+    name: z.string().trim().min(2, "Informe seu nome.").max(80),
+    email,
+    password: senha,
+    passwordConfirm: z.string(),
+    accept: z.literal("on", { message: "É preciso aceitar para continuar." }),
+  })
+  .refine((dados) => dados.password === dados.passwordConfirm, {
+    message: "As senhas não coincidem.",
+    path: ["passwordConfirm"],
+  });
+
+export const recuperarSenhaSchema = z.object({ email });
+
+export const novaSenhaSchema = z
+  .object({
+    password: senha,
+    passwordConfirm: z.string(),
+  })
+  .refine((dados) => dados.password === dados.passwordConfirm, {
+    message: "As senhas não coincidem.",
+    path: ["passwordConfirm"],
+  });

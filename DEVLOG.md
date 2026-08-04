@@ -511,6 +511,54 @@ Aproveitei a reescrita para separar: gas sai do bolso, não da posição na plat
 era somado junto; agora entra no resultado como custo, mas não reduz a exposição. Um teste
 fixa isso.
 
+## Marco 9 — Telas de entrada
+
+Pedido: tela de login. Duas coisas precisaram ser separadas antes de codar.
+
+### Autenticação não é autorização
+
+O usuário justificou a escolha de e-mail e senha assim: *"assim consigo autorizar a
+entrada apenas de pessoas que eu quiser"*. A premissa não se sustenta:
+
+| | |
+|---|---|
+| **Autenticação** | provar que você é você — senha, Google, Discord |
+| **Autorização** | decidir se você pode entrar |
+
+Com "entrar com Google" ainda dá para liberar só quem se quer; com e-mail e senha,
+qualquer um se cadastra se não houver trava. O que garante "só assinantes" é a trava, não
+o método.
+
+Feita a distinção, ele escolheu **cadastro livre com aprovação manual** — e e-mail e senha
+seguiram valendo, agora por preferência e não por um controle que não existia.
+
+### A tela que quase não foi feita
+
+Aprovação manual implica um estado entre "cadastrou" e "entrou". Sem tela para ele, a
+pessoa se cadastra, tenta entrar, é recusada e conclui que quebrou. `/aguardando-aprovacao`
+existe para dizer o que acontece a seguir — e para evitar a mensagem de suporte que viria.
+
+### Decisões de segurança nas telas
+
+- **Recuperação de senha não confirma se o e-mail existe.** A mensagem é sempre "se houver
+  conta com esse e-mail, o link chega". Dizer "não encontrado" transformaria a tela num
+  verificador de quem tem conta.
+- **Senha exige comprimento, não símbolos.** Regra complexa empurra para senha previsível
+  ou anotada. O que protege de verdade é hash no servidor e limite de tentativas — ambos
+  do backend.
+- **`autocomplete` correto** (`email`, `current-password`, `new-password`), para que
+  gerenciador de senha funcione. Sem isso, o incentivo é criar senha fácil de digitar.
+
+### O aviso que ficou na tela
+
+As telas validam formato de verdade, mas não verificam credencial — não há servidor. Em
+vez de deixar a ambiguidade, cada tela traz uma linha: *"Demonstração — a autenticação
+entra na fase de backend"*. Sai junto com a entrada do Auth.js.
+
+Estruturalmente, as rotas foram separadas em dois grupos: `app/(app)` com barra lateral e
+`app/(auth)` sem — quem ainda não entrou não tem para onde navegar, e oferecer menu daria
+caminhos que terminam em erro de permissão.
+
 ---
 
 ## Estado atual
@@ -518,6 +566,7 @@ fixa isso.
 | | |
 |---|---|
 | Telas | Visão geral, tarefas, projetos, aba do projeto, contas, cotações, histórico, importar |
+| Entrada | Login, cadastro, recuperação e espera por aprovação — desenhadas, sem verificar credencial |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo em modo local (localStorage), com edição e exclusão em cascata |
