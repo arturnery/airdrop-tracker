@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Pencil } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
+import { CampoValorToken } from "@/components/forms/campo-valor-token";
 import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
 import { Button } from "@/components/ui/button";
 import {
@@ -373,33 +374,13 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
               erro={e.occurredAt}
             />
           </div>
-          <CampoTexto
-            label="Valor em dólar"
-            name="amount"
-            obrigatorio
-            defaultValue={lancamento.amountUsd}
-            erro={e.amount}
-            inputMode="decimal"
+          <CampoValorToken
+            erros={e}
+            valorInicial={lancamento.amountUsd}
+            simboloInicial={lancamento.tokenSymbol ?? ""}
+            quantidadeInicial={lancamento.tokenAmount ?? ""}
           />
-          <fieldset className="border-border grid gap-4 rounded-md border p-3 sm:grid-cols-2">
-            <legend className="text-muted-foreground px-1 text-xs">
-              Foi em token? (opcional)
-            </legend>
-            <CampoTexto
-              label="Token"
-              name="tokenSymbol"
-              defaultValue={lancamento.tokenSymbol ?? ""}
-              erro={e.tokenSymbol}
-              placeholder="SOL"
-            />
-            <CampoTexto
-              label="Quantidade"
-              name="tokenAmount"
-              defaultValue={lancamento.tokenAmount ?? ""}
-              erro={e.tokenAmount}
-              inputMode="decimal"
-            />
-          </fieldset>
+
           <CampoTexto
             label="Descrição"
             name="description"

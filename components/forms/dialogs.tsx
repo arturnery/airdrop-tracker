@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 
+import { CampoValorToken } from "@/components/forms/campo-valor-token";
 import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
 import { useDados } from "@/components/data-provider";
 import { Button } from "@/components/ui/button";
@@ -404,35 +405,7 @@ export function NovoLancamento({
               erro={e.occurredAt}
             />
           </div>
-          <CampoTexto
-            label="Valor em dólar"
-            name="amount"
-            obrigatorio
-            erro={e.amount}
-            ajuda="Negativo para perda ou saída. Aceita $20.00, 20 ou 20,00."
-            placeholder="20.00"
-            inputMode="decimal"
-          />
-
-          <fieldset className="border-border grid gap-4 rounded-md border p-3 sm:grid-cols-2">
-            <legend className="text-muted-foreground px-1 text-xs">
-              Foi em token? (opcional)
-            </legend>
-            <CampoTexto
-              label="Token"
-              name="tokenSymbol"
-              erro={e.tokenSymbol}
-              placeholder="SOL"
-            />
-            <CampoTexto
-              label="Quantidade"
-              name="tokenAmount"
-              erro={e.tokenAmount}
-              ajuda="A posição é revalorizada pela cotação atual."
-              placeholder="1.5"
-              inputMode="decimal"
-            />
-          </fieldset>
+          <CampoValorToken erros={e} />
 
           <CampoTexto
             label="Descrição"

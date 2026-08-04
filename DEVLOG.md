@@ -489,6 +489,22 @@ Duas decisões de honestidade:
 - **A data da cotação fica visível.** Preço de duas semanas atrás avaliando a posição de
   hoje é pior que nenhum, e só dá para perceber isso se a data estiver à vista.
 
+### O preço unitário estava implícito
+
+Ao testar, o usuário notou: lançando $100 e 2 SOL, em lugar nenhum aparecia que a entrada
+foi a $50 por SOL. O dado existia — investido ÷ quantidade — mas nunca era mostrado.
+
+Dois lugares passaram a exibi-lo:
+
+- **No formulário, enquanto digita.** Valor e quantidade ficam no mesmo bloco e o preço
+  aparece embaixo em tempo real. Serve de conferência: quem quis lançar 0,2 SOL e digitou
+  2 vê "$50 por SOL" onde esperava "$500" antes de salvar.
+- **Na posição do projeto**, lado a lado com a cotação atual. "Preço de entrada $180 ·
+  Cotação hoje $195" responde de imediato à pergunta que motivou o recurso.
+
+O preço não é campo: continua derivado. Guardá-lo permitiria divergir do valor e da
+quantidade se um deles fosse editado depois.
+
 ### Por que `fee_gas` saiu do saldo
 
 Aproveitei a reescrita para separar: gas sai do bolso, não da posição na plataforma. Antes
@@ -505,7 +521,7 @@ fixa isso.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo em modo local (localStorage), com edição e exclusão em cascata |
-| Testes | 136, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
+| Testes | 138, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
 | Backend | Não iniciado — fixtures atrás da interface definitiva |
 

@@ -97,6 +97,8 @@ describe("selectProjectBySlug", () => {
     expect(sol.symbol).toBe("SOL");
     expect(sol.quantidade).toBe(1);
     expect(toDbNumeric(sol.investidoUsd)).toBe("180.00");
+    // 1 SOL por $180: entrou a $180; hoje vale $195.
+    expect(toDbNumeric(sol.precoMedioUsd!)).toBe("180.00");
     expect(toDbNumeric(sol.valorAtualUsd)).toBe("195.00");
     expect(toDbNumeric(sol.valorizacao!)).toBe("15.00");
     expect(sol.valorizacaoPercent).toBe(8.3);

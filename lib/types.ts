@@ -135,6 +135,8 @@ export type TokenPositionRow = {
   symbol: string;
   quantidade: number;
   investidoUsd: Cents;
+  /** Investido ÷ quantidade — o preço que você pagou, em média. */
+  precoMedioUsd: Cents | null;
   valorAtualUsd: Cents;
   /** null quando não há cotação informada. */
   precoUsd: Cents | null;

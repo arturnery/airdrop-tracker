@@ -259,3 +259,29 @@ describe("summarizeFinancials", () => {
     expect(resumo.roi).toBeNull();
   });
 });
+
+describe("preço de entrada derivado", () => {
+  it("dividir valor por quantidade dá o preço unitário", () => {
+    const posicoes = tokenPositionsByPair([
+      // $100 por 2 SOL: entrou a $50 cada.
+      mov("p1", "a1", "deposit", "100.00", { symbol: "SOL", amount: "2" }),
+    ]);
+    const sol = posicoes.get(KEY)!.get("SOL")!;
+    expect(toDbNumeric(sol.investedUsd)).toBe("100.00");
+    expect(sol.amount).toBe(2);
+    // 10000 centavos / 2 = 5000 centavos
+    expect(Math.round(sol.investedUsd / sol.amount)).toBe(5000);
+  });
+
+  it("aportes a preços diferentes viram preço médio", () => {
+    const posicoes = tokenPositionsByPair([
+      mov("p1", "a1", "deposit", "100.00", { symbol: "SOL", amount: "2" }),
+      mov("p1", "a1", "deposit", "300.00", { symbol: "SOL", amount: "2" }),
+    ]);
+    const sol = posicoes.get(KEY)!.get("SOL")!;
+    // $400 por 4 SOL: média de $100, entre os $50 e os $150 pagos.
+    expect(toDbNumeric(sol.investedUsd)).toBe("400.00");
+    expect(sol.amount).toBe(4);
+    expect(Math.round(sol.investedUsd / sol.amount)).toBe(10000);
+  });
+});

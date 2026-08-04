@@ -223,16 +223,39 @@ export function ProjetoView({ slug }: { slug: string }) {
                       >
                         informar cotação
                       </Link>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">
-                        a <Money value={posicao.precoUsd} /> cada
-                      </span>
-                    )}
+                    ) : null}
                   </div>
+
                   <p className="font-numeric mt-2 text-2xl leading-none font-semibold">
                     <Money value={posicao.valorAtualUsd} />
                   </p>
-                  <p className="text-muted-foreground mt-2 text-xs">
+
+                  {/* Entrada vs. hoje lado a lado: é a comparação que responde
+                      "estou ganhando no preço do token?". */}
+                  <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <dt className="text-muted-foreground">Preço de entrada</dt>
+                      <dd className="mt-0.5">
+                        {posicao.precoMedioUsd === null ? (
+                          "—"
+                        ) : (
+                          <Money value={posicao.precoMedioUsd} />
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Cotação hoje</dt>
+                      <dd className="mt-0.5">
+                        {posicao.precoUsd === null ? (
+                          <span className="text-caution">não informada</span>
+                        ) : (
+                          <Money value={posicao.precoUsd} />
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <p className="border-border text-muted-foreground mt-3 border-t pt-2 text-xs">
                     aportado <Money value={posicao.investidoUsd} />
                     {posicao.valorizacao !== null ? (
                       <>

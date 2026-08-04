@@ -317,6 +317,9 @@ export function selectProjectBySlug(
         symbol,
         quantidade: dados.qtd,
         investidoUsd: dados.investido,
+        // Preço médio pago: é com ele que a cotação atual é comparada.
+        precoMedioUsd:
+          dados.qtd > 0 ? cents(Math.round(dados.investido / dados.qtd)) : null,
         valorAtualUsd: valorAtual,
         precoUsd: preco,
         valorizacao: preco === null ? null : subtractCents(valorAtual, dados.investido),
