@@ -12,7 +12,11 @@ const envSchema = z.object({
     .min(1, "DATABASE_URL é obrigatória (connection string do Neon)"),
   SEED_USER_ID: z
     .uuid("SEED_USER_ID precisa ser um UUID")
-    .describe("Usuário fixo enquanto não há login — ver ARCHITECTURE.md §9"),
+    .describe("Usuário fixo enquanto não há login — ver ARCHITECTURE.md §9.1"),
+  ADMIN_EMAIL: z
+    .email("ADMIN_EMAIL precisa ser um e-mail válido")
+    .transform((v) => v.toLowerCase())
+    .describe("E-mail que nasce com papel de admin — ver ARCHITECTURE.md §9.3"),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),

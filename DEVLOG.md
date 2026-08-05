@@ -580,6 +580,38 @@ A tela também obrigou a registrar um conceito que faltava na arquitetura: **pap
 Alguém precisa aprovar, e essa pessoa vê e-mails que os demais não veem. `users.role` e a
 verificação no servidor entraram no documento (§9.3) antes de existirem no código.
 
+### O primeiro administrador
+
+Pergunta do usuário: *"como eu vou ser o adm, qual seria meu login e senha?"*
+
+Resposta curta: nenhum, ainda — nada é verificado. Mas a pergunta expôs um problema que
+precisava ser resolvido antes do backend, não durante.
+
+**A tela de aprovação exige um admin logado.** Se a conta do dono também depender de
+aprovação, ninguém entra nunca. É o problema do ovo e da galinha, e ele aparece no
+primeiro deploy — tarde demais para improvisar.
+
+Três saídas foram avaliadas:
+
+| Abordagem | Por que não |
+|---|---|
+| Primeiro cadastro vira admin | Abre uma corrida: quem descobrir a URL antes do dono assume o sistema |
+| Promover por SQL na mão | Funciona, mas depende de lembrar o comando e de ter acesso ao banco na hora |
+| **`ADMIN_EMAIL` em variável de ambiente** | Escolhida |
+
+O que decidiu: a variável **não é alcançável pela aplicação nem adivinhável**, vale desde
+o primeiro deploy (sem janela de exposição) e alterá-la depois **não rebaixa ninguém** —
+o papel fica gravado no banco, a variável só atua no momento do cadastro.
+
+**A variável não guarda senha.** Ela diz qual e-mail é o dono; a senha continua sendo
+escolhida no cadastro e gravada como hash. O `db:seed` cria a conta com `password_hash`
+nulo e não aceita senha por parâmetro: senha em variável de ambiente ou em argumento de
+linha de comando termina no histórico do shell.
+
+Junto entraram no schema os campos que a fila de aprovação já pressupunha — `role`,
+`status`, `reviewed_at`, `review_note` — e `exigirAdmin()` em `lib/auth.ts`, ainda
+lançando erro, para que a guarda exista antes das rotas que vão precisar dela.
+
 ---
 
 ## Estado atual

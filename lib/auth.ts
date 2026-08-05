@@ -42,6 +42,36 @@ export type Acesso = {
 };
 
 /**
+ * O e-mail configurado como administrador.
+ *
+ * Existe para resolver o primeiro acesso: a tela de aprovação exige um admin
+ * logado, então a conta que aprova não pode depender de aprovação. Quem se
+ * cadastrar com este e-mail nasce `role: "admin"` e `status: "aprovado"`.
+ *
+ * A variável não guarda senha — apenas identifica o dono. Trocar o valor depois
+ * não rebaixa quem já é admin, porque o papel fica gravado no banco.
+ */
+export function ehEmailDeAdmin(email: string): boolean {
+  return email.trim().toLowerCase() === env.ADMIN_EMAIL;
+}
+
+/**
+ * Guarda das rotas de administração.
+ *
+ * Precisa ser chamada no servidor, em toda rota e Server Action de admin.
+ * Esconder o link no menu não protege nada: a URL continua acessível para
+ * quem a digitar (ARCHITECTURE.md §9.4).
+ */
+export async function exigirAdmin(): Promise<void> {
+  // Fase 7:
+  // const session = await auth();
+  // if (session?.user?.role !== "admin") notFound();
+  throw new Error(
+    "exigirAdmin() só funciona com autenticação ativa — ver ARCHITECTURE.md §9.3.",
+  );
+}
+
+/**
  * Quem está com a sessão aberta.
  *
  * Fases 1–5 não têm login: devolve o usuário semeado via variável de ambiente.

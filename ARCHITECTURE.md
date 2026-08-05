@@ -125,12 +125,17 @@ penduram no par `project_accounts`, não em `projects` e `accounts` soltos. Ver 
 #### `users`
 Existe desde o início mesmo sem tela de login.
 ```
-id            uuid PK
-email         text unique
-handle        text unique   -- usado na URL do perfil: /u/artur
-display_name  text          -- como aparece para os outros
-name          text
-created_at    timestamptz
+id             uuid PK
+email          text unique
+handle         text unique   -- usado na URL do perfil: /u/artur
+display_name   text          -- como aparece para os outros
+name           text
+password_hash  text NULL     -- hash, nunca a senha; nulo até ser definida
+role           enum default 'membro'    -- admin | membro
+status         enum default 'pendente'  -- pendente | aprovado | recusado
+reviewed_at    timestamptz NULL
+review_note    text NULL     -- por que foi recusado; só o admin vê
+created_at     timestamptz
 ```
 
 #### `profile_settings` — o que o perfil mostra para os outros
@@ -640,6 +645,38 @@ note          text NULL    -- por que foi recusado; visível só para o admin
 **Recusa não apaga o registro.** Some da fila mas fica no histórico, por dois motivos:
 quem foi recusado não reaparece como cadastro novo, e a decisão pode ser revista com o
 motivo à vista.
+
+#### O primeiro administrador
+
+A tela de aprovação exige um admin logado — então a conta que aprova não pode depender de
+aprovação. Sem resolver isso, ninguém entra nunca.
+
+| Abordagem | Problema |
+|---|---|
+| Primeiro cadastro vira admin | Quem descobrir a URL antes do dono assume o sistema |
+| Promover por SQL na mão | Funciona, mas depende de lembrar o comando e de acesso ao banco |
+| **`ADMIN_EMAIL` em variável de ambiente** | Escolhida |
+
+```
+ADMIN_EMAIL="voce@exemplo.com"
+```
+
+Quem se cadastrar com esse e-mail nasce `role: "admin"` e `status: "aprovado"`. A
+variável só identifica o dono — **não guarda senha**, que continua sendo escolhida no
+cadastro e gravada como hash.
+
+Três propriedades que fizeram a escolha:
+
+1. **Só quem controla o ambiente decide.** Variável de ambiente não é adivinhável nem
+   alcançável pela aplicação.
+2. **Não há janela de exposição.** A regra vale desde o primeiro deploy, diferente de
+   "primeiro cadastro vira admin", que abre uma corrida contra desconhecidos.
+3. **Mudar a variável não rebaixa ninguém.** O papel fica gravado no banco; a variável só
+   atua no momento do cadastro. Para trocar de administrador, altera-se o papel no banco.
+
+`npm run db:seed` cria a conta antecipadamente com `password_hash` nulo — a senha é
+definida no primeiro acesso. O script não pede nem aceita senha: senha em variável de
+ambiente ou em argumento de linha de comando termina no histórico do shell.
 
 **Revogar acesso e reconsiderar recusa são a mesma operação**: devolver para `pendente`,
 limpando a decisão anterior. Uma função só, dois botões.

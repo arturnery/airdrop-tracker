@@ -59,12 +59,34 @@ export const importStatusEnum = pgEnum("import_status", [
   "revertida",
 ]);
 
+/** Quem administra vê dados que os demais não veem — ver ARCHITECTURE.md §9.3. */
+export const userRoleEnum = pgEnum("user_role", ["admin", "membro"]);
+
+/** Cadastro livre com aprovação manual: nasce pendente. */
+export const userStatusEnum = pgEnum("user_status", [
+  "pendente",
+  "aprovado",
+  "recusado",
+]);
+
 // ---------------------------------------------------------------- tabelas
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
+  /**
+   * Hash da senha — nunca a senha. Nulo enquanto a pessoa não definiu:
+   * o administrador semeado por `npm run db:seed` existe antes de ter senha,
+   * e a define no primeiro acesso.
+   */
+  passwordHash: text("password_hash"),
+  role: userRoleEnum("role").notNull().default("membro"),
+  status: userStatusEnum("status").notNull().default("pendente"),
+  /** Quando o acesso foi liberado ou recusado; nulo enquanto pendente. */
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  /** Por que foi recusado. Visível só para quem administra. */
+  reviewNote: text("review_note"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -1,8 +1,13 @@
 /**
- * Cria o usuário local e imprime o UUID para colar em SEED_USER_ID.
+ * Cria a conta de administrador e imprime o UUID para colar em SEED_USER_ID.
  *
  * Executar depois de `npm run db:push`:
  *   npm run db:seed
+ *
+ * A conta nasce sem senha (`password_hash` nulo). A senha é definida por você
+ * no primeiro cadastro pela tela — este script não pede nem guarda senha, e
+ * senha em variável de ambiente ou em argumento de linha de comando acabaria
+ * no histórico do shell.
  */
 import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
@@ -19,35 +24,61 @@ if (!url) {
   process.exit(1);
 }
 
-const EMAIL = process.env.SEED_USER_EMAIL ?? "voce@exemplo.com";
-const NAME = process.env.SEED_USER_NAME ?? "Usuário";
+const EMAIL = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+if (!EMAIL) {
+  console.error(
+    "ADMIN_EMAIL ausente. Defina em .env.local o e-mail que vai administrar.",
+  );
+  process.exit(1);
+}
+
+const NOME = process.env.ADMIN_NAME ?? "Administrador";
 
 async function main() {
   const db = drizzle(neon(url!));
 
-  const existing = await db
+  const existente = await db
     .select()
     .from(users)
-    .where(eq(users.email, EMAIL))
+    .where(eq(users.email, EMAIL!))
     .limit(1);
 
-  if (existing.length > 0) {
-    const user = existing[0]!;
-    console.log(`Usuário já existia: ${user.email}`);
-    console.log(`\nSEED_USER_ID="${user.id}"`);
+  if (existente.length > 0) {
+    const usuario = existente[0]!;
+
+    // Já existe: garante o papel em vez de recriar. Cobre o caso de a conta ter
+    // sido criada pela tela antes de ADMIN_EMAIL ser configurado.
+    if (usuario.role !== "admin" || usuario.status !== "aprovado") {
+      await db
+        .update(users)
+        .set({ role: "admin", status: "aprovado", reviewedAt: new Date() })
+        .where(eq(users.id, usuario.id));
+      console.log(`Conta existente promovida a administrador: ${usuario.email}`);
+    } else {
+      console.log(`Administrador já configurado: ${usuario.email}`);
+    }
+
+    console.log(`\nSEED_USER_ID="${usuario.id}"`);
     return;
   }
 
-  const [created] = await db
+  const [criado] = await db
     .insert(users)
-    .values({ email: EMAIL, name: NAME })
+    .values({
+      email: EMAIL!,
+      name: NOME,
+      role: "admin",
+      status: "aprovado",
+      reviewedAt: new Date(),
+    })
     .returning();
 
-  console.log(`Usuário criado: ${created!.email}`);
-  console.log(`\nCole em .env.local:\nSEED_USER_ID="${created!.id}"`);
+  console.log(`Administrador criado: ${criado!.email}`);
+  console.log("Defina a senha no primeiro acesso, pela tela de cadastro.");
+  console.log(`\nCole em .env.local:\nSEED_USER_ID="${criado!.id}"`);
 }
 
-main().catch((error) => {
-  console.error("Falha ao semear:", error);
+main().catch((erro) => {
+  console.error("Falha ao semear:", erro);
   process.exit(1);
 });
