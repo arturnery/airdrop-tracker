@@ -1,14 +1,44 @@
-import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import {
+  boolean,
+  date,
+  foreignKey,
+  index,
+  integer,
+  numeric,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  smallint,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 /**
- * Schema do banco. Ver ARCHITECTURE.md §4 para o modelo completo.
+ * Schema do banco. Ver ARCHITECTURE.md §4 para o modelo e o porquê de cada
+ * decisão. Os pontos que mais importam:
  *
- * Fase 0 define apenas `users` e os enums do domínio — o suficiente para
- * validar a pipeline drizzle-kit ponta a ponta. As demais tabelas entram
- * na fase 1.
+ *  - **Dinheiro é `numeric`, nunca float** (§5). O Drizzle devolve `numeric`
+ *    como string e `lib/money.ts` converte para centavos inteiros.
+ *  - **Datas de evento são `date`, sem timezone** (§5). Um depósito de 25/06 é
+ *    25/06 independentemente do fuso do servidor. Só instantes de sistema
+ *    (`created_at`, `completed_at`) usam `timestamptz`.
+ *  - **Movimento pendura no par projeto×conta**, via FK composta (§4.3-B), e
+ *    não em `projects` e `accounts` soltos.
+ *  - **`user_id` em toda tabela raiz** desde a primeira migração (§9.1).
  */
 
-// ---------------------------------------------------------------- enums
+// ------------------------------------------------------------------- enums
+
+export const userRoleEnum = pgEnum("user_role", ["admin", "membro"]);
+
+export const userStatusEnum = pgEnum("user_status", [
+  "pendente",
+  "aprovado",
+  "recusado",
+]);
 
 export const projectStatusEnum = pgEnum("project_status", [
   "pesquisando",
@@ -19,6 +49,13 @@ export const projectStatusEnum = pgEnum("project_status", [
   "descartado",
 ]);
 
+/** Como o projeto é farmado — define a rotina de trabalho. */
+export const projectCategoryEnum = pgEnum("project_category", [
+  "liquidez",
+  "interacoes",
+  "perps",
+]);
+
 export const projectAccountStatusEnum = pgEnum("project_account_status", [
   "ativa",
   "pausada",
@@ -26,14 +63,15 @@ export const projectAccountStatusEnum = pgEnum("project_account_status", [
 ]);
 
 /**
- * `volume_traded` registra atividade, não caixa: fica FORA do P&L (§5).
- * `fee_gas` está declarado desde já mesmo fora do MVP — custa zero e evita
- * uma migração de enum depois.
+ * `volume_traded` registra atividade, não caixa: fica FORA do saldo (§5).
+ * `fee_gas` sai do bolso, não da posição, então também não entra no saldo —
+ * mas é descontado do resultado.
  */
 export const transactionTypeEnum = pgEnum("transaction_type", [
   "deposit",
   "withdrawal",
   "trade_pnl",
+  "yield",
   "fee_gas",
   "volume_traded",
   "other",
@@ -59,26 +97,18 @@ export const importStatusEnum = pgEnum("import_status", [
   "revertida",
 ]);
 
-/** Quem administra vê dados que os demais não veem — ver ARCHITECTURE.md §9.3. */
-export const userRoleEnum = pgEnum("user_role", ["admin", "membro"]);
-
-/** Cadastro livre com aprovação manual: nasce pendente. */
-export const userStatusEnum = pgEnum("user_status", [
-  "pendente",
-  "aprovado",
-  "recusado",
-]);
-
-// ---------------------------------------------------------------- tabelas
+// ------------------------------------------------------------------ usuários
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
+  /** Usado na URL do perfil compartilhado: /u/artur. */
+  handle: text("handle").unique(),
+  displayName: text("display_name"),
   /**
-   * Hash da senha — nunca a senha. Nulo enquanto a pessoa não definiu:
-   * o administrador semeado por `npm run db:seed` existe antes de ter senha,
-   * e a define no primeiro acesso.
+   * Hash da senha — nunca a senha. Nulo enquanto não definida: a conta semeada
+   * por `npm run db:seed` existe antes de ter senha.
    */
   passwordHash: text("password_hash"),
   role: userRoleEnum("role").notNull().default("membro"),
@@ -92,5 +122,402 @@ export const users = pgTable("users", {
     .defaultNow(),
 });
 
+/** O que o perfil mostra para outros membros. Ver §9.2. */
+export const profileSettings = pgTable("profile_settings", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  isShared: boolean("is_shared").notNull().default(false),
+  showProjects: boolean("show_projects").notNull().default(true),
+  showTasks: boolean("show_tasks").notNull().default(true),
+  showValues: boolean("show_values").notNull().default(false),
+  showAccounts: boolean("show_accounts").notNull().default(false),
+  /** Endereço 0x… — nasce desligado; ver o aviso em §9.2. */
+  showWallets: boolean("show_wallets").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// -------------------------------------------------------------------- contas
+
+/** Carteira ou perfil de navegador. Entidade global do usuário (§2.1). */
+export const accounts = pgTable(
+  "accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    walletAddress: text("wallet_address"),
+    email: text("email"),
+    notes: text("notes"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [unique("accounts_user_label_unq").on(t.userId, t.label)],
+);
+
+// ------------------------------------------------------------------ projetos
+
+export const projects = pgTable(
+  "projects",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    status: projectStatusEnum("status").notNull().default("ativo"),
+    category: projectCategoryEnum("category"),
+    /** Nome do programa de pontos ("Pontos", "XP"); nulo = não tem (§4.4). */
+    pointsLabel: text("points_label"),
+    chain: text("chain"),
+    priority: smallint("priority").notNull().default(3),
+    websiteUrl: text("website_url"),
+    discordUrl: text("discord_url"),
+    twitterUrl: text("twitter_url"),
+    docsUrl: text("docs_url"),
+    expectedTgeDate: date("expected_tge_date"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+  },
+  (t) => [
+    unique("projects_user_slug_unq").on(t.userId, t.slug),
+    // Necessário para o upsert do importador de planilha (§7.1).
+    unique("projects_user_name_unq").on(t.userId, t.name),
+  ],
+);
+
+/**
+ * Junção projeto × conta, com dados próprios.
+ *
+ * A chave composta é alvo das FKs das tabelas de movimento (§4.3-B): é ela que
+ * impede registrar dinheiro numa conta nunca vinculada àquele projeto.
+ */
+export const projectAccounts = pgTable(
+  "project_accounts",
+  {
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    status: projectAccountStatusEnum("status").notNull().default("ativa"),
+    startedAt: date("started_at").notNull(),
+    notes: text("notes"),
+  },
+  (t) => [primaryKey({ columns: [t.projectId, t.accountId] })],
+);
+
+// --------------------------------------------------------------- lançamentos
+
+/**
+ * Livro-razão. O saldo de um par projeto×conta é a soma dos lançamentos —
+ * não existe registro de saldo em separado (§2.2).
+ */
+export const transactions = pgTable(
+  "transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").notNull(),
+    accountId: uuid("account_id").notNull(),
+    occurredAt: date("occurred_at").notNull(),
+    type: transactionTypeEnum("type").notNull(),
+    /** Valor em dólar na data. Negativo em perda, retirada e taxa. */
+    amountUsd: numeric("amount_usd", { precision: 18, scale: 2 }).notNull(),
+    /** Preenchidos quando o aporte foi em token; a posição é revalorizada. */
+    tokenSymbol: text("token_symbol"),
+    tokenAmount: numeric("token_amount", { precision: 36, scale: 18 }),
+    description: text("description"),
+    importBatchId: uuid("import_batch_id"),
+    /** Idempotência da importação: reimportar o mesmo arquivo não duplica. */
+    dedupeKey: text("dedupe_key"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.projectId, t.accountId],
+      foreignColumns: [projectAccounts.projectId, projectAccounts.accountId],
+      name: "transactions_project_account_fk",
+    }).onDelete("cascade"),
+    index("transactions_user_project_date_idx").on(
+      t.userId,
+      t.projectId,
+      t.occurredAt,
+    ),
+    unique("transactions_user_dedupe_unq").on(t.userId, t.dedupeKey),
+  ],
+);
+
+/**
+ * Cotação informada manualmente (§4.4).
+ *
+ * Sem API externa por decisão de projeto. Um símbolo por usuário: reinformar
+ * substitui o preço anterior.
+ */
+export const tokenPrices = pgTable(
+  "token_prices",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    symbol: text("symbol").notNull(),
+    priceUsd: numeric("price_usd", { precision: 18, scale: 8 }).notNull(),
+    updatedAt: date("updated_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.symbol] })],
+);
+
+// -------------------------------------------------------------------- pontos
+
+/**
+ * Foto do acumulado de pontos. Programas exibem total, não extrato — o ganho
+ * do período sai da diferença entre duas medições (§4.4).
+ */
+export const pointsSnapshots = pgTable(
+  "points_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").notNull(),
+    accountId: uuid("account_id").notNull(),
+    takenAt: date("taken_at").notNull(),
+    points: numeric("points", { precision: 24, scale: 4 }).notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.projectId, t.accountId],
+      foreignColumns: [projectAccounts.projectId, projectAccounts.accountId],
+      name: "points_project_account_fk",
+    }).onDelete("cascade"),
+    // Uma medição por par por dia: reinformar corrige em vez de duplicar.
+    unique("points_pair_day_unq").on(t.projectId, t.accountId, t.takenAt),
+  ],
+);
+
+// ------------------------------------------------------------------- tarefas
+
+export const tasks = pgTable("tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  /** Nulo = a tarefa vale para todas as contas do projeto. */
+  accountId: uuid("account_id").references(() => accounts.id, {
+    onDelete: "cascade",
+  }),
+  title: text("title").notNull(),
+  description: text("description"),
+  recurrence: recurrenceEnum("recurrence").notNull().default("none"),
+  intervalDays: smallint("interval_days"),
+  dueDate: date("due_date"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Ocorrências materializadas.
+ *
+ * A constraint única garante idempotência do motor de recorrência (§6): o
+ * `INSERT ... ON CONFLICT DO NOTHING` pode rodar quantas vezes for.
+ */
+export const taskOccurrences = pgTable(
+  "task_occurrences",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    dueDate: date("due_date").notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    skipped: boolean("skipped").notNull().default(false),
+  },
+  (t) => [
+    unique("occurrences_task_account_date_unq").on(
+      t.taskId,
+      t.accountId,
+      t.dueDate,
+    ),
+  ],
+);
+
+// --------------------------------------------------------------------- metas
+
+export const goals = pgTable("goals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  accountId: uuid("account_id").references(() => accounts.id, {
+    onDelete: "cascade",
+  }),
+  title: text("title").notNull(),
+  metric: goalMetricEnum("metric").notNull(),
+  targetValue: numeric("target_value", { precision: 18, scale: 2 }).notNull(),
+  deadline: date("deadline"),
+  achievedAt: timestamp("achieved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Progresso manual de meta.
+ *
+ * Só para métricas que não se derivam de outra tabela (§4.3-C). `current_value`
+ * não existe como coluna: valor calculado guardado diverge quando um registro
+ * antigo é editado.
+ */
+export const goalEntries = pgTable("goal_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  goalId: uuid("goal_id")
+    .notNull()
+    .references(() => goals.id, { onDelete: "cascade" }),
+  occurredAt: date("occurred_at").notNull(),
+  value: numeric("value", { precision: 18, scale: 2 }).notNull(),
+  note: text("note"),
+});
+
+// --------------------------------------------------------------- recebimentos
+
+export const airdropClaims = pgTable(
+  "airdrop_claims",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").notNull(),
+    accountId: uuid("account_id").notNull(),
+    receivedAt: date("received_at").notNull(),
+    tokenSymbol: text("token_symbol").notNull(),
+    tokenAmount: numeric("token_amount", { precision: 36, scale: 18 }).notNull(),
+    priceUsd: numeric("price_usd", { precision: 18, scale: 8 }).notNull(),
+    /** Congelado no registro: o preço muda depois, o histórico não. */
+    valueUsd: numeric("value_usd", { precision: 18, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.projectId, t.accountId],
+      foreignColumns: [projectAccounts.projectId, projectAccounts.accountId],
+      name: "claims_project_account_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+// ---------------------------------------------------------------- importação
+
+/** Rastro de cada importação, para desfazer o lote sem tocar no resto (§7.3). */
+export const importBatches = pgTable("import_batches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  importedAt: timestamp("imported_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  rowCount: integer("row_count").notNull().default(0),
+  createdProjects: integer("created_projects").notNull().default(0),
+  createdAccounts: integer("created_accounts").notNull().default(0),
+  status: importStatusEnum("status").notNull().default("concluida"),
+});
+
+// ------------------------------------------------------------------ relações
+
+export const usersRelations = relations(users, ({ many, one }) => ({
+  accounts: many(accounts),
+  projects: many(projects),
+  transactions: many(transactions),
+  settings: one(profileSettings),
+}));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  user: one(users, { fields: [projects.userId], references: [users.id] }),
+  contas: many(projectAccounts),
+  transactions: many(transactions),
+  tasks: many(tasks),
+  goals: many(goals),
+}));
+
+export const accountsRelations = relations(accounts, ({ one, many }) => ({
+  user: one(users, { fields: [accounts.userId], references: [users.id] }),
+  projetos: many(projectAccounts),
+}));
+
+export const projectAccountsRelations = relations(projectAccounts, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectAccounts.projectId],
+    references: [projects.id],
+  }),
+  account: one(accounts, {
+    fields: [projectAccounts.accountId],
+    references: [accounts.id],
+  }),
+}));
+
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
+  project: one(projects, { fields: [tasks.projectId], references: [projects.id] }),
+  occurrences: many(taskOccurrences),
+}));
+
+export const taskOccurrencesRelations = relations(taskOccurrences, ({ one }) => ({
+  task: one(tasks, { fields: [taskOccurrences.taskId], references: [tasks.id] }),
+}));
+
+export const goalsRelations = relations(goals, ({ one, many }) => ({
+  project: one(projects, { fields: [goals.projectId], references: [projects.id] }),
+  entries: many(goalEntries),
+}));
+
+// --------------------------------------------------------------------- tipos
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type Account = typeof accounts.$inferSelect;
+export type Project = typeof projects.$inferSelect;
+export type ProjectAccount = typeof projectAccounts.$inferSelect;
+export type Transaction = typeof transactions.$inferSelect;
+export type NewTransaction = typeof transactions.$inferInsert;
+export type TokenPrice = typeof tokenPrices.$inferSelect;
+export type PointsSnapshot = typeof pointsSnapshots.$inferSelect;
+export type Task = typeof tasks.$inferSelect;
+export type TaskOccurrence = typeof taskOccurrences.$inferSelect;
+export type Goal = typeof goals.$inferSelect;
+export type AirdropClaim = typeof airdropClaims.$inferSelect;
+export type ImportBatch = typeof importBatches.$inferSelect;
+export type ProfileSettings = typeof profileSettings.$inferSelect;
