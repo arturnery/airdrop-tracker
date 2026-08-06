@@ -68,13 +68,18 @@ export async function sair(): Promise<void> {
  * administração. A exceção é o e-mail configurado em `ADMIN_EMAIL`, que nasce
  * administrador e aprovado: sem isso não haveria quem aprovasse o primeiro.
  *
- * **E-mail já cadastrado não é revelado.** Dizer "este e-mail já existe"
- * permitiria descobrir quem é membro testando endereços no formulário, o que
- * entregaria a lista de assinantes para phishing direcionado.
+ * **E-mail já cadastrado é recusado com mensagem explícita**, por decisão do
+ * autor: quem tentava recadastrar não entendia o que acontecia, e a alternativa
+ * silenciosa custava mais em confusão do que rendia em proteção.
  *
- * Em vez de simplesmente calar, a tela de espera explica os dois caminhos
- * possíveis sem confirmar qual aconteceu: quem chegou ali por engano sabe o
- * que fazer, e quem está sondando não aprende nada.
+ * A contrapartida assumida: o formulário confirma se um endereço tem conta, o
+ * que permite mapear membros testando e-mails. Aceitável para uma comunidade
+ * fechada e pequena; se um dia o cadastro for exposto a público amplo, vale
+ * rever para uma resposta que não distingue os casos.
+ *
+ * A exceção é a conta semeada pelo administrador, que existe sem senha: nela o
+ * cadastro define a senha em vez de recusar, ou o primeiro acesso ficaria
+ * impossível.
  */
 export async function cadastrar(entrada: unknown): Promise<ErroAuth | void> {
   const analisado = cadastroSchema.safeParse(entrada);
@@ -97,26 +102,28 @@ export async function cadastrar(entrada: unknown): Promise<ErroAuth | void> {
     const hash = await gerarHash(password);
 
     if (existente) {
-      /*
-       * Conta semeada pelo administrador existe antes de ter senha. Neste caso
-       * o cadastro define a senha em vez de recusar. Se já houver senha, nada
-       * acontece: e a resposta continua idêntica, para não revelar o estado.
-       */
-      if (!existente.passwordHash) {
-        await db
-          .update(schema.users)
-          .set({ name, passwordHash: hash })
-          .where(eq(schema.users.id, existente.id));
+      // Conta com senha definida: recusa, e a pessoa entra pelo login.
+      if (existente.passwordHash) {
+        return {
+          erros: {
+            geral:
+              "Esse e-mail já tem conta. Entre com sua senha, ou use \"Esqueci minha senha\" se não lembrar dela.",
+          },
+        };
       }
+
       /*
-       * Quem já está aprovado vai para o login. Os demais caem na tela de
-       * espera, igual a um cadastro novo: a diferença não pode aparecer, ou o
-       * formulário viraria um verificador de contas.
+       * Sem senha é a conta semeada por `npm run db:seed`, criada antes de o
+       * administrador definir a dele. Aqui o cadastro completa o registro em
+       * vez de recusar, ou o primeiro acesso ficaria impossível.
        */
+      await db
+        .update(schema.users)
+        .set({ name, passwordHash: hash })
+        .where(eq(schema.users.id, existente.id));
+
       destino =
-        existente.status === "aprovado"
-          ? "/entrar?ja=1"
-          : "/aguardando-aprovacao";
+        existente.status === "aprovado" ? "/entrar" : "/aguardando-aprovacao";
     } else {
       const admin = ehEmailDeAdmin(email);
 

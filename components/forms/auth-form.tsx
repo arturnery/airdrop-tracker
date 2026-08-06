@@ -57,13 +57,28 @@ export function AuthForm({
         <p className="text-muted-foreground mt-2 text-sm">{descricao}</p>
       ) : null}
 
+      {/*
+        Faixa informativa em tom neutro: verde comunicaria acerto, e aqui é só
+        contexto. Erro tem canal próprio, em vermelho, logo abaixo.
+      */}
       {destaque ? (
         <div
           role="status"
-          className="border-primary/40 bg-primary/10 mt-5 rounded-md border px-4 py-3 text-sm"
+          className="border-border bg-secondary/50 text-muted-foreground mt-5 rounded-md border px-4 py-3 text-sm"
         >
           {destaque}
         </div>
+      ) : null}
+
+      {/* Erro geral acima do formulário: quem foi recusado precisa ver o
+          motivo antes de olhar os campos de novo. */}
+      {erros.geral ? (
+        <p
+          role="alert"
+          className="border-negative/40 bg-negative/10 text-negative mt-5 rounded-md border px-4 py-3 text-sm"
+        >
+          {erros.geral}
+        </p>
       ) : null}
 
       <form
@@ -89,21 +104,12 @@ export function AuthForm({
       >
         {children({ erros, enviando })}
 
-        {erros.geral ? (
-          <p
-            role="alert"
-            className="border-negative/30 bg-negative/5 text-negative rounded-md border px-3 py-2 text-sm"
-          >
-            {erros.geral}
-          </p>
-        ) : null}
-
         {/* Confirmação em tom neutro: não é erro, e pintá-la de vermelho
             faria a pessoa achar que algo deu errado. */}
         {aviso ? (
           <p
             role="status"
-            className="border-primary/30 bg-primary/5 text-muted-foreground rounded-md border px-3 py-2 text-sm"
+            className="border-border bg-secondary/50 text-muted-foreground rounded-md border px-3 py-2 text-sm"
           >
             {aviso}
           </p>

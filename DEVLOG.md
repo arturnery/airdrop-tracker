@@ -707,6 +707,27 @@ update cruzado afetou 0 linha(s): esperado 0
 O último número é o que importa: um `UPDATE` com o id de um projeto do admin e o `user_id`
 do outro afeta **zero linhas**. Conhecer o uuid não basta.
 
+### Revertendo a decisão sobre e-mail duplicado
+
+A escolha anterior era não confirmar que um e-mail já tinha conta, para que ninguém
+mapeasse os membros testando endereços. Ao usar, o autor concluiu que o custo em confusão
+era maior que a proteção: quem tentava recadastrar não entendia o que acontecia.
+
+**Decisão revertida com a contrapartida registrada:** o cadastro agora recusa e-mail já
+usado com mensagem explícita. O formulário passa a confirmar se um endereço tem conta, o
+que é aceitável para uma comunidade fechada e pequena, e deve ser revisto se o cadastro
+um dia ficar aberto a público amplo.
+
+Uma exceção precisou ficar de pé: a conta semeada por `db:seed` existe **sem senha**, e é
+o cadastro que a define. Recusar todo e-mail existente tornaria o primeiro acesso do
+administrador impossível. A regra passou a olhar o hash, não a existência: sem senha,
+completa o registro; com senha, recusa.
+
+Junto veio uma correção de cor. O aviso estava em verde, e verde comunica acerto: ali é
+bloqueio. Erro passou a vermelho e subiu para cima do formulário, onde quem foi recusado
+vê antes de mexer nos campos de novo. As faixas informativas ficaram em tom neutro, para
+que a cor signifique alguma coisa quando aparecer.
+
 ### Recuperação de senha sem serviço de e-mail
 
 O usuário notou que a tela de "esqueci minha senha" prometia um link que nunca sairia:

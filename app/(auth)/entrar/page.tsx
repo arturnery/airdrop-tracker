@@ -1,33 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
 import { entrar } from "@/actions/auth";
 import { AuthForm } from "@/components/forms/auth-form";
 import { CampoTexto } from "@/components/forms/fields";
 
 export default function EntrarPage() {
-  /*
-   * `?ja=1` chega de quem tentou se cadastrar com um e-mail que já tinha conta
-   * aprovada. Avisar aqui evita o "cadastrei e não aconteceu nada" sem que o
-   * formulário de cadastro precise confirmar que o endereço existe.
-   */
-  const jaTinhaConta = useSearchParams().get("ja") === "1";
-
   return (
     <AuthForm
       titulo="Entrar"
       descricao="Acompanhe seu farming de airdrops."
-      destaque={
-        jaTinhaConta ? (
-          <>
-            <strong className="font-medium">Esse e-mail já tem conta.</strong>{" "}
-            Não é preciso cadastrar de novo: entre com sua senha, ou use
-            &quot;Esqueci minha senha&quot; se não lembrar dela.
-          </>
-        ) : null
-      }
       rotuloCarregando="Entrando…"
       rotuloEnvio="Entrar"
       aoEnviar={(dados) =>
