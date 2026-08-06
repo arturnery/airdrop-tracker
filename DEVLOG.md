@@ -880,6 +880,26 @@ custar 11 linhas pagou de novo aqui.
 
 ---
 
+### Subida em produção
+
+Duas coisas apareceram só na hora de subir, e nenhuma delas dava sinal em desenvolvimento.
+
+`lib/env.ts` valida as variáveis de ambiente na inicialização e **falha o processo** se
+alguma faltar. A intenção é boa: melhor recusar a subir com mensagem clara do que deixar
+um `undefined` viajar até a string de conexão. Só que a lista ainda exigia `SEED_USER_ID`,
+que existia para fixar um dono enquanto não havia login. Com sessão real, só os scripts de
+seed a usam, e eles leem `process.env` direto. A validação estava protegendo a aplicação
+de uma variável que a aplicação não lê. Saiu do schema.
+
+A lição é sobre validação de ambiente em geral: ela precisa ser revisada quando o motivo
+de uma variável existir desaparece, senão vira um obstáculo herdado.
+
+O segredo de sessão de produção foi gerado novo, diferente do de desenvolvimento. Reusar o
+mesmo faria um token assinado na máquina local valer no ambiente público.
+
+
+---
+
 ## Estado atual
 
 | | |
@@ -894,6 +914,7 @@ custar 11 linhas pagou de novo aqui.
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
+| Produção | Vercel, com banco Neon e segredo de sessão próprio |
 
 ### Pendências conhecidas
 
@@ -904,3 +925,7 @@ custar 11 linhas pagou de novo aqui.
   seria pior.
 - Sem alternância entre tema claro e escuro: o tema claro está escrito e funcional, falta
   o controle.
+- O vínculo projeto×conta só nasce no primeiro lançamento. Funciona, mas é implícito:
+  criar o vínculo junto com o projeto tornaria a regra mais previsível.
+- Produção e desenvolvimento usam o mesmo banco. Aceitável para uso pessoal, precisa
+  separar antes de abrir para a comunidade.
