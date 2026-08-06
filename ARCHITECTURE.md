@@ -3,7 +3,7 @@
 Documento de arquitetura do sistema. Escrito **antes** da implementação, para servir como
 referência de decisões e como material de portfólio.
 
-**Revisão 7** — papel de administrador e fila de aprovação (§9.4).
+**Revisão 9** — banco, Server Actions e sessão em produção.
 
 ---
 
@@ -106,8 +106,8 @@ camadas se sobreporiam. tRPC já está comprovado no LVL, então nada se perde n
         ┌──────────────────┼──────────────────┐
         ▼                  ▼                  ▼
 ┌──────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│ transactions │  │balance_snapshots│  │ airdrop_claims  │
-│ (fluxo, soma)│  │ (foto, ñ soma)  │  │  (TGE caiu)     │
+│ transactions │  │ points_snapshots│  │ airdrop_claims  │
+│ (livro-razão)│  │ (foto de pontos)│  │  (TGE caiu)     │
 └──────┬───────┘  └─────────────────┘  └─────────────────┘
        │
        ▼                     ┌────────┐      ┌──────────────┐
@@ -117,8 +117,10 @@ camadas se sobreporiam. tRPC já está comprovado no LVL, então nada se perde n
 └──────────────┘
 ```
 
-Todas as tabelas de movimento (`transactions`, `balance_snapshots`, `airdrop_claims`)
+Todas as tabelas de movimento (`transactions`, `points_snapshots`, `airdrop_claims`)
 penduram no par `project_accounts`, não em `projects` e `accounts` soltos. Ver §4.3.
+
+Não existe `balance_snapshots`: o saldo é a soma dos lançamentos (revisão 6).
 
 ### 4.2. Tabelas
 

@@ -68,7 +68,11 @@ export async function cadastrar(entrada: unknown): Promise<ResultadoAuth> {
 
   try {
     const [existente] = await db
-      .select({ id: schema.users.id, passwordHash: schema.users.passwordHash })
+      .select({
+        id: schema.users.id,
+        passwordHash: schema.users.passwordHash,
+        status: schema.users.status,
+      })
       .from(schema.users)
       .where(eq(schema.users.email, email))
       .limit(1);
@@ -87,7 +91,13 @@ export async function cadastrar(entrada: unknown): Promise<ResultadoAuth> {
           .set({ name, passwordHash: hash })
           .where(eq(schema.users.id, existente.id));
       }
-      return { ok: true, destino: "/aguardando-aprovacao" };
+      // Quem já está aprovado vai direto para o login; mandá-lo esperar
+      // aprovação seria mentira e ele ficaria travado numa tela sem saída.
+      return {
+        ok: true,
+        destino:
+          existente.status === "aprovado" ? "/entrar" : "/aguardando-aprovacao",
+      };
     }
 
     const admin = ehEmailDeAdmin(email);
