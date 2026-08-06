@@ -26,6 +26,7 @@ export function AuthForm({
   children,
   aoEnviar,
   rotuloEnvio,
+  rotuloCarregando = "Aguarde…",
   rodape,
 }: {
   titulo: string;
@@ -36,6 +37,8 @@ export function AuthForm({
     { ok: true; destino: string } | { ok: false; erros: Erros }
   >;
   rotuloEnvio: string;
+  /** Texto durante o envio. Verificar senha leva ~1s por causa do hash. */
+  rotuloCarregando?: string;
   rodape?: ReactNode;
 }) {
   const router = useRouter();
@@ -55,19 +58,25 @@ export function AuthForm({
         onSubmit={async (evento) => {
           evento.preventDefault();
           setEnviando(true);
-          try {
-            const resultado = await aoEnviar(new FormData(evento.currentTarget));
-            if (!resultado.ok) {
-              setErros(resultado.erros);
-              return;
-            }
-            setErros({});
-            router.push(resultado.destino);
-            // Recarrega para que o layout enxergue a sessão nova.
-            router.refresh();
-          } finally {
+
+          const resultado = await aoEnviar(new FormData(evento.currentTarget));
+
+          if (!resultado.ok) {
+            setErros(resultado.erros);
             setEnviando(false);
+            return;
           }
+
+          /*
+           * Em caso de sucesso o botão NÃO volta ao estado normal: a navegação
+           * leva um instante, e devolver o botão antes dela dá a impressão de
+           * que o clique não fez nada — foi exatamente o que aconteceu no
+           * primeiro teste.
+           */
+          setErros({});
+          router.push(resultado.destino);
+          // Recarrega para que o layout enxergue a sessão nova.
+          router.refresh();
         }}
       >
         {children({ erros, enviando })}
@@ -81,11 +90,16 @@ export function AuthForm({
           </p>
         ) : null}
 
-        <Button type="submit" className="w-full" disabled={enviando}>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={enviando}
+          aria-busy={enviando}
+        >
           {enviando ? (
             <>
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              Aguarde…
+              {rotuloCarregando}
             </>
           ) : (
             rotuloEnvio

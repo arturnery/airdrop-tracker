@@ -12,6 +12,7 @@ export default function CriarContaPage() {
     <AuthForm
       titulo="Criar conta"
       descricao="O acesso é liberado manualmente depois do cadastro."
+      rotuloCarregando="Criando conta…"
       rotuloEnvio="Criar conta"
       aoEnviar={(dados) =>
         cadastrar({

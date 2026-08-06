@@ -11,6 +11,7 @@ export default function EntrarPage() {
     <AuthForm
       titulo="Entrar"
       descricao="Acompanhe seu farming de airdrops."
+      rotuloCarregando="Entrando…"
       rotuloEnvio="Entrar"
       aoEnviar={(dados) =>
         entrar({

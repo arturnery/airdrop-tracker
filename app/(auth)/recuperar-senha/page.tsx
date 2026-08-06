@@ -11,6 +11,7 @@ export default function RecuperarSenhaPage() {
     <AuthForm
       titulo="Recuperar senha"
       descricao="Você recebe um link para definir uma senha nova."
+      rotuloCarregando="Enviando…"
       rotuloEnvio="Enviar link"
       aoEnviar={async (dados) => {
         const resultado = recuperarSenhaSchema.safeParse({
