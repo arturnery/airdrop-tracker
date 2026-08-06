@@ -707,6 +707,44 @@ update cruzado afetou 0 linha(s): esperado 0
 O último número é o que importa: um `UPDATE` com o id de um projeto do admin e o `user_id`
 do outro afeta **zero linhas**. Conhecer o uuid não basta.
 
+### Recuperação de senha sem serviço de e-mail
+
+O usuário notou que a tela de "esqueci minha senha" prometia um link que nunca sairia:
+não há serviço de envio configurado. Prometer o que não se entrega é pior que não
+oferecer.
+
+Três saídas foram avaliadas. Configurar Resend resolveria de vez, mas exige conta,
+verificação de domínio e mais uma chave de API. Remover a tela deixaria quem esquece a
+senha sem saída alguma.
+
+**Escolhida: o administrador redefine pela área de membros.** Gera uma senha temporária,
+mostrada uma única vez num diálogo, e entrega pelo canal em que a comunidade já conversa.
+Para um grupo em que as pessoas se conhecem, isso é mais confiável que um link por e-mail
+que pode cair no spam.
+
+Dois cuidados na implementação:
+
+- **A senha aparece só uma vez.** O banco guarda apenas o hash, então não há como
+  consultá-la depois; se sumir da tela antes de ser copiada, gera-se outra. A interface
+  diz isso em vez de deixar a pessoa descobrir.
+- **Não redefine senha de outro administrador.** O `UPDATE` exclui `role = 'admin'`, para
+  que ninguém assuma a conta de quem administra.
+
+O alfabeto da senha exclui caracteres que se confundem ao ditar (`0`/`O`, `1`/`l`/`I`) e
+usa blocos separados por hífen. Quem recebe precisa conseguir digitar.
+
+A tela pública passou a dizer a verdade: o envio automático não está ativo, e o caminho é
+pedir no grupo.
+
+### O aviso que existia mas ninguém via
+
+Na mesma rodada, o usuário relatou que cadastrar com e-mail existente não avisava nada.
+O log mostrou que o redirecionamento acontecia e a mensagem era renderizada: ela estava
+no subtítulo, em cinza pequeno, e passou despercebida.
+
+Virou faixa destacada acima do formulário. **Informação correta em lugar que ninguém olha
+equivale a não ter informação**, e a única forma de descobrir isso é ver alguém usar.
+
 ---
 
 ## Estado atual

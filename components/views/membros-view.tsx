@@ -1,13 +1,21 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Clock, ShieldCheck, Undo2, X } from "lucide-react";
+import { Check, Clock, Copy, KeyRound, ShieldCheck, Undo2, X } from "lucide-react";
 
-import { reabrirMembro, revisarMembro } from "@/actions";
+import { reabrirMembro, redefinirSenhaDeMembro, revisarMembro } from "@/actions";
 import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
 import { resumirMembros } from "@/lib/selectors";
@@ -134,6 +142,98 @@ function LinhaPendente({ membro, hoje }: { membro: MemberRow; hoje: string }) {
         </div>
       ) : null}
     </li>
+  );
+}
+
+/**
+ * Redefinição de senha pelo administrador.
+ *
+ * A senha aparece uma única vez, num diálogo: o banco guarda só o hash, então
+ * não há como consultá-la depois. Se sumir da tela antes de ser copiada, gera-se
+ * outra. O diálogo evita espremer a senha dentro da célula da tabela, onde ela
+ * ficaria difícil de ler e de copiar.
+ */
+function RedefinirSenha({ membro }: { membro: MemberRow }) {
+  const [senha, setSenha] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [copiada, setCopiada] = useState(false);
+  const [gerando, iniciar] = useTransition();
+
+  const gerar = () =>
+    iniciar(async () => {
+      const resultado = await redefinirSenhaDeMembro(membro.id);
+      if (resultado.ok) {
+        setSenha(resultado.senha);
+        setErro(null);
+        setCopiada(false);
+      } else {
+        setErro(resultado.erro);
+        setSenha(null);
+      }
+    });
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8"
+        disabled={gerando}
+        onClick={gerar}
+        title={`Gerar senha temporária para ${membro.nome}`}
+      >
+        <KeyRound className="size-3.5" aria-hidden="true" />
+        Redefinir senha
+      </Button>
+
+      <Dialog
+        open={senha !== null}
+        onOpenChange={(aberto) => {
+          if (!aberto) setSenha(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Senha temporária</DialogTitle>
+            <DialogDescription>
+              Para {membro.nome}. Aparece só agora: o sistema guarda apenas o
+              hash, então não dá para consultá-la depois.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center gap-2">
+            <code className="bg-secondary flex-1 rounded-md px-3 py-2.5 text-center font-mono text-lg tracking-wider select-all">
+              {senha}
+            </code>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (senha) void navigator.clipboard.writeText(senha);
+                setCopiada(true);
+              }}
+            >
+              <Copy className="size-4" aria-hidden="true" />
+              {copiada ? "Copiada" : "Copiar"}
+            </Button>
+          </div>
+
+          <p className="text-muted-foreground text-sm">
+            Entregue por Discord ou WhatsApp e peça para trocar depois de entrar.
+            A senha antiga deixou de valer.
+          </p>
+
+          <DialogFooter>
+            <Button onClick={() => setSenha(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {erro ? (
+        <p role="alert" className="text-negative text-xs">
+          {erro}
+        </p>
+      ) : null}
+    </>
   );
 }
 
@@ -273,7 +373,8 @@ export function MembrosView({
                       {membro.revisadoEm ? formatDateBr(membro.revisadoEm) : "-"}
                     </td>
                     <td className="px-2 py-2">
-                      <div className="flex justify-end">
+                      <div className="flex flex-wrap items-center justify-end gap-1">
+                        <RedefinirSenha membro={membro} />
                         <ConfirmarExclusao
                           titulo="Revogar acesso"
                           alvo={membro.nome}

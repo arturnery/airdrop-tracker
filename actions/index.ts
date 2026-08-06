@@ -20,6 +20,11 @@ import {
   vinculoSchema,
 } from "@/lib/validators";
 
+import { revalidatePath } from "next/cache";
+
+import { getCurrentUserId } from "@/lib/auth";
+import { gerarHash } from "@/lib/senha";
+
 import { executar, ROTAS_DADOS, type ResultadoAcao } from "./_core";
 
 /**
@@ -577,4 +582,61 @@ export async function reabrirMembro(id: string): Promise<ResultadoAcao> {
       .set({ status: "pendente", reviewedAt: null, reviewNote: null })
       .where(and(eq(schema.users.id, dados.id), ne(schema.users.role, "admin")));
   }, ["/membros"]);
+}
+
+/**
+ * Gera uma senha temporária para um membro.
+ *
+ * Existe porque não há envio de e-mail: quem esquece a senha fala com o
+ * administrador, que gera uma provisória e entrega por onde já conversa com a
+ * comunidade. Para um grupo em que as pessoas se conhecem, isso é mais
+ * confiável que um link por e-mail, que pode cair em spam ou ser interceptado.
+ *
+ * A senha é devolvida **uma única vez**, no retorno desta ação. O banco guarda
+ * só o hash, então não há como consultá-la depois: se o administrador perder,
+ * gera outra.
+ */
+export async function redefinirSenhaDeMembro(
+  id: string,
+): Promise<{ ok: true; senha: string } | { ok: false; erro: string }> {
+  const analisado = idSchema.safeParse({ id });
+  if (!analisado.success) return { ok: false, erro: "Registro inválido." };
+
+  try {
+    const userId = await getCurrentUserId();
+    await exigirAdministrador(userId);
+
+    const senha = gerarSenhaTemporaria();
+    const resultado = await db
+      .update(schema.users)
+      .set({ passwordHash: await gerarHash(senha) })
+      // Nunca sobre outro admin: senha de administrador não se redefine por
+      // aqui, para que ninguém assuma a conta de quem administra.
+      .where(and(eq(schema.users.id, analisado.data.id), ne(schema.users.role, "admin")))
+      .returning({ id: schema.users.id });
+
+    if (resultado.length === 0) {
+      return { ok: false, erro: "Membro não encontrado." };
+    }
+
+    revalidatePath("/membros");
+    return { ok: true, senha };
+  } catch (erro) {
+    console.error("[redefinir senha]", erro);
+    return { ok: false, erro: "Não foi possível redefinir. Tente de novo." };
+  }
+}
+
+/**
+ * Senha provisória legível: blocos separados por hífen, sem caracteres que se
+ * confundem ao ditar (0/O, 1/l/I). Quem recebe precisa conseguir digitar.
+ */
+function gerarSenhaTemporaria(): string {
+  const alfabeto = "abcdefghjkmnpqrstuvwxyz23456789";
+  const bloco = () =>
+    Array.from(
+      { length: 4 },
+      () => alfabeto[Math.floor(Math.random() * alfabeto.length)],
+    ).join("");
+  return `${bloco()}-${bloco()}-${bloco()}`;
 }

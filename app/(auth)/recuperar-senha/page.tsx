@@ -10,18 +10,31 @@ export default function RecuperarSenhaPage() {
   return (
     <AuthForm
       titulo="Recuperar senha"
-      descricao="Você recebe um link para definir uma senha nova."
+      descricao="O envio automático por e-mail ainda não está ativo."
       rotuloCarregando="Enviando…"
-      rotuloEnvio="Enviar link"
+      rotuloEnvio="Registrar pedido"
+      destaque={
+        <>
+          <strong className="font-medium">Peça a redefinição no grupo.</strong>{" "}
+          Quem administra gera uma senha temporária e entrega direto para você.
+          É mais rápido que esperar e-mail, e sem risco de cair no spam.
+        </>
+      }
       aoEnviar={async (dados) => {
         const resultado = recuperarSenhaSchema.safeParse({
           email: String(dados.get("email") ?? ""),
         });
         if (!resultado.success) return { erros: extrairErros(resultado) };
-        // O envio do e-mail entra quando houver serviço configurado. Até lá a
-        // tela confirma sem revelar se o endereço existe.
+        /*
+         * Sem serviço de e-mail configurado, esta tela não envia nada. Em vez de
+         * prometer um link que não chega, ela orienta o caminho que funciona
+         * hoje: o administrador redefine pela área de membros.
+         *
+         * A resposta continua sem confirmar se o endereço existe.
+         */
         return {
-          aviso: "Se houver conta com esse e-mail, o link chega em instantes.",
+          aviso:
+            "Anotado. Fale com quem administra a comunidade para receber uma senha temporária.",
         };
       }}
       rodape={
@@ -40,7 +53,7 @@ export default function RecuperarSenhaPage() {
           erro={erros.email}
           /* Não confirma se o e-mail existe: dizer "não encontrado" revelaria
              quem tem conta para quem estivesse testando endereços. */
-          ajuda="Se houver conta com esse e-mail, o link chega em instantes."
+          ajuda="Serve para você conferir qual endereço usou no cadastro."
           placeholder="voce@exemplo.com"
           autoFocus
         />

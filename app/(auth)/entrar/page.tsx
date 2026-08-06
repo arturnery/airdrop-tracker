@@ -18,10 +18,15 @@ export default function EntrarPage() {
   return (
     <AuthForm
       titulo="Entrar"
-      descricao={
-        jaTinhaConta
-          ? "Este e-mail já tem conta. Entre com sua senha."
-          : "Acompanhe seu farming de airdrops."
+      descricao="Acompanhe seu farming de airdrops."
+      destaque={
+        jaTinhaConta ? (
+          <>
+            <strong className="font-medium">Esse e-mail já tem conta.</strong>{" "}
+            Não é preciso cadastrar de novo: entre com sua senha, ou use
+            &quot;Esqueci minha senha&quot; se não lembrar dela.
+          </>
+        ) : null
       }
       rotuloCarregando="Entrando…"
       rotuloEnvio="Entrar"

@@ -26,6 +26,7 @@ export function AuthForm({
   aoEnviar,
   rotuloEnvio,
   rotuloCarregando = "Aguarde…",
+  destaque,
   rodape,
 }: {
   titulo: string;
@@ -41,6 +42,8 @@ export function AuthForm({
   rotuloEnvio: string;
   /** Texto durante o envio. Verificar senha leva ~1s por causa do hash. */
   rotuloCarregando?: string;
+  /** Faixa acima do formulário, para contexto que a pessoa precisa ver antes. */
+  destaque?: ReactNode;
   rodape?: ReactNode;
 }) {
   const [erros, setErros] = useState<Erros>({});
@@ -52,6 +55,15 @@ export function AuthForm({
       <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
       {descricao ? (
         <p className="text-muted-foreground mt-2 text-sm">{descricao}</p>
+      ) : null}
+
+      {destaque ? (
+        <div
+          role="status"
+          className="border-primary/40 bg-primary/10 mt-5 rounded-md border px-4 py-3 text-sm"
+        >
+          {destaque}
+        </div>
       ) : null}
 
       <form
