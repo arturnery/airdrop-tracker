@@ -68,9 +68,13 @@ export async function sair(): Promise<void> {
  * administração. A exceção é o e-mail configurado em `ADMIN_EMAIL`, que nasce
  * administrador e aprovado: sem isso não haveria quem aprovasse o primeiro.
  *
- * **E-mail já cadastrado não é revelado.** A resposta é a mesma de um cadastro
- * novo. Dizer "este e-mail já existe" permitiria descobrir quem tem conta
- * testando endereços.
+ * **E-mail já cadastrado não é revelado.** Dizer "este e-mail já existe"
+ * permitiria descobrir quem é membro testando endereços no formulário, o que
+ * entregaria a lista de assinantes para phishing direcionado.
+ *
+ * Em vez de simplesmente calar, a tela de espera explica os dois caminhos
+ * possíveis sem confirmar qual aconteceu: quem chegou ali por engano sabe o
+ * que fazer, e quem está sondando não aprende nada.
  */
 export async function cadastrar(entrada: unknown): Promise<ErroAuth | void> {
   const analisado = cadastroSchema.safeParse(entrada);
@@ -104,10 +108,15 @@ export async function cadastrar(entrada: unknown): Promise<ErroAuth | void> {
           .set({ name, passwordHash: hash })
           .where(eq(schema.users.id, existente.id));
       }
-      // Quem já está aprovado vai direto para o login; mandá-lo esperar
-      // aprovação seria mentira e ele ficaria numa tela sem saída.
+      /*
+       * Quem já está aprovado vai para o login. Os demais caem na tela de
+       * espera, igual a um cadastro novo: a diferença não pode aparecer, ou o
+       * formulário viraria um verificador de contas.
+       */
       destino =
-        existente.status === "aprovado" ? "/entrar" : "/aguardando-aprovacao";
+        existente.status === "aprovado"
+          ? "/entrar?ja=1"
+          : "/aguardando-aprovacao";
     } else {
       const admin = ehEmailDeAdmin(email);
 

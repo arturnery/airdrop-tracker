@@ -25,10 +25,37 @@ export default function AguardandoAprovacaoPage() {
       </h1>
       <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
         Sua conta será liberada assim que o acesso for confirmado. Você recebe um
-        e-mail quando isso acontecer: não é preciso cadastrar de novo.
+        e-mail quando isso acontecer, e não precisa cadastrar de novo.
       </p>
 
+      {/*
+        Este bloco existe porque a tela também recebe quem já tinha conta: o
+        cadastro responde igual nos dois casos, de propósito, para que ninguém
+        descubra quem é membro testando endereços. Explicar os dois caminhos
+        resolve a dúvida de quem chegou aqui por engano sem confirmar qual foi.
+      */}
       <div className="border-border mt-8 rounded-lg border p-4 text-left">
+        <h2 className="text-sm font-medium">Já tinha conta?</h2>
+        <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+          Se este e-mail já estava cadastrado, nada mudou: use{" "}
+          <Link
+            href="/entrar"
+            className="text-foreground underline underline-offset-4"
+          >
+            Entrar
+          </Link>{" "}
+          normalmente, ou{" "}
+          <Link
+            href="/recuperar-senha"
+            className="text-foreground underline underline-offset-4"
+          >
+            recupere a senha
+          </Link>{" "}
+          se não lembrar dela.
+        </p>
+      </div>
+
+      <div className="border-border mt-4 rounded-lg border p-4 text-left">
         <h2 className="text-sm font-medium">Enquanto isso</h2>
         <ul className="text-muted-foreground mt-2 space-y-1.5 text-sm">
           <li>Confira se o e-mail do cadastro é o mesmo da sua assinatura.</li>
