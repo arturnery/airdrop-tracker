@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,17 +31,20 @@ export function AuthForm({
   titulo: string;
   descricao?: ReactNode;
   children: (props: { erros: Erros; enviando: boolean }) => ReactNode;
-  /** Devolve os erros, ou o destino quando dá certo. */
-  aoEnviar: (dados: FormData) => Promise<
-    { ok: true; destino: string } | { ok: false; erros: Erros }
-  >;
+  /**
+   * Devolve os erros quando falha. Em caso de sucesso não devolve nada: a
+   * própria ação redireciona no servidor.
+   */
+  aoEnviar: (
+    dados: FormData,
+  ) => Promise<{ erros?: Erros; aviso?: string } | void>;
   rotuloEnvio: string;
   /** Texto durante o envio. Verificar senha leva ~1s por causa do hash. */
   rotuloCarregando?: string;
   rodape?: ReactNode;
 }) {
-  const router = useRouter();
   const [erros, setErros] = useState<Erros>({});
+  const [aviso, setAviso] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   return (
@@ -61,22 +63,16 @@ export function AuthForm({
 
           const resultado = await aoEnviar(new FormData(evento.currentTarget));
 
-          if (!resultado.ok) {
-            setErros(resultado.erros);
-            setEnviando(false);
-            return;
-          }
-
           /*
-           * Em caso de sucesso o botão NÃO volta ao estado normal: a navegação
-           * leva um instante, e devolver o botão antes dela dá a impressão de
-           * que o clique não fez nada — foi exatamente o que aconteceu no
-           * primeiro teste.
+           * Só chega aqui com valor quando deu erro: no sucesso a ação
+           * redireciona no servidor e esta linha não executa. O estado de
+           * carregamento fica até a navegação concluir.
            */
-          setErros({});
-          router.push(resultado.destino);
-          // Recarrega para que o layout enxergue a sessão nova.
-          router.refresh();
+          if (resultado) {
+            setErros(resultado.erros ?? {});
+            setAviso(resultado.aviso ?? null);
+            setEnviando(false);
+          }
         }}
       >
         {children({ erros, enviando })}
@@ -87,6 +83,17 @@ export function AuthForm({
             className="border-negative/30 bg-negative/5 text-negative rounded-md border px-3 py-2 text-sm"
           >
             {erros.geral}
+          </p>
+        ) : null}
+
+        {/* Confirmação em tom neutro: não é erro, e pintá-la de vermelho
+            faria a pessoa achar que algo deu errado. */}
+        {aviso ? (
+          <p
+            role="status"
+            className="border-primary/30 bg-primary/5 text-muted-foreground rounded-md border px-3 py-2 text-sm"
+          >
+            {aviso}
           </p>
         ) : null}
 

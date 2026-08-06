@@ -1,6 +1,7 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { signIn, signOut } from "@/auth";
@@ -10,9 +11,19 @@ import { ehEmailDeAdmin } from "@/lib/auth";
 import { gerarHash } from "@/lib/senha";
 import { cadastroSchema, erros, loginSchema } from "@/lib/validators";
 
-export type ResultadoAuth =
-  | { ok: true; destino: string }
-  | { ok: false; erros: Record<string, string> };
+/**
+ * Ações de entrada.
+ *
+ * **A navegação acontece no servidor, via `redirect()`.** A primeira versão
+ * devolvia o destino e o formulário chamava `router.push()` seguido de
+ * `router.refresh()` — e o refresh atropelava a navegação pendente: o servidor
+ * renderizava a página nova, mas a tela não trocava.
+ *
+ * Com `redirect()` a resposta da ação já é o redirecionamento, então não há
+ * duas navegações competindo. O retorno destas funções passa a existir apenas
+ * para o caso de erro.
+ */
+export type ErroAuth = { erros: Record<string, string> };
 
 /**
  * Entrada no sistema.
@@ -22,9 +33,9 @@ export type ResultadoAuth =
  * transformaria a tela num verificador de quem tem conta — e revelaria quem já
  * foi aprovado.
  */
-export async function entrar(entrada: unknown): Promise<ResultadoAuth> {
+export async function entrar(entrada: unknown): Promise<ErroAuth | void> {
   const analisado = loginSchema.safeParse(entrada);
-  if (!analisado.success) return { ok: false, erros: erros(analisado) };
+  if (!analisado.success) return { erros: erros(analisado) };
 
   try {
     await signIn("credentials", {
@@ -35,14 +46,15 @@ export async function entrar(entrada: unknown): Promise<ResultadoAuth> {
   } catch (erro) {
     if (erro instanceof AuthError) {
       return {
-        ok: false,
         erros: { geral: "E-mail ou senha incorretos, ou acesso ainda não liberado." },
       };
     }
     throw erro;
   }
 
-  return { ok: true, destino: "/" };
+  // Fora do try: `redirect` funciona lançando uma exceção interna, que um
+  // catch genérico engoliria.
+  redirect("/");
 }
 
 export async function sair(): Promise<void> {
@@ -57,14 +69,15 @@ export async function sair(): Promise<void> {
  * administrador e aprovado — sem isso não haveria quem aprovasse o primeiro.
  *
  * **E-mail já cadastrado não é revelado.** A resposta é a mesma de um cadastro
- * novo, e a pessoa vai para a tela de espera. Dizer "este e-mail já existe"
- * permitiria descobrir quem tem conta testando endereços.
+ * novo. Dizer "este e-mail já existe" permitiria descobrir quem tem conta
+ * testando endereços.
  */
-export async function cadastrar(entrada: unknown): Promise<ResultadoAuth> {
+export async function cadastrar(entrada: unknown): Promise<ErroAuth | void> {
   const analisado = cadastroSchema.safeParse(entrada);
-  if (!analisado.success) return { ok: false, erros: erros(analisado) };
+  if (!analisado.success) return { erros: erros(analisado) };
 
   const { name, email, password } = analisado.data;
+  let destino: string;
 
   try {
     const [existente] = await db
@@ -92,31 +105,29 @@ export async function cadastrar(entrada: unknown): Promise<ResultadoAuth> {
           .where(eq(schema.users.id, existente.id));
       }
       // Quem já está aprovado vai direto para o login; mandá-lo esperar
-      // aprovação seria mentira e ele ficaria travado numa tela sem saída.
-      return {
-        ok: true,
-        destino:
-          existente.status === "aprovado" ? "/entrar" : "/aguardando-aprovacao",
-      };
+      // aprovação seria mentira e ele ficaria numa tela sem saída.
+      destino =
+        existente.status === "aprovado" ? "/entrar" : "/aguardando-aprovacao";
+    } else {
+      const admin = ehEmailDeAdmin(email);
+
+      await db.insert(schema.users).values({
+        name,
+        email,
+        passwordHash: hash,
+        role: admin ? "admin" : "membro",
+        status: admin ? "aprovado" : "pendente",
+        reviewedAt: admin ? new Date() : null,
+      });
+
+      destino = admin ? "/entrar" : "/aguardando-aprovacao";
     }
-
-    const admin = ehEmailDeAdmin(email);
-
-    await db.insert(schema.users).values({
-      name,
-      email,
-      passwordHash: hash,
-      role: admin ? "admin" : "membro",
-      status: admin ? "aprovado" : "pendente",
-      reviewedAt: admin ? new Date() : null,
-    });
-
-    return { ok: true, destino: admin ? "/entrar" : "/aguardando-aprovacao" };
   } catch (erro) {
     console.error("[cadastro]", erro);
     return {
-      ok: false,
       erros: { geral: "Não foi possível concluir o cadastro. Tente de novo." },
     };
   }
+
+  redirect(destino);
 }

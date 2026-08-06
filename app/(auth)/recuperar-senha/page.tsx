@@ -17,12 +17,12 @@ export default function RecuperarSenhaPage() {
         const resultado = recuperarSenhaSchema.safeParse({
           email: String(dados.get("email") ?? ""),
         });
-        if (!resultado.success) {
-          return { ok: false as const, erros: extrairErros(resultado) };
-        }
-        // O envio do e-mail entra quando houver serviço configurado. A tela
-        // responde igual de qualquer forma, para não revelar quem tem conta.
-        return { ok: true as const, destino: "/entrar" };
+        if (!resultado.success) return { erros: extrairErros(resultado) };
+        // O envio do e-mail entra quando houver serviço configurado. Até lá a
+        // tela confirma sem revelar se o endereço existe.
+        return {
+          aviso: "Se houver conta com esse e-mail, o link chega em instantes.",
+        };
       }}
       rodape={
         <Link href="/entrar" className="text-foreground underline underline-offset-4">
