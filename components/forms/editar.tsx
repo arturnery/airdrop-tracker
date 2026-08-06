@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Pencil } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { CampoValorToken } from "@/components/forms/campo-valor-token";
@@ -48,11 +48,12 @@ function DialogoEdicao({
   titulo: string;
   descricao?: string;
   children: (props: { erros: Erros }) => ReactNode;
-  aoEnviar: (dados: FormData) => Erros | null;
+  aoEnviar: (dados: FormData) => Promise<Erros | null> | Erros | null;
   rotuloGatilho: string;
 }) {
   const [aberto, setAberto] = useState(false);
   const [problemas, setProblemas] = useState<Erros>({});
+  const [enviando, setEnviando] = useState(false);
 
   return (
     <Dialog
@@ -80,24 +81,53 @@ function DialogoEdicao({
         </DialogHeader>
         <form
           noValidate
-          onSubmit={(evento) => {
+          onSubmit={async (evento) => {
             evento.preventDefault();
-            const resultado = aoEnviar(new FormData(evento.currentTarget));
-            if (resultado) {
-              setProblemas(resultado);
-              return;
+            setEnviando(true);
+            try {
+              const resultado = await aoEnviar(new FormData(evento.currentTarget));
+              if (resultado) {
+                setProblemas(resultado);
+                return;
+              }
+              setProblemas({});
+              setAberto(false);
+            } finally {
+              setEnviando(false);
             }
-            setProblemas({});
-            setAberto(false);
           }}
           className="space-y-4"
         >
           {children({ erros: problemas })}
+
+          {problemas.geral ? (
+            <p
+              role="alert"
+              className="border-negative/30 bg-negative/5 text-negative rounded-md border px-3 py-2 text-sm"
+            >
+              {problemas.geral}
+            </p>
+          ) : null}
+
           <DialogFooter className="pt-2">
-            <Button type="button" variant="ghost" onClick={() => setAberto(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={enviando}
+              onClick={() => setAberto(false)}
+            >
               Cancelar
             </Button>
-            <Button type="submit">Salvar alterações</Button>
+            <Button type="submit" disabled={enviando}>
+              {enviando ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  Salvando…
+                </>
+              ) : (
+                "Salvar alterações"
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -269,11 +299,10 @@ export function EditarConta({ accountId }: { accountId: string }) {
           email: texto(dados, "email"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.atualizarConta(accountId, {
+        return acoes.atualizarConta(accountId, {
           ...resultado.data,
           isActive: texto(dados, "isActive") === "sim",
         });
-        return null;
       }}
     >
       {({ erros: e }) => (
@@ -336,7 +365,7 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
           description: texto(dados, "description"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.atualizarLancamento(transactionId, {
+        return acoes.atualizarLancamento(transactionId, {
           occurredAt: resultado.data.occurredAt,
           type: resultado.data.type,
           amount: resultado.data.amount,
@@ -344,7 +373,6 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
           tokenAmount: resultado.data.tokenAmount,
           description: resultado.data.description,
         });
-        return null;
       }}
     >
       {({ erros: e }) => (
@@ -422,10 +450,8 @@ export function EditarVinculo({
           startedAt: texto(dados, "startedAt"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.atualizarVinculo(projectId, accountId, {
-          status: resultado.data.status,
-          startedAt: resultado.data.startedAt,
-        });
+        // A action de vincular faz upsert, então serve para criar e editar.
+        void acoes.vincularConta(resultado.data);
         return null;
       }}
     >
@@ -483,7 +509,7 @@ export function EditarTarefa({ taskId }: { taskId: string }) {
           dueDate: texto(dados, "dueDate"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.atualizarTarefa(taskId, {
+        return acoes.atualizarTarefa(taskId, {
           title: resultado.data.title,
           description: resultado.data.description,
           recurrence: resultado.data.recurrence,
@@ -492,7 +518,6 @@ export function EditarTarefa({ taskId }: { taskId: string }) {
           accountId: resultado.data.accountId,
           isActive: texto(dados, "isActive") === "sim",
         });
-        return null;
       }}
     >
       {({ erros: e }) => (

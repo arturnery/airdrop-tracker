@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 
 import { CampoValorToken } from "@/components/forms/campo-valor-token";
 import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
@@ -51,11 +51,12 @@ function Formulario({
   descricao?: string;
   gatilho: ReactNode;
   children: (props: { erros: Erros }) => ReactNode;
-  aoEnviar: (dados: FormData) => Erros | null;
+  aoEnviar: (dados: FormData) => Promise<Erros | null> | Erros | null;
   rotuloEnvio?: string;
 }) {
   const [aberto, setAberto] = useState(false);
   const [problemas, setProblemas] = useState<Erros>({});
+  const [enviando, setEnviando] = useState(false);
 
   return (
     <Dialog
@@ -74,30 +75,55 @@ function Formulario({
 
         <form
           noValidate
-          onSubmit={(evento) => {
+          onSubmit={async (evento) => {
             evento.preventDefault();
             const dados = new FormData(evento.currentTarget);
-            const resultado = aoEnviar(dados);
-            if (resultado) {
-              setProblemas(resultado);
-              return;
+            setEnviando(true);
+            try {
+              const resultado = await aoEnviar(dados);
+              if (resultado) {
+                setProblemas(resultado);
+                return;
+              }
+              setProblemas({});
+              setAberto(false);
+            } finally {
+              setEnviando(false);
             }
-            setProblemas({});
-            setAberto(false);
           }}
           className="space-y-4"
         >
           {children({ erros: problemas })}
 
+          {/* Falha do servidor (banco fora, permissão) chega neste campo. */}
+          {problemas.geral ? (
+            <p
+              role="alert"
+              className="border-negative/30 bg-negative/5 text-negative rounded-md border px-3 py-2 text-sm"
+            >
+              {problemas.geral}
+            </p>
+          ) : null}
+
           <DialogFooter className="pt-2">
             <Button
               type="button"
               variant="ghost"
+              disabled={enviando}
               onClick={() => setAberto(false)}
             >
               Cancelar
             </Button>
-            <Button type="submit">{rotuloEnvio}</Button>
+            <Button type="submit" disabled={enviando}>
+              {enviando ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  Salvando…
+                </>
+              ) : (
+                rotuloEnvio
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -148,8 +174,7 @@ export function NovoProjeto() {
           notes: texto(dados, "notes"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.criarProjeto(resultado.data);
-        return null;
+        return acoes.criarProjeto(resultado.data);
       }}
     >
       {({ erros: e }) => (
@@ -284,8 +309,7 @@ export function NovaConta() {
           email: texto(dados, "email"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.criarConta(resultado.data);
-        return null;
+        return acoes.criarConta(resultado.data);
       }}
     >
       {({ erros: e }) => (
@@ -357,8 +381,7 @@ export function NovoLancamento({
           description: texto(dados, "description"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.criarLancamento(resultado.data);
-        return null;
+        return acoes.criarLancamento(resultado.data);
       }}
     >
       {({ erros: e }) => (
@@ -444,8 +467,7 @@ export function DefinirCotacao({ symbol }: { symbol?: string }) {
           updatedAt: texto(dados, "updatedAt"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.definirCotacao(resultado.data);
-        return null;
+        return acoes.definirCotacao(resultado.data);
       }}
     >
       {({ erros: e }) => (
@@ -506,8 +528,7 @@ export function VincularConta({ projectId }: { projectId?: string }) {
           startedAt: texto(dados, "startedAt"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.vincularConta(resultado.data);
-        return null;
+        return acoes.vincularConta(resultado.data);
       }}
     >
       {({ erros: e }) => (
@@ -682,8 +703,7 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
           deadline: texto(dados, "deadline"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.criarMeta(resultado.data);
-        return null;
+        return acoes.criarMeta(resultado.data);
       }}
     >
       {({ erros: e }) => (
@@ -762,8 +782,7 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
           priceUsd: texto(dados, "priceUsd"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.registrarRecebimento(resultado.data);
-        return null;
+        return acoes.registrarRecebimento(resultado.data);
       }}
     >
       {({ erros: e }) => (
@@ -851,8 +870,7 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
           note: texto(dados, "note"),
         });
         if (!resultado.success) return erros(resultado);
-        acoes.registrarPontos(resultado.data);
-        return null;
+        return acoes.registrarPontos(resultado.data);
       }}
     >
       {({ erros: e }) => (

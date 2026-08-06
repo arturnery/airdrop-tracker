@@ -184,7 +184,5 @@ export async function carregarDataset(userId: string): Promise<Dataset> {
       priceUsd: c.priceUsd,
       valueUsd: c.valueUsd,
     })),
-    // A fila de aprovação vive em `users` e é carregada só na área de admin.
-    members: [],
   };
 }

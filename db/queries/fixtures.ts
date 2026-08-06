@@ -440,7 +440,6 @@ export function datasetInicial() {
     taskOccurrences: [...rawTaskOccurrences],
     goals: [...rawGoals],
     tokenPrices: [...rawTokenPrices],
-    members: [...rawMembers],
     pointsSnapshots: [...rawPointsSnapshots],
     airdropClaims: [...rawAirdropClaims],
   };

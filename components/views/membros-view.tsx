@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Check, Clock, ShieldCheck, Undo2, X } from "lucide-react";
 
-import { useDados } from "@/components/data-provider";
+import { reabrirMembro, revisarMembro } from "@/actions";
 import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
-import { selectMembros, selectResumoMembros } from "@/lib/selectors";
+import { resumirMembros } from "@/lib/selectors";
 import { cn } from "@/lib/utils";
 import type { MemberRow, MemberStatus } from "@/lib/types";
 
@@ -49,12 +49,14 @@ function StatusBadge({ status }: { status: MemberStatus }) {
 
 /** Linha de um cadastro aguardando decisão. */
 function LinhaPendente({ membro, hoje }: { membro: MemberRow; hoje: string }) {
-  const { acoes } = useDados();
   const [recusando, setRecusando] = useState(false);
   const [motivo, setMotivo] = useState("");
+  const [enviando, iniciar] = useTransition();
 
   const decidir = (status: "aprovado" | "recusado", note: string | null) =>
-    acoes.revisarMembro(membro.id, { status, note, revisadoEm: hoje });
+    iniciar(async () => {
+      await revisarMembro({ id: membro.id, status, note });
+    });
 
   return (
     <li className="px-4 py-3">
@@ -77,7 +79,11 @@ function LinhaPendente({ membro, hoje }: { membro: MemberRow; hoje: string }) {
 
         {recusando ? null : (
           <div className="flex shrink-0 gap-2">
-            <Button size="sm" onClick={() => decidir("aprovado", null)}>
+            <Button
+              size="sm"
+              disabled={enviando}
+              onClick={() => decidir("aprovado", null)}
+            >
               <Check className="size-4" aria-hidden="true" />
               Aprovar
             </Button>
@@ -109,6 +115,7 @@ function LinhaPendente({ membro, hoje }: { membro: MemberRow; hoje: string }) {
             <Button
               size="sm"
               variant="destructive"
+              disabled={enviando}
               onClick={() => decidir("recusado", motivo.trim() || null)}
             >
               Confirmar recusa
@@ -130,12 +137,15 @@ function LinhaPendente({ membro, hoje }: { membro: MemberRow; hoje: string }) {
   );
 }
 
-export function MembrosView() {
-  const { dataset, hoje, acoes } = useDados();
+export function MembrosView({
+  membros: todos,
+  hoje,
+}: {
+  membros: MemberRow[];
+  hoje: string;
+}) {
   const [busca, setBusca] = useState("");
-
-  const todos = selectMembros(dataset, hoje);
-  const resumo = selectResumoMembros(dataset, hoje);
+  const resumo = resumirMembros(todos);
 
   const filtrar = (lista: MemberRow[]) => {
     const termo = busca.trim().toLowerCase();
@@ -268,7 +278,7 @@ export function MembrosView() {
                           titulo="Revogar acesso"
                           alvo={membro.nome}
                           impacto="A pessoa volta para a fila e perde o acesso até ser aprovada de novo"
-                          aoConfirmar={() => acoes.reabrirMembro(membro.id)}
+                          aoConfirmar={() => reabrirMembro(membro.id)}
                           gatilho={
                             <Button
                               variant="ghost"
@@ -326,7 +336,7 @@ export function MembrosView() {
                     variant="ghost"
                     size="sm"
                     className="h-8"
-                    onClick={() => acoes.reabrirMembro(membro.id)}
+                    onClick={() => reabrirMembro(membro.id)}
                   >
                     <Undo2 className="size-3.5" aria-hidden="true" />
                     Reconsiderar

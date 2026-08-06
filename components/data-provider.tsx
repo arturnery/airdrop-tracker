@@ -7,163 +7,74 @@ import {
   useMemo,
   useState,
   useSyncExternalStore,
+  useTransition,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 
+import * as A from "@/actions";
 import type { Dataset } from "@/lib/dataset";
-import { criarRelogio, DatasetStore } from "@/lib/local-store";
-import type { Cents } from "@/lib/money";
-import type { Points } from "@/lib/points";
-import * as M from "@/lib/mutations";
+import { criarRelogio } from "@/lib/local-store";
 
 /**
- * Estado local da aplicação — modo de teste, sem backend.
+ * Acesso aos dados e às operações de escrita.
  *
- * O Dataset inicial vem do servidor (fixtures) e tudo que você cadastra fica
- * em localStorage. É deliberadamente temporário: na fase de backend este
- * provider sai e as telas passam a receber os dados de Server Components,
- * chamando as MESMAS funções de `lib/selectors`.
+ * O Dataset chega pronto do servidor (`carregarDataset`) e as escritas vão para
+ * Server Actions. Não há mais estado local: o servidor é a única fonte de
+ * verdade, e `router.refresh()` recarrega o que mudou.
  *
- * Hidratação: o estado vem de `useSyncExternalStore`, que entrega as fixtures
- * no servidor (`getServerSnapshot`) e o conteúdo do localStorage no cliente.
- * É o mecanismo que o React oferece para ler sistemas externos sem provocar
- * divergência de hidratação nem renderização em cascata.
+ * O contexto continua existindo por dois motivos. As telas já consomem
+ * `useDados()` — trocar por props atravessando cinco níveis não melhoraria nada
+ * — e a interface das ações permaneceu a mesma do modo local, então nenhum
+ * componente precisou mudar quando o banco entrou.
  */
 
+/** Resultado de uma escrita: `null` deu certo; objeto = erros por campo. */
+export type ErrosDeCampo = Record<string, string> | null;
+
+type Acao<T extends unknown[]> = (...args: T) => Promise<ErrosDeCampo>;
+
+type Resultado = { ok: true } | { ok: false; erros: Record<string, string> };
+
 type Acoes = {
-  criarProjeto: (dados: {
-    name: string;
-    status: Dataset["projects"][number]["status"];
-    category: Dataset["projects"][number]["category"];
-    pointsLabel: string | null;
-    chain: string | null;
-    priority: number;
-    websiteUrl: string | null;
-    discordUrl: string | null;
-    twitterUrl: string | null;
-    docsUrl: string | null;
-    expectedTgeDate: string | null;
-    notes: string | null;
-  }) => string;
-  criarConta: (dados: {
-    label: string;
-    walletAddress: string | null;
-    email: string | null;
-  }) => string;
-  vincularConta: (dados: {
-    projectId: string;
-    accountId: string;
-    status: "ativa" | "pausada" | "queimada";
-    startedAt: string;
-  }) => void;
-  criarLancamento: (dados: {
-    projectId: string;
-    accountId: string;
-    occurredAt: string;
-    type: Dataset["transactions"][number]["type"];
-    amount: Cents;
-    tokenSymbol: string | null;
-    tokenAmount: string | null;
-    description: string | null;
-  }) => void;
-  criarTarefa: (dados: {
-    projectId: string;
-    accountId: string | null;
-    title: string;
-    description: string | null;
-    recurrence: Dataset["tasks"][number]["recurrence"];
-    intervalDays: number | null;
-    dueDate: string | null;
-  }) => void;
-  alternarTarefa: (occurrenceId: string) => void;
-  criarMeta: (dados: {
-    projectId: string;
-    accountId: string | null;
-    title: string;
-    metric: Dataset["goals"][number]["metric"];
-    target: Cents;
-    deadline: string | null;
-  }) => void;
-  registrarRecebimento: (dados: {
-    projectId: string;
-    accountId: string;
-    receivedAt: string;
-    tokenSymbol: string;
-    tokenAmount: string;
-    priceUsd: string;
-  }) => void;
-  registrarPontos: (dados: {
-    projectId: string;
-    accountId: string;
-    takenAt: string;
-    points: Points;
-    note: string | null;
-  }) => void;
-  atualizarPontos: (
-    id: string,
-    dados: { takenAt: string; points: Points; note: string | null },
-  ) => void;
-  excluirPontos: (id: string) => void;
+  criarProjeto: Acao<[unknown]>;
+  atualizarProjeto: Acao<[string, unknown]>;
+  excluirProjeto: Acao<[string]>;
 
-  // ------------------------------------------------------------ edição
-  atualizarProjeto: (
-    id: string,
-    dados: Partial<Omit<Dataset["projects"][number], "id" | "slug">>,
-  ) => void;
-  atualizarConta: (
-    id: string,
-    dados: Partial<Omit<Dataset["accounts"][number], "id">>,
-  ) => void;
-  atualizarTarefa: (
-    id: string,
-    dados: Partial<Omit<Dataset["tasks"][number], "id">>,
-  ) => void;
-  atualizarLancamento: (
-    id: string,
-    dados: {
-      occurredAt: string;
-      type: Dataset["transactions"][number]["type"];
-      amount: Cents;
-      tokenSymbol: string | null;
-      tokenAmount: string | null;
-      description: string | null;
-    },
-  ) => void;
-  definirCotacao: (dados: {
-    symbol: string;
-    priceUsd: Cents;
-    updatedAt: string;
-  }) => void;
-  excluirCotacao: (symbol: string) => void;
-  revisarMembro: (
-    id: string,
-    dados: { status: "aprovado" | "recusado"; note: string | null; revisadoEm: string },
-  ) => void;
-  reabrirMembro: (id: string) => void;
-  excluirMembro: (id: string) => void;
-  atualizarVinculo: (
-    projectId: string,
-    accountId: string,
-    dados: { status: "ativa" | "pausada" | "queimada"; startedAt: string },
-  ) => void;
+  criarConta: Acao<[unknown]>;
+  atualizarConta: Acao<[string, unknown]>;
+  excluirConta: Acao<[string]>;
 
-  // ----------------------------------------------------------- exclusão
-  excluirProjeto: (id: string) => void;
-  excluirConta: (id: string) => void;
-  excluirLancamento: (id: string) => void;
-  excluirTarefa: (taskId: string) => void;
-  excluirOcorrencia: (id: string) => void;
-  excluirMeta: (id: string) => void;
-  excluirRecebimento: (id: string) => void;
-  desvincularConta: (projectId: string, accountId: string) => void;
+  vincularConta: Acao<[unknown]>;
+  desvincularConta: Acao<[string, string]>;
 
-  restaurarOriginal: () => void;
+  criarLancamento: Acao<[unknown]>;
+  atualizarLancamento: Acao<[string, unknown]>;
+  excluirLancamento: Acao<[string]>;
+
+  definirCotacao: Acao<[unknown]>;
+  excluirCotacao: Acao<[string]>;
+
+  registrarPontos: Acao<[unknown]>;
+  excluirPontos: Acao<[string]>;
+
+  criarTarefa: Acao<[unknown]>;
+  atualizarTarefa: Acao<[string, unknown]>;
+  excluirTarefa: Acao<[string]>;
+  alternarTarefa: Acao<[string]>;
+
+  criarMeta: Acao<[unknown]>;
+  excluirMeta: Acao<[string]>;
+
+  registrarRecebimento: Acao<[unknown]>;
+  excluirRecebimento: Acao<[string]>;
 };
 
 type Contexto = {
   dataset: Dataset;
   hoje: string;
-  modificado: boolean;
+  /** true enquanto uma escrita está em andamento. */
+  salvando: boolean;
   acoes: Acoes;
 };
 
@@ -178,86 +89,76 @@ export function DataProvider({
   initialToday: string;
   children: ReactNode;
 }) {
-  const [store] = useState(() => new DatasetStore(initialDataset));
+  const router = useRouter();
+  const [salvando, iniciarTransicao] = useTransition();
   const [relogio] = useState(() => criarRelogio(initialToday));
 
-  const dataset = useSyncExternalStore(
-    store.subscribe,
-    store.getSnapshot,
-    store.getServerSnapshot,
-  );
+  /**
+   * A data vem de store externo porque o relógio é externo ao React: o HTML do
+   * servidor carrega a constante e o navegador corrige ao hidratar, sem
+   * divergência de hidratação.
+   */
   const hoje = useSyncExternalStore(
     relogio.subscribe,
     relogio.getSnapshot,
     relogio.getServerSnapshot,
   );
-  const modificado = dataset !== initialDataset;
 
-  const atualizar = useCallback(
-    (fn: (atual: Dataset) => Dataset) => {
-      store.atualizar(fn);
-    },
-    [store],
+  /**
+   * Envolve uma Server Action: devolve os erros de validação para o formulário
+   * e, quando dá certo, recarrega os dados do servidor.
+   */
+  const envolver = useCallback(
+    <T extends unknown[]>(acao: (...args: T) => Promise<Resultado>): Acao<T> =>
+      async (...args: T) => {
+        const resultado = await acao(...args);
+        if (!resultado.ok) return resultado.erros;
+        iniciarTransicao(() => router.refresh());
+        return null;
+      },
+    [router],
   );
 
   const acoes = useMemo<Acoes>(
     () => ({
-      criarProjeto: (dados) => {
-        let id = "";
-        atualizar((atual) => {
-          const r = M.criarProjeto(atual, dados);
-          id = r.id;
-          return r.dataset;
-        });
-        return id;
-      },
-      criarConta: (dados) => {
-        let id = "";
-        atualizar((atual) => {
-          const r = M.criarConta(atual, dados);
-          id = r.id;
-          return r.dataset;
-        });
-        return id;
-      },
-      vincularConta: (d) => atualizar((a) => M.vincularConta(a, d)),
-      criarLancamento: (d) => atualizar((a) => M.criarLancamento(a, d)),
-      criarTarefa: (d) => atualizar((a) => M.criarTarefa(a, d, hoje)),
-      alternarTarefa: (id) => atualizar((a) => M.alternarOcorrencia(a, id)),
-      criarMeta: (d) => atualizar((a) => M.criarMeta(a, d)),
-      registrarRecebimento: (d) => atualizar((a) => M.registrarRecebimento(a, d)),
-      definirCotacao: (d) => atualizar((a) => M.definirCotacao(a, d)),
-      excluirCotacao: (sym) => atualizar((a) => M.excluirCotacao(a, sym)),
-      revisarMembro: (id, d) => atualizar((a) => M.revisarMembro(a, id, d)),
-      reabrirMembro: (id) => atualizar((a) => M.reabrirMembro(a, id)),
-      excluirMembro: (id) => atualizar((a) => M.excluirMembro(a, id)),
-      registrarPontos: (d) => atualizar((a) => M.registrarPontos(a, d)),
-      atualizarPontos: (id, d) => atualizar((a) => M.atualizarPontos(a, id, d)),
-      excluirPontos: (id) => atualizar((a) => M.excluirPontos(a, id)),
+      criarProjeto: envolver(A.criarProjeto),
+      atualizarProjeto: envolver(A.atualizarProjeto),
+      excluirProjeto: envolver(A.excluirProjeto),
 
-      atualizarProjeto: (id, d) => atualizar((a) => M.atualizarProjeto(a, id, d)),
-      atualizarConta: (id, d) => atualizar((a) => M.atualizarConta(a, id, d)),
-      atualizarTarefa: (id, d) => atualizar((a) => M.atualizarTarefa(a, id, d)),
-      atualizarLancamento: (id, d) => atualizar((a) => M.atualizarLancamento(a, id, d)),
-      atualizarVinculo: (p, c, d) => atualizar((a) => M.atualizarVinculo(a, p, c, d)),
+      criarConta: envolver(A.criarConta),
+      atualizarConta: envolver(A.atualizarConta),
+      excluirConta: envolver(A.excluirConta),
 
-      excluirProjeto: (id) => atualizar((a) => M.excluirProjeto(a, id)),
-      excluirConta: (id) => atualizar((a) => M.excluirConta(a, id)),
-      excluirLancamento: (id) => atualizar((a) => M.excluirLancamento(a, id)),
-      excluirTarefa: (id) => atualizar((a) => M.excluirTarefa(a, id)),
-      excluirOcorrencia: (id) => atualizar((a) => M.excluirOcorrencia(a, id)),
-      excluirMeta: (id) => atualizar((a) => M.excluirMeta(a, id)),
-      excluirRecebimento: (id) => atualizar((a) => M.excluirRecebimento(a, id)),
-      desvincularConta: (p, c) => atualizar((a) => M.desvincularConta(a, p, c)),
+      vincularConta: envolver(A.vincularConta),
+      desvincularConta: envolver(A.desvincularConta),
 
-      restaurarOriginal: () => store.restaurar(),
+      criarLancamento: envolver(A.criarLancamento),
+      atualizarLancamento: envolver(A.atualizarLancamento),
+      excluirLancamento: envolver(A.excluirLancamento),
+
+      definirCotacao: envolver(A.definirCotacao),
+      excluirCotacao: envolver(A.excluirCotacao),
+
+      registrarPontos: envolver(A.registrarPontos),
+      excluirPontos: envolver(A.excluirPontos),
+
+      criarTarefa: envolver(A.criarTarefa),
+      atualizarTarefa: envolver(A.atualizarTarefa),
+      excluirTarefa: envolver(A.excluirTarefa),
+      alternarTarefa: envolver(A.alternarOcorrencia),
+
+      criarMeta: envolver(A.criarMeta),
+      excluirMeta: envolver(A.excluirMeta),
+
+      registrarRecebimento: envolver(A.registrarRecebimento),
+      excluirRecebimento: envolver(A.excluirRecebimento),
     }),
-    [atualizar, store, hoje],
+    [envolver],
   );
 
   const valor = useMemo(
-    () => ({ dataset, hoje, modificado, acoes }),
-    [dataset, hoje, modificado, acoes],
+    () => ({ dataset: initialDataset, hoje, salvando, acoes }),
+    [initialDataset, hoje, salvando, acoes],
   );
 
   return <DataContext.Provider value={valor}>{children}</DataContext.Provider>;

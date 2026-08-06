@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
-import { selectPendingTasks, selectResumoMembros } from "@/lib/selectors";
+import { selectPendingTasks } from "@/lib/selectors";
 import { cn } from "@/lib/utils";
 
 const itens = [
@@ -35,10 +35,9 @@ export function Nav() {
   const urgentes = selectPendingTasks(dataset, hoje).filter(
     (t) => t.urgencia === "atrasada" || t.urgencia === "hoje",
   ).length;
-  const membrosPendentes = selectResumoMembros(dataset, hoje).pendentes;
-
-  const contagem = (href: string) =>
-    href === "/tarefas" ? urgentes : href === "/membros" ? membrosPendentes : 0;
+  // A contagem de membros pendentes não entra aqui: ela vive em `users` e é
+  // dado de administração, que não deve ser carregado em toda navegação.
+  const contagem = (href: string) => (href === "/tarefas" ? urgentes : 0);
 
   const estaAtivo = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
