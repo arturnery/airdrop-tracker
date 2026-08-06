@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   cotacaoSchema,
   lancamentoSchema,
+  perfilSchema,
   pontosSchema,
+  trocaSenhaSchema,
 } from "@/lib/validators";
 
 /**
@@ -96,5 +98,66 @@ describe("valores aceitos no formulário", () => {
     const r = cotacaoSchema.safeParse({ ...cotacaoBruta, priceUsd: "abc" });
     expect(r.success).toBe(false);
     expect(r.error!.issues[0]!.message).toContain("inválido");
+  });
+});
+
+describe("troca de senha", () => {
+  const base = {
+    atual: "senha-antiga",
+    nova: "senha-nova-123",
+    confirmacao: "senha-nova-123",
+  };
+
+  it("aceita quando as duas novas coincidem", () => {
+    expect(trocaSenhaSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("recusa confirmação diferente", () => {
+    const r = trocaSenhaSchema.safeParse({ ...base, confirmacao: "outra-coisa" });
+    expect(r.success).toBe(false);
+    expect(r.error!.issues[0]!.path).toEqual(["confirmacao"]);
+  });
+
+  /**
+   * Repetir a senha atual passaria despercebido e a pessoa acharia que trocou.
+   * O caso é comum com senha temporária: digita a que recebeu nos três campos.
+   */
+  it("recusa senha nova igual à atual", () => {
+    const r = trocaSenhaSchema.safeParse({
+      atual: "mesma-senha-123",
+      nova: "mesma-senha-123",
+      confirmacao: "mesma-senha-123",
+    });
+    expect(r.success).toBe(false);
+    expect(r.error!.issues[0]!.path).toEqual(["nova"]);
+  });
+
+  it("exige comprimento mínimo na nova", () => {
+    const r = trocaSenhaSchema.safeParse({
+      ...base,
+      nova: "curta",
+      confirmacao: "curta",
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("exige a senha atual", () => {
+    const r = trocaSenhaSchema.safeParse({ ...base, atual: "" });
+    expect(r.success).toBe(false);
+  });
+});
+
+describe("perfil", () => {
+  it("aceita nome válido", () => {
+    expect(perfilSchema.safeParse({ name: "Artur" }).success).toBe(true);
+  });
+
+  it("recusa nome curto demais", () => {
+    expect(perfilSchema.safeParse({ name: "A" }).success).toBe(false);
+  });
+
+  it("remove espaços das pontas", () => {
+    const r = perfilSchema.safeParse({ name: "  Artur Nery  " });
+    expect(r.data!.name).toBe("Artur Nery");
   });
 });

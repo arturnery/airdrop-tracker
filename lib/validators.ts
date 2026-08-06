@@ -247,3 +247,30 @@ export const novaSenhaSchema = z
     message: "As senhas não coincidem.",
     path: ["passwordConfirm"],
   });
+
+/** Dados do próprio perfil. O e-mail não muda: é a identidade da conta. */
+export const perfilSchema = z.object({
+  name: z.string().trim().min(2, "Informe seu nome.").max(80),
+});
+
+/**
+ * Troca de senha.
+ *
+ * Pede a senha atual mesmo com a sessão já aberta: sem isso, quem sentasse
+ * num computador destravado assumiria a conta trocando a senha, e o dono
+ * perderia o acesso sem entender o motivo.
+ */
+export const trocaSenhaSchema = z
+  .object({
+    atual: z.string().min(1, "Informe sua senha atual."),
+    nova: senha,
+    confirmacao: z.string(),
+  })
+  .refine((dados) => dados.nova === dados.confirmacao, {
+    message: "As senhas não coincidem.",
+    path: ["confirmacao"],
+  })
+  .refine((dados) => dados.nova !== dados.atual, {
+    message: "A senha nova precisa ser diferente da atual.",
+    path: ["nova"],
+  });

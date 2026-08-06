@@ -32,18 +32,25 @@ export default async function AppLayout({
             anunciar dois menus idênticos. */}
         <aside className="bg-sidebar border-border sticky top-0 z-40 border-b lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
           <div className="flex items-center justify-between gap-2 lg:block">
-            <div className="shrink-0 px-5 py-4">
+            <div className="min-w-0 shrink-0 px-5 py-4">
               <Link
                 href="/"
-                className="focus-visible:ring-ring rounded-sm text-sm font-semibold tracking-tight focus-visible:ring-2 focus-visible:outline-none"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm text-xs font-medium tracking-tight transition-colors focus-visible:ring-2 focus-visible:outline-none"
               >
                 airdrop
                 <span className="text-primary">·</span>
                 tracker
               </Link>
-              <p className="text-muted-foreground mt-0.5 hidden truncate text-xs lg:block">
+
+              {/* O nome ganha o peso visual: é o dado da pessoa, e clicar nele
+                  leva ao perfil. A marca vira a linha de cima, discreta. */}
+              <Link
+                href="/perfil"
+                className="hover:text-primary focus-visible:ring-ring mt-3 hidden max-w-full truncate rounded-sm text-base font-semibold tracking-tight transition-colors focus-visible:ring-2 focus-visible:outline-none lg:block"
+                title="Ver perfil"
+              >
                 {sessao.nome}
-              </p>
+              </Link>
             </div>
             <Nav ehAdmin={sessao.papel === "admin"} />
           </div>

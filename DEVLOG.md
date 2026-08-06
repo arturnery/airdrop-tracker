@@ -766,6 +766,33 @@ no subtítulo, em cinza pequeno, e passou despercebida.
 Virou faixa destacada acima do formulário. **Informação correta em lugar que ninguém olha
 equivale a não ter informação**, e a única forma de descobrir isso é ver alguém usar.
 
+### Perfil: fechando o ciclo da senha
+
+A redefinição pelo administrador criou um buraco: quem recebia a senha temporária não
+tinha como trocá-la. O autor propôs uma aba de perfil, acessada pelo próprio nome na
+barra lateral.
+
+**Nome e senha ficaram em formulários separados.** Trocar o nome não deveria exigir
+digitar senha, e salvar a senha não deveria arrastar uma alteração de nome sem querer.
+Cada um confirma o que fez, isolado.
+
+Três decisões na troca de senha:
+
+- **Pede a senha atual, mesmo com a sessão aberta.** Sem isso, quem sentasse num
+  computador destravado assumiria a conta trocando a senha, e o dono perderia o acesso
+  sem entender o motivo.
+- **Recusa senha nova igual à atual.** É o erro provável de quem recebeu uma temporária:
+  digitar a mesma nos três campos e achar que trocou. Um teste fixa a regra.
+- **A sessão continua valendo depois da troca.** Ela foi aberta por quem acabou de provar
+  saber a senha atual; derrubá-la só faria a pessoa entrar de novo, sem ganho.
+
+Os campos de senha são limpos após salvar, para não ficarem preenchidos na tela.
+
+Na barra lateral, o peso visual se inverteu: a marca virou a linha discreta de cima e o
+nome ganhou tamanho e espaço, porque é o dado da pessoa e agora é clicável. O e-mail
+aparece no perfil desabilitado, com a explicação de onde trocá-lo, em vez de simplesmente
+não existir na tela.
+
 ---
 
 ## Estado atual
