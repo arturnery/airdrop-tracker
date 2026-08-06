@@ -40,7 +40,7 @@ export type Recurrence =
 
 export type GoalMetric = "volume_usd" | "balance_usd" | "tx_count" | "days_active";
 
-/** Datas trafegam como "YYYY-MM-DD" — sem timezone, ver ARCHITECTURE.md §5. */
+/** Datas trafegam como "YYYY-MM-DD": sem timezone, ver ARCHITECTURE.md §5. */
 export type IsoDate = string;
 
 // ------------------------------------------------------------------ dashboard
@@ -54,7 +54,7 @@ export type FinancialSummary = {
   airdrops: Cents;
   exposicao: Cents;
   resultado: Cents;
-  /** null quando não há aporte — evita divisão por zero virar Infinity na tela. */
+  /** null quando não há aporte: evita divisão por zero virar Infinity na tela. */
   roi: number | null;
 };
 
@@ -64,7 +64,7 @@ export type DashboardSummary = FinancialSummary & {
   contasAtivas: number;
   tarefasHoje: number;
   tarefasAtrasadas: number;
-  /** Símbolos sem cotação informada — a interface pede a atualização. */
+  /** Símbolos sem cotação informada: a interface pede a atualização. */
   tokensSemCotacao: string[];
 };
 
@@ -135,7 +135,7 @@ export type TokenPositionRow = {
   symbol: string;
   quantidade: number;
   investidoUsd: Cents;
-  /** Investido ÷ quantidade — o preço que você pagou, em média. */
+  /** Investido ÷ quantidade: o preço que você pagou, em média. */
   precoMedioUsd: Cents | null;
   valorAtualUsd: Cents;
   /** null quando não há cotação informada. */
@@ -190,7 +190,7 @@ export type TaskUrgency = "atrasada" | "hoje" | "proxima";
 export type TaskOccurrenceRow = {
   /** Id da ocorrência (o item do dia). */
   id: string;
-  /** Id da tarefa que gerou a ocorrência — o que se edita ou exclui. */
+  /** Id da tarefa que gerou a ocorrência: o que se edita ou exclui. */
   taskId: string;
   titulo: string;
   descricao: string | null;
@@ -236,7 +236,7 @@ export type TipoAtividade =
 /**
  * Uma linha do histórico de atividade.
  *
- * Derivada dos próprios registros — não é uma tabela de auditoria. Mostra o que
+ * Derivada dos próprios registros: não é uma tabela de auditoria. Mostra o que
  * foi feito (aportes, saldos, tarefas cumpridas), não quem editou o quê.
  */
 export type AtividadeRow = {
@@ -309,7 +309,7 @@ export type MemberRow = {
   cadastradoEm: IsoDate;
   revisadoEm: IsoDate | null;
   nota: string | null;
-  /** Dias desde o cadastro — quem espera há mais tempo aparece primeiro. */
+  /** Dias desde o cadastro: quem espera há mais tempo aparece primeiro. */
   diasEsperando: number;
 };
 

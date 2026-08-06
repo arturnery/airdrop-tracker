@@ -16,7 +16,7 @@ import { cadastroSchema, erros, loginSchema } from "@/lib/validators";
  *
  * **A navegação acontece no servidor, via `redirect()`.** A primeira versão
  * devolvia o destino e o formulário chamava `router.push()` seguido de
- * `router.refresh()` — e o refresh atropelava a navegação pendente: o servidor
+ * `router.refresh()`: e o refresh atropelava a navegação pendente: o servidor
  * renderizava a página nova, mas a tela não trocava.
  *
  * Com `redirect()` a resposta da ação já é o redirecionamento, então não há
@@ -30,7 +30,7 @@ export type ErroAuth = { erros: Record<string, string> };
  *
  * A mensagem de recusa é sempre a mesma, qualquer que seja a causa: senha
  * errada, e-mail inexistente ou conta ainda não aprovada. Distinguir os casos
- * transformaria a tela num verificador de quem tem conta — e revelaria quem já
+ * transformaria a tela num verificador de quem tem conta: e revelaria quem já
  * foi aprovado.
  */
 export async function entrar(entrada: unknown): Promise<ErroAuth | void> {
@@ -66,7 +66,7 @@ export async function sair(): Promise<void> {
  *
  * A conta nasce `pendente`: o acesso é liberado manualmente na área de
  * administração. A exceção é o e-mail configurado em `ADMIN_EMAIL`, que nasce
- * administrador e aprovado — sem isso não haveria quem aprovasse o primeiro.
+ * administrador e aprovado: sem isso não haveria quem aprovasse o primeiro.
  *
  * **E-mail já cadastrado não é revelado.** A resposta é a mesma de um cadastro
  * novo. Dizer "este e-mail já existe" permitiria descobrir quem tem conta
@@ -96,7 +96,7 @@ export async function cadastrar(entrada: unknown): Promise<ErroAuth | void> {
       /*
        * Conta semeada pelo administrador existe antes de ter senha. Neste caso
        * o cadastro define a senha em vez de recusar. Se já houver senha, nada
-       * acontece — e a resposta continua idêntica, para não revelar o estado.
+       * acontece: e a resposta continua idêntica, para não revelar o estado.
        */
       if (!existente.passwordHash) {
         await db

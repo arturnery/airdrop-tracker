@@ -18,7 +18,7 @@ import { erros } from "@/lib/validators";
  * 2. **Todo UPDATE e DELETE filtra por `userId` além do id do registro.**
  *    Buscar só por id significaria que conhecer um uuid alheio basta para
  *    alterá-lo. Como efeito colateral, um id inexistente e um id de outro
- *    usuário se tornam indistinguíveis — que é exatamente o desejado.
+ *    usuário se tornam indistinguíveis: que é exatamente o desejado.
  */
 
 export type ResultadoAcao =
@@ -63,5 +63,5 @@ export async function executar<S extends z.ZodType>(
   return sucesso();
 }
 
-/** Rotas que dependem dos dados financeiros — revalidadas em quase toda ação. */
+/** Rotas que dependem dos dados financeiros: revalidadas em quase toda ação. */
 export const ROTAS_DADOS = ["/", "/projetos", "/contas", "/historico"];

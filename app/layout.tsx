@@ -11,7 +11,7 @@ import "./globals.css";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-/** Serif reservada aos números grandes de indicador — ver StatCard. */
+/** Serif reservada aos números grandes de indicador: ver StatCard. */
 const crimson = Crimson_Text({
   variable: "--font-crimson",
   weight: ["400", "600"],
@@ -28,7 +28,7 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   /*
    * As telas de entrada compartilham este layout, e quem ainda não entrou não
-   * tem dado para carregar. Sem sessão o Dataset fica vazio — nenhuma consulta
+   * tem dado para carregar. Sem sessão o Dataset fica vazio: nenhuma consulta
    * é feita, então não há o que vazar.
    */
   const sessao = await sessaoAtual();

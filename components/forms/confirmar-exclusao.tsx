@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 /**
  * Confirmação de exclusão.
  *
- * `impacto` descreve o que vai junto ("8 lançamentos e 2 tarefas") — dizer o
+ * `impacto` descreve o que vai junto ("8 lançamentos e 2 tarefas"): dizer o
  * tamanho do estrago é mais útil que perguntar "tem certeza?", e é a única
  * defesa aqui, já que não existe desfazer por item.
  */

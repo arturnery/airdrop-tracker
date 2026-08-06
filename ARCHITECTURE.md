@@ -1,9 +1,9 @@
-# airdrop-tracker — Arquitetura
+# Arquitetura do airdrop-tracker
 
 Documento de arquitetura do sistema. Escrito **antes** da implementação, para servir como
 referência de decisões e como material de portfólio.
 
-**Revisão 9** — banco, Server Actions e sessão em produção.
+**Revisão 9**: banco, Server Actions e sessão em produção.
 
 ---
 
@@ -12,10 +12,10 @@ referência de decisões e como material de portfólio.
 Substituir a planilha de controle de farming de airdrops por uma aplicação que responda,
 sem esforço manual:
 
-- **Quanto já investi** — por projeto e por conta.
-- **O que preciso fazer hoje** — tarefas recorrentes, prazos e metas.
-- **Qual o resultado** — P&L realizado, exposição atual, ROI quando o airdrop cai.
-- **Onde focar** — status e prioridade de cada projeto.
+- **Quanto já investi**: por projeto e por conta.
+- **O que preciso fazer hoje**: tarefas recorrentes, prazos e metas.
+- **Qual o resultado**: P&L realizado, exposição atual, ROI quando o airdrop cai.
+- **Onde focar**: status e prioridade de cada projeto.
 
 Objetivo secundário, igualmente importante: o projeto é peça de portfólio. A stack e as
 decisões arquiteturais foram escolhidas pensando também em entrevista técnica.
@@ -31,7 +31,7 @@ Três limitações estruturais:
 
 **2.1. Conta é texto solto.** `chrome (Perfil 1)`, `brave`, `mbox` são digitados a cada
 linha. Não existe a entidade "conta", então é impossível perguntar *"quanto essa carteira
-tem espalhado entre todos os projetos?"*. Uma conta é usada em vários projetos — precisa
+tem espalhado entre todos os projetos?"*. Uma conta é usada em vários projetos: precisa
 ser uma entidade própria.
 
 **2.2. Depósito e saldo estão misturados.** A coluna `Ação Realizada` guarda tanto
@@ -41,7 +41,7 @@ errado: está somando dinheiro que entrou com dinheiro que já estava lá.
 
 > **Resolvido virando livro-razão** (revisão 6): só existe lançamento, e o saldo é a soma
 > deles. Foto de saldo deixou de existir, então não há o que misturar. O custo é que toda
-> variação precisa ser lançada — inclusive rendimento, que ganhou tipo próprio.
+> variação precisa ser lançada: inclusive rendimento, que ganhou tipo próprio.
 
 **2.3. `Status: Pendente` significa duas coisas diferentes.** Às vezes é "ainda não
 executei essa ação" (uma tarefa), às vezes é "o airdrop ainda não caiu" (estado do
@@ -56,29 +56,29 @@ projeto). Tarefa e histórico são conceitos distintos e precisam de tabelas dis
 | Framework | **Next.js** (App Router) | 16.2.12 | Preenche o Next.js listado no CV sem projeto que comprove. Server Components eliminam a camada de API para leitura. |
 | Linguagem | **TypeScript** (strict) | 5.x | Já dominado. |
 | Banco | **PostgreSQL / Neon** (serverless) | driver 1.1 | Já dominado no LVL. Free tier, escala pra comunidade. |
-| ORM | **Drizzle** | 0.45 | Já dominado. Type-safe, SQL explícito — bom pra agregações. |
-| Mutações | **Server Actions** + Zod | — | Substitui Express + tRPC. Menos código, padrão moderno. |
+| ORM | **Drizzle** | 0.45 | Já dominado. Type-safe, SQL explícito: bom pra agregações. |
+| Mutações | **Server Actions** + Zod | (do Next) | Substitui Express + tRPC. Menos código, padrão moderno. |
 | Validação | **Zod** | 4.4 | Schema único compartilhado cliente/servidor. |
 | UI | **Tailwind + shadcn/ui (Radix)** | Tailwind 4 | Já dominado. |
 | Gráficos | **Recharts** | 3.10 | Integra com shadcn, leve. |
 | Testes | **Vitest** | 4.1 | Já dominado. |
-| Deploy | **Vercel** | — | Caminho natural do Next; já feito antes. |
+| Deploy | **Vercel** | (do Next) | Caminho natural do Next; já feito antes. |
 
 Notas de versão relevantes para a implementação:
 
-- **Next 16, não 15** — 16.2.12 é a versão atual. App Router e Server Actions são os
+- **Next 16, não 15**: 16.2.12 é a versão atual. App Router e Server Actions são os
   mesmos; a diferença prática é Turbopack como bundler padrão do build.
-- **Zod 4** — a API de validação de string mudou (`z.email()` no lugar de
+- **Zod 4**: a API de validação de string mudou (`z.email()` no lugar de
   `z.string().email()`, que segue funcionando com aviso de depreciação).
-- **Tailwind 4** — configuração por CSS (`@theme` em `globals.css`), sem
+- **Tailwind 4**: configuração por CSS (`@theme` em `globals.css`), sem
   `tailwind.config.js`.
 
 **O que muda em relação ao LVL:** só a camada de servidor. Sai `Express + tRPC + Vite`,
 entra `Server Components + Server Actions`. Drizzle, Neon, Zod, Tailwind, shadcn, Vitest e
-Vercel permanecem — o risco de execução é baixo e o ganho de skill novo é alto.
+Vercel permanecem: o risco de execução é baixo e o ganho de skill novo é alto.
 
 **Por que não manter tRPC:** tRPC resolve type-safety entre cliente e servidor separados.
-No App Router, Server Components e Server Actions já são type-safe por construção — as duas
+No App Router, Server Components e Server Actions já são type-safe por construção: as duas
 camadas se sobreporiam. tRPC já está comprovado no LVL, então nada se perde no CV.
 
 ---
@@ -140,7 +140,7 @@ review_note    text NULL     -- por que foi recusado; só o admin vê
 created_at     timestamptz
 ```
 
-#### `profile_settings` — o que o perfil mostra para os outros
+#### `profile_settings`: o que o perfil mostra para os outros
 Um registro por usuário, criado junto com a conta. Ver §9.2.
 ```
 user_id        uuid PK FK -> users
@@ -149,11 +149,11 @@ show_projects  boolean default true   -- projetos, status, categoria, prioridade
 show_tasks     boolean default true   -- rotina: o que faz e com que frequência
 show_values    boolean default false  -- valores em dólar
 show_accounts  boolean default false  -- rótulos das contas ("chrome (Perfil 1)")
-show_wallets   boolean default false  -- endereços 0x… — ver o aviso em §9.2
+show_wallets   boolean default false  -- endereços 0x…: ver o aviso em §9.2
 updated_at     timestamptz
 ```
 
-#### `accounts` — suas carteiras / perfis
+#### `accounts`: suas carteiras / perfis
 Entidade **global do usuário**, não por projeto. É o que corrige o problema 2.1.
 ```
 id             uuid PK
@@ -167,7 +167,7 @@ created_at     timestamptz
 unique(user_id, label)
 ```
 
-#### `projects` — os airdrops
+#### `projects`: os airdrops
 ```
 id                uuid PK
 user_id           uuid FK -> users
@@ -191,7 +191,7 @@ unique(user_id, slug)
 unique(user_id, name)           -- necessário para o upsert do importador
 ```
 
-#### `project_accounts` — junção projeto × conta
+#### `project_accounts`: junção projeto × conta
 Entidade central da tabela "conta por conta". Tem dados próprios, não é junção pura.
 ```
 id           uuid PK
@@ -203,7 +203,7 @@ notes        text NULL
 unique(project_id, account_id)   -- alvo das FKs compostas (§4.3)
 ```
 
-#### `transactions` — eventos de fluxo (somáveis)
+#### `transactions`: eventos de fluxo (somáveis)
 ```
 id                uuid PK
 user_id           uuid FK -> users
@@ -222,9 +222,9 @@ unique(user_id, dedupe_key)   -- parcial: WHERE dedupe_key IS NOT NULL
 ```
 
 `trade_pnl` negativo cobre o `Perda em Trade` da planilha. `volume_traded` registra volume
-operado (não é fluxo de caixa — fica fora do P&L, alimenta metas; ver §4.3-C).
+operado (não é fluxo de caixa: fica fora do P&L, alimenta metas; ver §4.3-C).
 
-#### `balance_snapshots` — fotos de saldo (NÃO somáveis)
+#### `balance_snapshots`: fotos de saldo (NÃO somáveis)
 ```
 id                uuid PK
 user_id           uuid FK -> users
@@ -242,7 +242,7 @@ index(project_id, account_id, taken_at desc)
 Só o snapshot mais recente de cada par `(projeto, conta)` conta para exposição atual.
 É o `Saldo Atualizado` da planilha, agora sem poluir o somatório.
 
-#### `tasks` — o que precisa ser feito
+#### `tasks`: o que precisa ser feito
 Cobre recorrente e prazo fixo na mesma tabela.
 ```
 id              uuid PK
@@ -258,7 +258,7 @@ is_active       boolean default true
 created_at      timestamptz
 ```
 
-#### `task_occurrences` — ocorrências geradas
+#### `task_occurrences`: ocorrências geradas
 ```
 id            uuid PK
 task_id       uuid FK -> tasks ON DELETE CASCADE
@@ -269,7 +269,7 @@ skipped       boolean default false
 unique(task_id, account_id, due_date)   -- garante idempotência (§6)
 ```
 
-#### `goals` — metas de volume/valor
+#### `goals`: metas de volume/valor
 ```
 id            uuid PK
 user_id       uuid FK -> users
@@ -280,9 +280,9 @@ target_value  numeric(18,2)
 deadline      date NULL
 achieved_at   timestamptz NULL
 ```
-`current_value` **não** é coluna — é derivado. Ver §4.3-C para a fonte de cada métrica.
+`current_value` **não** é coluna: é derivado. Ver §4.3-C para a fonte de cada métrica.
 
-#### `goal_entries` — progresso manual de meta
+#### `goal_entries`: progresso manual de meta
 Só existe para métricas que não podem ser derivadas de outra tabela.
 ```
 id            uuid PK
@@ -292,7 +292,7 @@ value         numeric(18,2)
 note          text NULL
 ```
 
-#### `airdrop_claims` — quando o token cai
+#### `airdrop_claims`: quando o token cai
 ```
 id                uuid PK
 user_id           uuid FK -> users
@@ -307,7 +307,7 @@ value_usd         numeric(18,2)   -- token_amount * price_usd, congelado
 Tabela própria em vez de um `type` de transação: tem campos que não cabem no modelo
 de transação (símbolo, quantidade com 18 casas). O P&L soma as duas fontes.
 
-#### `import_batches` — rastro de cada importação
+#### `import_batches`: rastro de cada importação
 ```
 id             uuid PK
 user_id        uuid FK -> users
@@ -324,13 +324,13 @@ Permite desfazer uma importação inteira sem tocar nos lançamentos manuais.
 
 **A. `account_id` é NOT NULL nas tabelas de movimento.**
 Na versão anterior era nullable. Consequência: linhas órfãs que aparecem no total do
-projeto mas em nenhuma linha da tabela conta-por-conta — os dois números não fecham e não
+projeto mas em nenhuma linha da tabela conta-por-conta: os dois números não fecham e não
 existe forma de descobrir de qual conta o dinheiro saiu. Na sua planilha, toda linha já tem
 conta preenchida. Tornar obrigatório elimina a classe inteira de bug.
 
 **B. FK composta para `project_accounts`.**
 Com `project_id` e `account_id` como FKs independentes, nada impede registrar uma transação
-para um par que não existe — dinheiro numa conta que nunca foi vinculada àquele projeto.
+para um par que não existe: dinheiro numa conta que nunca foi vinculada àquele projeto.
 
 ```sql
 FOREIGN KEY (project_id, account_id)
@@ -342,7 +342,7 @@ existe. Efeito colateral desejável: vincular a conta ao projeto vira passo expl
 a tabela conta-por-conta nunca fica desatualizada.
 
 **C. Fonte de cada métrica de meta.**
-Na versão anterior `goals.metric = volume_usd` não tinha de onde sair — volume de trading
+Na versão anterior `goals.metric = volume_usd` não tinha de onde sair: volume de trading
 não se deriva de depósito. Furo corrigido:
 
 | métrica | fonte | agregação |
@@ -355,7 +355,7 @@ não se deriva de depósito. Furo corrigido:
 ### 4.4. Programas de pontos
 
 Muitos projetos distribuem pontos antes do token. O acompanhamento é análogo ao do saldo
-em dólar — a plataforma mostra um **acumulado**, não um extrato, então o que se registra
+em dólar: a plataforma mostra um **acumulado**, não um extrato, então o que se registra
 é a foto do total e o ganho do período sai da diferença entre duas fotos.
 
 ```
@@ -378,10 +378,10 @@ unique(project_id, account_id, taken_at)   -- uma medição por dia por par
 **Pontos nunca são somados entre projetos.** Mil pontos de um projeto e mil de outro são
 unidades distintas; somá-los não produz informação. Só existe agregação **dentro** de um
 projeto, entre suas contas. Por isso não há indicador de "total de pontos" em lugar
-nenhum da interface — o que se compara entre projetos é a **variação**, não o acumulado.
+nenhum da interface: o que se compara entre projetos é a **variação**, não o acumulado.
 
 **Aritmética separada** (`lib/points.ts`, não `lib/money.ts`): escala de 4 casas em vez de
-2, valores muito maiores, e — o mais importante — ponto nunca entra em aporte, exposição,
+2, valores muito maiores, e, o mais importante, ponto nunca entra em aporte, exposição,
 P&L ou ROI. Compartilhar o tipo `Cents` abriria a porta para somar ponto com dinheiro sem
 que o compilador reclamasse.
 
@@ -410,11 +410,11 @@ Resultado        = (Retirado + Exposição atual + Airdrops) − Aportado − |T
 ROI              = Resultado / Aportado
 ```
 
-`volume_traded` **não entra em nenhuma dessas contas** — é métrica de atividade, não de
+`volume_traded` **não entra em nenhuma dessas contas**: é métrica de atividade, não de
 caixa. Somá-lo inflaria o capital investido.
 
 **Aritmética decimal, nunca float.** Coluna `numeric(18,2)` no Postgres; o Drizzle
-devolve `numeric` como *string*, o que é bom — evita a conversão implícita pra float.
+devolve `numeric` como *string*, o que é bom: evita a conversão implícita pra float.
 Os cálculos acontecem em centavos (inteiros) em `lib/money.ts` e só viram string
 formatada na renderização.
 
@@ -433,13 +433,13 @@ Tarefas recorrentes precisam virar ocorrências concretas ("check-in da conta br
 |---|---|---|
 | Como funciona | Job diário cria as ocorrências | Ao abrir o painel, calcula o que deveria existir e cria o que falta |
 | Infra extra | Sim (Vercel Cron / worker) | Não |
-| Falha silenciosa | Job cai, ocorrências somem | Impossível — sempre recalcula |
+| Falha silenciosa | Job cai, ocorrências somem | Impossível: sempre recalcula |
 | Custo | Roda mesmo sem uso | Só quando você abre |
 
 Fluxo: ao carregar `/tarefas`, para cada `task` ativa, expandir pelas contas vinculadas ao
 projeto, calcular as datas devidas na janela `[hoje − 7d, hoje + 30d]` e fazer um
 `INSERT ... ON CONFLICT DO NOTHING`. A constraint `unique(task_id, account_id, due_date)`
-garante idempotência — o mesmo princípio que você usou no EcoBot.
+garante idempotência: o mesmo princípio que você usou no EcoBot.
 
 Lógica isolada em `lib/recurrence.ts` como função pura → testável no Vitest sem banco.
 
@@ -456,11 +456,13 @@ Cada linha vira **um de dois destinos diferentes**, decidido pela ação:
 |---|---|---|
 | `Depósito na Plataforma` | `transactions` | `deposit` |
 | `Perda em Trade` | `transactions` | `trade_pnl` (valor negativo) |
-| `Saldo Atualizado` | **`balance_snapshots`** | — |
+| `Saldo Atualizado` | `transactions` | **diferença** para o saldo anterior |
 | não reconhecida | fila de revisão | usuário decide |
 
-O ponto não óbvio: `Saldo Atualizado` **não vira transação**. É exatamente o problema 2.2
-sendo resolvido no momento da importação.
+O ponto não óbvio está na terceira linha. No modelo de livro-razão (revisão 6) não existe
+registro de saldo, então uma linha de `Saldo Atualizado` vira o **movimento que explica a
+diferença** em relação ao que já estava lançado. É o problema 2.2 sendo resolvido no
+momento da importação, e não copiado para dentro do sistema.
 
 Também é feito upsert automático:
 - cada `Projeto` distinto → `projects` (por `unique(user_id, name)`)
@@ -478,7 +480,7 @@ dedupe_key = sha256(occurred_at | project | account | action | amount | linha)
 ```
 
 Gravado com `ON CONFLICT (user_id, dedupe_key) DO NOTHING`. Rodar de novo é seguro por
-construção — mesma escolha do EcoBot, aplicada a outro contexto.
+construção: mesma escolha do EcoBot, aplicada a outro contexto.
 
 ### 7.3. Fluxo de duas etapas
 
@@ -492,7 +494,7 @@ lançamentos manuais.
 ### 7.4. Por que isso vale mais que os 15 minutos de digitação
 
 Parsing tolerante, upsert idempotente, prévia antes de gravar e undo transacional é um
-conjunto de problemas que aparece em entrevista com frequência — e o histórico entra
+conjunto de problemas que aparece em entrevista com frequência: e o histórico entra
 correto de uma vez, em vez de re-digitado com erro de dedo.
 
 ---
@@ -514,7 +516,7 @@ airdrop-tracker/
 │           ├── historico/page.tsx    # log de transações
 │           └── airdrop/page.tsx      # registro do que foi recebido
 │
-├── actions/                          # "use server" — mutações
+├── actions/                          # "use server": mutações
 │   ├── transactions.ts
 │   ├── projects.ts
 │   ├── accounts.ts
@@ -560,7 +562,7 @@ Duas regras:
 1. **Nenhum componente chama Drizzle diretamente.** Toda leitura passa por `db/queries`,
    toda escrita por `actions/`. Mantém a lógica de negócio testável e fora do React.
 2. **Todo arquivo em `db/` começa com `import 'server-only'`.** No App Router não existe
-   fronteira física entre cliente e servidor — um import errado num Client Component
+   fronteira física entre cliente e servidor: um import errado num Client Component
    empacota a string de conexão do Neon no bundle do navegador. O pacote `server-only`
    transforma isso em erro de build.
 
@@ -576,7 +578,7 @@ Vitest dão mais retorno.
 
 Todas as tabelas raiz têm `user_id` desde a primeira migração. Enquanto não há login, a
 identidade vem de variável de ambiente; com o Auth.js, da sessão. Trocar isso é trocar
-uma função — nenhuma query, nenhuma tabela, nenhuma migração.
+uma função: nenhuma query, nenhuma tabela, nenhuma migração.
 
 ### 9.2. Perfil compartilhado
 
@@ -601,7 +603,7 @@ registrada antes de começar.
 
 **Decisões tomadas:**
 
-- **Só membros logados.** Sem sessão, o perfil não abre — nem com o link. Evita
+- **Só membros logados.** Sem sessão, o perfil não abre: nem com o link. Evita
   indexação por buscador e mantém a lista de quem tem acesso sob controle.
 - **Todos podem compartilhar**, não só o dono da comunidade. `is_shared` é do usuário.
 - **Visibilidade por campo**, não um interruptor único. Cada `show_*` é uma decisão
@@ -611,7 +613,7 @@ registrada antes de começar.
 foram separados de propósito. O rótulo (`chrome (Perfil 1)`) comunica a estratégia
 multi-conta, que é o conteúdo útil para a comunidade, e não expõe nada. O endereço
 (`0x…`) permite a qualquer visitante ler todo o histórico on-chain, estimar patrimônio e
-— o mais grave no contexto — **correlacionar as contas entre si**. Vários projetos usam
+ o mais grave no contexto: **correlacionar as contas entre si**. Vários projetos usam
 análise de cluster para desqualificar farming multi-conta; publicar os endereços juntos
 entrega esse agrupamento pronto. Continua sendo escolha do usuário, mas exige um ato
 explícito.
@@ -622,7 +624,7 @@ O controle de acesso escolhido é **cadastro livre com aprovação manual**: qua
 cria conta e fica em `pendente` até ser liberada. Isso introduz duas coisas que o modelo
 não tinha.
 
-**Papel.** Alguém precisa aprovar, e essa pessoa vê dados que os demais não veem — a lista
+**Papel.** Alguém precisa aprovar, e essa pessoa vê dados que os demais não veem: a lista
 de quem pediu acesso, com e-mails. `users.role` (`admin` | `membro`) resolve, e a rota de
 administração exige `admin` **no servidor**: esconder o link do menu não é controle, é
 decoração.
@@ -631,7 +633,7 @@ decoração.
 users.role   enum default 'membro'   -- admin | membro
 ```
 
-#### `members` — solicitações de acesso
+#### `members`: solicitações de acesso
 Na fase de backend isto se funde a `users`: a solicitação vira o próprio usuário com
 `status`. Enquanto não há login, existe como coleção separada para desenhar a tela.
 ```
@@ -650,7 +652,7 @@ motivo à vista.
 
 #### O primeiro administrador
 
-A tela de aprovação exige um admin logado — então a conta que aprova não pode depender de
+A tela de aprovação exige um admin logado: então a conta que aprova não pode depender de
 aprovação. Sem resolver isso, ninguém entra nunca.
 
 | Abordagem | Problema |
@@ -664,7 +666,7 @@ ADMIN_EMAIL="voce@exemplo.com"
 ```
 
 Quem se cadastrar com esse e-mail nasce `role: "admin"` e `status: "aprovado"`. A
-variável só identifica o dono — **não guarda senha**, que continua sendo escolhida no
+variável só identifica o dono: **não guarda senha**, que continua sendo escolhida no
 cadastro e gravada como hash.
 
 Três propriedades que fizeram a escolha:
@@ -676,7 +678,7 @@ Três propriedades que fizeram a escolha:
 3. **Mudar a variável não rebaixa ninguém.** O papel fica gravado no banco; a variável só
    atua no momento do cadastro. Para trocar de administrador, altera-se o papel no banco.
 
-`npm run db:seed` cria a conta antecipadamente com `password_hash` nulo — a senha é
+`npm run db:seed` cria a conta antecipadamente com `password_hash` nulo: a senha é
 definida no primeiro acesso. O script não pede nem aceita senha: senha em variável de
 ambiente ou em argumento de linha de comando termina no histórico do shell.
 
@@ -702,11 +704,11 @@ Duas regras que não podem ser confundidas:
    do registro que está sendo alterado. Um perfil em modo leitura que só oculta botões
    continua editável por quem souber montar a requisição.
 2. **Campo escondido não é campo filtrado.** Se `show_values` está desligado, os valores
-   não podem ser enviados ao cliente e apenas ocultados por CSS — precisam não sair da
+   não podem ser enviados ao cliente e apenas ocultados por CSS: precisam não sair da
    query. Caso contrário estão no HTML, visíveis a qualquer um que abra o inspetor.
 
 Na fase 6 entra uma suíte que, para cada rota e cada Server Action, tenta agir como outro
-usuário e espera falha — incluindo o caso do visitante de perfil compartilhado tentando
+usuário e espera falha: incluindo o caso do visitante de perfil compartilhado tentando
 escrever. Row Level Security do Postgres fica como reforço opcional: com Server
 Components a query já nasce no servidor com o id da sessão, e RLS adiciona complexidade
 de conexão no Neon sem substituir os testes.
@@ -734,36 +736,36 @@ parar de manter as duas coisas em paralelo. Fases 1+2 são o MVP real.
 
 ## 11. Decisões registradas
 
-1. **Fluxo separado de saldo** (`transactions` vs `balance_snapshots`) — sem isso, todo
+1. **Fluxo separado de saldo** (`transactions` vs `balance_snapshots`): sem isso, todo
    somatório financeiro fica errado.
-2. **Conta é entidade global**, não string por linha — permite visão transversal por
+2. **Conta é entidade global**, não string por linha: permite visão transversal por
    carteira.
-3. **`account_id` NOT NULL + FK composta para `project_accounts`** — impede movimento
+3. **`account_id` NOT NULL + FK composta para `project_accounts`**: impede movimento
    órfão e movimento em par inexistente.
-4. **`user_id` desde o dia 1** — evita migração dolorosa na fase 6.
-5. **Valores derivados não são armazenados** (`goals.current_value`, saldos agregados) —
+4. **`user_id` desde o dia 1**: evita migração dolorosa na fase 6.
+5. **Valores derivados não são armazenados** (`goals.current_value`, saldos agregados):
    evita divergência quando um registro antigo é editado.
-6. **Toda métrica de meta tem fonte declarada** (§4.3-C) — meta sem fonte é meta que não
+6. **Toda métrica de meta tem fonte declarada** (§4.3-C): meta sem fonte é meta que não
    atualiza.
-7. **Recorrência preguiçosa em vez de cron** — sem infra extra, idempotente por constraint.
-8. **Importação idempotente com prévia e undo** — reimportar é seguro por construção.
-9. **`numeric` + centavos inteiros, nunca float** — sem erro de arredondamento.
-10. **`date` para eventos, `timestamptz` só para instantes de sistema** — imune a fuso do
+7. **Recorrência preguiçosa em vez de cron**: sem infra extra, idempotente por constraint.
+8. **Importação idempotente com prévia e undo**: reimportar é seguro por construção.
+9. **`numeric` + centavos inteiros, nunca float**: sem erro de arredondamento.
+10. **`date` para eventos, `timestamptz` só para instantes de sistema**: imune a fuso do
     servidor.
-11. **`server-only` em toda a camada de dados** — impede vazamento de credencial no bundle.
-12. **Server Actions em vez de tRPC** — tRPC já comprovado no LVL; aqui o ganho é Next.js.
-13. **Sem tabela de auditoria** — como só o dono escreve nos próprios registros, o autor
+11. **`server-only` em toda a camada de dados**: impede vazamento de credencial no bundle.
+12. **Server Actions em vez de tRPC**: tRPC já comprovado no LVL; aqui o ganho é Next.js.
+13. **Sem tabela de auditoria**: como só o dono escreve nos próprios registros, o autor
     de qualquer alteração é sempre o dono; `user_id` já responde "quem". Auditoria só
     faria sentido se várias pessoas editassem o mesmo perfil.
-14. **`viewer` separado de `owner`** (§9.2) — ler o perfil de outra pessoa quebra a
+14. **`viewer` separado de `owner`** (§9.2): ler o perfil de outra pessoa quebra a
     premissa de dono único; as queries recebem `ownerId` em vez de assumir a sessão.
-15. **Visibilidade por campo, com endereço de carteira à parte** — rótulo de conta ensina
+15. **Visibilidade por campo, com endereço de carteira à parte**: rótulo de conta ensina
     a estratégia sem custo; endereço permite correlacionar as contas entre si e pode
     queimar o farming. São decisões diferentes e ficam em chaves diferentes.
-16. **Pontos com tipo e aritmética próprios** (§4.4) — unidade por projeto, escala
+16. **Pontos com tipo e aritmética próprios** (§4.4): unidade por projeto, escala
     diferente e nunca somáveis entre si nem com dinheiro; o tipo separado impede a soma
     indevida em tempo de compilação.
-17. **Autorização no servidor, não na interface** — esconder o botão de editar é conforto
+17. **Autorização no servidor, não na interface**: esconder o botão de editar é conforto
     visual; a recusa que vale é a da Server Action. Campo não permitido não sai da query,
     em vez de sair e ser ocultado por CSS.
 

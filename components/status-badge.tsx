@@ -26,7 +26,7 @@ const projectStyles: Record<ProjectStatus, string> = {
 };
 
 /**
- * O risco pertence ao nome do projeto, não ao rótulo do status — riscar a
+ * O risco pertence ao nome do projeto, não ao rótulo do status: riscar a
  * palavra "Descartado" apenas tornava o próprio rótulo difícil de ler.
  */
 export const nomeRiscado = (status: ProjectStatus) =>
@@ -142,9 +142,9 @@ const categoryLabels: Record<ProjectCategory, string> = {
 
 /** Descrição longa, usada em tooltip e nos formulários. */
 export const categoryDescriptions: Record<ProjectCategory, string> = {
-  liquidez: "Farm passivo — capital parado rendendo",
-  interacoes: "Interações semanais — exige rotina de uso",
-  perps: "Perps — volume operado é o que conta",
+  liquidez: "Farm passivo: capital parado rendendo",
+  interacoes: "Interações semanais: exige rotina de uso",
+  perps: "Perps: volume operado é o que conta",
 };
 
 const categoryStyles: Record<ProjectCategory, string> = {

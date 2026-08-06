@@ -45,7 +45,7 @@ import type {
  * Agregação do domínio. Toda função é pura: `(Dataset, hoje) -> view model`.
  *
  * Nenhuma delas sabe se o Dataset veio do localStorage ou do Postgres, o que
- * é justamente o ponto — a mesma regra de negócio roda nos dois modos.
+ * é justamente o ponto: a mesma regra de negócio roda nos dois modos.
  */
 
 // ------------------------------------------------------------------- helpers
@@ -503,7 +503,7 @@ export function contarDependenciasVinculo(
   };
 }
 
-/** "3 lançamentos e 2 tarefas" — some itens zerados. */
+/** "3 lançamentos e 2 tarefas": some itens zerados. */
 export function descreverImpacto(contagem: Record<string, number>): string | null {
   const rotulos: Record<string, [string, string]> = {
     contas: ["vínculo de conta", "vínculos de conta"],
@@ -545,7 +545,7 @@ const rotuloPorTipo: Record<string, { titulo: string; tipo: TipoAtividade }> = {
  *
  * Junta lançamentos, saldos registrados, airdrops recebidos e tarefas
  * concluídas num feed único. É derivado dos registros existentes, então
- * funciona retroativamente sobre dados já cadastrados — diferente de uma
+ * funciona retroativamente sobre dados já cadastrados: diferente de uma
  * tabela de auditoria, que só passa a valer a partir do dia em que existe.
  *
  * Por isso não mostra edições nem exclusões: o rastro de "quem mudou o quê"
@@ -642,12 +642,12 @@ function pontosDoPar(ds: Dataset, projectId: string, accountId: string) {
  * Programas de pontos, um por projeto que tenha `pointsLabel`.
  *
  * Regra central: **pontos nunca são somados entre projetos.** Cada programa é
- * uma unidade própria — 1.000 pontos de um projeto e 1.000 de outro não formam
+ * uma unidade própria: 1.000 pontos de um projeto e 1.000 de outro não formam
  * 2.000 de coisa alguma. Só há soma entre as contas de um mesmo projeto.
  *
  * A variação compara o total atual com o total na medição anterior de cada
  * conta. Como as contas nem sempre são medidas no mesmo dia, a comparação é
- * feita conta a conta e depois somada — comparar o total de duas datas
+ * feita conta a conta e depois somada: comparar o total de duas datas
  * misturaria contas medidas em momentos diferentes.
  */
 export function selectProgramasDePontos(ds: Dataset): PointsProgramRow[] {
@@ -758,7 +758,7 @@ export function selectHistoricoDePontos(
  * Cotações informadas, com quantos projetos usam cada token.
  *
  * Inclui também os tokens que aparecem em lançamentos mas ainda não têm preço,
- * com `precoUsd: null` — é o que permite à interface pedir a atualização em vez
+ * com `precoUsd: null`: é o que permite à interface pedir a atualização em vez
  * de silenciosamente subestimar a posição.
  */
 export function selectCotacoes(ds: Dataset): TokenPriceRow2[] {

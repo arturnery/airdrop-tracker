@@ -10,7 +10,7 @@ import type { MemberRow } from "@/lib/types";
 /**
  * Solicitações de acesso.
  *
- * Só o administrador deve chamar — a lista traz e-mails de todo mundo. A
+ * Só o administrador deve chamar: a lista traz e-mails de todo mundo. A
  * verificação de papel é responsabilidade da rota que consome (§9.4); esta
  * função não a faz para não esconder onde a decisão acontece.
  *

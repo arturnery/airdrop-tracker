@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
  * Casca dos formulários de entrada.
  *
  * A validação de formato roda aqui e é definitiva. A verificação de credencial
- * — senha correta, conta existente, cadastro aprovado — depende do servidor e
+ *, senha correta, conta existente, cadastro aprovado, depende do servidor e
  * ainda não existe: `aoEnviar` devolve os erros de formato e a navegação segue
  * como se tivesse dado certo.
  *

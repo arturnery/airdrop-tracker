@@ -25,7 +25,7 @@ export default function AguardandoAprovacaoPage() {
       </h1>
       <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
         Sua conta será liberada assim que o acesso for confirmado. Você recebe um
-        e-mail quando isso acontecer — não é preciso cadastrar de novo.
+        e-mail quando isso acontecer: não é preciso cadastrar de novo.
       </p>
 
       <div className="border-border mt-8 rounded-lg border p-4 text-left">

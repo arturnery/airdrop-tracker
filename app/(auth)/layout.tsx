@@ -3,7 +3,7 @@ import Link from "next/link";
 /**
  * Casca das telas de entrada: uma coluna centrada, sem navegação.
  *
- * Quem ainda não entrou não tem para onde navegar — oferecer menu aqui só
+ * Quem ainda não entrou não tem para onde navegar: oferecer menu aqui só
  * daria caminhos que terminam em erro de permissão.
  */
 export default function AuthLayout({

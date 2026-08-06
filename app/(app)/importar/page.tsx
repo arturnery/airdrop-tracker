@@ -12,7 +12,7 @@ const mapeamento = [
 ];
 
 /**
- * Tela de importação — estrutura visual pronta, sem o processamento ainda.
+ * Tela de importação: estrutura visual pronta, sem o processamento ainda.
  * O parser e a gravação transacional entram na fase 2 (ARCHITECTURE.md §7).
  */
 export default function ImportarPage() {
@@ -65,7 +65,7 @@ export default function ImportarPage() {
           <strong className="text-foreground font-medium">
             &quot;Saldo Atualizado&quot; não vira transação
           </strong>
-          . É foto do saldo, não movimentação de dinheiro — somar as duas coisas na mesma
+          . É foto do saldo, não movimentação de dinheiro: somar as duas coisas na mesma
           coluna é o que fazia o total da planilha sair errado. A separação acontece no
           momento da importação.
         </p>

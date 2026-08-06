@@ -3,12 +3,12 @@ import type { FinancialSummary } from "./types";
 
 /**
  * Agregação financeira. Módulo puro: recebe linhas no formato que o banco
- * devolve e devolve totais. Sem Drizzle, sem React — testável direto.
+ * devolve e devolve totais. Sem Drizzle, sem React: testável direto.
  *
  * O sistema é um **livro-razão**: o saldo de um par projeto×conta é a soma de
  * tudo que foi lançado nele. Não existe registro de saldo em separado, então
  * todo centavo em tela tem um lançamento que o explica. A contrapartida é que
- * variação não registrada não aparece — quem lança é o usuário.
+ * variação não registrada não aparece: quem lança é o usuário.
  *
  * As fórmulas estão em ARCHITECTURE.md §5.
  */
@@ -35,7 +35,7 @@ export const pairKey = (projectId: string, accountId: string): PairKey =>
 /**
  * Movimentos que alteram o saldo dentro da plataforma.
  *
- * `volume_traded` fica de fora: é métrica de atividade, não de caixa — somá-lo
+ * `volume_traded` fica de fora: é métrica de atividade, não de caixa: somá-lo
  * inflaria o capital. `fee_gas` também fica de fora do saldo porque sai do
  * bolso, não da posição; entra no resultado como custo (§5).
  */
@@ -115,7 +115,7 @@ export type PairExposure = {
   value: Cents;
   /** Parte do valor que veio de posição em token revalorizada. */
   tokenValue: Cents;
-  /** Tokens sem cotação informada — a interface avisa em vez de fingir preço. */
+  /** Tokens sem cotação informada: a interface avisa em vez de fingir preço. */
   semCotacao: string[];
 };
 
@@ -126,8 +126,8 @@ export type PairExposure = {
  * revalorizados pela cotação atual: é isso que revela ganho ou perda no preço
  * do token, e não apenas o que foi aportado.
  *
- * Sem cotação informada para um token, o valor em dólar do aporte é mantido —
- * subestimar seria tão errado quanto inventar preço — e o símbolo é reportado
+ * Sem cotação informada para um token, o valor em dólar do aporte é mantido:
+ * subestimar seria tão errado quanto inventar preço: e o símbolo é reportado
  * para que a interface peça a atualização.
  */
 export function exposureForPair(
@@ -211,7 +211,7 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
    *
    * A retirada entra duas vezes de propósito: ela já reduziu a exposição (é um
    * movimento negativo no razão), mas o dinheiro sacado continua sendo do
-   * usuário. Aportar 100 e sacar 30 deixa 70 na plataforma e 30 no bolso —
+   * usuário. Aportar 100 e sacar 30 deixa 70 na plataforma e 30 no bolso:
    * resultado zero, não prejuízo de 30.
    */
   const resultado = cents(

@@ -24,8 +24,8 @@ import { criarRelogio } from "@/lib/local-store";
  * verdade, e `router.refresh()` recarrega o que mudou.
  *
  * O contexto continua existindo por dois motivos. As telas já consomem
- * `useDados()` — trocar por props atravessando cinco níveis não melhoraria nada
- * — e a interface das ações permaneceu a mesma do modo local, então nenhum
+ * `useDados()`: trocar por props atravessando cinco níveis não melhoraria nada
+ *: e a interface das ações permaneceu a mesma do modo local, então nenhum
  * componente precisou mudar quando o banco entrou.
  */
 

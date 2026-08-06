@@ -12,7 +12,7 @@ export const metadata = { title: "Membros · airdrop-tracker" };
  * nesta rota, e só ela.
  *
  * `exigirAdmin()` roda antes da consulta, no servidor. Quem não é
- * administrador é redirecionado para a raiz — dizer "acesso negado"
+ * administrador é redirecionado para a raiz: dizer "acesso negado"
  * confirmaria que a rota existe.
  */
 export default async function MembrosPage() {

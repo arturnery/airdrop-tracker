@@ -2,12 +2,12 @@
 
 Registro cronológico das decisões, dos problemas encontrados e do raciocínio por trás de
 cada escolha. O [`ARCHITECTURE.md`](ARCHITECTURE.md) diz **como o sistema é**; este
-documento diz **como se chegou até ele** — incluindo o que foi descartado e o que deu
+documento diz **como se chegou até ele**: incluindo o que foi descartado e o que deu
 errado no caminho.
 
 ---
 
-## Marco 0 — Arquitetura antes de qualquer código
+## Marco 0: Arquitetura antes de qualquer código
 
 **Ponto de partida:** uma planilha do Google Sheets com as colunas
 `Data | Projeto | Conta/Wallet | Ação Realizada | Valor | Status`.
@@ -18,12 +18,12 @@ Antes de propor solução, o diagnóstico do que estava errado no modelo atual:
 
 1. **Conta era texto solto.** `chrome (Perfil 1)`, `brave` e `mbox` eram redigitados a
    cada linha. Sem a entidade "conta", era impossível responder *"quanto essa carteira
-   tem espalhado entre todos os projetos?"* — uma pergunta central para quem farma com
+   tem espalhado entre todos os projetos?"*: uma pergunta central para quem farma com
    múltiplas contas.
 
 2. **Depósito e saldo dividiam a mesma coluna.** `Depósito na Plataforma` é um evento de
    fluxo (somável); `Saldo Atualizado` é uma foto do saldo (não somável). Somar a coluna
-   de valor misturava dinheiro que entrou com dinheiro que já estava lá — **o total da
+   de valor misturava dinheiro que entrou com dinheiro que já estava lá: **o total da
    planilha estava simplesmente errado**. Esta virou a correção central do modelo:
    `transactions` e `balance_snapshots` são tabelas separadas.
 
@@ -38,7 +38,7 @@ comprovasse, e o projeto anterior (landing page com captação de leads) usava
 `Vite + Express + tRPC`. Repetir a mesma stack não adicionaria nada ao portfólio.
 
 **Decisão:** Next.js 16 (App Router) + Drizzle + Neon + Zod + Tailwind/shadcn + Vitest.
-Mantém 80% do que já era dominado — só a camada de servidor muda, de `Express + tRPC`
+Mantém 80% do que já era dominado: só a camada de servidor muda, de `Express + tRPC`
 para `Server Components + Server Actions`. Risco de execução baixo, skill nova
 comprovada.
 
@@ -55,7 +55,7 @@ que eu mesmo tinha escrito**:
 |---|---|
 | `account_id` nullable nas tabelas de movimento | Linhas órfãs somando no total do projeto sem aparecer na tabela conta-por-conta; os dois números nunca fechariam |
 | FKs independentes para projeto e conta | Nada impediria registrar dinheiro numa conta jamais vinculada àquele projeto |
-| Meta `volume_usd` sem fonte de dados | Métrica que nunca atualizaria — volume de trading não se deriva de depósito |
+| Meta `volume_usd` sem fonte de dados | Métrica que nunca atualizaria: volume de trading não se deriva de depósito |
 | Faltava `server-only` na camada de dados | Um import errado num Client Component empacotaria a `DATABASE_URL` no bundle do navegador |
 
 Corrigidos com: `NOT NULL`, FK composta apontando para `project_accounts`, tipo
@@ -66,7 +66,7 @@ encontra o que a escrita original não vê. Três revisões antes da primeira li
 
 ---
 
-## Marco 1 — Fase 0: infraestrutura
+## Marco 1: Fase 0: infraestrutura
 
 Setup do projeto: Next.js, TypeScript strict, Drizzle, Neon, Tailwind, shadcn, Vitest.
 
@@ -90,19 +90,19 @@ temporariamente um Client Component importando o banco e rodei o build:
 Falhou como devia, com o rastro completo do import. A sonda foi removida depois.
 
 **Erro cometido no caminho:** a primeira tentativa usou a pasta `app/_probe/`. Pastas com
-`_` são privadas no Next e não viram rota — a página nunca foi compilada e o build passou,
+`_` são privadas no Next e não viram rota: a página nunca foi compilada e o build passou,
 dando a falsa impressão de que a proteção não funcionava. Renomear para `app/probe/`
 revelou o comportamento real.
 
 ### `money.ts`: os testes encontraram dois bugs meus
 
-Aritmética monetária em centavos inteiros — valor em dinheiro nunca passa por float. Ao
+Aritmética monetária em centavos inteiros: valor em dinheiro nunca passa por float. Ao
 escrever os testes, dois defeitos apareceram:
 
 1. **`"1.2.3,4,5"` era aceito como válido.** Faltava validar agrupamento de milhar.
    Corrigido com regex de grupos exatos de 3 dígitos.
 
-2. **`"10.005"` é genuinamente ambíguo** — dez mil e cinco (milhar brasileiro) ou dez com
+2. **`"10.005"` é genuinamente ambíguo**: dez mil e cinco (milhar brasileiro) ou dez com
    três casas decimais? Não há como desambiguar sem quebrar `"1.234"`, que precisa valer
    mil duzentos e trinta e quatro no teclado BR.
 
@@ -120,7 +120,7 @@ escrever os testes, dois defeitos apareceram:
 
 ---
 
-## Marco 2 — Front completo com dados de desenvolvimento
+## Marco 2: Front completo com dados de desenvolvimento
 
 Pedido: construir a interface antes do backend, para avaliar o produto antes de investir
 no banco.
@@ -130,7 +130,7 @@ no banco.
 Dados mock atrás da **mesma interface** que as queries reais teriam:
 
 - `db/queries` devolve os view models de `lib/types`, com assinatura `async`;
-- as fixtures reproduzem o formato do Drizzle — `numeric` como **string**, data como
+- as fixtures reproduzem o formato do Drizzle: `numeric` como **string**, data como
   `"YYYY-MM-DD"` sem timezone.
 
 A agregação já opera sobre o formato real. Trocar fixture por SQL não muda a lógica.
@@ -154,7 +154,7 @@ incerteza fica visível, não escondida.**
 
 Nas transcrições da planilha, `Meridian / navegador` tem dois snapshots de saldo e **nenhum
 depósito registrado**. A interface mostra o saldo sem aporte em vez de corrigir ou
-esconder — é informação legítima para o dono decidir o que fazer.
+esconder: é informação legítima para o dono decidir o que fazer.
 
 ### Acessibilidade medida, não estimada
 
@@ -167,13 +167,13 @@ esconder — é informação legítima para o dono decidir o que fazer.
 ### Gráfico: série única recebe cor única
 
 O gráfico de capital por projeto usa **uma cor só**. Pintar cada projeto de um tom
-diferente seria decoração — a identidade já vem do rótulo de texto. O valor aparece
+diferente seria decoração: a identidade já vem do rótulo de texto. O valor aparece
 escrito ao lado, então nada depende de enxergar cor ou comprimento. Construído em CSS
 puro: acessível por construção e sem biblioteca no bundle.
 
 ---
 
-## Marco 3 — Formulários em modo local
+## Marco 3: Formulários em modo local
 
 Pedido: poder cadastrar dados para testar, ainda sem backend.
 
@@ -182,7 +182,7 @@ Pedido: poder cadastrar dados para testar, ainda sem backend.
 **Diagnóstico:** apenas o texto do nome era link. Clicar em qualquer outro ponto do card
 não fazia nada.
 
-**Correção:** *stretched link* — o `<Link>` continua sendo um único link real (bom para
+**Correção:** *stretched link*: o `<Link>` continua sendo um único link real (bom para
 teclado e leitor de tela), mas seu `::after` cobre o card inteiro. Envolver o card no
 `<Link>` aninharia os links internos, o que é HTML inválido.
 
@@ -210,7 +210,7 @@ e sem render extra.
 
 ---
 
-## Marco 4 — Edição e exclusão
+## Marco 4: Edição e exclusão
 
 ### Bug relatado: "todos os botões verdes não estão funcionando"
 
@@ -222,7 +222,7 @@ function BotaoNovo({ children }) {        // ← descarta as props
 }
 ```
 
-`DialogTrigger asChild` clona o elemento e injeta `onClick` **nas props** — que iam para
+`DialogTrigger asChild` clona o elemento e injeta `onClick` **nas props**: que iam para
 o lixo. Os botões *outline* funcionavam por usarem `<Button>` direto, o que explicava
 exatamente por que só os verdes falhavam. Um `{...props}` corrigiu as cinco chamadas.
 
@@ -231,7 +231,7 @@ qualquer padrão `asChild`.
 
 ### Segundo erro meu, pego na revisão
 
-O gatilho de exclusão tinha sido escrito como `<span onClick>` — não alcançável por Tab.
+O gatilho de exclusão tinha sido escrito como `<span onClick>`: não alcançável por Tab.
 Trocado por `AlertDialogTrigger asChild` sobre um `<button>` real.
 
 ### Exclusão em cascata: decisões de produto
@@ -243,14 +243,14 @@ Replicando o que as FKs fariam no banco, com duas escolhas que não são óbvias
 - **Apagar uma conta** converte suas tarefas específicas em tarefas de todas as contas,
   em vez de apagá-las. A intenção de farming sobrevive à conta.
 
-A confirmação informa o tamanho do estrago — *"isso também apaga 8 lançamentos e 2
-tarefas"* — em vez de um "tem certeza?" genérico, já que não há desfazer por item.
+A confirmação informa o tamanho do estrago: *"isso também apaga 8 lançamentos e 2
+tarefas"*: em vez de um "tem certeza?" genérico, já que não há desfazer por item.
 
 ### Segunda extração para funções puras
 
 A lógica de cascata tinha nascido dentro do componente React: **impossível de testar**.
 Movida para `lib/mutations` como `(Dataset, dados) → Dataset`. O provider caiu para uma
-casca fina de delegação, e entraram 17 testes que antes não existiam — incluindo um que
+casca fina de delegação, e entraram 17 testes que antes não existiam: incluindo um que
 garante que nenhuma mutação altera o dataset original.
 
 São as mesmas transformações que as Server Actions vão executar contra o Postgres. O teste
@@ -259,7 +259,7 @@ migração.
 
 ---
 
-## Marco 5 — Histórico, categoria e filtros
+## Marco 5: Histórico, categoria e filtros
 
 ### Histórico: feed derivado, não tabela de auditoria
 
@@ -277,30 +277,30 @@ foi feito**, não **o que foi editado**.
 
 ### Categoria de projeto
 
-`Liquidez (farm passivo)` · `Interações semanais` · `Perps` — classificação por **tipo de
+`Liquidez (farm passivo)` · `Interações semanais` · `Perps`: classificação por **tipo de
 esforço**, que é o que determina a rotina de trabalho.
 
 ### Filtros: contagem vem do conjunto completo
 
 Detalhe de usabilidade decidido de propósito: os contadores dos chips refletem o total,
 não o resultado filtrado. Se viessem do filtrado, escolher "Perps" faria as outras
-categorias mostrarem 0 — e o usuário perderia a referência de quantos existem. Filtros que
+categorias mostrarem 0: e o usuário perderia a referência de quantos existem. Filtros que
 não devolveriam nada são escondidos em vez de oferecidos.
 
 ---
 
-## Marco 6 — Modelo de perfis compartilhados
+## Marco 6: Modelo de perfis compartilhados
 
 Contexto: a ferramenta será aberta para a comunidade, cada pessoa com seu perfil,
 podendo **ver** o perfil dos outros mas não editar.
 
-### Audit log descartado — com justificativa
+### Audit log descartado: com justificativa
 
 Eu havia sugerido reservar espaço para uma tabela de auditoria. O usuário apontou que
 cada pessoa só altera os próprios dados.
 
 **Ele estava certo.** Se só o dono escreve nos próprios registros, o autor de qualquer
-alteração é sempre o dono — `user_id` já responde "quem". Auditoria só faria sentido com
+alteração é sempre o dono: `user_id` já responde "quem". Auditoria só faria sentido com
 várias pessoas editando o mesmo perfil. Descartado.
 
 ### O que o compartilhamento realmente exige
@@ -313,7 +313,7 @@ Uma distinção que o modelo de dono único não tinha:
 | **owner** | de quem são os dados exibidos |
 
 Hoje `db/queries` assume que coincidem. Na fase 7 passa a receber `ownerId` e consultar
-permissão — a mudança de maior alcance da fase de backend, registrada antes de começar.
+permissão: a mudança de maior alcance da fase de backend, registrada antes de começar.
 
 ### Duas armadilhas registradas
 
@@ -321,7 +321,7 @@ permissão — a mudança de maior alcance da fase de backend, registrada antes 
    continua editável por quem souber montar a requisição. A recusa que vale é a da Server
    Action.
 2. **Campo escondido não é campo filtrado.** Valor que não pode ser visto não pode sair da
-   query e ser ocultado por CSS — estaria no HTML, legível no inspetor.
+   query e ser ocultado por CSS: estaria no HTML, legível no inspetor.
 
 ### Rótulo de conta separado de endereço de carteira
 
@@ -332,7 +332,7 @@ riscos são diferentes:
   para a comunidade, sem custo.
 - **Endereço** (`0x…`) permite ler todo o histórico on-chain e, o mais grave,
   **correlacionar as contas entre si**. Vários projetos usam análise de cluster para
-  desqualificar farming multi-conta — publicar os endereços juntos entrega o agrupamento
+  desqualificar farming multi-conta: publicar os endereços juntos entrega o agrupamento
   pronto. Não é só privacidade: pode custar os airdrops.
 
 `show_wallets` nasce desligado e exige ato explícito. A decisão continua do usuário, mas
@@ -340,7 +340,7 @@ não fica embutida numa escolha única.
 
 ---
 
-## Marco 7 — Programas de pontos e descrição nos saldos
+## Marco 7: Programas de pontos e descrição nos saldos
 
 Dois pedidos: acompanhar os programas de pontos (para uma live semanal com a comunidade,
 mostrando a evolução do acúmulo) e um campo de descrição ao registrar saldo.
@@ -348,7 +348,7 @@ mostrando a evolução do acúmulo) e um campo de descrição ao registrar saldo
 ### A armadilha resolvida antes de codar
 
 O pedido foi *"igual tem do capital, coloque uma parte de pontos"*, o que sugeriria
-espelhar a estrutura do dinheiro — inclusive um indicador de total.
+espelhar a estrutura do dinheiro: inclusive um indicador de total.
 
 **Não funciona.** Mil pontos de um projeto e mil de outro são unidades diferentes; somá-los
 é como somar moedas sem câmbio. O total geral seria um número sem significado exibido com
@@ -381,20 +381,20 @@ ganho do período é a diferença entre duas medições.
 "total de hoje" com "total de uma semana atrás" misturaria contas medidas em momentos
 diferentes. A variação é calculada **conta a conta** e só depois somada.
 
-Também: um programa com uma única medição devolve variação `null`, não zero — exibir
+Também: um programa com uma única medição devolve variação `null`, não zero: exibir
 "+0" na estreia sugeriria estagnação onde só falta base de comparação.
 
 ### O teste encontrou outro bug de parsing
 
 `parsePointsInput("1.5,5")` era aceito como 15,5. O parser separava inteiro e decimal
-corretamente mas não validava o **agrupamento de milhar** da parte inteira — `"1.5"` não
+corretamente mas não validava o **agrupamento de milhar** da parte inteira: `"1.5"` não
 é agrupamento válido, porque milhar exige grupos de exatos 3 dígitos.
 
 É exatamente o mesmo defeito que `money.ts` teve no Marco 1, cometido de novo em código
 novo. Corrigido com a mesma validação de agrupamento.
 
 **Lição:** ao escrever um segundo parser com regra parecida, revisar os casos-limite que o
-primeiro já resolveu — a memória de ter corrigido não impede repetir.
+primeiro já resolveu: a memória de ter corrigido não impede repetir.
 
 ### Descrição nos saldos
 
@@ -408,24 +408,24 @@ genérico "Saldo atualizado" quando existe. Um saldo que caiu passa a dizer por 
 ### Correção: o risco estava no lugar errado
 
 Projeto com status `descartado` aparecia com a **palavra "Descartado" riscada** dentro do
-badge, em vez do nome do projeto. O `line-through` tinha ido parar no estilo do rótulo —
+badge, em vez do nome do projeto. O `line-through` tinha ido parar no estilo do rótulo:
 o que, além de não comunicar nada, deixava o próprio rótulo difícil de ler.
 
 O risco pertence ao **nome**: é ele que representa a coisa abandonada. Extraído para um
 helper `nomeRiscado(status)` aplicado no card, na tabela do dashboard, no cabeçalho e na
 trilha do projeto, com teste travando o comportamento.
 
-## Marco 8 — Livro-razão e aportes em token
+## Marco 8: Livro-razão e aportes em token
 
 Pergunta do usuário: *"qual seria a diferença de registrar saldo para novo lançamento?"*
 
 A dúvida em si já era o diagnóstico. Se quem construiu a rotina não sabe qual usar,
-a interface não está comunicando — e essa era a distinção central do modelo.
+a interface não está comunicando: e essa era a distinção central do modelo.
 
 ### A decisão: um só caminho de entrada
 
 Em vez de explicar melhor a diferença, o usuário preferiu eliminá-la: **tudo vira
-lançamento**, e o saldo passa a ser a soma deles. A motivação é boa — o histórico passa a
+lançamento**, e o saldo passa a ser a soma deles. A motivação é boa: o histórico passa a
 explicar cada centavo, em vez de o saldo aparecer sem origem.
 
 O risco foi apontado antes de executar: **variação não registrada nunca aparece**. Com
@@ -436,7 +436,7 @@ diferença) como meio-termo, e o usuário optou pelo modelo puro, ciente da cont
 Consequências no código:
 
 - `balance_snapshots` desapareceu do modelo, das telas e dos testes;
-- entrou o tipo `yield` (rendimento) — era o caso de uso concreto: *"dia 15 olhei e rendeu
+- entrou o tipo `yield` (rendimento): era o caso de uso concreto: *"dia 15 olhei e rendeu
   $1, adiciono $1 de rendimento"*;
 - `exposureForPair` deixou de escolher entre snapshot e estimativa: é soma direta;
 - todo o aparato de "cobertura de saldo confirmado" saiu, porque não existe mais saldo
@@ -450,7 +450,7 @@ Ao reescrever o resumo financeiro, escrevi:
 resultado = exposição + airdrops − aportado − |taxas|
 ```
 
-Errado. No razão, a retirada já **reduziu** a exposição por ser um movimento negativo —
+Errado. No razão, a retirada já **reduziu** a exposição por ser um movimento negativo:
 mas o dinheiro sacado continua sendo do usuário. Aportar 100 e sacar 30 deixa 70 na
 plataforma e 30 no bolso: resultado **zero**, e a fórmula acima diria prejuízo de 30.
 
@@ -463,7 +463,7 @@ porque parece erro para quem lê rápido.
 
 ### Aportes em token
 
-Pedido: *"depositei $100 ou 1 SOL — assim podemos saber se estamos ganhando no valor do
+Pedido: *"depositei $100 ou 1 SOL: assim podemos saber se estamos ganhando no valor do
 token ou não"*.
 
 Modelo escolhido: cada lançamento pode ter `tokenSymbol` e `tokenAmount` além do valor em
@@ -478,7 +478,7 @@ preço.
 | Resultado | +$15 (+8,3%) |
 
 **Cotação manual, sem API.** O usuário informa o preço em `/cotacoes` e atualiza quando
-quiser — tipicamente antes da live semanal. Escolhido em vez de CoinGecko para não
+quiser: tipicamente antes da live semanal. Escolhido em vez de CoinGecko para não
 adicionar dependência externa, chave e ponto de falha a um app que roda sem backend.
 
 Duas decisões de honestidade:
@@ -492,7 +492,7 @@ Duas decisões de honestidade:
 ### O preço unitário estava implícito
 
 Ao testar, o usuário notou: lançando $100 e 2 SOL, em lugar nenhum aparecia que a entrada
-foi a $50 por SOL. O dado existia — investido ÷ quantidade — mas nunca era mostrado.
+foi a $50 por SOL. O dado existia, investido ÷ quantidade, mas nunca era mostrado.
 
 Dois lugares passaram a exibi-lo:
 
@@ -511,7 +511,7 @@ Aproveitei a reescrita para separar: gas sai do bolso, não da posição na plat
 era somado junto; agora entra no resultado como custo, mas não reduz a exposição. Um teste
 fixa isso.
 
-## Marco 9 — Telas de entrada
+## Marco 9: Telas de entrada
 
 Pedido: tela de login. Duas coisas precisaram ser separadas antes de codar.
 
@@ -522,21 +522,21 @@ entrada apenas de pessoas que eu quiser"*. A premissa não se sustenta:
 
 | | |
 |---|---|
-| **Autenticação** | provar que você é você — senha, Google, Discord |
+| **Autenticação** | provar que você é você: senha, Google, Discord |
 | **Autorização** | decidir se você pode entrar |
 
 Com "entrar com Google" ainda dá para liberar só quem se quer; com e-mail e senha,
 qualquer um se cadastra se não houver trava. O que garante "só assinantes" é a trava, não
 o método.
 
-Feita a distinção, ele escolheu **cadastro livre com aprovação manual** — e e-mail e senha
+Feita a distinção, ele escolheu **cadastro livre com aprovação manual**: e e-mail e senha
 seguiram valendo, agora por preferência e não por um controle que não existia.
 
 ### A tela que quase não foi feita
 
 Aprovação manual implica um estado entre "cadastrou" e "entrou". Sem tela para ele, a
 pessoa se cadastra, tenta entrar, é recusada e conclui que quebrou. `/aguardando-aprovacao`
-existe para dizer o que acontece a seguir — e para evitar a mensagem de suporte que viria.
+existe para dizer o que acontece a seguir: e para evitar a mensagem de suporte que viria.
 
 ### Decisões de segurança nas telas
 
@@ -544,19 +544,19 @@ existe para dizer o que acontece a seguir — e para evitar a mensagem de suport
   conta com esse e-mail, o link chega". Dizer "não encontrado" transformaria a tela num
   verificador de quem tem conta.
 - **Senha exige comprimento, não símbolos.** Regra complexa empurra para senha previsível
-  ou anotada. O que protege de verdade é hash no servidor e limite de tentativas — ambos
+  ou anotada. O que protege de verdade é hash no servidor e limite de tentativas: ambos
   do backend.
 - **`autocomplete` correto** (`email`, `current-password`, `new-password`), para que
   gerenciador de senha funcione. Sem isso, o incentivo é criar senha fácil de digitar.
 
 ### O aviso que ficou na tela
 
-As telas validam formato de verdade, mas não verificam credencial — não há servidor. Em
-vez de deixar a ambiguidade, cada tela traz uma linha: *"Demonstração — a autenticação
+As telas validam formato de verdade, mas não verificam credencial: não há servidor. Em
+vez de deixar a ambiguidade, cada tela traz uma linha: *"Demonstração: a autenticação
 entra na fase de backend"*. Sai junto com a entrada do Auth.js.
 
 Estruturalmente, as rotas foram separadas em dois grupos: `app/(app)` com barra lateral e
-`app/(auth)` sem — quem ainda não entrou não tem para onde navegar, e oferecer menu daria
+`app/(auth)` sem: quem ainda não entrou não tem para onde navegar, e oferecer menu daria
 caminhos que terminam em erro de permissão.
 
 ### Área de administração
@@ -564,7 +564,7 @@ caminhos que terminam em erro de permissão.
 A tela de aprovação (`/membros`) fechou o fluxo. Três decisões de produto nela:
 
 **Ordem por quem espera há mais tempo**, não por cadastro mais recente. Numa fila de
-aprovação, o mais antigo é o mais urgente — e é justamente ele que some do topo se a
+aprovação, o mais antigo é o mais urgente: e é justamente ele que some do topo se a
 ordenação for decrescente.
 
 **Recusar pede um motivo**, guardado só para o administrador. Meses depois, "por que
@@ -573,7 +573,7 @@ recusei essa pessoa?" é uma pergunta real, e sem a nota a resposta se perde.
 **Recusa não apaga.** O registro sai da fila mas fica no histórico: quem foi recusado não
 volta como cadastro novo, e dá para reconsiderar com o motivo à vista.
 
-Revogar acesso e reconsiderar uma recusa acabaram sendo a **mesma operação** — devolver
+Revogar acesso e reconsiderar uma recusa acabaram sendo a **mesma operação**: devolver
 para a fila limpando a decisão anterior. Uma função, dois botões com rótulos diferentes.
 
 A tela também obrigou a registrar um conceito que faltava na arquitetura: **papel**.
@@ -584,12 +584,12 @@ verificação no servidor entraram no documento (§9.3) antes de existirem no c�
 
 Pergunta do usuário: *"como eu vou ser o adm, qual seria meu login e senha?"*
 
-Resposta curta: nenhum, ainda — nada é verificado. Mas a pergunta expôs um problema que
+Resposta curta: nenhum, ainda: nada é verificado. Mas a pergunta expôs um problema que
 precisava ser resolvido antes do backend, não durante.
 
 **A tela de aprovação exige um admin logado.** Se a conta do dono também depender de
 aprovação, ninguém entra nunca. É o problema do ovo e da galinha, e ele aparece no
-primeiro deploy — tarde demais para improvisar.
+primeiro deploy: tarde demais para improvisar.
 
 Três saídas foram avaliadas:
 
@@ -600,7 +600,7 @@ Três saídas foram avaliadas:
 | **`ADMIN_EMAIL` em variável de ambiente** | Escolhida |
 
 O que decidiu: a variável **não é alcançável pela aplicação nem adivinhável**, vale desde
-o primeiro deploy (sem janela de exposição) e alterá-la depois **não rebaixa ninguém** —
+o primeiro deploy (sem janela de exposição) e alterá-la depois **não rebaixa ninguém**:
 o papel fica gravado no banco, a variável só atua no momento do cadastro.
 
 **A variável não guarda senha.** Ela diz qual e-mail é o dono; a senha continua sendo
@@ -608,11 +608,11 @@ escolhida no cadastro e gravada como hash. O `db:seed` cria a conta com `passwor
 nulo e não aceita senha por parâmetro: senha em variável de ambiente ou em argumento de
 linha de comando termina no histórico do shell.
 
-Junto entraram no schema os campos que a fila de aprovação já pressupunha — `role`,
-`status`, `reviewed_at`, `review_note` — e `exigirAdmin()` em `lib/auth.ts`, ainda
+Junto entraram no schema os campos que a fila de aprovação já pressupunha: `role`,
+`status`, `reviewed_at`, `review_note`: e `exigirAdmin()` em `lib/auth.ts`, ainda
 lançando erro, para que a guarda exista antes das rotas que vão precisar dela.
 
-## Marco 10 — Backend: banco, escrita e sessão
+## Marco 10: Backend: banco, escrita e sessão
 
 O pedido foi *"cada mudança nos airdrops salva de acordo com a conta logada"*.
 Três etapas, cada uma verificável antes da seguinte.
@@ -620,7 +620,7 @@ Três etapas, cada uma verificável antes da seguinte.
 ### A aposta arquitetural foi cobrada
 
 Trocar fixtures por Postgres custou **1 arquivo e 11 linhas** (`app/layout.tsx`). Zero
-telas, zero selectors, zero funções de cálculo — medido com `git diff --stat`.
+telas, zero selectors, zero funções de cálculo: medido com `git diff --stat`.
 
 Isso foi possível porque `carregarDataset()` devolve exatamente a forma que as fixtures
 devolviam. Os números conferiram sem ajuste: $337 aportado, $348,18 de exposição, +$11,18
@@ -654,7 +654,7 @@ o caminho de execução.
 2. **Todo `UPDATE` e `DELETE` filtra por `userId` além do id.** Buscar só por id
    significaria que conhecer um uuid alheio basta para alterá-lo.
 
-Um caso exigiu cuidado extra: `project_accounts` não tem `user_id` — pende das duas
+Um caso exigiu cuidado extra: `project_accounts` não tem `user_id`: pende das duas
 pontas. Sem checagem, alguém poderia vincular a própria conta ao projeto de outro
 mandando os uuids. Daí o `exigirDono()`.
 
@@ -663,7 +663,7 @@ mandando os uuids. Daí o `exigirDono()`.
 Ao criar uma cotação, o campo de preço acusava *"Invalid input: expected string, received
 number"*.
 
-**Causa:** o formulário validava no cliente e enviava `resultado.data` — já transformado —
+**Causa:** o formulário validava no cliente e enviava `resultado.data`: já transformado:
 para a Server Action, que validava de novo. Como os schemas convertem string em número
 ("$3" → 300 centavos), a segunda validação recebia número onde esperava string e recusava
 **a própria saída**.
@@ -701,7 +701,7 @@ Criei um segundo usuário aprovado e medi:
 admin : {"projetos":6,"contas":7,"lancamentos":25}
 outro : {"projetos":0,"contas":0,"lancamentos":0}
 
-update cruzado afetou 0 linha(s) — esperado 0
+update cruzado afetou 0 linha(s): esperado 0
 ```
 
 O último número é o que importa: um `UPDATE` com o id de um projeto do admin e o `user_id`
@@ -714,7 +714,7 @@ do outro afeta **zero linhas**. Conhecer o uuid não basta.
 | | |
 |---|---|
 | Telas | Visão geral, tarefas, projetos, aba do projeto, contas, cotações, histórico, importar |
-| Entrada | Login, cadastro, recuperação e espera por aprovação — desenhadas, sem verificar credencial |
+| Entrada | Login, cadastro, recuperação e espera por aprovação: desenhadas, sem verificar credencial |
 | Administração | Fila de aprovação, membros com acesso e histórico de recusas |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
@@ -731,5 +731,5 @@ do outro afeta **zero linhas**. Conhecer o uuid não basta.
 - A data no HTML estático fica congelada na constante das fixtures; o navegador corrige ao
   hidratar. Usar `new Date()` no servidor congelaria a data no momento do *build*, o que
   seria pior.
-- Sem alternância entre tema claro e escuro — o tema claro está escrito e funcional, falta
+- Sem alternância entre tema claro e escuro: o tema claro está escrito e funcional, falta
   o controle.

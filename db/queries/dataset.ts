@@ -9,7 +9,7 @@ import type { Dataset } from "@/lib/dataset";
 /**
  * Carrega o Dataset completo de um usuário.
  *
- * Devolve exatamente a mesma forma que as fixtures devolviam — por isso
+ * Devolve exatamente a mesma forma que as fixtures devolviam: por isso
  * `lib/selectors` e `lib/mutations` continuam valendo sem alteração, e as telas
  * não sabem se os dados vieram do Postgres ou do navegador.
  *
@@ -19,7 +19,7 @@ import type { Dataset } from "@/lib/dataset";
  *
  * Carregar tudo de uma vez é adequado à escala do problema (dezenas de
  * projetos, centenas de lançamentos). Se um dia deixar de ser, o caminho é
- * mover a agregação para SQL — os selectors passam a ser a especificação do
+ * mover a agregação para SQL: os selectors passam a ser a especificação do
  * que as queries precisam devolver.
  */
 export async function carregarDataset(userId: string): Promise<Dataset> {
@@ -128,7 +128,7 @@ export async function carregarDataset(userId: string): Promise<Dataset> {
       amountUsd: t.amountUsd,
       tokenSymbol: t.tokenSymbol,
       // `numeric` volta como string; o zero à direita não importa para o
-      // cálculo, mas incomoda na tela — some aqui, não no componente.
+      // cálculo, mas incomoda na tela: some aqui, não no componente.
       tokenAmount: t.tokenAmount === null ? null : String(Number(t.tokenAmount)),
       description: t.description,
     })),

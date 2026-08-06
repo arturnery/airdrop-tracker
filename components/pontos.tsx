@@ -54,7 +54,7 @@ export function CardPrograma({
       <div className="mt-3 flex items-center gap-2 text-xs">
         {variacao === null ? (
           <span className="text-muted-foreground">
-            primeira medição — sem base de comparação
+            primeira medição: sem base de comparação
           </span>
         ) : (
           <>
@@ -89,7 +89,7 @@ export function CardPrograma({
               <span className="text-muted-foreground truncate">{conta.label}</span>
               <span className="flex shrink-0 items-baseline gap-2">
                 <span className="tabular">
-                  {conta.total === null ? "—" : formatPoints(conta.total)}
+                  {conta.total === null ? "-" : formatPoints(conta.total)}
                 </span>
                 {conta.variacao !== null && conta.variacao !== ZERO_PONTOS ? (
                   <span

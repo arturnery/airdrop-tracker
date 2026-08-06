@@ -61,7 +61,7 @@ export function vincularConta(
 }
 
 /**
- * Garante o par projeto×conta antes de gravar um movimento — mesma integridade
+ * Garante o par projeto×conta antes de gravar um movimento: mesma integridade
  * que a FK composta impõe no banco (ARCHITECTURE.md §4.3-B).
  */
 function garantirVinculo(
@@ -191,7 +191,7 @@ export function registrarRecebimento(
     priceUsd: string;
   },
 ): Dataset {
-  // Valor congelado no momento do registro — o preço muda depois, o histórico não.
+  // Valor congelado no momento do registro: o preço muda depois, o histórico não.
   const valueUsd = (Number(dados.tokenAmount) * Number(dados.priceUsd)).toFixed(2);
   return {
     ...ds,
@@ -448,7 +448,7 @@ export function excluirPontos(ds: Dataset, id: string): Dataset {
  * Define ou atualiza a cotação de um token.
  *
  * Sem API externa por decisão de projeto: o preço é informado pelo usuário e
- * vale até ele atualizar. Um símbolo por registro — reinformar substitui.
+ * vale até ele atualizar. Um símbolo por registro: reinformar substitui.
  */
 export function definirCotacao(
   ds: Dataset,

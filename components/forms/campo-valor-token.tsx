@@ -10,7 +10,7 @@ import { formatUsd, parseUserInput, cents } from "@/lib/money";
  *
  * Os três campos ficam juntos porque só fazem sentido em conjunto: valor em
  * dólar dividido pela quantidade é o preço unitário de entrada. Esse preço não
- * é digitado nem guardado — é derivado, e aparece enquanto se digita para que
+ * é digitado nem guardado: é derivado, e aparece enquanto se digita para que
  * um erro de dedo (2 SOL a $100 quando se queria 0,2) salte à vista antes de
  * virar registro.
  */

@@ -7,7 +7,7 @@ type Tone = "auto" | "neutral" | "muted";
  * Valor monetário.
  *
  * Em `tone="auto"` a cor acompanha o sinal, mas o sinal em si já vem no texto
- * ("-$9.00"), então a cor nunca é a única informação — requisito de
+ * ("-$9.00"), então a cor nunca é a única informação: requisito de
  * acessibilidade. Números tabulares para as colunas alinharem.
  */
 export function Money({
@@ -51,8 +51,11 @@ export function Percent({
 }) {
   if (value === null) {
     return (
-      <span className={cn("text-muted-foreground tabular", className)} title="Sem aporte para calcular">
-        —
+      <span
+        className={cn("text-muted-foreground tabular", className)}
+        title="Sem aporte para calcular"
+      >
+        -
       </span>
     );
   }

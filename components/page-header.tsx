@@ -6,7 +6,7 @@ export function PageHeader({
   title,
   description,
   actions,
-  /** Estilo extra no título — usado para riscar projeto descartado. */
+  /** Estilo extra no título: usado para riscar projeto descartado. */
   titleClassName,
 }: {
   title: string;

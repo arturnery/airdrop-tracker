@@ -10,20 +10,20 @@ import { loginSchema } from "@/lib/validators";
 /**
  * Autenticação.
  *
- * E-mail e senha, com sessão em JWT — sem tabela de sessões, o que mantém o
+ * E-mail e senha, com sessão em JWT: sem tabela de sessões, o que mantém o
  * banco enxuto e funciona bem em serverless.
  *
  * Três decisões de segurança:
  *
  * 1. **A recusa é sempre a mesma.** Senha errada, e-mail inexistente e conta
  *    não aprovada devolvem o mesmo `null`. Distinguir os casos transformaria a
- *    tela de login num verificador de quem tem conta — e de quem foi aprovado.
+ *    tela de login num verificador de quem tem conta: e de quem foi aprovado.
  *
  * 2. **`status` é verificado aqui, não só na interface.** Uma conta pendente ou
  *    recusada não abre sessão nenhuma; não adianta saber a senha.
  *
  * 3. **`role` entra no token.** Assim a guarda de administração não precisa
- *    consultar o banco a cada requisição — mas continua sendo verificada no
+ *    consultar o banco a cada requisição: mas continua sendo verificada no
  *    servidor, nunca no cliente.
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({

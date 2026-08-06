@@ -6,7 +6,7 @@ import { parsePointsInput } from "./points";
 /**
  * Schemas de entrada dos formulários.
  *
- * Os mesmos schemas passam a validar as Server Actions na fase de backend —
+ * Os mesmos schemas passam a validar as Server Actions na fase de backend:
  * é o ganho de manter validação separada da UI.
  */
 
@@ -128,7 +128,7 @@ export const cotacaoSchema = z.object({
   updatedAt: dataIso,
 });
 
-/** Pontos usam escala própria — ver lib/points.ts. */
+/** Pontos usam escala própria: ver lib/points.ts. */
 const quantidadePontos = z.string().transform((raw, ctx) => {
   const parsed = parsePointsInput(raw);
   if (!parsed.ok) {
@@ -197,8 +197,8 @@ export function erros(resultado: z.ZodSafeParseResult<unknown>) {
  * Schemas das telas de entrada.
  *
  * A validação de formato é definitiva e roda no cliente. A verificação de
- * credencial — se a senha confere, se o e-mail existe, se a conta foi aprovada
- * — é responsabilidade do servidor e entra com o backend (ARCHITECTURE.md §9).
+ * credencial: se a senha confere, se o e-mail existe, se a conta foi aprovada
+ *: é responsabilidade do servidor e entra com o backend (ARCHITECTURE.md §9).
  */
 
 const email = z

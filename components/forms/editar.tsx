@@ -29,7 +29,7 @@ import {
  * Formulários de edição.
  *
  * Cada um recebe o registro atual e pré-preenche os campos. A validação usa os
- * mesmos schemas do cadastro — um campo que é obrigatório ao criar continua
+ * mesmos schemas do cadastro: um campo que é obrigatório ao criar continua
  * obrigatório ao editar, sem regra duplicada.
  */
 
@@ -149,7 +149,7 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
       aoEnviar={(dados) => {
         /*
          * Envia o objeto BRUTO, não `resultado.data`. Os schemas têm
-         * transform — "$3" vira 300 centavos — e a Server Action valida de
+         * transform, "$3" vira 300 centavos, e a Server Action valida de
          * novo. Mandar o já transformado faria o schema receber número onde
          * espera string e recusar a própria saída.
          *

@@ -17,7 +17,7 @@ import type { MemberRow, MemberStatus } from "@/lib/types";
 /**
  * Área do administrador: quem pediu acesso e quem já tem.
  *
- * Em produção esta rota exige papel de administrador — a verificação acontece
+ * Em produção esta rota exige papel de administrador: a verificação acontece
  * no servidor, não escondendo o link (ARCHITECTURE.md §9.3). Aqui não há
  * sessão, então a tela está aberta.
  */
@@ -270,7 +270,7 @@ export function MembrosView({
                       {membro.email}
                     </td>
                     <td className="text-muted-foreground px-4 py-3 text-xs">
-                      {membro.revisadoEm ? formatDateBr(membro.revisadoEm) : "—"}
+                      {membro.revisadoEm ? formatDateBr(membro.revisadoEm) : "-"}
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex justify-end">

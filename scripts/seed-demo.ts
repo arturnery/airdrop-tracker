@@ -5,7 +5,7 @@
  *   npm run db:seed-demo
  *
  * Reexecutar é seguro: apaga o que era do usuário antes de inserir. Não toca
- * em dados de outros usuários — todo DELETE filtra por user_id.
+ * em dados de outros usuários: todo DELETE filtra por user_id.
  */
 import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";

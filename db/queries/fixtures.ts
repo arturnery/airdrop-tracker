@@ -1,5 +1,5 @@
 /**
- * Dados de desenvolvimento — substituídos pelo Neon na fase de backend.
+ * Dados de desenvolvimento: substituídos pelo Neon na fase de backend.
  *
  * Formato deliberadamente igual ao que o Drizzle devolve: valores `numeric`
  * como STRING, datas como "YYYY-MM-DD". A agregação em `db/queries` já opera
@@ -8,7 +8,7 @@
  * PROCEDÊNCIA DOS DADOS
  *  - Transações e os dois snapshots de Meridian/navegador-1: reais, vindos da planilha.
  *  - Demais snapshots, tarefas e metas: exemplos para dar o que ver às telas.
- *  - `chain` dos projetos: exemplo — conferir antes de levar a sério.
+ *  - `chain` dos projetos: exemplo: conferir antes de levar a sério.
  */
 
 export const HOJE = "2026-07-28";
@@ -53,7 +53,7 @@ export type RawProject = {
   slug: string;
   name: string;
   status: "pesquisando" | "ativo" | "pausado" | "tge_anunciado" | "distribuido" | "descartado";
-  /** Como o projeto é farmado — define a rotina de trabalho. */
+  /** Como o projeto é farmado: define a rotina de trabalho. */
   category: "liquidez" | "interacoes" | "perps" | null;
   /**
    * Nome do programa de pontos ("Pontos", "XP", "Marks"). `null` = o projeto
@@ -214,7 +214,7 @@ export const rawTokenPrices: RawTokenPrice[] = [
 
 /**
  * Lançamentos. No modelo de razão, o saldo de cada par projeto×conta é a soma
- * de tudo que foi lançado — não existe registro de saldo em separado.
+ * de tudo que foi lançado: não existe registro de saldo em separado.
  *
  * Dados de demonstração.
  */
@@ -254,7 +254,7 @@ export const rawTransactions: RawTransaction[] = [
 
   // ------------------------------------------------------------------ Nebula
   // Aporte em token: o dólar fica congelado na data, mas a posição de 1 SOL é
-  // revalorizada pela cotação atual — é o que revela ganho de preço.
+  // revalorizada pela cotação atual: é o que revela ganho de preço.
   { id: "tx-25", projectId: "prj-nebula", accountId: "acc-mbox", occurredAt: "2026-07-28", type: "deposit", amountUsd: "180.00", tokenSymbol: "SOL", tokenAmount: "1", description: "Depósito de 1 SOL a $180" },
 ];
 
@@ -339,7 +339,7 @@ export const rawTasks: RawTask[] = [
   },
 ];
 
-/** Ocorrências já materializadas — o motor de recorrência entra na fase 4. */
+/** Ocorrências já materializadas: o motor de recorrência entra na fase 4. */
 export type RawTaskOccurrence = {
   id: string;
   taskId: string;
@@ -350,7 +350,7 @@ export type RawTaskOccurrence = {
 };
 
 export const rawTaskOccurrences: RawTaskOccurrence[] = [
-  // Vertex Perp — "Executar 3 trades", 4 contas
+  // Vertex Perp: "Executar 3 trades", 4 contas
   { id: "occ-01", taskId: "tsk-01", accountId: "acc-brave", dueDate: "2026-07-28", completedAt: null, skipped: false },
   { id: "occ-02", taskId: "tsk-01", accountId: "acc-chrome", dueDate: "2026-07-28", completedAt: null, skipped: false },
   { id: "occ-03", taskId: "tsk-01", accountId: "acc-chrome-1", dueDate: "2026-07-28", completedAt: null, skipped: false },
@@ -360,19 +360,19 @@ export const rawTaskOccurrences: RawTaskOccurrence[] = [
   { id: "occ-06", taskId: "tsk-01", accountId: "acc-chrome-2", dueDate: "2026-07-27", completedAt: null, skipped: false },
   { id: "occ-07", taskId: "tsk-01", accountId: "acc-brave", dueDate: "2026-07-27", completedAt: "2026-07-27T18:20:00Z", skipped: false },
   { id: "occ-08", taskId: "tsk-01", accountId: "acc-chrome", dueDate: "2026-07-27", completedAt: "2026-07-27T18:35:00Z", skipped: false },
-  // Meridian — check-in diário, 3 contas
+  // Meridian: check-in diário, 3 contas
   { id: "occ-09", taskId: "tsk-02", accountId: "acc-email", dueDate: "2026-07-28", completedAt: null, skipped: false },
   { id: "occ-10", taskId: "tsk-02", accountId: "acc-chrome", dueDate: "2026-07-28", completedAt: null, skipped: false },
   { id: "occ-11", taskId: "tsk-02", accountId: "acc-brave", dueDate: "2026-07-28", completedAt: "2026-07-28T09:10:00Z", skipped: false },
   { id: "occ-12", taskId: "tsk-02", accountId: "acc-email", dueDate: "2026-07-26", completedAt: null, skipped: false },
-  // Prisma DEX — semanal
+  // Prisma DEX: semanal
   { id: "occ-13", taskId: "tsk-03", accountId: "acc-chrome", dueDate: "2026-08-02", completedAt: null, skipped: false },
-  // Solstice — prazo fixo
+  // Solstice: prazo fixo
   { id: "occ-14", taskId: "tsk-04", accountId: "acc-brave", dueDate: "2026-08-15", completedAt: null, skipped: false },
   { id: "occ-15", taskId: "tsk-04", accountId: "acc-chrome", dueDate: "2026-08-15", completedAt: null, skipped: false },
-  // Nebula — prazo fixo próximo
+  // Nebula: prazo fixo próximo
   { id: "occ-16", taskId: "tsk-05", accountId: "acc-mbox", dueDate: "2026-07-30", completedAt: null, skipped: false },
-  // Vertex Perp — a cada 10 dias
+  // Vertex Perp: a cada 10 dias
   { id: "occ-17", taskId: "tsk-06", accountId: "acc-chrome", dueDate: "2026-08-03", completedAt: null, skipped: false },
 ];
 
@@ -428,7 +428,7 @@ export const rawAirdropClaims: RawAirdropClaim[] = [];
  * Dataset inicial entregue ao provider client.
  *
  * As cópias impedem que uma mutação acidental no navegador altere os módulos
- * importados — o "restaurar dados originais" precisa de uma base intacta.
+ * importados: o "restaurar dados originais" precisa de uma base intacta.
  */
 export function datasetInicial() {
   return {
@@ -457,13 +457,13 @@ export type RawPointsSnapshot = {
 
 /**
  * Fotos do saldo de pontos. Mesmo princípio dos saldos em dólar: o programa
- * mostra um acumulado, não um extrato — então o que se registra é o total do
+ * mostra um acumulado, não um extrato: então o que se registra é o total do
  * dia, e o ganho do período sai da diferença entre duas fotos.
  *
  * Dados de exemplo.
  */
 export const rawPointsSnapshots: RawPointsSnapshot[] = [
-  // Vertex Perp — quatro contas, duas medições
+  // Vertex Perp: quatro contas, duas medições
   { id: "pts-01", projectId: "prj-vertex", accountId: "acc-brave", takenAt: "2026-07-20", points: "8400.0000", note: null },
   { id: "pts-02", projectId: "prj-vertex", accountId: "acc-chrome", takenAt: "2026-07-20", points: "15200.0000", note: null },
   { id: "pts-03", projectId: "prj-vertex", accountId: "acc-chrome-1", takenAt: "2026-07-20", points: "1100.0000", note: null },
@@ -472,10 +472,10 @@ export const rawPointsSnapshots: RawPointsSnapshot[] = [
   { id: "pts-06", projectId: "prj-vertex", accountId: "acc-chrome", takenAt: "2026-07-27", points: "21400.0000", note: null },
   { id: "pts-07", projectId: "prj-vertex", accountId: "acc-chrome-1", takenAt: "2026-07-27", points: "1480.0000", note: null },
   { id: "pts-08", projectId: "prj-vertex", accountId: "acc-chrome-2", takenAt: "2026-07-27", points: "1620.0000", note: null },
-  // Prisma DEX — uma conta
+  // Prisma DEX: uma conta
   { id: "pts-09", projectId: "prj-prisma", accountId: "acc-chrome", takenAt: "2026-07-19", points: "3200.0000", note: null },
   { id: "pts-10", projectId: "prj-prisma", accountId: "acc-chrome", takenAt: "2026-07-26", points: "4850.5000", note: "Bônus de maker" },
-  // Nebula — programa recém-iniciado, só uma medição
+  // Nebula: programa recém-iniciado, só uma medição
   { id: "pts-11", projectId: "prj-nebula", accountId: "acc-mbox", takenAt: "2026-07-28", points: "500.0000", note: "Pontos de entrada" },
 ];
 
@@ -496,7 +496,7 @@ export type RawMember = {
   registeredAt: string;
   /** Quando foi aprovada ou recusada; null enquanto pendente. */
   reviewedAt: string | null;
-  /** Observação de quem revisou — por que recusou, de onde veio, etc. */
+  /** Observação de quem revisou: por que recusou, de onde veio, etc. */
   note: string | null;
 };
 

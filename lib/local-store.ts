@@ -85,7 +85,7 @@ export class DatasetStore {
 }
 
 /**
- * Data de hoje como store externo — o relógio também é externo ao React.
+ * Data de hoje como store externo: o relógio também é externo ao React.
  * O valor é calculado uma vez e fica estável durante a sessão.
  */
 export function criarRelogio(dataInicial: string) {

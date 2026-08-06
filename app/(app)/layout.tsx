@@ -8,7 +8,7 @@ import { exigirSessao } from "@/lib/auth";
  * Casca do aplicativo: navegação lateral e área de conteúdo.
  *
  * Separada do layout raiz porque as telas de entrada (`app/(auth)`) não têm
- * barra lateral — quem ainda não entrou não tem para onde navegar.
+ * barra lateral: quem ainda não entrou não tem para onde navegar.
  */
 export default async function AppLayout({
   children,

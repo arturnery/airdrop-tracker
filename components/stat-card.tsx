@@ -13,7 +13,7 @@ const accentBorder: Record<Accent, string> = {
 };
 
 /**
- * Cartão de indicador. O valor usa a serif do tema — número é o que o olho
+ * Cartão de indicador. O valor usa a serif do tema: número é o que o olho
  * procura primeiro nesta tela, e a mudança de família o destaca sem precisar
  * de cor forte.
  */

@@ -9,8 +9,8 @@ import {
 /**
  * Estes testes existem por causa de um bug real.
  *
- * Os formulários validavam no cliente e enviavam `resultado.data` — já
- * transformado — para a Server Action, que validava de novo. Como os schemas
+ * Os formulários validavam no cliente e enviavam `resultado.data`: já
+ * transformado: para a Server Action, que validava de novo. Como os schemas
  * convertem string em número ("$3" → 300 centavos), a segunda validação
  * recebia número onde esperava string e recusava a própria saída, com a
  * mensagem "Invalid input: expected string, received number".

@@ -28,7 +28,7 @@ const itens = [
 ] as const;
 
 /**
- * `ehAdmin` esconde o item de administração de quem não é — conforto visual,
+ * `ehAdmin` esconde o item de administração de quem não é: conforto visual,
  * não segurança. A rota se protege sozinha no servidor (§9.4).
  */
 export function Nav({ ehAdmin = false }: { ehAdmin?: boolean }) {

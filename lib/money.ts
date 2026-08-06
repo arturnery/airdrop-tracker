@@ -62,7 +62,7 @@ export function fromDbNumeric(value: string | null | undefined): Cents {
 
 /**
  * Converte centavos para o formato que o Postgres espera em `numeric(18,2)`.
- * Feito por manipulação de string — divisão por 100 introduziria float.
+ * Feito por manipulação de string: divisão por 100 introduziria float.
  */
 export function toDbNumeric(value: Cents): string {
   const negative = value < 0;
@@ -88,7 +88,7 @@ export type ParseResult =
  *  - só um separador, com outra quantidade de dígitos -> decimal.
  *
  * Consequência assumida: "10.005" é lido como dez mil e cinco, não como dez
- * com três casas. A ambiguidade é irredutível — "1.234" precisa continuar
+ * com três casas. A ambiguidade é irredutível: "1.234" precisa continuar
  * valendo mil duzentos e trinta e quatro no teclado brasileiro. Milhar exige
  * agrupamento exato de 3 em 3, então "1,23,456" é recusado em vez de aceito
  * torto.
@@ -224,7 +224,7 @@ export function sumDbNumeric(values: (string | null | undefined)[]): Cents {
 
 /**
  * Percentual com uma casa: (resultado / aportado).
- * Devolve null quando não há base — evita divisão por zero virar Infinity na tela.
+ * Devolve null quando não há base: evita divisão por zero virar Infinity na tela.
  */
 export function percentOf(value: Cents, base: Cents): number | null {
   if (base === 0) return null;

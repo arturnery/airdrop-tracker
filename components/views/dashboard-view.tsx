@@ -265,7 +265,7 @@ export function DashboardView() {
             Programas de pontos
           </h2>
           <p className="text-muted-foreground mt-1 mb-4 text-sm">
-            Cada programa tem unidade própria e por isso não existe total geral —
+            Cada programa tem unidade própria e por isso não existe total geral:
             o que se compara entre projetos é o ganho, não o acumulado.
           </p>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

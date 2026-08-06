@@ -5,7 +5,7 @@
  *   npm run db:seed
  *
  * A conta nasce sem senha (`password_hash` nulo). A senha é definida por você
- * no primeiro cadastro pela tela — este script não pede nem guarda senha, e
+ * no primeiro cadastro pela tela: este script não pede nem guarda senha, e
  * senha em variável de ambiente ou em argumento de linha de comando acabaria
  * no histórico do shell.
  */

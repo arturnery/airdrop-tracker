@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
  *
  * Regras seguidas em todos: label sempre visível (nunca placeholder no lugar
  * de rótulo), mensagem de erro ligada ao controle por `aria-describedby` e
- * `aria-invalid` para leitores de tela — cor sozinha não comunica o erro.
+ * `aria-invalid` para leitores de tela: cor sozinha não comunica o erro.
  */
 
 function Envolucro({

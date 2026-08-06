@@ -13,7 +13,7 @@ import {
 /**
  * Camada de leitura do servidor.
  *
- * No modo local as telas não passam por aqui — elas leem o estado do
+ * No modo local as telas não passam por aqui: elas leem o estado do
  * `DataProvider`. Estas funções existem porque são o ponto de retorno quando
  * o backend entrar: basta trocar `datasetInicial()` por consultas Drizzle e
  * as telas voltam a ser Server Components sem que `lib/selectors` mude uma

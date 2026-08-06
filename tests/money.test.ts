@@ -109,7 +109,7 @@ describe("parseUserInput", () => {
 
   /**
    * "10.005" é ambíguo de verdade: dez mil e cinco (milhar BR) ou dez com três
-   * casas decimais. A regra escolhida é milhar — coerente com "1.234" — e está
+   * casas decimais. A regra escolhida é milhar, coerente com "1.234", e está
    * documentada em parseUserInput. Este teste existe para travar a decisão:
    * se alguém mudar a heurística, quebra aqui e precisa decidir de novo.
    */

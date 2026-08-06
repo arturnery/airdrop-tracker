@@ -10,8 +10,8 @@ import { env } from "./env";
  * Duas noções distintas, e confundi-las é a origem da maior parte dos
  * vazamentos de dados entre usuários (ARCHITECTURE.md §9.2):
  *
- *  - **viewer** — quem está com a sessão aberta;
- *  - **owner**  — de quem são os dados sendo exibidos.
+ *  - **viewer**: quem está com a sessão aberta;
+ *  - **owner** : de quem são os dados sendo exibidos.
  *
  * Hoje os dois coincidem: cada pessoa só vê o próprio perfil. Quando um membro
  * puder abrir o perfil de outro em modo leitura, deixam de coincidir, e toda
@@ -24,7 +24,7 @@ export type CamposVisiveis = {
   tarefas: boolean;
   valores: boolean;
   contas: boolean;
-  /** Endereço 0x… — nasce desligado; ver o aviso em ARCHITECTURE.md §9.2. */
+  /** Endereço 0x…: nasce desligado; ver o aviso em ARCHITECTURE.md §9.2. */
   carteiras: boolean;
 };
 
@@ -95,7 +95,7 @@ export async function getCurrentUserId(): Promise<string> {
  * a conta que aprova não pode depender de aprovação. Quem se cadastrar com
  * este e-mail nasce `role: "admin"` e `status: "aprovado"`.
  *
- * A variável não guarda senha — apenas identifica o dono. Trocar o valor depois
+ * A variável não guarda senha: apenas identifica o dono. Trocar o valor depois
  * não rebaixa quem já é admin, porque o papel fica gravado no banco.
  */
 export function ehEmailDeAdmin(email: string): boolean {
@@ -109,7 +109,7 @@ export function ehEmailDeAdmin(email: string): boolean {
  * protege nada: a URL continua acessível para quem a digitar (§9.4).
  *
  * Quem não é administrador recebe redirecionamento para a raiz, não uma
- * mensagem de "acesso negado" — confirmar que a rota existe já é informação.
+ * mensagem de "acesso negado": confirmar que a rota existe já é informação.
  */
 export async function exigirAdmin(): Promise<Sessao> {
   const sessao = await exigirSessao();

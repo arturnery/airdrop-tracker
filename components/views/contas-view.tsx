@@ -33,7 +33,7 @@ export function ContasView() {
     <>
       <PageHeader
         title="Contas"
-        description="Cada carteira ou perfil atravessando todos os projetos — a visão que a planilha não conseguia dar."
+        description="Cada carteira ou perfil atravessando todos os projetos. É a visão que a planilha não conseguia dar."
         actions={
           <>
             <VincularConta />
@@ -74,7 +74,7 @@ export function ContasView() {
               label="Conta mais exposta"
               accent="caution"
               value={
-                <span className="text-2xl">{contaMaisExposta?.label ?? "—"}</span>
+                <span className="text-2xl">{contaMaisExposta?.label ?? "-"}</span>
               }
               hint={
                 contaMaisExposta ? (
@@ -140,7 +140,7 @@ export function ContasView() {
                       {conta.tarefasPendentes > 0 ? (
                         <span className="tabular">{conta.tarefasPendentes}</span>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </td>
                     <td className="text-muted-foreground px-4 py-3 text-right text-xs">
@@ -149,7 +149,7 @@ export function ContasView() {
                           {relativeLabel(conta.ultimaAtividade, hoje)}
                         </span>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </td>
                     <td className="px-2 py-2">

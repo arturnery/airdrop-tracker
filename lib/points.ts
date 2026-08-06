@@ -16,7 +16,7 @@
 
 declare const pointsBrand: unique symbol;
 
-/** Pontos em milésimos de milésimo — inteiro escalado por 10⁴. */
+/** Pontos em milésimos de milésimo: inteiro escalado por 10⁴. */
 export type Points = number & { readonly [pointsBrand]: true };
 
 const ESCALA = 10_000;

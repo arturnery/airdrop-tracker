@@ -43,7 +43,7 @@ function Lista({
             checked={false}
             onCheckedChange={() => aoConcluir(tarefa.id)}
             className="mt-0.5"
-            aria-label={`Concluir: ${tarefa.titulo} — ${tarefa.projetoNome}, ${tarefa.contaLabel}`}
+            aria-label={`Concluir: ${tarefa.titulo}, em ${tarefa.projetoNome}, conta ${tarefa.contaLabel}`}
           />
           <div className="min-w-0 flex-1">
             <label

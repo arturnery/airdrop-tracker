@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 /**
  * Hash de senha.
  *
- * O banco guarda o hash, nunca a senha. Não existe operação de "ler a senha" —
+ * O banco guarda o hash, nunca a senha. Não existe operação de "ler a senha":
  * só de verificar se a que foi digitada bate com o hash guardado. Nem quem tem
  * acesso ao banco consegue recuperá-la.
  *
@@ -24,7 +24,7 @@ export async function gerarHash(senha: string): Promise<string> {
 /**
  * Confere a senha contra o hash.
  *
- * Quando não há hash — conta criada pelo seed, ainda sem senha — devolve falso
+ * Quando não há hash, conta criada pelo seed, ainda sem senha, devolve falso
  * **depois** de um hash descartável. Sem isso, uma conta sem senha responderia
  * instantaneamente e o tempo de resposta revelaria quais e-mails existem.
  */

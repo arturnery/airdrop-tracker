@@ -48,7 +48,7 @@ import { formatPoints, formatPointsDelta, ZERO_PONTOS } from "@/lib/points";
 import { cn } from "@/lib/utils";
 import type { TransactionRow } from "@/lib/types";
 
-/** Botão de lixeira das linhas de tabela — mesmo tamanho do de editar. */
+/** Botão de lixeira das linhas de tabela: mesmo tamanho do de editar. */
 function BotaoLixeira({ rotulo }: { rotulo: string }) {
   return (
     <Button
@@ -237,7 +237,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                       <dt className="text-muted-foreground">Preço de entrada</dt>
                       <dd className="mt-0.5">
                         {posicao.precoMedioUsd === null ? (
-                          "—"
+                          "-"
                         ) : (
                           <Money value={posicao.precoMedioUsd} />
                         )}
@@ -322,7 +322,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                         {conta.tarefasPendentes > 0 ? (
                           <span className="tabular">{conta.tarefasPendentes}</span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </td>
                       <td className="px-2 py-2">
@@ -366,7 +366,7 @@ export function ProjetoView({ slug }: { slug: string }) {
           )}
 
           <p className="text-muted-foreground mt-3 text-xs">
-            O saldo de cada conta é a soma dos lançamentos dela — todo valor aqui tem
+            O saldo de cada conta é a soma dos lançamentos dela: todo valor aqui tem
             um lançamento no histórico que o explica.
           </p>
         </TabsContent>
@@ -417,7 +417,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                             </span>
                           ) : null}
                           {linha.tokenAmount && linha.descricao ? " · " : null}
-                          {linha.descricao ?? (linha.tokenAmount ? "" : "—")}
+                          {linha.descricao ?? (linha.tokenAmount ? "" : "-")}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Money value={linha.valor} />
@@ -441,7 +441,7 @@ export function ProjetoView({ slug }: { slug: string }) {
               </div>
               <p className="text-muted-foreground mt-3 text-xs">
                 O saldo do projeto é a soma destes lançamentos. Volume operado aparece
-                aqui mas fica fora do caixa — é atividade, não dinheiro movimentado.
+                aqui mas fica fora do caixa: é atividade, não dinheiro movimentado.
               </p>
             </>
           )}
@@ -583,7 +583,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                   </p>
                 ) : (
                   <p className="text-muted-foreground mt-2 text-xs">
-                    Primeira medição — registre de novo depois para ver o ganho.
+                    Primeira medição: registre de novo depois para ver o ganho.
                   </p>
                 )}
               </div>
@@ -622,7 +622,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                       </td>
                       <td className="px-4 py-3 text-right">
                         {conta.variacao === null ? (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground">-</span>
                         ) : (
                           <span
                             className={cn(
@@ -636,12 +636,12 @@ export function ProjetoView({ slug }: { slug: string }) {
                         )}
                       </td>
                       <td className="text-muted-foreground px-4 py-3 text-xs">
-                        {conta.nota ?? "—"}
+                        {conta.nota ?? "-"}
                       </td>
                       <td className="text-muted-foreground px-4 py-3 text-right text-xs">
                         {conta.atualizadoEm
                           ? relativeLabel(conta.atualizadoEm, hoje)
-                          : "—"}
+                          : "-"}
                       </td>
                     </tr>
                   ))}
@@ -699,7 +699,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                           )}
                         </td>
                         <td className="text-muted-foreground px-4 py-3 text-xs">
-                          {registro.nota ?? "—"}
+                          {registro.nota ?? "-"}
                         </td>
                         <td className="px-2 py-2">
                           <div className="flex items-center justify-end">
@@ -789,7 +789,7 @@ export function ProjetoView({ slug }: { slug: string }) {
               <dl className="space-y-3 text-sm">
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Rede</dt>
-                  <dd>{projeto.chain ?? "—"}</dd>
+                  <dd>{projeto.chain ?? "-"}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Status</dt>
@@ -813,7 +813,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">TGE previsto</dt>
                   <dd className="tabular">
-                    {projeto.tgePrevisto ? formatDateBr(projeto.tgePrevisto) : "—"}
+                    {projeto.tgePrevisto ? formatDateBr(projeto.tgePrevisto) : "-"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
@@ -821,7 +821,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                   <dd className="tabular">
                     {projeto.ultimaAtividade
                       ? formatDateBr(projeto.ultimaAtividade)
-                      : "—"}
+                      : "-"}
                   </dd>
                 </div>
               </dl>

@@ -200,7 +200,7 @@ export async function desvincularConta(
 /**
  * Confirma que projeto e conta pertencem ao usuário.
  *
- * `project_accounts` não tem `user_id` — ela pende das duas pontas. Sem esta
+ * `project_accounts` não tem `user_id`: ela pende das duas pontas. Sem esta
  * verificação, alguém poderia vincular a própria conta ao projeto de outro
  * enviando os uuids na requisição.
  */
@@ -526,7 +526,7 @@ export async function excluirRecebimento(id: string): Promise<ResultadoAcao> {
 /**
  * Revisão de solicitação de acesso.
  *
- * Diferente das demais, esta ação não age sobre dados do próprio usuário — ela
+ * Diferente das demais, esta ação não age sobre dados do próprio usuário: ela
  * altera OUTRA conta. Por isso a guarda é de papel, não de posse: só quem é
  * administrador pode decidir quem entra.
  */
@@ -568,7 +568,7 @@ export async function revisarMembro(entrada: unknown): Promise<ResultadoAcao> {
   }, ["/membros"]);
 }
 
-/** Devolve para a fila — serve tanto para revogar acesso quanto reconsiderar. */
+/** Devolve para a fila: serve tanto para revogar acesso quanto reconsiderar. */
 export async function reabrirMembro(id: string): Promise<ResultadoAcao> {
   return executar(idSchema, { id }, async (dados, userId) => {
     await exigirAdministrador(userId);

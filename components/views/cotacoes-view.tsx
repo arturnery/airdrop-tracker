@@ -15,7 +15,7 @@ import { selectCotacoes } from "@/lib/selectors";
  * Cotações informadas manualmente.
  *
  * Sem API externa por decisão de projeto. O preço vale até ser atualizado, e a
- * data fica visível justamente para deixar claro quando ficou velho — cotação
+ * data fica visível justamente para deixar claro quando ficou velho: cotação
  * de duas semanas atrás avaliando a posição de hoje é pior que nenhuma.
  */
 export function CotacoesView() {
@@ -43,7 +43,7 @@ export function CotacoesView() {
               {semPreco.map((c) => c.symbol).join(", ")} sem cotação.
             </strong>{" "}
             Enquanto isso, a posição nesses tokens é avaliada pelo valor em dólar do
-            aporte — ou seja, sem ganho nem perda de preço.
+            aporte: ou seja, sem ganho nem perda de preço.
           </span>
         </p>
       ) : null}
@@ -95,7 +95,7 @@ export function CotacoesView() {
                           {relativeLabel(cotacao.atualizadoEm, hoje)}
                         </span>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </td>
                     <td className="px-2 py-2">

@@ -49,7 +49,7 @@ export const projectStatusEnum = pgEnum("project_status", [
   "descartado",
 ]);
 
-/** Como o projeto é farmado — define a rotina de trabalho. */
+/** Como o projeto é farmado: define a rotina de trabalho. */
 export const projectCategoryEnum = pgEnum("project_category", [
   "liquidez",
   "interacoes",
@@ -64,7 +64,7 @@ export const projectAccountStatusEnum = pgEnum("project_account_status", [
 
 /**
  * `volume_traded` registra atividade, não caixa: fica FORA do saldo (§5).
- * `fee_gas` sai do bolso, não da posição, então também não entra no saldo —
+ * `fee_gas` sai do bolso, não da posição, então também não entra no saldo:
  * mas é descontado do resultado.
  */
 export const transactionTypeEnum = pgEnum("transaction_type", [
@@ -107,7 +107,7 @@ export const users = pgTable("users", {
   handle: text("handle").unique(),
   displayName: text("display_name"),
   /**
-   * Hash da senha — nunca a senha. Nulo enquanto não definida: a conta semeada
+   * Hash da senha: nunca a senha. Nulo enquanto não definida: a conta semeada
    * por `npm run db:seed` existe antes de ter senha.
    */
   passwordHash: text("password_hash"),
@@ -132,7 +132,7 @@ export const profileSettings = pgTable("profile_settings", {
   showTasks: boolean("show_tasks").notNull().default(true),
   showValues: boolean("show_values").notNull().default(false),
   showAccounts: boolean("show_accounts").notNull().default(false),
-  /** Endereço 0x… — nasce desligado; ver o aviso em §9.2. */
+  /** Endereço 0x…: nasce desligado; ver o aviso em §9.2. */
   showWallets: boolean("show_wallets").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
@@ -221,7 +221,7 @@ export const projectAccounts = pgTable(
 // --------------------------------------------------------------- lançamentos
 
 /**
- * Livro-razão. O saldo de um par projeto×conta é a soma dos lançamentos —
+ * Livro-razão. O saldo de um par projeto×conta é a soma dos lançamentos:
  * não existe registro de saldo em separado (§2.2).
  */
 export const transactions = pgTable(
@@ -285,7 +285,7 @@ export const tokenPrices = pgTable(
 // -------------------------------------------------------------------- pontos
 
 /**
- * Foto do acumulado de pontos. Programas exibem total, não extrato — o ganho
+ * Foto do acumulado de pontos. Programas exibem total, não extrato: o ganho
  * do período sai da diferença entre duas medições (§4.4).
  */
 export const pointsSnapshots = pgTable(

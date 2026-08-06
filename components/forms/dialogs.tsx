@@ -161,7 +161,7 @@ export function NovoProjeto() {
       aoEnviar={(dados) => {
         /*
          * Envia o objeto BRUTO, não `resultado.data`. Os schemas têm
-         * transform — "$3" vira 300 centavos — e a Server Action valida de
+         * transform, "$3" vira 300 centavos, e a Server Action valida de
          * novo. Mandar o já transformado faria o schema receber número onde
          * espera string e recusar a própria saída.
          *
@@ -869,7 +869,7 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
   // Só projetos que declararam ter programa de pontos.
   const comPrograma = dataset.projects
     .filter((p) => p.pointsLabel !== null)
-    .map((p) => ({ valor: p.id, rotulo: `${p.name} — ${p.pointsLabel}` }));
+    .map((p) => ({ valor: p.id, rotulo: `${p.name} · ${p.pointsLabel}` }));
 
   if (comPrograma.length === 0) return null;
 
