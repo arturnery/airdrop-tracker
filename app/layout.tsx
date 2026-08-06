@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Crimson_Text, Geist, Geist_Mono } from "next/font/google";
 
 import { DataProvider } from "@/components/data-provider";
-import { datasetInicial, HOJE } from "@/db/queries/fixtures";
+import { carregarDataset } from "@/db/queries/dataset";
+import { HOJE } from "@/db/queries/fixtures";
+import { getCurrentUserId } from "@/lib/auth";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -20,23 +22,22 @@ export const metadata: Metadata = {
   description: "Controle de farming de airdrops: capital, tarefas e resultado.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Os dados agora vêm do Postgres. As telas não mudaram: o Dataset tem a
+  // mesma forma que as fixtures tinham.
+  const dataset = await carregarDataset(await getCurrentUserId());
+
   return (
     <html
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} ${crimson.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        {/* O dataset das fixtures é o ponto de partida; o provider passa a usar
-            o localStorage assim que monta. Na fase de backend este provider sai
-            e os dados voltam a vir de Server Components.
-
-            `initialToday` é só o valor que o HTML estático carrega: usar
-            `new Date()` aqui congelaria a data no momento do build, que é pior.
-            O provider troca pela data real do navegador ao hidratar. */}
-        <DataProvider initialDataset={datasetInicial()} initialToday={HOJE}>
+        {/* `initialToday` é só o valor que o HTML carrega; o provider troca
+            pela data real do navegador ao hidratar. */}
+        <DataProvider initialDataset={dataset} initialToday={HOJE}>
           {children}
         </DataProvider>
       </body>
