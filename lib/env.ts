@@ -10,9 +10,12 @@ const envSchema = z.object({
   DATABASE_URL: z
     .string()
     .min(1, "DATABASE_URL é obrigatória (connection string do Neon)"),
-  SEED_USER_ID: z
-    .uuid("SEED_USER_ID precisa ser um UUID")
-    .describe("Usuário fixo enquanto não há login: ver ARCHITECTURE.md §9.1"),
+  /*
+   * SEED_USER_ID saiu daqui quando o login real entrou. Ela existia para fixar
+   * um dono enquanto não havia sessão, e hoje só os scripts de seed a usam,
+   * lendo `process.env` direto. Mantê-la obrigatória fazia a aplicação recusar
+   * a subir em produção por falta de uma variável que ela não lê.
+   */
   AUTH_SECRET: z
     .string()
     .min(32, "AUTH_SECRET precisa de pelo menos 32 caracteres")
