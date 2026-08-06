@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Nav } from "@/components/nav";
 import { Sair } from "@/components/sair";
+import { carregarUsuario } from "@/db/queries/usuario";
 import { exigirSessao } from "@/lib/auth";
 
 /**
@@ -16,6 +17,14 @@ export default async function AppLayout({
   // Toda rota do aplicativo exige sessão. A verificação é do servidor: não
   // adianta o menu esconder o link se a URL continua acessível.
   const sessao = await exigirSessao();
+
+  /*
+   * O nome vem do banco, não do token: o JWT é assinado no login e congela o
+   * nome daquele momento, então trocá-lo no perfil não mudaria a barra lateral
+   * até sair e entrar de novo. Identidade continua vindo da sessão.
+   */
+  const usuario = await carregarUsuario(sessao.id);
+  const nomeExibido = usuario?.nome ?? sessao.nome;
 
   return (
     <>
@@ -49,7 +58,7 @@ export default async function AppLayout({
                 className="hover:text-primary focus-visible:ring-ring mt-3 hidden max-w-full truncate rounded-sm text-base font-semibold tracking-tight transition-colors focus-visible:ring-2 focus-visible:outline-none lg:block"
                 title="Ver perfil"
               >
-                {sessao.nome}
+                {nomeExibido}
               </Link>
             </div>
             <Nav ehAdmin={sessao.papel === "admin"} />

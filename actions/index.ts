@@ -8,6 +8,7 @@ import * as schema from "@/db/schema";
 import { uniqueSlug } from "@/lib/dataset";
 import { toDbNumeric } from "@/lib/money";
 import { toDbPoints } from "@/lib/points";
+import { contasAlvoDaTarefa } from "@/lib/tarefas";
 import {
   contaSchema,
   cotacaoSchema,
@@ -163,6 +164,32 @@ async function garantirVinculo(
     .insert(schema.projectAccounts)
     .values({ projectId, accountId, startedAt: desde })
     .onConflictDoNothing();
+}
+
+/** Busca os dados e delega a decisão para `contasAlvoDaTarefa`. */
+async function contasDoProjeto(
+  escolhida: string | null,
+  projectId: string,
+  userId: string,
+) {
+  if (escolhida) return [escolhida];
+
+  const [vinculadas, proprias] = await Promise.all([
+    db
+      .select({ accountId: schema.projectAccounts.accountId })
+      .from(schema.projectAccounts)
+      .where(eq(schema.projectAccounts.projectId, projectId)),
+    db
+      .select({ id: schema.accounts.id })
+      .from(schema.accounts)
+      .where(eq(schema.accounts.userId, userId)),
+  ]);
+
+  return contasAlvoDaTarefa(
+    escolhida,
+    vinculadas.map((v) => v.accountId),
+    proprias.map((c) => c.id),
+  );
 }
 
 export async function vincularConta(entrada: unknown): Promise<ResultadoAcao> {
@@ -379,30 +406,35 @@ export async function criarTarefa(entrada: unknown): Promise<ResultadoAcao> {
       })
       .returning({ id: schema.tasks.id });
 
-    // Conta nula = a tarefa vale para todas as contas do projeto.
-    const contasAlvo = dados.accountId
-      ? [dados.accountId]
-      : (
-          await db
-            .select({ accountId: schema.projectAccounts.accountId })
-            .from(schema.projectAccounts)
-            .where(eq(schema.projectAccounts.projectId, dados.projectId))
-        ).map((p) => p.accountId);
+    const contasAlvo = await contasDoProjeto(
+      dados.accountId,
+      dados.projectId,
+      userId,
+    );
 
     const vencimento = dados.dueDate ?? new Date().toISOString().slice(0, 10);
 
-    if (contasAlvo.length > 0) {
-      await db
-        .insert(schema.taskOccurrences)
-        .values(
-          contasAlvo.map((accountId) => ({
-            taskId: tarefa!.id,
-            accountId,
-            dueDate: vencimento,
-          })),
-        )
-        .onConflictDoNothing();
+    /*
+     * Sem ocorrência a tarefa não aparece em lugar nenhum: a tela lista
+     * ocorrências, não tarefas. Criar a tarefa e parar por aqui produziria um
+     * registro invisível, que foi exatamente o que aconteceu em produção.
+     */
+    if (contasAlvo.length === 0) {
+      throw new Error(
+        "Cadastre uma conta antes de criar tarefas: é nela que a tarefa aparece.",
+      );
     }
+
+    await db
+      .insert(schema.taskOccurrences)
+      .values(
+        contasAlvo.map((accountId) => ({
+          taskId: tarefa!.id,
+          accountId,
+          dueDate: vencimento,
+        })),
+      )
+      .onConflictDoNothing();
   }, [...ROTAS_DADOS, "/tarefas"]);
 }
 

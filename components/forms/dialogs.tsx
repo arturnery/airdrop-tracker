@@ -594,8 +594,24 @@ export function VincularConta({ projectId }: { projectId?: string }) {
 // -------------------------------------------------------------------- tarefa
 
 export function NovaTarefa({ projectId }: { projectId?: string }) {
-  const { acoes, hoje } = useDados();
+  const { acoes, hoje, dataset } = useDados();
   const { projetos, contas } = useOpcoes();
+
+  /*
+   * Deixar a conta em branco cria a tarefa para várias contas de uma vez. Isso
+   * não é óbvio olhando o campo, então o aviso aparece só quando a escolha for
+   * essa, dizendo em quantas contas vai cair: um texto fixo de ajuda ficava
+   * visível o tempo todo e mesmo assim passava despercebido.
+   */
+  const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
+  const [contaSel, setContaSel] = useState("");
+
+  // Espelha a regra do servidor: vínculos do projeto ou, na falta deles, todas
+  // as contas. Ver `contasDoProjeto` em actions/index.ts.
+  const vinculadas = dataset.projectAccounts.filter(
+    (pa) => pa.projectId === projetoSel,
+  ).length;
+  const alcance = vinculadas > 0 ? vinculadas : dataset.accounts.length;
 
   return (
     <Formulario
@@ -641,15 +657,30 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
               defaultValue={projectId}
               erro={e.projectId}
               opcoes={projetos}
+              onChange={(evento) => setProjetoSel(evento.target.value)}
             />
             <CampoSelecao
               label="Conta"
               name="accountId"
               erro={e.accountId}
-              ajuda="Em branco = vale para todas as contas do projeto."
               opcoes={[{ valor: "", rotulo: "Todas as contas" }, ...contas]}
+              onChange={(evento) => setContaSel(evento.target.value)}
             />
           </div>
+
+          {contaSel === "" && alcance > 0 ? (
+            <p
+              role="status"
+              className="border-border bg-secondary/50 text-muted-foreground rounded-md border px-3 py-2 text-sm"
+            >
+              Conta não selecionada: ao prosseguir, a tarefa será criada{" "}
+              {alcance === 1 ? (
+                <>na sua única conta.</>
+              ) : (
+                <>para todas as {alcance} contas.</>
+              )}
+            </p>
+          ) : null}
           <div className="grid gap-4 sm:grid-cols-3">
             <CampoSelecao
               label="Repetição"

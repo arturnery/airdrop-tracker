@@ -793,6 +793,91 @@ nome ganhou tamanho e espaço, porque é o dado da pessoa e agora é clicável. 
 aparece no perfil desabilitado, com a explicação de onde trocá-lo, em vez de simplesmente
 não existir na tela.
 
+## Marco 11: Três defeitos achados em uso real
+
+Os três vieram do mesmo lugar: usar o sistema com dados de verdade, depois de o banco
+entrar. Nenhum deles aparece em teste unitário, e vale registrar por quê.
+
+### O nome trocado que não trocava
+
+Trocar o nome no perfil salvava no banco, mas a barra lateral seguia com o antigo até
+sair e entrar de novo.
+
+A causa é o desenho da sessão. Ela é um JWT assinado no login: os dados vão dentro do
+token, não são consultados a cada requisição. Isso é o que torna a sessão barata em
+serverless, e foi uma escolha deliberada. O efeito colateral é que **tudo que está no
+token congela no instante do login**. `revalidatePath` re-renderizou o layout, mas o
+layout lia `sessao.nome`, e a sessão continuava a mesma.
+
+A correção separa duas coisas que estavam juntas:
+
+| Dado | De onde vem | Por quê |
+|---|---|---|
+| `id`, `papel` | Token | Precisa ser confiável e não pode custar uma consulta por requisição |
+| Nome, e-mail exibidos | Banco | São exibição, mudam, e ler errado é pior que ler devagar |
+
+O que decide acesso continua no token, assinado. O que é só exibição passou a vir de
+`carregarUsuario()`. Reemitir o token na troca do nome resolveria o sintoma, mas
+manteria a armadilha para o próximo campo editável.
+
+### A tarefa que nascia invisível
+
+Criar tarefa deixando "Conta" em branco não adicionava nada. O relato mencionava um
+projeto com uma conta só, o que tornava o comportamento ainda mais estranho: em branco
+significa "todas as contas", e havia uma.
+
+O banco mostrou o real:
+
+```
+contas: 1  |  projetos: 5  |  vinculos: 0  |  tarefas: 6  |  ocorrencias: 2
+```
+
+`vinculos: 0`. A tarefa resolvia o alvo consultando `project_accounts`, mas **esse
+vínculo só nasce no primeiro lançamento** (`garantirVinculo` é chamada por lançamento,
+pontos e recebimento, nunca na criação do projeto). Projeto recém-criado tem zero
+vínculos, então "todas as contas do projeto" resolvia para lista vazia, e o `if` que
+protegia contra inserir vazio pulava a criação em silêncio.
+
+A tela lista **ocorrências**, não tarefas. Sem ocorrência, a tarefa existia no banco e
+não aparecia em lugar nenhum: nem para ser apagada. Cinco delas tinham se acumulado.
+
+Três correções, e a terceira é a que importa:
+
+1. Sem vínculo nenhum, o alvo cai para todas as contas da pessoa. Antes de existir
+   lançamento, "todas as contas do projeto" e "todas as minhas contas" são a mesma coisa.
+2. Alvo vazio agora **recusa** a criação com mensagem, em vez de criar registro invisível.
+   Falhar em silêncio foi o que transformou um caso de borda em cinco registros órfãos.
+3. A decisão saiu da Server Action para `lib/tarefas.ts`, como função pura. Dentro da
+   action ela só era testável com um banco de verdade, e por isso não tinha teste nenhum.
+   São seis agora, incluindo o caso que quebrou.
+
+Um script de reparo (`scripts/reparar-tarefas-sem-ocorrencia.ts`) criou as ocorrências
+que faltavam. Ele não apaga nada: torna visível o que já existia e devolve a decisão para
+quem usa.
+
+O aviso do formulário também mudou. Havia um texto fixo, "Em branco = vale para todas as
+contas do projeto", visível o tempo todo e ignorado justamente por isso. Saiu, e no lugar
+entrou um aviso que só aparece quando o campo está em branco, dizendo o número real:
+"a tarefa será criada na sua única conta" ou "para todas as 3 contas". Aviso que aparece
+sempre vira parte do cenário.
+
+### O check que demorava
+
+Marcar tarefa concluída levava um tempo perceptível para pintar. Não era defeito de
+lógica, era o custo real do caminho: escrever no banco, revalidar cinco rotas, recarregar
+o dataset inteiro e só então re-renderizar. Todo o resto do sistema tem formulário e
+diálogo que fecha, o que disfarça a espera. O check é um clique só, sem nada entre o dedo
+e o resultado.
+
+`useOptimistic` pinta na hora e deixa o servidor confirmar depois. Se a escrita falhar, o
+React descarta o palpite sozinho e a tela volta ao que o banco diz.
+
+O detalhe que vale a pena: a transformação otimista é `alternarOcorrencia` de
+`lib/mutations.ts`, **escrita meses antes, quando os dados eram locais**. Por ser uma
+função pura de `(Dataset, id) => Dataset`, sem saber de onde os dados vêm, serviu sem
+uma linha de alteração. A mesma propriedade que fez a troca de fixtures por Postgres
+custar 11 linhas pagou de novo aqui.
+
 ---
 
 ## Estado atual
@@ -800,12 +885,12 @@ não existir na tela.
 | | |
 |---|---|
 | Telas | Visão geral, tarefas, projetos, aba do projeto, contas, cotações, histórico, importar |
-| Entrada | Login, cadastro, recuperação e espera por aprovação: desenhadas, sem verificar credencial |
+| Entrada | Login, cadastro, recuperação e espera por aprovação, com credencial verificada |
 | Administração | Fila de aprovação, membros com acesso e histórico de recusas |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
-| CRUD | Completo em modo local (localStorage), com edição e exclusão em cascata |
-| Testes | 148, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
+| CRUD | Completo no banco, com edição e exclusão em cascata |
+| Testes | 159, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
