@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import { Nav } from "@/components/nav";
-import { RestaurarDados } from "@/components/restaurar-dados";
+import { Sair } from "@/components/sair";
+import { exigirSessao } from "@/lib/auth";
 
 /**
  * Casca do aplicativo: navegação lateral e área de conteúdo.
@@ -9,9 +10,13 @@ import { RestaurarDados } from "@/components/restaurar-dados";
  * Separada do layout raiz porque as telas de entrada (`app/(auth)`) não têm
  * barra lateral — quem ainda não entrou não tem para onde navegar.
  */
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Toda rota do aplicativo exige sessão. A verificação é do servidor: não
+  // adianta o menu esconder o link se a URL continua acessível.
+  const sessao = await exigirSessao();
+
   return (
     <>
       <a
@@ -36,14 +41,14 @@ export default function AppLayout({
                 <span className="text-primary">·</span>
                 tracker
               </Link>
-              <p className="text-muted-foreground mt-0.5 hidden text-xs lg:block">
-                Controle de farming
+              <p className="text-muted-foreground mt-0.5 hidden truncate text-xs lg:block">
+                {sessao.nome}
               </p>
             </div>
-            <Nav />
+            <Nav ehAdmin={sessao.papel === "admin"} />
           </div>
           <div className="mt-auto hidden lg:block">
-            <RestaurarDados />
+            <Sair />
           </div>
         </aside>
 

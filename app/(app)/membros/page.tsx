@@ -1,4 +1,5 @@
 import { listarMembros } from "@/db/queries/membros";
+import { exigirAdmin } from "@/lib/auth";
 import { MembrosView } from "@/components/views/membros-view";
 
 export const metadata = { title: "Membros · airdrop-tracker" };
@@ -10,10 +11,13 @@ export const metadata = { title: "Membros · airdrop-tracker" };
  * Dataset geral significaria enviar dados de admin para qualquer sessão. Fica
  * nesta rota, e só ela.
  *
- * Quando o Auth.js entrar, `exigirAdmin()` roda aqui — no servidor, antes de a
- * query ser feita. Esconder o link do menu não é controle (§9.4).
+ * `exigirAdmin()` roda antes da consulta, no servidor. Quem não é
+ * administrador é redirecionado para a raiz — dizer "acesso negado"
+ * confirmaria que a rota existe.
  */
 export default async function MembrosPage() {
+  await exigirAdmin();
+
   const hoje = new Date().toISOString().slice(0, 10);
   const membros = await listarMembros(hoje);
 

@@ -147,7 +147,16 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
       titulo="Editar projeto"
       rotuloGatilho={`Editar ${projeto.name}`}
       aoEnviar={(dados) => {
-        const resultado = projetoSchema.safeParse({
+        /*
+         * Envia o objeto BRUTO, não `resultado.data`. Os schemas têm
+         * transform — "$3" vira 300 centavos — e a Server Action valida de
+         * novo. Mandar o já transformado faria o schema receber número onde
+         * espera string e recusar a própria saída.
+         *
+         * A validação aqui existe só para o retorno rápido ao usuário; a que
+         * vale é a do servidor.
+         */
+        const bruto = {
           name: texto(dados, "name"),
           status: texto(dados, "status"),
           category: texto(dados, "category"),
@@ -160,10 +169,11 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
           docsUrl: texto(dados, "docsUrl"),
           expectedTgeDate: texto(dados, "expectedTgeDate"),
           notes: texto(dados, "notes"),
-        });
+        };
+        const resultado = projetoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
         // O slug não muda: ele está na URL e em links já compartilhados.
-        acoes.atualizarProjeto(projectId, resultado.data);
+        acoes.atualizarProjeto(projectId, bruto);
         return null;
       }}
     >
@@ -293,14 +303,15 @@ export function EditarConta({ accountId }: { accountId: string }) {
       titulo="Editar conta"
       rotuloGatilho={`Editar ${conta.label}`}
       aoEnviar={(dados) => {
-        const resultado = contaSchema.safeParse({
+        const bruto = {
           label: texto(dados, "label"),
           walletAddress: texto(dados, "walletAddress"),
           email: texto(dados, "email"),
-        });
+        };
+        const resultado = contaSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
         return acoes.atualizarConta(accountId, {
-          ...resultado.data,
+          ...bruto,
           isActive: texto(dados, "isActive") === "sim",
         });
       }}
@@ -354,7 +365,7 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
       titulo="Editar lançamento"
       rotuloGatilho="Editar lançamento"
       aoEnviar={(dados) => {
-        const resultado = lancamentoSchema.safeParse({
+        const bruto = {
           projectId: lancamento.projectId,
           accountId: lancamento.accountId,
           occurredAt: texto(dados, "occurredAt"),
@@ -363,16 +374,10 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
           tokenSymbol: texto(dados, "tokenSymbol"),
           tokenAmount: texto(dados, "tokenAmount"),
           description: texto(dados, "description"),
-        });
+        };
+        const resultado = lancamentoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.atualizarLancamento(transactionId, {
-          occurredAt: resultado.data.occurredAt,
-          type: resultado.data.type,
-          amount: resultado.data.amount,
-          tokenSymbol: resultado.data.tokenSymbol,
-          tokenAmount: resultado.data.tokenAmount,
-          description: resultado.data.description,
-        });
+        return acoes.atualizarLancamento(transactionId, bruto);
       }}
     >
       {({ erros: e }) => (
@@ -443,15 +448,16 @@ export function EditarVinculo({
       descricao={`Situação da conta ${conta.label} neste projeto.`}
       rotuloGatilho={`Editar vínculo de ${conta.label}`}
       aoEnviar={(dados) => {
-        const resultado = vinculoSchema.safeParse({
+        const bruto = {
           projectId,
           accountId,
           status: texto(dados, "status"),
           startedAt: texto(dados, "startedAt"),
-        });
+        };
+        const resultado = vinculoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
         // A action de vincular faz upsert, então serve para criar e editar.
-        void acoes.vincularConta(resultado.data);
+        void acoes.vincularConta(bruto);
         return null;
       }}
     >
@@ -499,7 +505,7 @@ export function EditarTarefa({ taskId }: { taskId: string }) {
       titulo="Editar tarefa"
       rotuloGatilho={`Editar ${tarefa.title}`}
       aoEnviar={(dados) => {
-        const resultado = tarefaSchema.safeParse({
+        const bruto = {
           projectId: tarefa.projectId,
           accountId: nulo(texto(dados, "accountId")),
           title: texto(dados, "title"),
@@ -507,15 +513,11 @@ export function EditarTarefa({ taskId }: { taskId: string }) {
           recurrence: texto(dados, "recurrence"),
           intervalDays: nulo(texto(dados, "intervalDays")),
           dueDate: texto(dados, "dueDate"),
-        });
+        };
+        const resultado = tarefaSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
         return acoes.atualizarTarefa(taskId, {
-          title: resultado.data.title,
-          description: resultado.data.description,
-          recurrence: resultado.data.recurrence,
-          intervalDays: resultado.data.intervalDays,
-          dueDate: resultado.data.dueDate,
-          accountId: resultado.data.accountId,
+          ...bruto,
           isActive: texto(dados, "isActive") === "sim",
         });
       }}

@@ -12,12 +12,16 @@ export default function RecuperarSenhaPage() {
       titulo="Recuperar senha"
       descricao="Você recebe um link para definir uma senha nova."
       rotuloEnvio="Enviar link"
-      destino="/entrar"
-      aoEnviar={(dados) => {
+      aoEnviar={async (dados) => {
         const resultado = recuperarSenhaSchema.safeParse({
           email: String(dados.get("email") ?? ""),
         });
-        return resultado.success ? null : extrairErros(resultado);
+        if (!resultado.success) {
+          return { ok: false as const, erros: extrairErros(resultado) };
+        }
+        // O envio do e-mail entra quando houver serviço configurado. A tela
+        // responde igual de qualquer forma, para não revelar quem tem conta.
+        return { ok: true as const, destino: "/entrar" };
       }}
       rodape={
         <Link href="/entrar" className="text-foreground underline underline-offset-4">

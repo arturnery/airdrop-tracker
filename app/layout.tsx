@@ -4,7 +4,8 @@ import { Crimson_Text, Geist, Geist_Mono } from "next/font/google";
 import { DataProvider } from "@/components/data-provider";
 import { carregarDataset } from "@/db/queries/dataset";
 import { HOJE } from "@/db/queries/fixtures";
-import { getCurrentUserId } from "@/lib/auth";
+import { emptyDataset } from "@/lib/dataset";
+import { sessaoAtual } from "@/lib/auth";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -25,9 +26,13 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Os dados agora vêm do Postgres. As telas não mudaram: o Dataset tem a
-  // mesma forma que as fixtures tinham.
-  const dataset = await carregarDataset(await getCurrentUserId());
+  /*
+   * As telas de entrada compartilham este layout, e quem ainda não entrou não
+   * tem dado para carregar. Sem sessão o Dataset fica vazio — nenhuma consulta
+   * é feita, então não há o que vazar.
+   */
+  const sessao = await sessaoAtual();
+  const dataset = sessao ? await carregarDataset(sessao.id) : emptyDataset();
 
   return (
     <html

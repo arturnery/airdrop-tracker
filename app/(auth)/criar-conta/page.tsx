@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AuthForm } from "@/components/forms/auth-form";
 import { CampoTexto } from "@/components/forms/fields";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cadastroSchema, erros as extrairErros } from "@/lib/validators";
+import { cadastrar } from "@/actions/auth";
 
 export default function CriarContaPage() {
   return (
@@ -13,17 +13,15 @@ export default function CriarContaPage() {
       titulo="Criar conta"
       descricao="O acesso é liberado manualmente depois do cadastro."
       rotuloEnvio="Criar conta"
-      destino="/aguardando-aprovacao"
-      aoEnviar={(dados) => {
-        const resultado = cadastroSchema.safeParse({
+      aoEnviar={(dados) =>
+        cadastrar({
           name: String(dados.get("name") ?? ""),
           email: String(dados.get("email") ?? ""),
           password: String(dados.get("password") ?? ""),
           passwordConfirm: String(dados.get("passwordConfirm") ?? ""),
           accept: String(dados.get("accept") ?? ""),
-        });
-        return resultado.success ? null : extrairErros(resultado);
-      }}
+        })
+      }
       rodape={
         <>
           Já tem conta?{" "}

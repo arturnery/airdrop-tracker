@@ -716,12 +716,12 @@ de conexão no Neon sem substituir os testes.
 | Fase | Entrega | Estado ao fim |
 |---|---|---|
 | **0** | Setup: Next 16, TS strict, Drizzle, Neon, Tailwind, shadcn, Vitest, deploy Vercel | App no ar, vazio |
-| **1** | `users`, `accounts`, `projects`, `project_accounts`, `transactions`, `balance_snapshots` + CRUD + Dashboard geral | Números batendo |
+| **1** ✅ | `users`, `accounts`, `projects`, `project_accounts`, `transactions`, `balance_snapshots` + CRUD + Dashboard geral | Números batendo |
 | **2** | Importação da planilha: parser, prévia, gravação transacional, undo | **Histórico dentro, planilha aposentada** |
 | **3** | Aba do projeto: informações, tabela conta por conta, histórico filtrável | Navegação completa |
 | **4** | `tasks` + `task_occurrences` + motor de recorrência + painel "O que fazer hoje" | Deixa de ser só registro |
 | **5** | `goals` + `goal_entries` + `airdrop_claims` + P&L completo e gráficos | Ciclo fechado |
-| **6** | Auth.js, cadastro, isolamento por usuário + testes de vazamento | Cada um com seu perfil |
+| **6** ✅ | Auth.js, cadastro, isolamento por usuário + testes de vazamento | Cada um com seu perfil |
 | **7** | Auth.js, fila de aprovação, papel de admin | Comunidade entra |
 | **8** | Perfis compartilhados: `/u/[handle]`, `profile_settings`, modo leitura | Comunidade acompanha |
 

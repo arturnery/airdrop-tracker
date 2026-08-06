@@ -26,16 +26,16 @@ export function AuthForm({
   children,
   aoEnviar,
   rotuloEnvio,
-  destino,
   rodape,
 }: {
   titulo: string;
   descricao?: ReactNode;
   children: (props: { erros: Erros; enviando: boolean }) => ReactNode;
-  aoEnviar: (dados: FormData) => Erros | null;
+  /** Devolve os erros, ou o destino quando dá certo. */
+  aoEnviar: (dados: FormData) => Promise<
+    { ok: true; destino: string } | { ok: false; erros: Erros }
+  >;
   rotuloEnvio: string;
-  /** Para onde ir quando a validação passa. */
-  destino: string;
   rodape?: ReactNode;
 }) {
   const router = useRouter();
@@ -52,16 +52,22 @@ export function AuthForm({
       <form
         noValidate
         className="mt-8 space-y-4"
-        onSubmit={(evento) => {
+        onSubmit={async (evento) => {
           evento.preventDefault();
-          const resultado = aoEnviar(new FormData(evento.currentTarget));
-          if (resultado) {
-            setErros(resultado);
-            return;
-          }
-          setErros({});
           setEnviando(true);
-          router.push(destino);
+          try {
+            const resultado = await aoEnviar(new FormData(evento.currentTarget));
+            if (!resultado.ok) {
+              setErros(resultado.erros);
+              return;
+            }
+            setErros({});
+            router.push(resultado.destino);
+            // Recarrega para que o layout enxergue a sessão nova.
+            router.refresh();
+          } finally {
+            setEnviando(false);
+          }
         }}
       >
         {children({ erros, enviando })}
@@ -79,7 +85,7 @@ export function AuthForm({
           {enviando ? (
             <>
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              Entrando…
+              Aguarde…
             </>
           ) : (
             rotuloEnvio
@@ -91,12 +97,6 @@ export function AuthForm({
         <div className="text-muted-foreground mt-6 text-center text-sm">{rodape}</div>
       ) : null}
 
-      {/* Aviso honesto enquanto não há verificação de credencial. Sai junto com
-          a entrada do backend. */}
-      <p className="border-border text-muted-foreground mt-8 border-t pt-4 text-center text-xs">
-        Demonstração — a autenticação entra na fase de backend. Qualquer dado
-        válido avança.
-      </p>
     </section>
   );
 }

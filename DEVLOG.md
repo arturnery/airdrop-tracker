@@ -612,6 +612,101 @@ Junto entraram no schema os campos que a fila de aprovação já pressupunha —
 `status`, `reviewed_at`, `review_note` — e `exigirAdmin()` em `lib/auth.ts`, ainda
 lançando erro, para que a guarda exista antes das rotas que vão precisar dela.
 
+## Marco 10 — Backend: banco, escrita e sessão
+
+O pedido foi *"cada mudança nos airdrops salva de acordo com a conta logada"*.
+Três etapas, cada uma verificável antes da seguinte.
+
+### A aposta arquitetural foi cobrada
+
+Trocar fixtures por Postgres custou **1 arquivo e 11 linhas** (`app/layout.tsx`). Zero
+telas, zero selectors, zero funções de cálculo — medido com `git diff --stat`.
+
+Isso foi possível porque `carregarDataset()` devolve exatamente a forma que as fixtures
+devolviam. Os números conferiram sem ajuste: $337 aportado, $348,18 de exposição, +$11,18
+de resultado, porque a mesma função pura calcula os dois.
+
+Foi o retorno da decisão tomada lá no Marco 3, de separar agregação da origem dos dados.
+Se as views lessem o banco diretamente, esta etapa teria reescrito o aplicativo inteiro.
+
+### As regras saíram do código para o banco
+
+O que estava em `lib/mutations` migrou para onde é mais difícil burlar:
+
+| Regra | Onde vive agora |
+|---|---|
+| Cascata ao apagar projeto | `ON DELETE CASCADE` |
+| Uma medição de pontos por dia | `unique` + `ON CONFLICT DO UPDATE` |
+| Movimento exige par projeto×conta | **FK composta** |
+| Reimportar planilha não duplica | `unique(user_id, dedupe_key)` |
+
+A FK composta foi testada de propósito: um `INSERT` de lançamento com projeto e conta
+aleatórios foi **recusado pelo banco**. A proteção não depende mais de a aplicação
+lembrar de verificar.
+
+`lib/mutations` permaneceu como especificação testada dessas regras, mesmo não sendo mais
+o caminho de execução.
+
+### Duas regras em toda Server Action
+
+1. **O `userId` vem da sessão, nunca do formulário.** Aceitá-lo do cliente permitiria
+   escrever no espaço de outra pessoa alterando um campo oculto.
+2. **Todo `UPDATE` e `DELETE` filtra por `userId` além do id.** Buscar só por id
+   significaria que conhecer um uuid alheio basta para alterá-lo.
+
+Um caso exigiu cuidado extra: `project_accounts` não tem `user_id` — pende das duas
+pontas. Sem checagem, alguém poderia vincular a própria conta ao projeto de outro
+mandando os uuids. Daí o `exigirDono()`.
+
+### O bug que o usuário encontrou testando
+
+Ao criar uma cotação, o campo de preço acusava *"Invalid input: expected string, received
+number"*.
+
+**Causa:** o formulário validava no cliente e enviava `resultado.data` — já transformado —
+para a Server Action, que validava de novo. Como os schemas convertem string em número
+("$3" → 300 centavos), a segunda validação recebia número onde esperava string e recusava
+**a própria saída**.
+
+Afetava todo formulário com valor monetário, não só o de cotação.
+
+**Correção:** enviar o objeto bruto. A validação no cliente serve para resposta rápida; a
+que vale é a do servidor, e ela precisa receber o dado como o usuário digitou.
+
+Entraram 7 testes que fixam a razão: um schema com `transform` **não é idempotente**, e
+validar duas vezes o mesmo dado é sempre erro de desenho. Sem eles, o padrão voltaria no
+próximo formulário.
+
+### Autenticação
+
+Auth.js com credenciais, senha em bcrypt (custo 12), sessão em JWT.
+
+Três decisões de segurança que não são óbvias:
+
+- **A recusa de login é sempre igual.** Senha errada, e-mail inexistente e conta não
+  aprovada devolvem a mesma mensagem. Distinguir transformaria a tela num verificador de
+  quem tem conta.
+- **Sem hash, a senha ainda é processada.** Conta criada pelo seed não tem senha; retornar
+  imediatamente faria o tempo de resposta revelar quais e-mails existem.
+- **Cadastro não revela e-mail já usado.** A resposta é idêntica à de um cadastro novo.
+
+O `status` é verificado no `authorize`, não só na interface: conta pendente não abre
+sessão, mesmo com a senha correta.
+
+### Isolamento verificado, não presumido
+
+Criei um segundo usuário aprovado e medi:
+
+```
+admin : {"projetos":6,"contas":7,"lancamentos":25}
+outro : {"projetos":0,"contas":0,"lancamentos":0}
+
+update cruzado afetou 0 linha(s) — esperado 0
+```
+
+O último número é o que importa: um `UPDATE` com o id de um projeto do admin e o `user_id`
+do outro afeta **zero linhas**. Conhecer o uuid não basta.
+
 ---
 
 ## Estado atual
@@ -626,7 +721,8 @@ lançando erro, para que a guarda exista antes das rotas que vão precisar dela.
 | CRUD | Completo em modo local (localStorage), com edição e exclusão em cascata |
 | Testes | 148, cobrindo aritmética monetária e de pontos, agregação financeira, seletores e mutações |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
-| Backend | Não iniciado — fixtures atrás da interface definitiva |
+| Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
+| Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
 
 ### Pendências conhecidas
 

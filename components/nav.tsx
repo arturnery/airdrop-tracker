@@ -25,10 +25,13 @@ const itens = [
   { href: "/cotacoes", label: "Cotações", icon: CircleDollarSign },
   { href: "/historico", label: "Histórico", icon: History },
   { href: "/importar", label: "Importar", icon: Upload },
-  { href: "/membros", label: "Membros", icon: UserCheck },
 ] as const;
 
-export function Nav() {
+/**
+ * `ehAdmin` esconde o item de administração de quem não é — conforto visual,
+ * não segurança. A rota se protege sozinha no servidor (§9.4).
+ */
+export function Nav({ ehAdmin = false }: { ehAdmin?: boolean }) {
   const pathname = usePathname();
   const { dataset, hoje } = useDados();
 
@@ -45,7 +48,12 @@ export function Nav() {
   return (
     <nav aria-label="Navegação principal" className="p-3">
       <ul className="flex gap-1 lg:flex-col">
-        {itens.map((item) => {
+        {[
+          ...itens,
+          ...(ehAdmin
+            ? [{ href: "/membros", label: "Membros", icon: UserCheck } as const]
+            : []),
+        ].map((item) => {
           const ativo = estaAtivo(item.href);
           const Icon = item.icon;
           return (

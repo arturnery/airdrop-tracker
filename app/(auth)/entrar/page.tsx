@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 
+import { entrar } from "@/actions/auth";
 import { AuthForm } from "@/components/forms/auth-form";
 import { CampoTexto } from "@/components/forms/fields";
-import { erros as extrairErros, loginSchema } from "@/lib/validators";
 
 export default function EntrarPage() {
   return (
@@ -12,14 +12,12 @@ export default function EntrarPage() {
       titulo="Entrar"
       descricao="Acompanhe seu farming de airdrops."
       rotuloEnvio="Entrar"
-      destino="/"
-      aoEnviar={(dados) => {
-        const resultado = loginSchema.safeParse({
+      aoEnviar={(dados) =>
+        entrar({
           email: String(dados.get("email") ?? ""),
           password: String(dados.get("password") ?? ""),
-        });
-        return resultado.success ? null : extrairErros(resultado);
-      }}
+        })
+      }
       rodape={
         <>
           Ainda não tem conta?{" "}

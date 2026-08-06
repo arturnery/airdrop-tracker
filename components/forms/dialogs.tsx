@@ -159,7 +159,16 @@ export function NovoProjeto() {
       descricao="Cadastre um airdrop que você está farmando."
       gatilho={<BotaoNovo>Novo projeto</BotaoNovo>}
       aoEnviar={(dados) => {
-        const resultado = projetoSchema.safeParse({
+        /*
+         * Envia o objeto BRUTO, não `resultado.data`. Os schemas têm
+         * transform — "$3" vira 300 centavos — e a Server Action valida de
+         * novo. Mandar o já transformado faria o schema receber número onde
+         * espera string e recusar a própria saída.
+         *
+         * A validação aqui existe só para o retorno rápido ao usuário; a que
+         * vale é a do servidor.
+         */
+        const bruto = {
           name: texto(dados, "name"),
           status: texto(dados, "status"),
           category: texto(dados, "category"),
@@ -172,9 +181,10 @@ export function NovoProjeto() {
           docsUrl: texto(dados, "docsUrl"),
           expectedTgeDate: texto(dados, "expectedTgeDate"),
           notes: texto(dados, "notes"),
-        });
+        };
+        const resultado = projetoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.criarProjeto(resultado.data);
+        return acoes.criarProjeto(bruto);
       }}
     >
       {({ erros: e }) => (
@@ -303,13 +313,14 @@ export function NovaConta() {
       descricao="Uma carteira ou perfil de navegador, usada em quantos projetos você quiser."
       gatilho={<BotaoNovo>Nova conta</BotaoNovo>}
       aoEnviar={(dados) => {
-        const resultado = contaSchema.safeParse({
+        const bruto = {
           label: texto(dados, "label"),
           walletAddress: texto(dados, "walletAddress"),
           email: texto(dados, "email"),
-        });
+        };
+        const resultado = contaSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.criarConta(resultado.data);
+        return acoes.criarConta(bruto);
       }}
     >
       {({ erros: e }) => (
@@ -370,7 +381,7 @@ export function NovoLancamento({
       descricao="Depósito, retirada, resultado de trade ou volume operado."
       gatilho={<BotaoNovo>{rotulo}</BotaoNovo>}
       aoEnviar={(dados) => {
-        const resultado = lancamentoSchema.safeParse({
+        const bruto = {
           projectId: texto(dados, "projectId"),
           accountId: texto(dados, "accountId"),
           occurredAt: texto(dados, "occurredAt"),
@@ -379,9 +390,10 @@ export function NovoLancamento({
           tokenSymbol: texto(dados, "tokenSymbol"),
           tokenAmount: texto(dados, "tokenAmount"),
           description: texto(dados, "description"),
-        });
+        };
+        const resultado = lancamentoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.criarLancamento(resultado.data);
+        return acoes.criarLancamento(bruto);
       }}
     >
       {({ erros: e }) => (
@@ -461,13 +473,14 @@ export function DefinirCotacao({ symbol }: { symbol?: string }) {
         )
       }
       aoEnviar={(dados) => {
-        const resultado = cotacaoSchema.safeParse({
+        const bruto = {
           symbol: symbol ?? texto(dados, "symbol"),
           priceUsd: texto(dados, "priceUsd"),
           updatedAt: texto(dados, "updatedAt"),
-        });
+        };
+        const resultado = cotacaoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.definirCotacao(resultado.data);
+        return acoes.definirCotacao(bruto);
       }}
     >
       {({ erros: e }) => (
@@ -521,14 +534,15 @@ export function VincularConta({ projectId }: { projectId?: string }) {
         </Button>
       }
       aoEnviar={(dados) => {
-        const resultado = vinculoSchema.safeParse({
+        const bruto = {
           projectId: texto(dados, "projectId"),
           accountId: texto(dados, "accountId"),
           status: texto(dados, "status"),
           startedAt: texto(dados, "startedAt"),
-        });
+        };
+        const resultado = vinculoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.vincularConta(resultado.data);
+        return acoes.vincularConta(bruto);
       }}
     >
       {({ erros: e }) => (
@@ -591,7 +605,7 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
       aoEnviar={(dados) => {
         const conta = texto(dados, "accountId");
         const recorrencia = texto(dados, "recurrence");
-        const resultado = tarefaSchema.safeParse({
+        const bruto = {
           projectId: texto(dados, "projectId"),
           accountId: nulo(conta),
           title: texto(dados, "title"),
@@ -599,12 +613,13 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
           recurrence: recorrencia,
           intervalDays: nulo(texto(dados, "intervalDays")),
           dueDate: texto(dados, "dueDate"),
-        });
+        };
+        const resultado = tarefaSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        if (resultado.data.recurrence === "none" && !resultado.data.dueDate) {
+        if (bruto.recurrence === "none" && !bruto.dueDate) {
           return { dueDate: "Tarefa de prazo fixo precisa de uma data." };
         }
-        acoes.criarTarefa(resultado.data);
+        acoes.criarTarefa(bruto);
         return null;
       }}
     >
@@ -694,16 +709,17 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
         </Button>
       }
       aoEnviar={(dados) => {
-        const resultado = metaSchema.safeParse({
+        const bruto = {
           projectId: texto(dados, "projectId"),
           accountId: nulo(texto(dados, "accountId")),
           title: texto(dados, "title"),
           metric: texto(dados, "metric"),
           target: texto(dados, "target"),
           deadline: texto(dados, "deadline"),
-        });
+        };
+        const resultado = metaSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.criarMeta(resultado.data);
+        return acoes.criarMeta(bruto);
       }}
     >
       {({ erros: e }) => (
@@ -773,16 +789,17 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
       descricao="Quanto cada conta recebeu e a que preço. É o que fecha o ROI real."
       gatilho={<BotaoNovo>Registrar recebimento</BotaoNovo>}
       aoEnviar={(dados) => {
-        const resultado = recebimentoSchema.safeParse({
+        const bruto = {
           projectId: texto(dados, "projectId"),
           accountId: texto(dados, "accountId"),
           receivedAt: texto(dados, "receivedAt"),
           tokenSymbol: texto(dados, "tokenSymbol"),
           tokenAmount: texto(dados, "tokenAmount"),
           priceUsd: texto(dados, "priceUsd"),
-        });
+        };
+        const resultado = recebimentoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.registrarRecebimento(resultado.data);
+        return acoes.registrarRecebimento(bruto);
       }}
     >
       {({ erros: e }) => (
@@ -862,15 +879,16 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
       descricao="O total acumulado que a plataforma mostra hoje. O ganho do período sai da diferença entre dois registros."
       gatilho={<BotaoNovo>Registrar pontos</BotaoNovo>}
       aoEnviar={(dados) => {
-        const resultado = pontosSchema.safeParse({
+        const bruto = {
           projectId: texto(dados, "projectId"),
           accountId: texto(dados, "accountId"),
           takenAt: texto(dados, "takenAt"),
           points: texto(dados, "points"),
           note: texto(dados, "note"),
-        });
+        };
+        const resultado = pontosSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.registrarPontos(resultado.data);
+        return acoes.registrarPontos(bruto);
       }}
     >
       {({ erros: e }) => (
