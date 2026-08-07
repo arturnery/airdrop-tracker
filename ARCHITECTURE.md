@@ -728,6 +728,7 @@ de conexão no Neon sem substituir os testes.
 | **6** ✅ | Auth.js, cadastro, isolamento por usuário + testes de vazamento | Cada um com seu perfil |
 | **7** | Auth.js, fila de aprovação, papel de admin | Comunidade entra |
 | **8** | Perfis compartilhados: `/u/[handle]`, `profile_settings`, modo leitura | Comunidade acompanha |
+| **9** | Catálogo de projetos: `catalog_projects`, publicação, aba de descoberta e adoção (§13) | Ninguém cadastra do zero |
 
 A importação virou fase 2 (logo após a fundação) e não uma etapa final: é o que permite
 parar de manter as duas coisas em paralelo. Fases 1+2 são o MVP real.
@@ -768,6 +769,106 @@ parar de manter as duas coisas em paralelo. Fases 1+2 são o MVP real.
 17. **Autorização no servidor, não na interface**: esconder o botão de editar é conforto
     visual; a recusa que vale é a da Server Action. Campo não permitido não sai da query,
     em vez de sair e ser ocultado por CSS.
+
+---
+
+## 13. Catálogo de projetos da comunidade (modelado, não implementado)
+
+### 13.1. O problema
+
+Hoje cada pessoa que entra recebe uma tela vazia e precisa cadastrar do zero cada projeto
+que farma, caçando link de Discord, documentação e data prevista de TGE. Esse trabalho é
+idêntico para todo mundo, e é feito uma vez por pessoa.
+
+A proposta inverte isso: quem administra cadastra o projeto uma vez, ele aparece num
+catálogo para a comunidade, e quem farma aquele projeto o adiciona aos próprios com um
+clique, passando a registrar aportes, histórico e tarefas normalmente.
+
+### 13.2. A separação que o modelo atual não tem
+
+Os campos de `projects` hoje convivem numa tabela só porque só existia um dono. A proposta
+os divide segundo a natureza de cada um:
+
+| Editorial (igual para todos) | Pessoal (de cada um) |
+|---|---|
+| nome, categoria, chain | status: ativo, pausado, descartado |
+| site, Discord, Twitter, docs | prioridade |
+| data prevista de TGE | anotações |
+| rótulo do programa de pontos | aportes, tarefas, metas, pontos, recebimentos |
+
+O Discord do Meridian é o mesmo para qualquer pessoa; o status "pausado" é de quem pausou.
+Sem essa divisão, o catálogo não teria como existir.
+
+### 13.3. Decisão: vínculo, não cópia
+
+Ao adotar, o projeto da pessoa **aponta** para a entrada do catálogo em vez de copiar seus
+campos. Corrigir a data de TGE uma vez alcança todo mundo que adotou, e é isso que dá
+sentido a existir um curador. A cópia seria bem mais simples de construir, e transformaria
+o catálogo num formulário pré-preenchido que envelhece no dia seguinte.
+
+**Custo aceito:** quem adota não personaliza os campos editoriais. Sobrescrita campo a
+campo foi considerada e adiada: dobra a complexidade de leitura (cada campo passa a ter
+duas origens possíveis) para resolver um problema que ainda não apareceu.
+
+### 13.4. Tabelas
+
+```
+catalog_projects            entrada curada, sem dados financeiros
+  id, slug, name, category, chain, points_label,
+  website_url, discord_url, twitter_url, docs_url,
+  expected_tge_date, summary,
+  created_by      -> users.id (sempre um admin)
+  published_at    null = rascunho, só o autor enxerga
+  archived_at     saída do catálogo sem apagar nada
+
+projects                    farming de uma pessoa (tabela atual)
+  + catalog_project_id      null = projeto próprio, como hoje
+  + unique (user_id, catalog_project_id)
+```
+
+A unicidade impede adotar o mesmo projeto duas vezes. Múltiplas carteiras no mesmo projeto
+já são resolvidas por `project_accounts`, não por projetos repetidos.
+
+### 13.5. Apagar do catálogo não pode apagar dinheiro de ninguém
+
+Esta é a regra de integridade da proposta, e a razão de ela estar registrada antes de
+qualquer código.
+
+Se dez pessoas adotaram um projeto e ele sai do catálogo, os aportes e o histórico delas
+**não podem** desaparecer junto: seriam dados financeiros de terceiros sumindo por uma ação
+administrativa. Duas medidas, juntas:
+
+1. **Saída é `archived_at`, não `DELETE`.** A entrada some do catálogo e continua servindo
+   quem já a usa. A exclusão física fica bloqueada enquanto houver adoções.
+2. **`name` é copiado para `projects` na adoção**, de propósito, mesmo vindo do catálogo.
+   É desnormalização deliberada: garante que todo registro financeiro tenha uma identidade
+   legível por conta própria, sem depender de nenhuma linha de outra tabela existir.
+
+A FK usa `ON DELETE SET NULL`. Se a entrada sumir apesar de tudo, o projeto da pessoa vira
+um projeto comum, com o nome preservado e o histórico intacto.
+
+### 13.6. Autorização
+
+| Ação | Quem |
+|---|---|
+| Criar, editar, publicar e arquivar no catálogo | Apenas `admin` |
+| Ler entradas publicadas | Qualquer membro aprovado |
+| Adotar | Qualquer membro aprovado, para si mesmo |
+
+Publicar é um ato explícito: criar um projeto continua privado por padrão. Sem isso,
+qualquer teste ou projeto que ainda não se queira sinalizar apareceria para a comunidade.
+
+A adoção cria uma linha em `projects` do próprio usuário, então todo o isolamento existente
+continua valendo sem mudança: ninguém enxerga o farming de ninguém, só a entrada do
+catálogo é compartilhada.
+
+### 13.7. Fora do escopo desta proposta
+
+- **Tarefas sugeridas junto do projeto.** Aumentaria bastante o valor para a comunidade e
+  também o tamanho da entrega. Fica para depois de o catálogo existir.
+- **Sobrescrita dos campos editoriais** pela pessoa que adotou (ver 13.3).
+- **Catálogo aberto a contribuição de membros.** Só admin publica; curadoria é o produto.
+
 
 ---
 

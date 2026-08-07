@@ -336,6 +336,12 @@ tests/            Vitest
 
 ## Roadmap
 
+- [ ] **Catálogo de projetos da comunidade.** Quem administra cadastra o projeto uma vez,
+      com links e data prevista de TGE, e quem farma o adiciona aos próprios com um clique,
+      em vez de recadastrar tudo do zero. Modelado em
+      [`ARCHITECTURE.md` §13](ARCHITECTURE.md): vínculo em vez de cópia, para que uma
+      correção alcance todo mundo, e arquivamento em vez de exclusão, para que sair do
+      catálogo nunca apague o histórico financeiro de quem adotou
 - [ ] CI no GitHub Actions rodando testes, typecheck e lint em cada push
 - [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
 - [ ] Edição de metas, recebimentos e medições (hoje só criar e excluir)
