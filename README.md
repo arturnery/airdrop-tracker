@@ -399,7 +399,7 @@ Projeto entregue como freelancer para a [Level Cripto](https://www.levelcripto.c
 para quem também desenvolvi a landing page da plataforma. Disponível para novos projetos e
 oportunidades.
 
+- Portfólio: [arturnery.vercel.app](https://arturnery.vercel.app/)
+- LinkedIn: [artur-matoso-nery](https://www.linkedin.com/in/artur-matoso-nery-84a4971a9/)
 - GitHub: [github.com/arturnery](https://github.com/arturnery)
-- E-mail: arturnery97@gmail.com
-- LinkedIn: `[ADICIONAR AQUI]`
-- Portfólio: `[ADICIONAR AQUI]`
+- E-mail: arturnery1997@gmail.com
