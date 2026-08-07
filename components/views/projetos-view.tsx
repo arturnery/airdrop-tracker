@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { FiltroChips } from "@/components/filtro-chips";
-import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
+import {
+  BotaoLixeira,
+  ConfirmarExclusao,
+} from "@/components/forms/confirmar-exclusao";
 import { NovoProjeto } from "@/components/forms/dialogs";
 import { EditarProjeto } from "@/components/forms/editar";
 import { Money, Percent } from "@/components/money";
@@ -81,17 +83,7 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
             alvo={projeto.nome}
             impacto={descreverImpacto(contarDependenciasProjeto(dataset, projeto.id))}
             aoConfirmar={() => acoes.excluirProjeto(projeto.id)}
-            gatilho={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:text-negative size-8"
-                aria-label={`Excluir ${projeto.nome}`}
-                title={`Excluir ${projeto.nome}`}
-              >
-                <Trash2 className="size-3.5" aria-hidden="true" />
-              </Button>
-            }
+            gatilho={<BotaoLixeira rotulo={`Excluir ${projeto.nome}`} />}
           />
         </div>
       </div>

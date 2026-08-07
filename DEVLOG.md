@@ -1106,6 +1106,47 @@ fixture escrita para parecer bonita na tela não faz.
 
 ---
 
+## Marco 15: O mesmo defeito pela segunda vez
+
+Os cinco botões de excluir da aba do projeto não abriam nada. Clicar não fazia efeito
+nenhum: sem erro no console, sem diálogo, sem pista.
+
+A causa é idêntica à do marco 3, quando todos os botões de criar pararam de funcionar. O
+`AlertDialogTrigger` do Radix usa `asChild`: ele não renderiza um botão próprio, ele **clona
+o filho** e injeta `onClick`, `aria-*` e `ref` nele. Um componente que não repassa
+`...props` engole a injeção, e o resultado é um botão perfeito visualmente que não está
+ligado a nada.
+
+```tsx
+// quebrado: as props injetadas pelo Radix não chegam ao <Button>
+function BotaoLixeira({ rotulo }: { rotulo: string }) {
+  return <Button aria-label={rotulo}>...</Button>;
+}
+```
+
+O que torna o caso interessante é que a lição já estava escrita. O `BotaoNovo` tem um
+comentário de quatro linhas explicando exatamente isso, no mesmo repositório. Não bastou:
+`projeto-view.tsx` criou o próprio gatilho meses depois, sem passar por aquele arquivo.
+
+**Comentário no lugar certo não é onde o erro foi cometido, é onde ele pode ser cometido de
+novo.** O `BotaoLixeira` foi movido para `confirmar-exclusao.tsx`, ao lado do componente que
+o clona, e as telas de projetos e cotações passaram a usá-lo em vez de repetir o mesmo
+`<Button>` inline. Quem escrever a próxima tela de exclusão vai encontrar o gatilho pronto
+antes de escrever um.
+
+### Por que nenhum teste pegou
+
+Os 167 testes são de funções puras: dinheiro, pontos, agregação, seletores, recorrência.
+Eles verificam o que o sistema **calcula**, e este defeito é sobre o que o sistema **liga**.
+Um gatilho que não recebe `onClick` é invisível para qualquer teste que não renderize
+componente.
+
+É a segunda vez que essa mesma classe passa, o que a torna o argumento mais concreto para o
+item "testes de componente" do roadmap: não como cobertura genérica, mas para os pontos onde
+`asChild` clona um elemento.
+
+---
+
 ## Estado atual
 
 | | |

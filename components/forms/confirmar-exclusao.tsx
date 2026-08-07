@@ -14,8 +14,39 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+/**
+ * Gatilho padrão de exclusão: um ícone de lixeira.
+ *
+ * **Precisa repassar `...props`.** `AlertDialogTrigger` com `asChild` clona
+ * este elemento e injeta `onClick`, `aria-*` e `ref` nele. Sem o spread o
+ * clique é descartado em silêncio: o botão aparece, responde ao hover, e não
+ * abre nada.
+ *
+ * Esse defeito já aconteceu duas vezes neste projeto, primeiro nos botões de
+ * criar e depois nos cinco de excluir da aba do projeto, porque cada tela
+ * escrevia o próprio gatilho. Por isso ele mora aqui, ao lado de quem o clona,
+ * em vez de ser reescrito em cada view.
+ */
+export function BotaoLixeira({
+  rotulo,
+  ...props
+}: React.ComponentProps<typeof Button> & { rotulo: string }) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="hover:text-negative size-8"
+      aria-label={rotulo}
+      title={rotulo}
+      {...props}
+    >
+      <Trash2 className="size-3.5" aria-hidden="true" />
+    </Button>
+  );
+}
 
 /**
  * Confirmação de exclusão.

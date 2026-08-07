@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Trash2, Unlink } from "lucide-react";
+import { ExternalLink, Unlink } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
-import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
+import {
+  BotaoLixeira,
+  ConfirmarExclusao,
+} from "@/components/forms/confirmar-exclusao";
 import {
   EditarLancamento,
   EditarProjeto,
@@ -47,21 +50,6 @@ import {
 import { formatPoints, formatPointsDelta, ZERO_PONTOS } from "@/lib/points";
 import { cn } from "@/lib/utils";
 import type { TransactionRow } from "@/lib/types";
-
-/** Botão de lixeira das linhas de tabela: mesmo tamanho do de editar. */
-function BotaoLixeira({ rotulo }: { rotulo: string }) {
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="hover:text-negative size-8"
-      aria-label={rotulo}
-      title={rotulo}
-    >
-      <Trash2 className="size-3.5" aria-hidden="true" />
-    </Button>
-  );
-}
 
 const tipoLabels: Record<TransactionRow["tipo"], string> = {
   deposit: "Depósito",

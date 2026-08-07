@@ -1,13 +1,15 @@
 "use client";
 
-import { Trash2, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
-import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
+import {
+  BotaoLixeira,
+  ConfirmarExclusao,
+} from "@/components/forms/confirmar-exclusao";
 import { DefinirCotacao } from "@/components/forms/dialogs";
 import { Money } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
 import { selectCotacoes } from "@/lib/selectors";
 
@@ -108,15 +110,9 @@ export function CotacoesView() {
                             impacto="A posição nesse token volta a ser avaliada pelo valor aportado"
                             aoConfirmar={() => acoes.excluirCotacao(cotacao.symbol)}
                             gatilho={
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="hover:text-negative size-8"
-                                aria-label={`Remover cotação de ${cotacao.symbol}`}
-                                title={`Remover cotação de ${cotacao.symbol}`}
-                              >
-                                <Trash2 className="size-3.5" aria-hidden="true" />
-                              </Button>
+                              <BotaoLixeira
+                                rotulo={`Remover cotação de ${cotacao.symbol}`}
+                              />
                             }
                           />
                         ) : null}
