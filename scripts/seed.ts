@@ -9,20 +9,15 @@
  * senha em variável de ambiente ou em argumento de linha de comando acabaria
  * no histórico do shell.
  */
-import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq } from "drizzle-orm";
 
 import { users } from "../db/schema";
+import { anunciar, resolverAmbiente } from "./_ambiente";
 
-config({ path: ".env.local" });
-
-const url = process.env.DATABASE_URL;
-if (!url) {
-  console.error("DATABASE_URL ausente. Preencha .env.local antes de semear.");
-  process.exit(1);
-}
+const ambiente = resolverAmbiente();
+const url = ambiente.url;
 
 const EMAIL = process.env.ADMIN_EMAIL?.trim().toLowerCase();
 if (!EMAIL) {
@@ -35,6 +30,7 @@ if (!EMAIL) {
 const NOME = process.env.ADMIN_NAME ?? "Administrador";
 
 async function main() {
+  anunciar(ambiente);
   const db = drizzle(neon(url!));
 
   const existente = await db

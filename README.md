@@ -60,6 +60,20 @@ Desenvolvimento não recebe cópia de produção. Assim que houver mais de uma p
 sistema, produção passa a guardar e-mails e hashes de senha de terceiros, e clonar isso
 para onde se testa migração espalharia dado de outra pessoa sem que ela tenha concordado.
 
+**O `.env.local` não muda de valor no dia a dia.** Ele aponta para `dev` e fica assim.
+Para os casos raros de rodar um script administrativo contra produção, os scripts aceitam
+`--producao`, que lê a conexão de `.env.production.local`:
+
+```bash
+npx tsx scripts/limpar-dados.ts                          # dev, só relata
+npx tsx scripts/limpar-dados.ts --confirmar              # dev, apaga
+npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
+```
+
+A escolha fica na linha que foi digitada, em vez de num arquivo editado e esquecido, e o
+padrão é sempre o ambiente descartável. Todo script imprime o ambiente e o host antes de
+agir, com `!!` quando o alvo é produção.
+
 ## Scripts
 
 | Comando | O que faz |

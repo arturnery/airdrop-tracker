@@ -13,26 +13,20 @@
  * host alvo antes de agir: rodar isso no banco errado é o tipo de engano que
  * um script assim precisa dificultar.
  *
- *   npx tsx scripts/limpar-dados.ts              # só mostra o que faria
- *   npx tsx scripts/limpar-dados.ts --confirmar  # apaga
+ *   npx tsx scripts/limpar-dados.ts                          # dev, só relata
+ *   npx tsx scripts/limpar-dados.ts --confirmar              # dev, apaga
+ *   npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
  */
-import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 
-config({ path: ".env.local" });
+import { anunciar, resolverAmbiente } from "./_ambiente";
 
-const url = process.env.DATABASE_URL;
-if (!url) {
-  console.error("DATABASE_URL não definida.");
-  process.exit(1);
-}
-
-const sql = neon(url);
+const ambiente = resolverAmbiente();
+const sql = neon(ambiente.url);
 const confirmado = process.argv.includes("--confirmar");
 
 async function main() {
-  const host = url!.match(/@([^/]+)/)?.[1] ?? "desconhecido";
-  console.log(`\nBanco: ${host}\n`);
+  anunciar(ambiente);
 
   const antes = await sql`
     select
@@ -47,8 +41,7 @@ async function main() {
 
   if (!confirmado) {
     console.log(
-      "\nNada foi apagado. Para apagar de verdade:\n" +
-        "  npx tsx scripts/limpar-dados.ts --confirmar\n",
+      "\nNada foi apagado. Para apagar de verdade, repita com --confirmar.\n",
     );
     return;
   }

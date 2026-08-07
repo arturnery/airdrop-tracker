@@ -933,6 +933,32 @@ schema junto, então não é preciso rodar migração no ambiente novo, e uma mi
 em `dev` não alcança `main`. Dois projetos separados só compensariam para isolar
 faturamento e limites, o que não é o caso.
 
+### Trocar de banco não pode depender de editar arquivo
+
+A primeira versão da separação tinha um buraco de uso: para rodar um script contra
+produção seria preciso editar o `.env.local`, apontar para lá e desfazer depois. Isso
+transforma a operação mais perigosa do sistema em algo que depende de lembrar de reverter
+um arquivo. Basta esquecer uma vez para o próximo comando destrutivo acertar produção sem
+avisar.
+
+`scripts/_ambiente.ts` inverteu isso. O `.env.local` aponta para desenvolvimento e nunca
+mais muda; produção mora em `.env.production.local` e só é alcançada com `--producao` na
+linha de comando. A escolha passa a ser visível no comando digitado, o padrão é sempre o
+ambiente descartável, e todo script anuncia ambiente e host antes de agir, com `!!` quando
+o alvo é produção.
+
+Um detalhe que quase passou: o `dotenv` não substitui variável já presente no ambiente. Sem
+`override: true`, um `.env.local` carregado antes venceria e o `--producao` seria ignorado
+em silêncio, que é o pior desfecho imaginável para uma flag como essa.
+
+O `AUTH_SECRET` de produção ficou de fora do `.env.production.local` de propósito. Nenhum
+script precisa dele, e o segredo que assina as sessões não ganha nada em existir no disco
+de uma máquina de desenvolvimento.
+
+Na mesma leva, `db:seed-demo` deixou de exigir `SEED_USER_ID`. Pedir um UUID colado à mão
+obrigava a consultar o banco antes de semear; agora o dono sai de `ADMIN_EMAIL`, que já
+está configurado e identifica a mesma pessoa.
+
 ### Limpeza com confirmação explícita
 
 O banco de produção carregava sete projetos de teste (`a`, `ab`, `abc`) e zero

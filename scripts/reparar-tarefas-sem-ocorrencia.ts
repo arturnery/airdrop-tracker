@@ -10,13 +10,16 @@
  *
  *   npx tsx scripts/reparar-tarefas-sem-ocorrencia.ts
  */
-import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 
-config({ path: ".env.local" });
-const sql = neon(process.env.DATABASE_URL!);
+import { anunciar, resolverAmbiente } from "./_ambiente";
+
+const ambiente = resolverAmbiente();
+const sql = neon(ambiente.url);
 
 async function main() {
+  anunciar(ambiente);
+
   const orfas = await sql`
     select t.id, t.title, t.user_id, t.project_id, t.due_date
     from tasks t
