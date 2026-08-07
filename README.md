@@ -1,5 +1,6 @@
 # airdrop-tracker
 
+[![CI](https://github.com/arturnery/airdrop-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/arturnery/airdrop-tracker/actions/workflows/ci.yml)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
@@ -300,6 +301,12 @@ npm run check         # typecheck sem emitir
 npm run lint
 ```
 
+As quatro verificações mais o build rodam sozinhas no GitHub Actions a cada push e a cada
+pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). O build entra na
+verificação com variáveis de ambiente falsas de propósito: todas as rotas são dinâmicas,
+então nada consulta o banco durante o build, e uma conexão real daria ao CI acesso a dados
+de produção sem necessidade.
+
 Os testes cobrem o que quebra em silêncio: aritmética monetária e de pontos, agregação
 financeira, seletores, mutações, regras de validação e o alvo de ocorrências das tarefas.
 Componentes de interface não têm teste automatizado, o que é uma lacuna consciente e está
@@ -341,7 +348,6 @@ tests/            Vitest
       em vez de recadastrar tudo do zero. Modelado em
       [`ARCHITECTURE.md` §13](ARCHITECTURE.md): adoção por cópia, para que o projeto passe
       a ser de quem adotou e nenhuma ação de quem administra alcance dados de terceiros
-- [ ] CI no GitHub Actions rodando testes, typecheck e lint em cada push
 - [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
 - [ ] Edição de metas, recebimentos e medições (hoje só criar e excluir)
 - [ ] Alternância entre tema claro e escuro (o tema claro já existe, falta o controle)

@@ -1194,6 +1194,33 @@ depósitos e saques parciais, e não apenas o saldo atual.
 
 ---
 
+## Marco 17: Verificação automática a cada push
+
+Até aqui, `npm test`, `check`, `lint` e `build` dependiam de alguém lembrar de rodá-los
+antes de commitar. Funcionou porque eram sempre rodados, mas é o tipo de disciplina que
+falha exatamente no dia corrido.
+
+O workflow roda as quatro etapas mais o build em cada push na `main` e em cada pull
+request. Duas decisões valem registro.
+
+**`npm ci`, não `npm install`.** O primeiro instala exatamente o que está no
+`package-lock.json` e falha se o lock estiver dessincronizado do `package.json`. O segundo
+resolveria versões novas na hora, e o CI passaria a verificar dependências diferentes das
+que rodam na máquina de quem desenvolve, que é o oposto do que ele existe para fazer.
+
+**O build usa variáveis de ambiente falsas, de propósito.** `lib/env.ts` valida na
+inicialização e recusa subir sem `DATABASE_URL`, `AUTH_SECRET` e `ADMIN_EMAIL`, então o
+build precisa de algo. A tentação seria colocar as credenciais reais como secrets do
+repositório. Não foi feito, porque todas as rotas são dinâmicas e nada consulta o banco
+durante o build: a conexão real não seria usada para nada, e daria a um processo automático
+acesso a dados de produção sem motivo. Verificado antes de escrever o workflow, rodando o
+build sem `.env.local` e com valores inventados.
+
+O badge de CI no topo do README passa a ser informação verificável em vez de enfeite: ele
+reflete o estado real da última execução.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1205,7 +1232,7 @@ depósitos e saques parciais, e não apenas o saldo atual.
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
 | Testes | 172, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
-| Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
+| Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
 | Produção | Vercel, com banco Neon e segredo de sessão próprio |

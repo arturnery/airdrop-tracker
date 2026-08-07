@@ -1,0 +1,50 @@
+name: CI
+
+# Roda a cada push na main e em todo pull request. O objetivo é que ninguém
+# precise lembrar de rodar a verificação: quebrou, aparece vermelho no commit.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verificar:
+    name: Tipos, lint, testes e build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # Cacheia ~/.npm entre execuções, usando package-lock.json como chave.
+          cache: npm
+
+      # `npm ci` e não `npm install`: instala exatamente o que está no
+      # package-lock, sem atualizar nada. O CI precisa verificar as versões que
+      # a máquina de desenvolvimento usa, não as mais novas do dia.
+      - run: npm ci
+
+      - name: Tipos
+        run: npm run check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Testes
+        run: npm test
+
+      # O build é a única etapa que precisa de variáveis de ambiente, porque
+      # `lib/env.ts` valida na inicialização e falha se faltar alguma.
+      #
+      # Os valores abaixo são falsos de propósito e não são segredo: todas as
+      # rotas são dinâmicas, então nada consulta o banco durante o build. Uma
+      # conexão real aqui não seria usada, e daria ao CI acesso a dados de
+      # produção sem necessidade.
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          AUTH_SECRET: ci-secret-com-mais-de-trinta-e-dois-caracteres
+          ADMIN_EMAIL: ci@example.com
