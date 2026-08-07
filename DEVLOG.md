@@ -619,8 +619,10 @@ Três etapas, cada uma verificável antes da seguinte.
 
 ### A aposta arquitetural foi cobrada
 
-Trocar fixtures por Postgres custou **1 arquivo e 11 linhas** (`app/layout.tsx`). Zero
-telas, zero selectors, zero funções de cálculo: medido com `git diff --stat`.
+Trocar fixtures por Postgres não tocou **nenhuma tela, nenhum selector e nenhuma função de
+cálculo**. O único arquivo já existente que mudou foi `app/layout.tsx`, que passou a montar
+o `Dataset` a partir do banco; o resto do commit é código novo (a camada de leitura e o
+seed). Medido com `git show --stat 7c3c776`: 11 linhas removidas no total.
 
 Isso foi possível porque `carregarDataset()` devolve exatamente a forma que as fixtures
 devolviam. Os números conferiram sem ajuste: $337 aportado, $348,18 de exposição, +$11,18
@@ -876,7 +878,7 @@ O detalhe que vale a pena: a transformação otimista é `alternarOcorrencia` de
 `lib/mutations.ts`, **escrita meses antes, quando os dados eram locais**. Por ser uma
 função pura de `(Dataset, id) => Dataset`, sem saber de onde os dados vêm, serviu sem
 uma linha de alteração. A mesma propriedade que fez a troca de fixtures por Postgres
-custar 11 linhas pagou de novo aqui.
+custar um arquivo pagou de novo aqui.
 
 ---
 
@@ -930,7 +932,7 @@ circula fora de produção.
 
 O Neon cria branches copy-on-write instantâneos, isolados entre si. Um branch traz o
 schema junto, então não é preciso rodar migração no ambiente novo, e uma migração errada
-em `dev` não alcança `main`. Dois projetos separados só compensariam para isolar
+em `dev` não alcança `production`. Dois projetos separados só compensariam para isolar
 faturamento e limites, o que não é o caso.
 
 ### Trocar de banco não pode depender de editar arquivo
@@ -970,7 +972,7 @@ esperando o momento: sem `--confirmar` ele só relata o que faria, e imprime o h
 banco antes de agir. Rodar limpeza no banco errado é o engano que este tipo de script
 precisa tornar difícil.
 
-A limpeza rodou antes da criação do branch, de propósito: assim `dev` nasce de um `main`
+A limpeza rodou antes da criação do branch, de propósito: assim `dev` nasce de um `production`
 já limpo, em vez de herdar o lixo e precisar de uma segunda limpeza.
 
 ---

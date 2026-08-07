@@ -1,68 +1,251 @@
 # airdrop-tracker
 
-Controle de farming de airdrops: quanto foi investido, o que precisa ser feito hoje e qual
-o resultado: por projeto e por conta.
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
+![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
+![Tests](https://img.shields.io/badge/testes-159%20passando-3FB950)
+![License](https://img.shields.io/badge/licen%C3%A7a-a%20definir-lightgrey)
 
-Substitui uma planilha onde depósito e saldo dividiam a mesma coluna, o que tornava
-qualquer somatório incorreto. A separação entre **fluxo de caixa** e **foto de saldo** é a
-decisão central do modelo de dados.
+Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
+aportado, o que precisa ser feito hoje e qual o resultado real, por projeto e por conta.
+
+Substitui uma planilha onde depósito e saldo dividiam a mesma coluna. Isso parece um
+detalhe de organização e não é: torna **todo somatório incorreto**, porque somar um aporte
+de US$ 100 com uma leitura de saldo de US$ 103 produz US$ 203 de nada. Separar fluxo de
+caixa de foto de saldo é a decisão central do modelo de dados, e é dela que sai o resto do
+projeto.
+
+**Aplicação no ar:** [airdrop-tracker.vercel.app](https://airdrop-tracker-arturnery97-1755s-projects.vercel.app)
+(acesso por convite: cadastros novos entram numa fila de aprovação)
+
+## Demonstração
+
+`[ADICIONAR AQUI: screenshot da visão geral]`
+
+`[ADICIONAR AQUI: GIF do fluxo de lançamento ou da aba do projeto]`
+
+## Funcionalidades
+
+- **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
+  lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
+- **Aportes em token com cotação manual.** Registrar "1 SOL a US$ 50" e atualizar a cotação
+  depois mostra quanto do resultado veio do farming e quanto veio do preço do token.
+- **Programas de pontos.** Medições periódicas por projeto e conta, com evolução entre
+  medições, para os projetos que distribuem por pontuação em vez de volume.
+- **Tarefas recorrentes.** Diária, semanal, mensal ou a cada N dias, com ocorrências
+  geradas por conta e conclusão em um clique.
+- **Metas e recebimentos.** Objetivos por projeto e registro dos airdrops efetivamente
+  recebidos, com valor no momento do recebimento.
+- **Importação por CSV.** Migração da planilha antiga, com validação linha a linha.
+- **Múltiplos usuários com aprovação manual.** Cadastro livre, entrada só depois de
+  liberada. Cada pessoa enxerga exclusivamente os próprios dados.
 
 ## Stack
 
-| Camada | Tecnologia |
-|---|---|
-| Framework | Next.js 16 (App Router, Server Components, Server Actions) |
-| Linguagem | TypeScript (strict) |
-| Banco | PostgreSQL serverless (Neon) |
-| ORM | Drizzle |
-| Validação | Zod |
-| UI | Tailwind v4 + shadcn/ui (Radix) |
-| Gráficos | Recharts |
-| Testes | Vitest |
-| Deploy | Vercel |
+| Camada | Escolha | Versão |
+|---|---|---|
+| Framework | Next.js (App Router, Server Components, Server Actions) | 16.2 |
+| UI | React | 19.2 |
+| Linguagem | TypeScript, modo `strict` | 5 |
+| Banco | PostgreSQL serverless (Neon) | |
+| ORM | Drizzle | 0.45 |
+| Validação | Zod | 4.4 |
+| Autenticação | Auth.js (next-auth), Credentials + JWT | 5 |
+| Estilo | Tailwind CSS + shadcn/ui (Radix) | 4 |
+| Gráficos | Recharts | 3.10 |
+| Testes | Vitest | 4.1 |
+| Hospedagem | Vercel | |
 
-## Estado do projeto
+## Arquitetura
 
-Aplicação funcional com banco e autenticação. Cada pessoa entra com e-mail e senha e vê
-apenas os próprios projetos, contas, lançamentos e tarefas. Cadastros novos ficam
-pendentes até serem liberados na área de administração.
+Três fronteiras, cada uma com um mecanismo que a torna difícil de furar sem querer.
 
-Os projetos e valores dos dados de demonstração são fictícios.
+```mermaid
+flowchart TB
+    subgraph cliente["Navegador"]
+        V["Views e formulários<br/>(Client Components)"]
+    end
 
-## Começando
+    subgraph servidor["Servidor"]
+        P["app/ (Server Components)"]
+        A["actions/<br/>toda escrita"]
+        Q["db/queries/<br/>toda leitura"]
+        L["lib/<br/>funções puras"]
+    end
 
-```bash
-npm install
-cp .env.example .env.local     # preencha DATABASE_URL, AUTH_SECRET e ADMIN_EMAIL
-npm run db:migrate             # cria as 14 tabelas
-npm run db:seed                # cria a conta de administrador
-npm run db:seed-demo           # opcional: carrega dados de exemplo
-npm run dev                    # http://localhost:3000
+    DB[("PostgreSQL<br/>14 tabelas")]
+
+    P -->|Dataset pronto| V
+    V -->|Server Actions| A
+    P --> Q
+    A -->|valida com Zod| L
+    Q -->|agrega com| L
+    A --> DB
+    Q --> DB
+
+    style L fill:#1f6feb,color:#fff
+    style DB fill:#336791,color:#fff
 ```
 
-A senha do administrador é definida por você no primeiro cadastro, pela tela. Quem se
-cadastrar com o e-mail de `ADMIN_EMAIL` nasce admin e aprovado; qualquer outro e-mail
-entra na fila de aprovação.
+1. **Nenhum componente fala com o ORM.** Leitura passa por `db/queries`, escrita por
+   `actions/`. A regra é convenção, mas a próxima não é.
+2. **Todo arquivo em `db/` começa com `import "server-only"`.** Um import acidental no
+   cliente vira erro de build, em vez de vazar a string de conexão no bundle enviado ao
+   navegador. Convenção que o compilador cobra.
+3. **`lib/` não conhece a origem dos dados.** São funções puras de `(Dataset, ...) => X`.
+   Isso soa acadêmico até render (ver os trade-offs abaixo).
 
-## Ambientes
+## Decisões técnicas e trade-offs
 
-Produção e desenvolvimento usam bancos diferentes. São dois branches do mesmo projeto
-Neon: `main` serve produção, `dev` serve a máquina local.
+### Dinheiro em inteiros, nunca em ponto flutuante
 
-| | Produção | Desenvolvimento |
+Valores são inteiros de centavos. `0.1 + 0.2 !== 0.3` em IEEE 754, e num sistema que soma
+dezenas de lançamentos por conta o erro acumula até aparecer na tela. O `numeric` do
+Postgres volta como string pelo Drizzle, o que é chato de manipular e é exatamente o
+comportamento correto: obriga a conversão explícita em vez de deixar o JavaScript decidir.
+
+**Trade-off:** toda entrada e saída precisa de conversão. Custa código repetitivo em
+`lib/money.ts`, coberto por testes, e elimina uma classe inteira de bug silencioso.
+
+### Pontos são um tipo separado de dinheiro
+
+Pontos usam inteiros escalados por 10⁴ e **não compartilham tipo com valores monetários**,
+mesmo sendo os dois "números com casas decimais". Unificar economizaria código e permitiria
+somar pontos com dólares sem que nada reclamasse. A separação é o ponto: o compilador
+recusa a operação que não faz sentido no domínio.
+
+### O banco recusa dados impossíveis, a aplicação não é a única guarda
+
+Regras que estavam em código migraram para onde é mais difícil burlá-las:
+
+| Regra | Como é garantida |
+|---|---|
+| Excluir projeto leva lançamentos, tarefas e metas | `ON DELETE CASCADE` |
+| Uma medição de pontos por dia | `UNIQUE` + `ON CONFLICT` |
+| Movimento exige par projeto×conta válido | Chave estrangeira **composta** |
+
+A FK composta foi testada tentando inserir um lançamento órfão: o banco rejeitou. Validação
+na aplicação vale para o que a aplicação escreve; a do banco vale também para o script, o
+console e o engano.
+
+### Sessão em JWT, e o que isso custou
+
+Sem tabela de sessões: o token carrega `id` e `role`, o que mantém a autorização barata em
+serverless (nenhuma consulta por requisição). O custo apareceu em uso real: **tudo que está
+no token congela no login**. Trocar o nome no perfil salvava no banco e a barra lateral
+seguia com o antigo.
+
+A correção não foi reemitir o token, e sim separar duas coisas que estavam juntas:
+identidade (`id`, `role`) continua vindo do token assinado, e o que é apenas exibição passa
+a vir do banco. Reemitir resolveria o sintoma e deixaria a mesma armadilha para o próximo
+campo editável.
+
+### Login que não revela quem tem conta
+
+Senha errada, e-mail inexistente e conta não aprovada devolvem **a mesma recusa**.
+Distinguir os casos transformaria a tela num verificador de quem tem cadastro. A senha é
+processada mesmo quando o usuário não existe, porque responder rápido nesse caso revelaria
+a mesma informação pelo tempo de resposta.
+
+Uma exceção deliberada: o **cadastro** informa que o e-mail já existe. Isso confirma a
+existência da conta, e foi escolhido mesmo assim: sem esse aviso a pessoa preenche o
+formulário de novo achando que errou algo. Decisão consciente, não descuido.
+
+### Funções puras que pagaram duas vezes
+
+`lib/selectors.ts` e `lib/mutations.ts` recebem um `Dataset` e devolvem outro, sem saber de
+onde os dados vieram. O retorno veio em dois momentos que não estavam planejados:
+
+- **Trocar fixtures em memória por PostgreSQL não alterou nenhuma view, nenhum seletor e
+  nenhum teste.** O único arquivo já existente que precisou mudar foi `app/layout.tsx`, que
+  passou a montar o `Dataset` a partir do banco. Todo o resto do commit é código novo (a
+  camada de leitura e o seed). Verificável em `git show --stat 7c3c776`.
+- **A atualização otimista reusou a mesma função sem uma linha de alteração.** Quando
+  marcar tarefa ficou lento, `useOptimistic` precisava de uma transformação local do
+  estado. `alternarOcorrencia`, escrita quando os dados ainda eram locais, servia
+  exatamente para isso.
+
+**Trade-off:** manter `lib/` ignorante da origem dos dados exige montar o `Dataset` inteiro
+e passá-lo adiante, o que é mais verboso que consultar o banco direto no componente. O
+projeto é pequeno o bastante para isso caber; num volume maior, a agregação precisaria ir
+para o banco.
+
+### Entrada manual, sem leitura on-chain
+
+Nada de RPC, API de exchange ou cotação automática. Um farmer opera em várias redes e
+exchanges, e cada integração é um ponto de falha que envelhece sozinho. A entrada manual é
+mais trabalhosa e mantém o sistema funcionando sem depender de nada externo.
+
+### Dois bancos, escolhidos por argumento
+
+Produção e desenvolvimento são branches distintos do mesmo projeto Neon. Desenvolvimento
+**não** recebe cópia de produção: quando houver mais gente usando, produção guardará
+e-mails e hashes de senha de terceiros, e clonar isso para onde se testa migração
+espalharia dado de outra pessoa sem que ela tenha concordado.
+
+Scripts administrativos escolhem o alvo por argumento (`--producao`), nunca editando
+arquivo. Trocar conexão editando `.env.local` faz a operação mais perigosa do sistema
+depender de lembrar de reverter um arquivo: basta esquecer uma vez.
+
+## Como rodar localmente
+
+### Pré-requisitos
+
+- Node.js 20 ou superior
+- Uma conta no [Neon](https://neon.tech) (o plano gratuito basta)
+
+### Instalação
+
+```bash
+git clone https://github.com/arturnery/airdrop-tracker.git
+cd airdrop-tracker
+npm install
+```
+
+### Variáveis de ambiente
+
+```bash
+cp .env.example .env.local
+```
+
+| Variável | O que é | Como obter |
 |---|---|---|
-| Banco | Branch `main` | Branch `dev` |
-| Onde a conexão fica | Variáveis do projeto na Vercel | `.env.local`, fora do versionamento |
-| Dados | Reais | `npm run db:seed-demo`, fictícios |
-| Segredo de sessão | Próprio, gerado para produção | Próprio, local |
+| `DATABASE_URL` | Conexão do Postgres | Neon → Project → Connection Details (use a URL *pooled*) |
+| `AUTH_SECRET` | Assina os tokens de sessão | `openssl rand -base64 32` |
+| `ADMIN_EMAIL` | E-mail que nasce administrador | O seu |
 
-Desenvolvimento não recebe cópia de produção. Assim que houver mais de uma pessoa usando o
-sistema, produção passa a guardar e-mails e hashes de senha de terceiros, e clonar isso
-para onde se testa migração espalharia dado de outra pessoa sem que ela tenha concordado.
+### Banco e primeiro acesso
 
-**O `.env.local` não muda de valor no dia a dia.** Ele aponta para `dev` e fica assim.
-Para os casos raros de rodar um script administrativo contra produção, os scripts aceitam
-`--producao`, que lê a conexão de `.env.production.local`:
+```bash
+npm run db:migrate      # cria as 14 tabelas
+npm run db:seed-demo    # opcional: dados fictícios para explorar
+npm run dev             # http://localhost:3000
+```
+
+Cadastre-se em `/criar-conta` usando o mesmo e-mail de `ADMIN_EMAIL`: essa conta nasce
+administradora e já aprovada. Qualquer outro e-mail entra na fila de aprovação, liberada em
+`/membros`.
+
+Nenhuma senha é definida por variável de ambiente ou linha de comando: ela iria parar no
+histórico do shell.
+
+### Scripts
+
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção |
+| `npm run db:generate` | Gera uma migração a partir do schema |
+| `npm run db:migrate` | Aplica as migrações |
+| `npm run db:studio` | Drizzle Studio |
+| `npm run db:seed` | Cria a conta de administrador sem senha |
+| `npm run db:seed-demo` | Carrega dados de demonstração |
+| `npx tsx scripts/limpar-dados.ts` | Relata o que uma limpeza apagaria, preservando as contas de acesso |
+
+Scripts que tocam o banco rodam contra desenvolvimento por padrão e anunciam o alvo antes
+de agir. Produção exige `--producao` explícito, e alterações destrutivas exigem também
+`--confirmar`:
 
 ```bash
 npx tsx scripts/limpar-dados.ts                          # dev, só relata
@@ -70,62 +253,105 @@ npx tsx scripts/limpar-dados.ts --confirmar              # dev, apaga
 npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ```
 
-A escolha fica na linha que foi digitada, em vez de num arquivo editado e esquecido, e o
-padrão é sempre o ambiente descartável. Todo script imprime o ambiente e o host antes de
-agir, com `!!` quando o alvo é produção.
+## Testes
 
-## Scripts
+```bash
+npm test              # 159 testes
+npm run test:watch    # modo observação
+npm run check         # typecheck sem emitir
+npm run lint
+```
 
-| Comando | O que faz |
-|---|---|
-| `npm run dev` | Servidor de desenvolvimento |
-| `npm run build` | Build de produção |
-| `npm run check` | Typecheck sem emitir |
-| `npm test` | Suíte Vitest |
-| `npm run test:watch` | Vitest em modo watch |
-| `npm run db:migrate` | Aplica as migrações no banco |
-| `npm run db:generate` | Gera uma migração a partir do schema |
-| `npm run db:studio` | Drizzle Studio |
-| `npm run db:seed` | Cria a conta de administrador |
-| `npm run db:seed-demo` | Carrega dados de demonstração |
-| `npx tsx scripts/limpar-dados.ts` | Mostra o que uma limpeza apagaria (some `--confirmar` para apagar): preserva as contas de acesso |
+Os testes cobrem o que quebra em silêncio: aritmética monetária e de pontos, agregação
+financeira, seletores, mutações, regras de validação e o alvo de ocorrências das tarefas.
+Componentes de interface não têm teste automatizado, o que é uma lacuna consciente e está
+no roadmap.
 
-## Estrutura
+Vários testes existem porque um bug aconteceu, e ficam como especificação executável do
+caso. Exemplos: o parser recusando `"1.2.3,4,5"`, a decisão documentada de tratar `"10.005"`
+como milhar, e schemas de transformação não sendo idempotentes.
+
+## Estrutura de pastas
 
 ```
-app/         Rotas (Server Components por padrão)
-actions/     Server Actions: toda escrita passa por aqui
+app/              Rotas. Server Components por padrão
+  (app)/          Área autenticada: layout com sessão e navegação
+  entrar/         Login, cadastro, recuperação, espera por aprovação
+actions/          Server Actions: toda escrita passa por aqui
 db/
-  schema.ts  Definição das tabelas (Drizzle)
-  queries/   Leitura e agregação: toda leitura passa por aqui
-lib/         Funções puras: money, recurrence, csv-parser, validators
-components/  UI (shadcn em components/ui)
-tests/       Vitest
+  schema.ts       14 tabelas (Drizzle), com cascatas e FK composta
+  queries/        Toda leitura e agregação
+lib/              Funções puras, testáveis sem banco
+  money.ts        Aritmética monetária em centavos
+  points.ts       Pontos em inteiros escalados
+  finance.ts      Fórmulas de resultado e exposição
+  selectors.ts    Derivações do Dataset para as telas
+  mutations.ts    Transformações puras (também usadas na UI otimista)
+  validators.ts   Schemas Zod, compartilhados entre cliente e servidor
+components/
+  views/          Telas
+  forms/          Diálogos e campos
+  ui/             shadcn/ui
+scripts/          Seed, limpeza e reparos, com escolha de ambiente
+tests/            Vitest
 ```
 
-Duas regras de fronteira:
+## Roadmap
 
-1. Nenhum componente chama Drizzle diretamente: leitura via `db/queries`, escrita via
-   `actions/`.
-2. Todo arquivo em `db/` e `lib/env.ts` começa com `import "server-only"`, o que
-   transforma um import acidental no cliente em erro de build em vez de vazamento da
-   string de conexão no bundle.
+- [ ] CI no GitHub Actions rodando testes, typecheck e lint em cada push
+- [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
+- [ ] Edição de metas, recebimentos e medições (hoje só criar e excluir)
+- [ ] Alternância entre tema claro e escuro (o tema claro já existe, falta o controle)
+- [ ] Recuperação de senha por e-mail (a tela existe, falta o provedor de envio)
+- [ ] Criar o vínculo projeto×conta junto com o projeto, em vez de no primeiro lançamento
+- [ ] Definir licença
+
+## O que aprendi
+
+**Falhar em silêncio é pior que falhar.** Criar tarefa com o campo de conta em branco
+resolvia o alvo como lista vazia e um `if` pulava a inserção sem reclamar. A tarefa ia para
+o banco sem nenhuma ocorrência, e como a tela lista ocorrências, ela não aparecia em lugar
+nenhum: nem para ser apagada. Cinco delas acumularam antes de alguém notar. Hoje o caso
+recusa com mensagem. O bug não estava no `if`, estava em ter escolhido não avisar.
+
+**Testabilidade não é sobre cobertura, é sobre onde o código mora.** A regra que causou o
+bug acima vivia dentro de uma Server Action, e testá-la exigiria um banco de verdade. Por
+isso não tinha teste. Movida para uma função pura, ganhou seis casos em minutos. Código
+difícil de testar costuma estar no lugar errado, não faltando teste.
+
+**Arquitetura se paga em mudanças que não foram previstas.** Manter `lib/` ignorante da
+origem dos dados parecia rigor desnecessário enquanto tudo era fixture. Rendeu duas vezes:
+na troca por PostgreSQL (um arquivo) e na atualização otimista, que reusou uma função escrita
+meses antes para outro fim. Nenhum dos dois estava no plano quando a decisão foi tomada.
+
+**Validação de ambiente precisa envelhecer junto com o projeto.** `lib/env.ts` recusava
+subir sem `SEED_USER_ID`, variável que existia para fixar um dono antes de haver login. Com
+autenticação real ela virou obsoleta, mas continuou obrigatória, e quase impediu o primeiro
+deploy. A guarda estava protegendo a aplicação de uma variável que a aplicação não lia.
+
+**Transformações do Zod não são idempotentes.** Validar no cliente, enviar o resultado
+transformado e revalidar no servidor produz "expected string, received number", porque a
+segunda passada recebe o que a primeira já converteu. A correção foi enviar o objeto bruto.
+Sete testes agora fixam esse comportamento.
+
+**Escolha de tecnologia com objetivo declarado.** Next.js entrou por preencher uma lacuna
+concreta: estava listado no meu currículo sem nenhum projeto que comprovasse. A decisão foi
+explícita, não acidental, e o projeto serve tanto de ferramenta de uso diário quanto de
+demonstração de App Router, Server Actions e React 19 em algo com regra de negócio de
+verdade.
 
 ## Documentação
 
-| Documento | O que traz |
+| Documento | Conteúdo |
 |---|---|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Como o sistema é: modelo de dados, fórmulas financeiras, motor de recorrência, fluxo de importação, autorização e decisões registradas |
-| [`DEVLOG.md`](DEVLOG.md) | Como se chegou até aqui: trade-offs considerados, alternativas descartadas e os bugs encontrados no caminho |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Modelo de dados, fórmulas financeiras, motor de recorrência, autorização |
+| [`DEVLOG.md`](DEVLOG.md) | Como se chegou aqui: alternativas descartadas, trade-offs e os bugs do caminho |
 
-## Segurança
+## Contato
 
-Três decisões que valem registro:
+**Artur Matoso Nery**, desenvolvedor Full Stack
 
-- **Senha nunca é guardada**, só o hash (bcrypt custo 12). Nem com acesso ao banco é
-  possível recuperá-la.
-- **A recusa de login é sempre a mesma mensagem**, seja senha errada, e-mail inexistente
-  ou conta não aprovada. Distinguir os casos transformaria a tela num verificador de quem
-  tem conta.
-- **Todo UPDATE e DELETE filtra por usuário** além do id do registro, então conhecer um
-  uuid alheio não permite alterá-lo.
+- GitHub: [github.com/arturnery](https://github.com/arturnery)
+- E-mail: arturnery97@gmail.com
+- LinkedIn: `[ADICIONAR AQUI]`
+- Portfólio: `[ADICIONAR AQUI]`

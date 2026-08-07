@@ -39,7 +39,28 @@ let userId: string;
  */
 async function escolherDono(db: ReturnType<typeof drizzle>): Promise<string> {
   const fixo = process.env.SEED_USER_ID;
-  if (fixo) return fixo;
+  if (fixo) {
+    /*
+     * Conferir que o UUID existe neste banco não é zelo excessivo: com dois
+     * ambientes, um SEED_USER_ID deixado no arquivo aponta para o usuário do
+     * outro branch. Sem esta checagem o seed quebraria lá adiante, no meio das
+     * inserções, com erro de chave estrangeira e nenhuma pista da causa.
+     */
+    const [existe] = await db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(eq(schema.users.id, fixo))
+      .limit(1);
+
+    if (existe) return fixo;
+
+    console.error(
+      `SEED_USER_ID (${fixo}) não existe neste banco.\n` +
+        "Provavelmente é o usuário de outro ambiente: remova a variável e o\n" +
+        "dono passa a sair de ADMIN_EMAIL.",
+    );
+    process.exit(1);
+  }
 
   const email = process.env.ADMIN_EMAIL?.toLowerCase();
   if (!email) {
