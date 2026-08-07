@@ -4,7 +4,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
-![Tests](https://img.shields.io/badge/testes-159%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-167%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -294,7 +294,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 159 testes
+npm test              # 167 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -339,9 +339,8 @@ tests/            Vitest
 - [ ] **Catálogo de projetos da comunidade.** Quem administra cadastra o projeto uma vez,
       com links e data prevista de TGE, e quem farma o adiciona aos próprios com um clique,
       em vez de recadastrar tudo do zero. Modelado em
-      [`ARCHITECTURE.md` §13](ARCHITECTURE.md): vínculo em vez de cópia, para que uma
-      correção alcance todo mundo, e arquivamento em vez de exclusão, para que sair do
-      catálogo nunca apague o histórico financeiro de quem adotou
+      [`ARCHITECTURE.md` §13](ARCHITECTURE.md): adoção por cópia, para que o projeto passe
+      a ser de quem adotou e nenhuma ação de quem administra alcance dados de terceiros
 - [ ] CI no GitHub Actions rodando testes, typecheck e lint em cada push
 - [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
 - [ ] Edição de metas, recebimentos e medições (hoje só criar e excluir)

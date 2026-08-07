@@ -45,6 +45,84 @@ export function isCashType(type: string): boolean {
   return (CASH_TYPES as readonly string[]).includes(type);
 }
 
+// -------------------------------------------------------------- sinal
+
+/**
+ * Para que lado o tipo move o dinheiro.
+ *
+ * `ambos` existe porque resultado de trade é lucro ou prejuízo, e forçar um
+ * sinal ali obrigaria a inventar dois tipos para a mesma coisa.
+ */
+export type Direcao = "entrada" | "saida" | "ambos";
+
+export function direcaoDoTipo(type: string): Direcao {
+  switch (type) {
+    case "withdrawal":
+    case "fee_gas":
+      return "saida";
+    case "deposit":
+    case "yield":
+    case "volume_traded":
+      return "entrada";
+    default:
+      // trade_pnl e other: quem lança decide.
+      return "ambos";
+  }
+}
+
+/**
+ * Aplica ao valor o sinal que o tipo exige.
+ *
+ * O livro-razão soma tudo, então uma retirada precisa ser negativa para reduzir
+ * a posição. Antes isso dependia de a pessoa digitar "-14", e digitar "14"
+ * produzia o oposto do pretendido em silêncio: a retirada somava à exposição e
+ * o projeto parecia ter mais dinheiro depois do saque.
+ *
+ * Exigir o sinal era pedir que a pessoa soubesse a convenção interna do banco.
+ * Agora o tipo decide, e o valor digitado é sempre a quantia.
+ *
+ * A função é idempotente de propósito (`-abs` de um negativo segue negativo):
+ * aplicá-la duas vezes, no cliente e no servidor, dá o mesmo resultado.
+ */
+export function aplicarSinalDoTipo(type: string, valor: Cents): Cents {
+  switch (direcaoDoTipo(type)) {
+    case "saida":
+      return cents(-Math.abs(valor));
+    case "entrada":
+      return cents(Math.abs(valor));
+    default:
+      return valor;
+  }
+}
+
+// ----------------------------------------------------------- resultado
+
+/**
+ * Resultado de um recorte qualquer: geral, projeto, conta ou par.
+ *
+ * Existe como função porque a fórmula já morou em dois lugares e eles
+ * divergiram: `summarizeFinancials` somava o retirado de volta e os cartões de
+ * projeto e conta faziam apenas `exposição − aportado`. O mesmo projeto exibia
+ * resultados diferentes conforme a tela.
+ *
+ * O retirado entra somado, e é a parte que engana: ele já reduziu a exposição
+ * (é negativo no razão), mas o dinheiro sacado continua sendo de quem sacou.
+ * Aportar 20, perder 6 e sacar 14 zera a posição sem ser prejuízo de 20: o
+ * prejuízo é 6, que é exatamente o que se perdeu.
+ */
+export function resultadoLiquido(params: {
+  exposicao: Cents;
+  aportado: Cents;
+  retirado: Cents;
+  airdrops?: Cents;
+  taxas?: Cents;
+}): Cents {
+  const { exposicao, aportado, retirado, airdrops = ZERO, taxas = ZERO } = params;
+  return cents(
+    exposicao + Math.abs(retirado) + airdrops - aportado - Math.abs(taxas),
+  );
+}
+
 export function sumOfType(movements: MovementRow[], type: string): Cents {
   return cents(
     movements
@@ -206,17 +284,13 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
     for (const simbolo of exposure.semCotacao) semCotacao.add(simbolo);
   }
 
-  /*
-   * Resultado = exposição + |retirado| + airdrops − aportado − |taxas|
-   *
-   * A retirada entra duas vezes de propósito: ela já reduziu a exposição (é um
-   * movimento negativo no razão), mas o dinheiro sacado continua sendo do
-   * usuário. Aportar 100 e sacar 30 deixa 70 na plataforma e 30 no bolso:
-   * resultado zero, não prejuízo de 30.
-   */
-  const resultado = cents(
-    exposicao + Math.abs(retirado) + airdrops - aportado - Math.abs(taxas),
-  );
+  const resultado = resultadoLiquido({
+    exposicao,
+    aportado,
+    retirado,
+    airdrops,
+    taxas,
+  });
 
   return {
     aportado,

@@ -5,6 +5,7 @@ import {
   netFlowByPair,
   pairKey,
   priceMap,
+  resultadoLiquido,
   sumOfType,
   summarizeFinancials,
   tokenPositionsByPair,
@@ -156,12 +157,18 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         ds.tasks.filter((t) => t.projectId === projeto.id).map((t) => t.id),
       );
       const doProjeto = pendentes.filter((o) => idsTarefas.has(o.taskId));
-      const aportado = sumOfType(
-        ds.transactions.filter((t) => t.projectId === projeto.id),
-        "deposit",
+      const doProjetoMov = ds.transactions.filter(
+        (t) => t.projectId === projeto.id,
       );
+      const aportado = sumOfType(doProjetoMov, "deposit");
       const exposicao = exposicoes.get(projeto.id) ?? ZERO;
-      const resultado = subtractCents(exposicao, aportado);
+      // Mesma fórmula da aba do projeto: ver resultadoLiquido em finance.ts.
+      const resultado = resultadoLiquido({
+        exposicao,
+        aportado,
+        retirado: sumOfType(doProjetoMov, "withdrawal"),
+        taxas: sumOfType(doProjetoMov, "fee_gas"),
+      });
 
       return {
         id: projeto.id,
@@ -223,7 +230,12 @@ export function selectProjectBySlug(
         status: par.status,
         aportado,
         saldo: exposure.value,
-        resultado: subtractCents(exposure.value, aportado),
+        resultado: resultadoLiquido({
+          exposicao: exposure.value,
+          aportado,
+          retirado: sumOfType(doPar, "withdrawal"),
+          taxas: sumOfType(doPar, "fee_gas"),
+        }),
         tarefasPendentes: pendentes.filter((o) => o.accountId === par.accountId).length,
         ultimaAtividade: ultimaAtividade(
           ds,
@@ -432,10 +444,8 @@ export function selectAccounts(ds: Dataset): AccountSummary[] {
 
   return ds.accounts
     .map((conta) => {
-      const aportado = sumOfType(
-        ds.transactions.filter((t) => t.accountId === conta.id),
-        "deposit",
-      );
+      const daConta = ds.transactions.filter((t) => t.accountId === conta.id);
+      const aportado = sumOfType(daConta, "deposit");
       const exposicao = exposicoes.get(conta.id) ?? ZERO;
 
       return {
@@ -447,7 +457,12 @@ export function selectAccounts(ds: Dataset): AccountSummary[] {
         projetos: ds.projectAccounts.filter((p) => p.accountId === conta.id).length,
         aportado,
         exposicao,
-        resultado: subtractCents(exposicao, aportado),
+        resultado: resultadoLiquido({
+          exposicao,
+          aportado,
+          retirado: sumOfType(daConta, "withdrawal"),
+          taxas: sumOfType(daConta, "fee_gas"),
+        }),
         tarefasPendentes: pendentes.filter((o) => o.accountId === conta.id).length,
         ultimaAtividade: ultimaAtividade(ds, (r) => r.accountId === conta.id),
       } satisfies AccountSummary;

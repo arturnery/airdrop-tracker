@@ -728,7 +728,7 @@ de conexão no Neon sem substituir os testes.
 | **6** ✅ | Auth.js, cadastro, isolamento por usuário + testes de vazamento | Cada um com seu perfil |
 | **7** | Auth.js, fila de aprovação, papel de admin | Comunidade entra |
 | **8** | Perfis compartilhados: `/u/[handle]`, `profile_settings`, modo leitura | Comunidade acompanha |
-| **9** | Catálogo de projetos: `catalog_projects`, publicação, aba de descoberta e adoção (§13) | Ninguém cadastra do zero |
+| **9** | Catálogo de projetos: `catalog_projects`, publicação, aba de descoberta e adoção por cópia (§13) | Ninguém cadastra do zero |
 
 A importação virou fase 2 (logo após a fundação) e não uma etapa final: é o que permite
 parar de manter as duas coisas em paralelo. Fases 1+2 são o MVP real.
@@ -799,16 +799,26 @@ os divide segundo a natureza de cada um:
 O Discord do Meridian é o mesmo para qualquer pessoa; o status "pausado" é de quem pausou.
 Sem essa divisão, o catálogo não teria como existir.
 
-### 13.3. Decisão: vínculo, não cópia
+### 13.3. Decisão: cópia, não vínculo
 
-Ao adotar, o projeto da pessoa **aponta** para a entrada do catálogo em vez de copiar seus
-campos. Corrigir a data de TGE uma vez alcança todo mundo que adotou, e é isso que dá
-sentido a existir um curador. A cópia seria bem mais simples de construir, e transformaria
-o catálogo num formulário pré-preenchido que envelhece no dia seguinte.
+Ao adotar, os campos do catálogo são **copiados** para um projeto novo da pessoa, que passa
+a ser dela por inteiro. Quem administra não altera mais nada ali depois.
 
-**Custo aceito:** quem adota não personaliza os campos editoriais. Sobrescrita campo a
-campo foi considerada e adiada: dobra a complexidade de leitura (cada campo passa a ter
-duas origens possíveis) para resolver um problema que ainda não apareceu.
+O vínculo foi considerado primeiro, com o argumento de que corrigir a data de TGE uma vez
+alcançaria todo mundo. Foi descartado por uma razão que pesa mais: **o projeto adotado é da
+pessoa**. Ela deve poder renomear, corrigir a rede, ajustar o que quiser, e o curador não
+deve conseguir mexer em nada que já esteja no espaço de outro usuário. Um projeto que muda
+sozinho porque alguém editou em outro lugar é um comportamento difícil de explicar para
+quem está olhando os próprios números.
+
+**Custo aceito:** corrigir um link no catálogo não alcança quem já adotou. O catálogo passa
+a valer pelo que economiza no cadastro inicial, que é onde estava a dor, e não por manter
+todo mundo sincronizado.
+
+**O que isso simplifica.** Com cópia, o pior problema do desenho anterior deixa de existir:
+não há mais o risco de uma ação administrativa alcançar dados financeiros de terceiros,
+porque não sobra nenhuma dependência entre a entrada do catálogo e o projeto adotado.
+Arquivar ou apagar do catálogo não toca em ninguém.
 
 ### 13.4. Tabelas
 
@@ -819,33 +829,34 @@ catalog_projects            entrada curada, sem dados financeiros
   expected_tge_date, summary,
   created_by      -> users.id (sempre um admin)
   published_at    null = rascunho, só o autor enxerga
-  archived_at     saída do catálogo sem apagar nada
+  archived_at     sai do catálogo sem apagar histórico de curadoria
 
-projects                    farming de uma pessoa (tabela atual)
-  + catalog_project_id      null = projeto próprio, como hoje
-  + unique (user_id, catalog_project_id)
+projects                    farming de uma pessoa (tabela atual, sem mudança
+                            de comportamento)
+  + adopted_from_id         referência histórica: de qual entrada veio.
+                            ON DELETE SET NULL, e nada depende dela para exibir
+  + unique (user_id, adopted_from_id)
 ```
+
+`adopted_from_id` não é usada para ler nada: serve para não oferecer duas vezes o mesmo
+projeto a quem já adotou, e para saber quantas pessoas pegaram cada entrada. Todo campo
+exibido vive na linha da própria pessoa.
 
 A unicidade impede adotar o mesmo projeto duas vezes. Múltiplas carteiras no mesmo projeto
 já são resolvidas por `project_accounts`, não por projetos repetidos.
 
-### 13.5. Apagar do catálogo não pode apagar dinheiro de ninguém
+### 13.5. O que a cópia elimina
 
-Esta é a regra de integridade da proposta, e a razão de ela estar registrada antes de
-qualquer código.
+Vale registrar o que **não** precisa ser construído por causa desta escolha, porque era a
+parte mais delicada do desenho com vínculo:
 
-Se dez pessoas adotaram um projeto e ele sai do catálogo, os aportes e o histórico delas
-**não podem** desaparecer junto: seriam dados financeiros de terceiros sumindo por uma ação
-administrativa. Duas medidas, juntas:
+- Nenhuma regra impedindo excluir uma entrada adotada por outras pessoas.
+- Nenhuma desnormalização defensiva de campos para o caso de a origem sumir.
+- Nenhuma decisão sobre o que acontece com quem adotou quando o curador despublica.
+- Nenhuma leitura com duas origens possíveis por campo.
 
-1. **Saída é `archived_at`, não `DELETE`.** A entrada some do catálogo e continua servindo
-   quem já a usa. A exclusão física fica bloqueada enquanto houver adoções.
-2. **`name` é copiado para `projects` na adoção**, de propósito, mesmo vindo do catálogo.
-   É desnormalização deliberada: garante que todo registro financeiro tenha uma identidade
-   legível por conta própria, sem depender de nenhuma linha de outra tabela existir.
-
-A FK usa `ON DELETE SET NULL`. Se a entrada sumir apesar de tudo, o projeto da pessoa vira
-um projeto comum, com o nome preservado e o histórico intacto.
+O projeto adotado é indistinguível de um projeto criado à mão, e todo o código de leitura,
+edição e exclusão que já existe continua valendo sem exceção.
 
 ### 13.6. Autorização
 
@@ -866,7 +877,7 @@ catálogo é compartilhada.
 
 - **Tarefas sugeridas junto do projeto.** Aumentaria bastante o valor para a comunidade e
   também o tamanho da entrega. Fica para depois de o catálogo existir.
-- **Sobrescrita dos campos editoriais** pela pessoa que adotou (ver 13.3).
+- **Sincronizar correções com quem já adotou** (ver 13.3): descartado, não adiado.
 - **Catálogo aberto a contribuição de membros.** Só admin publica; curadoria é o produto.
 
 

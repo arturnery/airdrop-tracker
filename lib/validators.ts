@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { aplicarSinalDoTipo } from "./finance";
 import { parseUserInput } from "./money";
 import { parsePointsInput } from "./points";
 
@@ -115,7 +116,22 @@ export const lancamentoSchema = z.object({
       "Quantidade inválida.",
     ),
   description: textoOpcional,
-});
+})
+  /*
+   * O sinal vem do tipo, não de quem digita.
+   *
+   * O razão soma tudo, então retirada e taxa precisam ser negativas para
+   * reduzir a posição. Antes isso dependia de a pessoa lembrar de escrever
+   * "-14", e escrever "14" fazia o saque **somar** à exposição: o projeto
+   * parecia ter mais dinheiro depois de tirar dinheiro dele, sem nenhum aviso.
+   *
+   * Aqui, e não só na tela, porque a Server Action revalida com este mesmo
+   * schema: uma requisição direta receberia o mesmo tratamento.
+   */
+  .transform((dados) => ({
+    ...dados,
+    amount: aplicarSinalDoTipo(dados.type, dados.amount),
+  }));
 
 export const cotacaoSchema = z.object({
   symbol: z

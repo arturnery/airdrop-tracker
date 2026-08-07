@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  aplicarSinalDoTipo,
   exposureForPair,
   isCashType,
+  resultadoLiquido,
   netFlowByPair,
   pairKey,
   priceMap,
@@ -12,7 +14,7 @@ import {
   type MovementRow,
   type TokenPriceRow,
 } from "@/lib/finance";
-import { toDbNumeric } from "@/lib/money";
+import { cents, toDbNumeric } from "@/lib/money";
 
 const mov = (
   projectId: string,
@@ -283,5 +285,84 @@ describe("preço de entrada derivado", () => {
     expect(toDbNumeric(sol.investedUsd)).toBe("400.00");
     expect(sol.amount).toBe(4);
     expect(Math.round(sol.investedUsd / sol.amount)).toBe(10000);
+  });
+});
+
+describe("sinal pelo tipo do lançamento", () => {
+  it("retirada e taxa viram negativas mesmo digitadas sem sinal", () => {
+    expect(aplicarSinalDoTipo("withdrawal", cents(1400))).toBe(-1400);
+    expect(aplicarSinalDoTipo("fee_gas", cents(250))).toBe(-250);
+  });
+
+  it("já negativas continuam negativas: aplicar duas vezes não alterna", () => {
+    const uma = aplicarSinalDoTipo("withdrawal", cents(-1400));
+    expect(uma).toBe(-1400);
+    expect(aplicarSinalDoTipo("withdrawal", uma)).toBe(-1400);
+  });
+
+  it("depósito e rendimento não ficam negativos por engano", () => {
+    expect(aplicarSinalDoTipo("deposit", cents(-2000))).toBe(2000);
+    expect(aplicarSinalDoTipo("yield", cents(150))).toBe(150);
+  });
+
+  it("resultado de trade preserva o sinal: pode ser lucro ou prejuízo", () => {
+    expect(aplicarSinalDoTipo("trade_pnl", cents(-600))).toBe(-600);
+    expect(aplicarSinalDoTipo("trade_pnl", cents(600))).toBe(600);
+  });
+});
+
+describe("resultadoLiquido", () => {
+  /*
+   * O caso relatado em uso real: depositar 20, perder 6 em trade e sacar os 14
+   * restantes zera a posição. Antes os cartões mostravam -20 (todo o aportado
+   * como perda), porque a fórmula deles ignorava o saque.
+   */
+  it("sacar o que sobrou não vira prejuízo do valor aportado", () => {
+    expect(
+      resultadoLiquido({
+        exposicao: cents(0),
+        aportado: cents(2000),
+        retirado: cents(-1400),
+      }),
+    ).toBe(-600);
+  });
+
+  it("aportar e sacar sem ganho nem perda dá resultado zero", () => {
+    expect(
+      resultadoLiquido({
+        exposicao: cents(7000),
+        aportado: cents(10000),
+        retirado: cents(-3000),
+      }),
+    ).toBe(0);
+  });
+
+  it("taxas entram como custo qualquer que seja o sinal gravado", () => {
+    const comNegativa = resultadoLiquido({
+      exposicao: cents(1000),
+      aportado: cents(1000),
+      retirado: cents(0),
+      taxas: cents(-200),
+    });
+    expect(comNegativa).toBe(-200);
+    expect(
+      resultadoLiquido({
+        exposicao: cents(1000),
+        aportado: cents(1000),
+        retirado: cents(0),
+        taxas: cents(200),
+      }),
+    ).toBe(comNegativa);
+  });
+
+  it("airdrop recebido entra como ganho", () => {
+    expect(
+      resultadoLiquido({
+        exposicao: cents(0),
+        aportado: cents(5000),
+        retirado: cents(0),
+        airdrops: cents(8000),
+      }),
+    ).toBe(3000);
   });
 });

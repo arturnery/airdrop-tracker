@@ -6,6 +6,7 @@ import { Loader2, Plus } from "lucide-react";
 import { CampoValorToken } from "@/components/forms/campo-valor-token";
 import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
 import { useDados } from "@/components/data-provider";
+import { direcaoDoTipo } from "@/lib/finance";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -375,6 +376,14 @@ export function NovoLancamento({
   const { acoes, hoje } = useDados();
   const { projetos, contas } = useOpcoes();
 
+  /*
+   * O sinal é decidido pelo tipo (ver aplicarSinalDoTipo), então o campo pede
+   * só a quantia. Mostrar para onde o dinheiro vai evita a dúvida de digitar
+   * ou não o menos, que antes produzia um saque somando à posição.
+   */
+  const [tipoSel, setTipoSel] = useState("deposit");
+  const direcao = direcaoDoTipo(tipoSel);
+
   return (
     <Formulario
       titulo="Novo lançamento"
@@ -421,6 +430,14 @@ export function NovoLancamento({
               name="type"
               defaultValue="deposit"
               erro={e.type}
+              onChange={(evento) => setTipoSel(evento.target.value)}
+              ajuda={
+                direcao === "saida"
+                  ? "Sai da posição: informe só a quantia, o sinal é aplicado."
+                  : direcao === "ambos"
+                    ? "Use o sinal de menos para prejuízo."
+                    : undefined
+              }
               opcoes={[
                 { valor: "deposit", rotulo: "Depósito" },
                 { valor: "withdrawal", rotulo: "Retirada" },

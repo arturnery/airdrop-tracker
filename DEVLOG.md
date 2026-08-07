@@ -1037,6 +1037,75 @@ o alvo aparece no comando, não num arquivo editado.
 
 ---
 
+## Marco 14: Dois defeitos financeiros achados com dinheiro real
+
+Os dois vieram do mesmo lugar: usar o sistema com valores de verdade, e não com os dados de
+demonstração, que por acaso nunca exercitaram estes caminhos.
+
+### O saque que aumentava o saldo
+
+Depositar 20 e sacar 14 mostrava exposição de **34**. A retirada estava sendo somada.
+
+A causa não era um erro de cálculo, era o contrato entre a tela e o banco. O comentário em
+`schema.ts` já dizia: "negativo em perda, retirada e taxa". Ou seja, o sistema esperava que
+**quem digita** aplicasse o sinal. Digitar "14" numa retirada gravava +14, e o razão somava
+alegremente: o projeto ficava com mais dinheiro depois de tirar dinheiro dele, sem nenhum
+aviso.
+
+Isso é uma convenção interna do banco vazando para o formulário. Ninguém deveria precisar
+saber que o razão soma tudo para conseguir registrar um saque.
+
+`aplicarSinalDoTipo` move a decisão para onde ela pertence: o tipo do lançamento determina
+a direção, e o campo pede apenas a quantia. Retirada e taxa saem sempre; depósito e
+rendimento entram sempre. `trade_pnl` continua aceitando os dois sinais, porque resultado
+de trade é lucro **ou** prejuízo, e forçar um lado ali obrigaria a inventar dois tipos para
+a mesma coisa.
+
+A função é idempotente de propósito (`-abs` de um número negativo continua o mesmo), então
+aplicá-la no cliente e de novo no servidor dá o mesmo resultado. Isso importa por causa de
+um defeito anterior deste projeto, no marco 8: schemas com transform que não eram
+idempotentes quebravam quando o valor passava duas vezes pela validação.
+
+Ela vive no schema Zod, não no componente. A Server Action revalida com o mesmo schema,
+então uma requisição direta recebe o mesmo tratamento que o formulário.
+
+### A mesma fórmula em dois lugares, com respostas diferentes
+
+O caso relatado: depositar 20, perder 6 em trade, sacar os 14 restantes. A aba do projeto
+respondia **-6**, correto. O cartão na lista respondia **-20**, como se todo o valor
+aportado tivesse virado prejuízo.
+
+`summarizeFinancials` aplicava a fórmula certa, somando de volta o que foi retirado. Mas
+três outros pontos em `selectors.ts` faziam apenas `exposição − aportado`: o cartão do
+projeto, a linha por conta e o cartão da conta. A regra tinha sido reescrita à mão em cada
+lugar, e as cópias envelheceram sem que ninguém percebesse, porque cada tela era testada
+isoladamente e todas pareciam plausíveis.
+
+O erro é conceitual e vale escrever inteiro: **sacar não é perder**. A retirada já reduziu
+a exposição, mas o dinheiro sacado continua sendo de quem sacou. Aportar 20, perder 6 e
+sacar 14 zera a posição sem ser prejuízo de 20; o prejuízo é 6, que é exatamente o que se
+perdeu. Um farmer que encerra a posição com lucro veria "-100%" na tela, o oposto do que
+aconteceu.
+
+A correção não foi consertar os três, foi apagar os três: `resultadoLiquido` passou a ser a
+única fonte da fórmula, e os quatro pontos a chamam. Consertar cada cópia deixaria o mesmo
+convite para a quinta divergir.
+
+Oito testes fixam as duas regras, incluindo o cenário exato relatado, com os números dele.
+
+### O que os dois têm em comum
+
+Nenhum apareceria em teste unitário como estavam escritos, porque cada peça respondia certo
+para a pergunta que lhe faziam. O que faltava era comparar as respostas entre si, e isso só
+acontece usando o sistema.
+
+Os dados de demonstração não pegariam nenhum dos dois: eles têm depósitos, rendimentos e
+perdas, mas nenhuma sequência que **encerra uma posição**. O caso que quebrou é o de
+alguém saindo de um projeto, que é justamente o que um farmer faz o tempo todo e o que uma
+fixture escrita para parecer bonita na tela não faz.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1047,7 +1116,7 @@ o alvo aparece no comando, não num arquivo editado.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 159, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 167, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
