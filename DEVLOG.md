@@ -900,6 +900,55 @@ mesmo faria um token assinado na máquina local valer no ambiente público.
 
 ---
 
+## Marco 12: Separação entre produção e desenvolvimento
+
+Até aqui os dois ambientes usavam o mesmo banco. Funcionava porque só uma pessoa usava o
+sistema, e deixou de funcionar pela mesma razão que sempre deixa: o ambiente onde se testa
+migração e se roda script destrutivo passou a ser o ambiente que guarda dado real.
+
+### Qual banco vira qual
+
+A decisão foi manter o banco existente como produção e criar um novo para desenvolvimento,
+e não o contrário. O motivo é onde o risco cai. A `DATABASE_URL` de produção já estava
+configurada e testada na Vercel; trocá-la significaria mexer no que funciona. Criando o
+ambiente novo do lado do desenvolvimento, um engano de configuração custa dado
+descartável, não dado real.
+
+### Dev não é cópia de produção
+
+A tentação óbvia é clonar produção para ter dados realistas em desenvolvimento. Isso foi
+descartado por antecipação: quando a comunidade entrar, produção vai conter e-mails e
+hashes de senha de outras pessoas. Copiá-los para o ambiente onde se testa migração e se
+roda script destrutivo espalha dado de terceiro para onde há menos cuidado, sem que
+ninguém tenha consentido com isso.
+
+Desenvolvimento passa a nascer de `db:seed-demo`, com projetos e valores fictícios que já
+existiam. O custo é não ter dados realistas; o ganho é que nenhum dado de outra pessoa
+circula fora de produção.
+
+### Branch em vez de projeto separado
+
+O Neon cria branches copy-on-write instantâneos, isolados entre si. Um branch traz o
+schema junto, então não é preciso rodar migração no ambiente novo, e uma migração errada
+em `dev` não alcança `main`. Dois projetos separados só compensariam para isolar
+faturamento e limites, o que não é o caso.
+
+### Limpeza com confirmação explícita
+
+O banco de produção carregava sete projetos de teste (`a`, `ab`, `abc`) e zero
+lançamentos: nada a preservar. `scripts/limpar-dados.ts` apaga dados e mantém `users` e
+`profile_settings`, para não obrigar ninguém a recadastrar o login.
+
+Duas proteções nele valem registro, porque um script destrutivo sem elas é um acidente
+esperando o momento: sem `--confirmar` ele só relata o que faria, e imprime o host do
+banco antes de agir. Rodar limpeza no banco errado é o engano que este tipo de script
+precisa tornar difícil.
+
+A limpeza rodou antes da criação do branch, de propósito: assim `dev` nasce de um `main`
+já limpo, em vez de herdar o lixo e precisar de uma segunda limpeza.
+
+---
+
 ## Estado atual
 
 | | |
@@ -927,5 +976,4 @@ mesmo faria um token assinado na máquina local valer no ambiente público.
   o controle.
 - O vínculo projeto×conta só nasce no primeiro lançamento. Funciona, mas é implícito:
   criar o vínculo junto com o projeto tornaria a regra mais previsível.
-- Produção e desenvolvimento usam o mesmo banco. Aceitável para uso pessoal, precisa
-  separar antes de abrir para a comunidade.
+- Falta separar o ambiente de preview da Vercel: hoje ele não tem variáveis próprias.

@@ -44,6 +44,22 @@ A senha do administrador é definida por você no primeiro cadastro, pela tela. 
 cadastrar com o e-mail de `ADMIN_EMAIL` nasce admin e aprovado; qualquer outro e-mail
 entra na fila de aprovação.
 
+## Ambientes
+
+Produção e desenvolvimento usam bancos diferentes. São dois branches do mesmo projeto
+Neon: `main` serve produção, `dev` serve a máquina local.
+
+| | Produção | Desenvolvimento |
+|---|---|---|
+| Banco | Branch `main` | Branch `dev` |
+| Onde a conexão fica | Variáveis do projeto na Vercel | `.env.local`, fora do versionamento |
+| Dados | Reais | `npm run db:seed-demo`, fictícios |
+| Segredo de sessão | Próprio, gerado para produção | Próprio, local |
+
+Desenvolvimento não recebe cópia de produção. Assim que houver mais de uma pessoa usando o
+sistema, produção passa a guardar e-mails e hashes de senha de terceiros, e clonar isso
+para onde se testa migração espalharia dado de outra pessoa sem que ela tenha concordado.
+
 ## Scripts
 
 | Comando | O que faz |
@@ -58,6 +74,7 @@ entra na fila de aprovação.
 | `npm run db:studio` | Drizzle Studio |
 | `npm run db:seed` | Cria a conta de administrador |
 | `npm run db:seed-demo` | Carrega dados de demonstração |
+| `npx tsx scripts/limpar-dados.ts` | Mostra o que uma limpeza apagaria (some `--confirmar` para apagar): preserva as contas de acesso |
 
 ## Estrutura
 
