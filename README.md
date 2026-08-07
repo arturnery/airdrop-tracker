@@ -16,6 +16,11 @@ de US$ 100 com uma leitura de saldo de US$ 103 produz US$ 203 de nada. Separar f
 caixa de foto de saldo é a decisão central do modelo de dados, e é dela que sai o resto do
 projeto.
 
+> **Trabalho freelancer para a [Level Cripto](https://www.levelcripto.com.br)**, segundo
+> projeto entregue para o mesmo cliente, depois da landing page da plataforma. A ferramenta
+> nasceu de uma necessidade concreta da comunidade, e é usada por ela: por isso o cadastro
+> tem aprovação manual e cada assinante enxerga apenas os próprios dados.
+
 ## Testar sem instalar nada
 
 **[Abrir a aplicação](https://airdrop-tracker-arturnery97-1755s-projects.vercel.app)** e entrar com:
@@ -368,11 +373,12 @@ transformado e revalidar no servidor produz "expected string, received number", 
 segunda passada recebe o que a primeira já converteu. A correção foi enviar o objeto bruto.
 Sete testes agora fixam esse comportamento.
 
-**Escolha de tecnologia com objetivo declarado.** Next.js entrou por preencher uma lacuna
-concreta: estava listado no meu currículo sem nenhum projeto que comprovasse. A decisão foi
-explícita, não acidental, e o projeto serve tanto de ferramenta de uso diário quanto de
-demonstração de App Router, Server Actions e React 19 em algo com regra de negócio de
-verdade.
+**Escolha de tecnologia com critério declarado.** Next.js atendia ao que o projeto pedia:
+renderização no servidor para telas com muito cálculo, Server Actions em vez de uma API
+separada para um time de uma pessoa, e deploy simples na Vercel. Entre as opções que
+resolviam isso igualmente bem, o desempate foi meu: era a que eu tinha no currículo sem
+nenhum projeto que comprovasse. Registro isso porque decisão técnica raramente tem um único
+critério, e fingir que tem é o que produz justificativa inventada depois do fato.
 
 ## Documentação
 
@@ -388,6 +394,10 @@ verdade.
 ## Contato
 
 **Artur Matoso Nery**, desenvolvedor Full Stack
+
+Projeto entregue como freelancer para a [Level Cripto](https://www.levelcripto.com.br),
+para quem também desenvolvi a landing page da plataforma. Disponível para novos projetos e
+oportunidades.
 
 - GitHub: [github.com/arturnery](https://github.com/arturnery)
 - E-mail: arturnery97@gmail.com
