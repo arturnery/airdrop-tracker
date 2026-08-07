@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![Tests](https://img.shields.io/badge/testes-159%20passando-3FB950)
-![License](https://img.shields.io/badge/licen%C3%A7a-a%20definir-lightgrey)
+![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
 aportado, o que precisa ser feito hoje e qual o resultado real, por projeto e por conta.
@@ -335,9 +335,10 @@ tests/            Vitest
 - [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
 - [ ] Edição de metas, recebimentos e medições (hoje só criar e excluir)
 - [ ] Alternância entre tema claro e escuro (o tema claro já existe, falta o controle)
-- [ ] Recuperação de senha por e-mail (a tela existe, falta o provedor de envio)
+- [ ] Redefinição de senha pela área de administração, gerando senha temporária. Para uma
+      comunidade fechada com aprovação manual, e-mail transacional é infraestrutura demais
+      para o problema: a tela de recuperação existe, mas o provedor de envio não se paga
 - [ ] Criar o vínculo projeto×conta junto com o projeto, em vez de no primeiro lançamento
-- [ ] Definir licença
 
 ## O que aprendi
 
@@ -379,6 +380,10 @@ verdade.
 |---|---|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Modelo de dados, fórmulas financeiras, motor de recorrência, autorização |
 | [`DEVLOG.md`](DEVLOG.md) | Como se chegou aqui: alternativas descartadas, trade-offs e os bugs do caminho |
+
+## Licença
+
+[MIT](LICENSE).
 
 ## Contato
 
