@@ -98,6 +98,31 @@ export function aplicarSinalDoTipo(type: string, valor: Cents): Cents {
 // ----------------------------------------------------------- resultado
 
 /**
+ * Capital que ainda é dinheiro próprio dentro da posição: depositado menos
+ * retirado.
+ *
+ * Substituiu o total depositado histórico, que continuava exibindo "$500"
+ * mesmo depois de a pessoa ter sacado tudo e não ter mais nada no projeto.
+ * Em farming de airdrop o capital é de giro, não é consumido: entra, trabalha e
+ * volta. O que interessa é quanto ainda está lá.
+ *
+ * A diferença entre este número e a exposição ganha significado próprio: é o
+ * ganho ou a perda acumulados na posição. Empregar 14 e ter 8 de exposição diz,
+ * sozinho, que 6 se perderam.
+ *
+ * Nunca negativo. Retirar mais do que se depositou significa que o lucro já foi
+ * sacado e nada mais é capital próprio parado ali: isso é zero empregado, e o
+ * ganho aparece no resultado, que é onde ele pertence.
+ */
+export function capitalEmpregado(params: {
+  aportado: Cents;
+  retirado: Cents;
+}): Cents {
+  const liquido = params.aportado - Math.abs(params.retirado);
+  return cents(Math.max(0, liquido));
+}
+
+/**
  * Resultado de um recorte qualquer: geral, projeto, conta ou par.
  *
  * Existe como função porque a fórmula já morou em dois lugares e eles
@@ -294,6 +319,7 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
 
   return {
     aportado,
+    capitalEmpregado: capitalEmpregado({ aportado, retirado }),
     retirado,
     taxas,
     pnlTrades,

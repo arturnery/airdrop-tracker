@@ -3,6 +3,7 @@ import { daysBetween, urgencyOf } from "./dates";
 import {
   exposureForPair,
   netFlowByPair,
+  capitalEmpregado,
   pairKey,
   priceMap,
   resultadoLiquido,
@@ -161,12 +162,13 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         (t) => t.projectId === projeto.id,
       );
       const aportado = sumOfType(doProjetoMov, "deposit");
+      const retiradoProjeto = sumOfType(doProjetoMov, "withdrawal");
       const exposicao = exposicoes.get(projeto.id) ?? ZERO;
       // Mesma fórmula da aba do projeto: ver resultadoLiquido em finance.ts.
       const resultado = resultadoLiquido({
         exposicao,
         aportado,
-        retirado: sumOfType(doProjetoMov, "withdrawal"),
+        retirado: retiradoProjeto,
         taxas: sumOfType(doProjetoMov, "fee_gas"),
       });
 
@@ -179,6 +181,7 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         chain: projeto.chain,
         prioridade: projeto.priority,
         aportado,
+        capitalEmpregado: capitalEmpregado({ aportado, retirado: retiradoProjeto }),
         exposicao,
         resultado,
         roi: percentOf(resultado, aportado),
@@ -352,6 +355,7 @@ export function selectProjectBySlug(
     chain: projeto.chain,
     prioridade: projeto.priority,
     aportado: financeiro.aportado,
+    capitalEmpregado: financeiro.capitalEmpregado,
     exposicao: financeiro.exposicao,
     resultado: financeiro.resultado,
     roi: financeiro.roi,

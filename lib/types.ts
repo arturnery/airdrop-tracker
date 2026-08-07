@@ -46,7 +46,10 @@ export type IsoDate = string;
 // ------------------------------------------------------------------ dashboard
 
 export type FinancialSummary = {
+  /** Total já depositado na história. Base do ROI, não vai para a tela. */
   aportado: Cents;
+  /** Depositado menos retirado: o que ainda é dinheiro próprio na posição. */
+  capitalEmpregado: Cents;
   retirado: Cents;
   taxas: Cents;
   pnlTrades: Cents;
@@ -86,6 +89,7 @@ export type ProjectSummary = {
   chain: string | null;
   prioridade: number;
   aportado: Cents;
+  capitalEmpregado: Cents;
   exposicao: Cents;
   resultado: Cents;
   roi: number | null;

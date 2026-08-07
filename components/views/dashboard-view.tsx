@@ -61,9 +61,9 @@ export function DashboardView() {
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
         <StatCard
-          label="Capital aportado"
+          label="Capital empregado"
           accent="primary"
-          value={<Money value={resumo.aportado} />}
+          value={<Money value={resumo.capitalEmpregado} />}
           hint={`${resumo.projetosAtivos} projetos ativos · ${resumo.contasAtivas} contas`}
         />
         <StatCard

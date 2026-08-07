@@ -1147,6 +1147,53 @@ item "testes de componente" do roadmap: não como cobertura genérica, mas para 
 
 ---
 
+## Marco 16: Capital empregado no lugar do total depositado
+
+O cartão "Aportado" mostrava a soma histórica dos depósitos. Ele continuava exibindo $500
+depois de a pessoa ter sacado tudo e não ter mais nada no projeto.
+
+O questionamento veio de quem usa: em farming de airdrop o capital é **de giro**, não é
+consumido. Deposita-se $500, usa-se a plataforma por um mês, e os $500 voltam. Não houve
+gasto de $500; houve um empréstimo a si mesmo. O custo real é só o que não volta: perdas e
+taxas.
+
+O cálculo já concordava com isso. Depositar 500, sacar 500 e registrar 5 de rendimento dá
+resultado +5, e nunca tratou o principal como prejuízo. Onde o total depositado entrava era
+só no denominador do ROI.
+
+### O que mudou
+
+`capitalEmpregado = depositado − retirado`, e é ele que vai para a tela.
+
+A vantagem não é só ser mais fiel: a diferença entre ele e a exposição passa a ter
+significado próprio. Empregar 14 e ter 8 de exposição diz, sem mais nenhuma conta, que 6 se
+perderam ali dentro.
+
+Nunca é negativo. Sacar mais do que se depositou significa que o lucro já foi realizado, e
+isso é zero capital próprio parado, não capital negativo: o ganho pertence ao resultado, que
+é onde ele aparece.
+
+### O que quase se perdeu na discussão
+
+A proposta inicial era remover o campo por completo. O argumento contra, e que sobreviveu:
+sem capital, dois projetos que renderam $200 de airdrop parecem idênticos, mesmo que um
+tenha travado $5.000 por três meses e o outro $200. Com capital limitado e várias
+oportunidades simultâneas, essa é exatamente a comparação que decide o próximo depósito. E
+sem denominador, o ROI percentual simplesmente deixa de existir.
+
+O acordo foi manter o dado, trocar a definição pela mais fiel e tirar do mesmo nível de
+destaque. O total depositado continua no modelo, como base do ROI, e aparece só como texto
+de apoio ao lado do resultado: "ROI -15% sobre $40 depositados".
+
+### O que a conversa revelou e ainda não existe
+
+Nenhuma tela mede **tempo**. "$500 parados por um mês" e "$500 por seis meses" aparecem
+iguais, e para eficiência de capital essa é a variável que falta. Ficou registrado em
+ARCHITECTURE §12, não implementado: exigiria medir a posição ao longo do tempo, com
+depósitos e saques parciais, e não apenas o saldo atual.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1157,7 +1204,7 @@ item "testes de componente" do roadmap: não como cobertura genérica, mas para 
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 167, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 172, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build` passando |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
