@@ -16,8 +16,20 @@ de US$ 100 com uma leitura de saldo de US$ 103 produz US$ 203 de nada. Separar f
 caixa de foto de saldo é a decisão central do modelo de dados, e é dela que sai o resto do
 projeto.
 
-**Aplicação no ar:** [airdrop-tracker.vercel.app](https://airdrop-tracker-arturnery97-1755s-projects.vercel.app)
-(acesso por convite: cadastros novos entram numa fila de aprovação)
+## Testar sem instalar nada
+
+**[Abrir a aplicação](https://airdrop-tracker-arturnery97-1755s-projects.vercel.app)** e entrar com:
+
+```
+e-mail: demo@airdrop-tracker.app
+senha:  demo1234
+```
+
+A conta já vem com projetos, lançamentos e tarefas de exemplo. Pode criar, editar e excluir
+à vontade: os dados são fictícios e ficam isolados dessa conta.
+
+Só duas coisas ficam travadas nela, nome e senha, porque valem para todo mundo que entra
+pelo mesmo login. Cadastros novos entram numa fila de aprovação manual.
 
 ## Demonstração
 
@@ -140,6 +152,27 @@ A correção não foi reemitir o token, e sim separar duas coisas que estavam ju
 identidade (`id`, `role`) continua vindo do token assinado, e o que é apenas exibição passa
 a vir do banco. Reemitir resolveria o sintoma e deixaria a mesma armadilha para o próximo
 campo editável.
+
+### Uma conta pública que não vira um problema
+
+Publicar credenciais num README costuma dar errado de três jeitos, e cada um pedia uma
+resposta diferente:
+
+| Risco | Resposta |
+|---|---|
+| Alguém troca a senha e tranca os visitantes seguintes | `is_demo` bloqueia a troca **no servidor**, não escondendo o botão |
+| Alguém renomeia a conta para algo que o próximo visitante lê | Mesma trava, pelo mesmo motivo |
+| A conta enxerga dados de terceiros | Papel `membro`, nunca `admin`: a fila de aprovação tem e-mails de outras pessoas |
+
+O isolamento por usuário, que já existia, faz o resto: a conta pública vê apenas os
+próprios dados, e nenhum dado real de quem mantém o projeto.
+
+`is_demo` é uma coluna e não um valor de `role` de propósito. Um terceiro papel obrigaria a
+revisar toda comparação de papel no sistema para decidir o que "demo" significa em cada
+uma; a coluna deixa a autorização como estava e liga só o que precisa mudar.
+
+A trava vive na Server Action, não no componente. Esconder o formulário no cliente não
+impede a requisição direta à ação, que é o caminho que alguém realmente tentaria.
 
 ### Login que não revela quem tem conta
 

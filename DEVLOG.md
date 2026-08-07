@@ -977,6 +977,66 @@ já limpo, em vez de herdar o lixo e precisar de uma segunda limpeza.
 
 ---
 
+## Marco 13: Conta pública de demonstração
+
+O projeto é peça de portfólio, e quem avalia não vai clonar o repositório, criar conta no
+Neon e rodar migração para ver se funciona. Sem uma forma de entrar, o link para a
+aplicação mostra apenas uma tela de login.
+
+A saída óbvia, publicar e-mail e senha no README, tem três buracos. Dois deles são
+consequência direta de funcionalidades que já existiam:
+
+| Risco | Origem | Resposta |
+|---|---|---|
+| Trocar a senha e trancar todos os visitantes seguintes | A aba de perfil, feita no marco 10 | Bloqueio no servidor |
+| Renomear a conta para algo que o próximo visitante lê | O nome aparece na barra lateral | Mesmo bloqueio |
+| Enxergar e-mails de terceiros | A fila de aprovação | Papel `membro`, nunca `admin` |
+
+O primeiro é o mais interessante: a troca de senha era uma melhoria pedida pelo usuário, e
+virou uma vulnerabilidade no momento em que a senha passou a ser pública. Nada mudou no
+código dela; mudou o contexto em que roda.
+
+O que **não** precisou de resposta foi o isolamento entre usuários, feito no marco 10 e
+verificado na época com um `UPDATE` cruzado que afetou zero linhas. A conta pública vê
+apenas os próprios dados porque essa garantia já estava no lugar.
+
+### Coluna, não um terceiro papel
+
+`is_demo` é uma coluna booleana e não um valor de `role`. Acrescentar "demo" ao enum
+obrigaria a revisar cada comparação de papel no sistema para decidir o que aquele valor
+significa ali, e a maioria das respostas seria "igual a membro". A coluna deixa a
+autorização exatamente como estava e liga só o comportamento que muda.
+
+### A trava fica na Server Action
+
+Desabilitar o formulário no cliente não impede nada: a Server Action continua alcançável
+por requisição direta, que é justamente o caminho que alguém interessado tentaria. O
+bloqueio vive na ação; o formulário desabilitado existe só para a pessoa não preencher três
+campos até descobrir que não pode.
+
+### O banco criado com `push` não tinha histórico de migração
+
+Aplicar a coluna revelou um problema anterior: `npm run db:migrate` travava tentando criar
+as 14 tabelas que já existiam. A causa é que o banco nasceu de `drizzle-kit push`, que
+sincroniza o schema direto e não escreve nada na tabela de controle. Para o Drizzle,
+nenhuma migração havia sido aplicada.
+
+`scripts/adotar-migracoes.ts` fecha a lacuna registrando a migração inicial como aplicada,
+sem reexecutá-la. O hash é o SHA-256 do conteúdo do arquivo e `created_at` é o carimbo do
+journal, porque é assim que o Drizzle identifica cada uma: gravar outra coisa faria a
+próxima execução tentar aplicar tudo de novo.
+
+Um detalhe que só apareceu por termos dois ambientes: em produção a migração inicial **já
+estava registrada**, e no branch `dev` não. O branch foi criado com "schema only", que copia
+a estrutura das tabelas mas não as linhas, e o histórico de migração é linha. Vale como
+lembrete de que "só o schema" não inclui o que o schema sabe sobre si mesmo.
+
+O `drizzle.config.ts` passou a escolher o ambiente por `DB_ENV=producao`, com
+`npm run db:migrate:prod` já trazendo a variável, pelo mesmo princípio dos outros scripts:
+o alvo aparece no comando, não num arquivo editado.
+
+---
+
 ## Estado atual
 
 | | |
@@ -992,6 +1052,7 @@ já limpo, em vez de herdar o lixo e precisar de uma segunda limpeza.
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
 | Produção | Vercel, com banco Neon e segredo de sessão próprio |
+| Demonstração | Conta pública com nome e senha travados, dados fictícios |
 
 ### Pendências conhecidas
 

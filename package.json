@@ -15,7 +15,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
-    "db:seed-demo": "tsx scripts/seed-demo.ts"
+    "db:seed-demo": "tsx scripts/seed-demo.ts",
+    "db:migrate:prod": "DB_ENV=producao drizzle-kit migrate",
+    "db:studio:prod": "DB_ENV=producao drizzle-kit studio"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

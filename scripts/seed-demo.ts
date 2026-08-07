@@ -38,6 +38,27 @@ let userId: string;
  * está configurado para outra finalidade e identifica a mesma pessoa.
  */
 async function escolherDono(db: ReturnType<typeof drizzle>): Promise<string> {
+  /*
+   * `--email` vence tudo: é como a conta de demonstração recebe os dados sem
+   * precisar mexer em variável de ambiente nenhuma.
+   */
+  const i = process.argv.indexOf("--email");
+  const alvo = i >= 0 ? process.argv[i + 1]?.toLowerCase() : undefined;
+  if (alvo) {
+    const [dono] = await db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(eq(schema.users.email, alvo))
+      .limit(1);
+
+    if (!dono) {
+      console.error(`Nenhuma conta com o e-mail ${alvo} neste banco.`);
+      process.exit(1);
+    }
+    console.log(`dono da demonstração: ${alvo}`);
+    return dono.id;
+  }
+
   const fixo = process.env.SEED_USER_ID;
   if (fixo) {
     /*

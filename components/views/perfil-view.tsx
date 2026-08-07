@@ -24,11 +24,13 @@ function Secao({
   descricao,
   rotuloEnvio,
   aoEnviar,
+  desabilitado = false,
   children,
 }: {
   titulo: string;
   descricao: string;
   rotuloEnvio: string;
+  desabilitado?: boolean;
   aoEnviar: (
     dados: FormData,
   ) => Promise<{ ok: true; aviso?: string } | { ok: false; erros: Erros }>;
@@ -43,6 +45,7 @@ function Secao({
       <h2 className="text-base font-medium">{titulo}</h2>
       <p className="text-muted-foreground mt-1 text-sm">{descricao}</p>
 
+      <fieldset disabled={desabilitado} className="contents">
       <form
         noValidate
         className="mt-6 space-y-4"
@@ -91,7 +94,7 @@ function Secao({
           </p>
         ) : null}
 
-        <Button type="submit" disabled={enviando}>
+        <Button type="submit" disabled={enviando || desabilitado}>
           {enviando ? (
             <>
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -102,11 +105,18 @@ function Secao({
           )}
         </Button>
       </form>
+      </fieldset>
     </section>
   );
 }
 
-export function PerfilView({ sessao }: { sessao: Sessao }) {
+export function PerfilView({
+  sessao,
+  isDemo = false,
+}: {
+  sessao: Sessao;
+  isDemo?: boolean;
+}) {
   return (
     <>
       <PageHeader
@@ -115,7 +125,20 @@ export function PerfilView({ sessao }: { sessao: Sessao }) {
       />
 
       <div className="max-w-xl space-y-6">
+        {/* O servidor recusa a alteração de qualquer jeito. O aviso existe para
+            a pessoa não preencher o formulário até descobrir isso. */}
+        {isDemo ? (
+          <p
+            role="status"
+            className="border-border bg-secondary/50 text-muted-foreground rounded-md border px-4 py-3 text-sm"
+          >
+            Você está na conta de demonstração. Nome e senha ficam fixos, porque
+            valem para todo mundo que entra por aqui. O resto do sistema está
+            liberado: crie projetos, lance valores e marque tarefas à vontade.
+          </p>
+        ) : null}
         <Secao
+          desabilitado={isDemo}
           titulo="Seus dados"
           descricao="O nome aparece na barra lateral e, no futuro, para quem visitar seu perfil."
           rotuloEnvio="Salvar nome"
@@ -149,6 +172,7 @@ export function PerfilView({ sessao }: { sessao: Sessao }) {
         </Secao>
 
         <Secao
+          desabilitado={isDemo}
           titulo="Trocar senha"
           descricao="Se recebeu uma senha temporária, troque por uma sua."
           rotuloEnvio="Trocar senha"

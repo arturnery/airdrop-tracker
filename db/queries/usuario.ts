@@ -23,6 +23,7 @@ export async function carregarUsuario(userId: string) {
       nome: schema.users.name,
       email: schema.users.email,
       papel: schema.users.role,
+      isDemo: schema.users.isDemo,
     })
     .from(schema.users)
     .where(eq(schema.users.id, userId))

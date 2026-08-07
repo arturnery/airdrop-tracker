@@ -16,6 +16,7 @@ export default async function PerfilPage() {
         nome: usuario?.nome ?? sessao.nome,
         email: usuario?.email ?? sessao.email,
       }}
+      isDemo={usuario?.isDemo ?? false}
     />
   );
 }

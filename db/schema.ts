@@ -113,6 +113,19 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   role: userRoleEnum("role").notNull().default("membro"),
   status: userStatusEnum("status").notNull().default("pendente"),
+  /**
+   * Conta de demonstração, com senha publicada no README.
+   *
+   * É uma coluna e não um valor de `role` porque não substitui o papel: a conta
+   * demo continua sendo `membro` para todo efeito de autorização, e virar um
+   * terceiro papel obrigaria a revisar cada comparação de `role` no sistema.
+   *
+   * O que a marca muda é pontual: nome e senha ficam travados. Sem isso, a
+   * primeira pessoa a entrar poderia trocar a senha e trancar todas as
+   * seguintes do lado de fora, ou renomear a conta para algo que o próximo
+   * visitante veria na barra lateral.
+   */
+  isDemo: boolean("is_demo").notNull().default(false),
   /** Quando o acesso foi liberado ou recusado; nulo enquanto pendente. */
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   /** Por que foi recusado. Visível só para quem administra. */

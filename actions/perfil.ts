@@ -20,6 +20,31 @@ export type ResultadoPerfil =
   | { ok: true; aviso?: string }
   | { ok: false; erros: Record<string, string> };
 
+/**
+ * A conta de demonstração não altera o próprio cadastro.
+ *
+ * A senha dela é pública, então quem entrasse poderia trocá-la e trancar todo
+ * mundo do lado de fora, inclusive quem mantém o projeto. O nome é travado pelo
+ * mesmo motivo por outro caminho: aparece na barra lateral, e o que uma pessoa
+ * escrevesse ali o próximo visitante leria.
+ *
+ * A checagem é aqui, no servidor, e não escondendo o formulário: esconder o
+ * botão não impede a requisição direta à Server Action.
+ */
+async function bloqueadoPorSerDemo(userId: string): Promise<boolean> {
+  const [usuario] = await db
+    .select({ isDemo: schema.users.isDemo })
+    .from(schema.users)
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+
+  return usuario?.isDemo ?? false;
+}
+
+const AVISO_DEMO =
+  "Esta é a conta de demonstração: nome e senha ficam fixos para todo mundo " +
+  "que entra. O resto do sistema está liberado, fique à vontade.";
+
 export async function atualizarPerfil(
   entrada: unknown,
 ): Promise<ResultadoPerfil> {
@@ -28,6 +53,10 @@ export async function atualizarPerfil(
 
   try {
     const userId = await getCurrentUserId();
+    if (await bloqueadoPorSerDemo(userId)) {
+      return { ok: false, erros: { geral: AVISO_DEMO } };
+    }
+
     await db
       .update(schema.users)
       .set({ name: analisado.data.name })
@@ -53,6 +82,9 @@ export async function trocarSenha(entrada: unknown): Promise<ResultadoPerfil> {
 
   try {
     const userId = await getCurrentUserId();
+    if (await bloqueadoPorSerDemo(userId)) {
+      return { ok: false, erros: { geral: AVISO_DEMO } };
+    }
 
     const [usuario] = await db
       .select({ passwordHash: schema.users.passwordHash })
