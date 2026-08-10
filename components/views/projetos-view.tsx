@@ -113,6 +113,21 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
             <Percent value={projeto.roi} className="text-xs" />
           </dd>
         </div>
+
+        {/*
+          Em perps, o que qualifica para o airdrop costuma ser volume operado,
+          não quanto ficou parado. Sem isso, abrir o projeto era a única forma
+          de saber se a meta de volume andou. Só aparece nessa categoria: nas
+          outras seria uma coluna vazia ocupando espaço.
+        */}
+        {projeto.categoria === "perps" ? (
+          <div className="col-span-3 border-t border-border pt-3">
+            <dt className="text-muted-foreground text-xs">Volume operado</dt>
+            <dd className="mt-0.5">
+              <Money value={projeto.volumeOperado} tone="muted" />
+            </dd>
+          </div>
+        ) : null}
       </dl>
 
       <div className="border-border mt-4 flex items-center justify-between gap-3 border-t pt-3 text-xs">

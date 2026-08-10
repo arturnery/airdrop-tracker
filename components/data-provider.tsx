@@ -66,6 +66,7 @@ type Acoes = {
   alternarTarefa: Acao<[string]>;
 
   criarMeta: Acao<[unknown]>;
+  atualizarMeta: Acao<[string, unknown]>;
   excluirMeta: Acao<[string]>;
 
   registrarRecebimento: Acao<[unknown]>;
@@ -188,6 +189,7 @@ export function DataProvider({
       alternarTarefa,
 
       criarMeta: envolver(A.criarMeta),
+      atualizarMeta: envolver(A.atualizarMeta),
       excluirMeta: envolver(A.excluirMeta),
 
       registrarRecebimento: envolver(A.registrarRecebimento),

@@ -5,6 +5,8 @@ import { Loader2, Plus } from "lucide-react";
 
 import { CampoValorToken } from "@/components/forms/campo-valor-token";
 import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
+import { CampoData } from "@/components/forms/campo-data";
+import { CampoValor } from "@/components/forms/campo-valor";
 import { useDados } from "@/components/data-provider";
 import { direcaoDoTipo } from "@/lib/finance";
 import { Button } from "@/components/ui/button";
@@ -252,10 +254,9 @@ export function NovoProjeto() {
               erro={e.chain}
               placeholder="Arbitrum"
             />
-            <CampoTexto
+            <CampoData
               label="TGE previsto"
               name="expectedTgeDate"
-              type="date"
               erro={e.expectedTgeDate}
             />
           </div>
@@ -448,10 +449,9 @@ export function NovoLancamento({
                 { valor: "other", rotulo: "Outro" },
               ]}
             />
-            <CampoTexto
+            <CampoData
               label="Data"
               name="occurredAt"
-              type="date"
               obrigatorio
               defaultValue={hoje}
               erro={e.occurredAt}
@@ -521,10 +521,9 @@ export function DefinirCotacao({ symbol }: { symbol?: string }) {
             inputMode="decimal"
             autoFocus={Boolean(symbol)}
           />
-          <CampoTexto
+          <CampoData
             label="Data"
             name="updatedAt"
-            type="date"
             obrigatorio
             defaultValue={hoje}
             erro={e.updatedAt}
@@ -593,10 +592,9 @@ export function VincularConta({ projectId }: { projectId?: string }) {
                 { valor: "queimada", rotulo: "Queimada" },
               ]}
             />
-            <CampoTexto
+            <CampoData
               label="Início"
               name="startedAt"
-              type="date"
               obrigatorio
               defaultValue={hoje}
               erro={e.startedAt}
@@ -721,10 +719,9 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
               erro={e.intervalDays}
               ajuda="Só para 'a cada N dias'."
             />
-            <CampoTexto
+            <CampoData
               label="Vencimento"
               name="dueDate"
-              type="date"
               defaultValue={hoje}
               erro={e.dueDate}
             />
@@ -746,6 +743,7 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
 export function NovaMeta({ projectId }: { projectId?: string }) {
   const { acoes } = useDados();
   const { projetos, contas } = useOpcoes();
+  const [alvo, setAlvo] = useState("");
 
   return (
     <Formulario
@@ -809,15 +807,16 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
                 { valor: "days_active", rotulo: "Dias ativos" },
               ]}
             />
-            <CampoTexto
+            <CampoValor
               label="Alvo"
               name="target"
               obrigatorio
+              valor={alvo}
+              aoMudar={setAlvo}
               erro={e.target}
               placeholder="10000"
-              inputMode="decimal"
             />
-            <CampoTexto label="Prazo" name="deadline" type="date" erro={e.deadline} />
+            <CampoData label="Prazo" name="deadline" erro={e.deadline} />
           </div>
         </>
       )}
@@ -894,10 +893,9 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
               inputMode="decimal"
             />
           </div>
-          <CampoTexto
+          <CampoData
             label="Data"
             name="receivedAt"
-            type="date"
             obrigatorio
             defaultValue={hoje}
             erro={e.receivedAt}
@@ -968,10 +966,9 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
               placeholder="12.450"
               inputMode="decimal"
             />
-            <CampoTexto
+            <CampoData
               label="Data"
               name="takenAt"
-              type="date"
               obrigatorio
               defaultValue={hoje}
               erro={e.takenAt}

@@ -1267,6 +1267,70 @@ lucro a partir de um saque.
 
 ---
 
+## Marco 19: Cinco ajustes vindos do uso diário
+
+Todos saíram de usar o sistema com dados reais, e dois deles são bugs com a mesma origem.
+
+### A data da tarefa que não mudava
+
+Editar o vencimento salvava e a tela continuava mostrando a data antiga.
+
+A action atualizava `tasks.dueDate`. Só que a tela lista **ocorrências**, e cada ocorrência
+guarda o próprio vencimento. A edição alterava um campo que ninguém exibe.
+
+É a segunda vez que a distinção entre tarefa e ocorrência causa um defeito: a primeira foi a
+tarefa que nascia sem nenhuma ocorrência e ficava invisível. O modelo está certo, uma tarefa
+recorrente precisa mesmo de instâncias datadas, mas ele é fácil de esquecer justamente
+porque a tela só mostra uma das duas metades.
+
+Agora a data desce para as ocorrências **pendentes**. As concluídas não mudam: a data em que
+algo venceu e foi feito é histórico, e não muda porque a tarefa foi reagendada depois.
+
+### Metas moravam dentro da aba de tarefas
+
+Estavam empilhadas abaixo da lista de tarefas, e não tinham edição: só criar e excluir.
+Ganharam aba própria, com estado vazio, botão de criar e `EditarMeta`.
+
+Uma restrição deliberada na edição: **o projeto da meta não muda**. O valor atual dela é
+derivado dos lançamentos daquele projeto, então mover a meta faria a barra de progresso
+comparar coisas diferentes. A Server Action ignora qualquer `projectId` enviado, em vez de
+confiar que o formulário não vai mandar.
+
+### Volume operado nos cartões de perps
+
+Em projetos de perps, o que qualifica para o airdrop costuma ser volume operado, não o que
+ficou parado. O número existia, mas só aparecia dentro do projeto. Agora sai no cartão da
+lista, **apenas nessa categoria**: nas outras seria uma coluna vazia ocupando espaço.
+
+### Números e datas que não se conferem com o olho
+
+Dois problemas de leitura, e a mesma resposta para os dois.
+
+Digitar `10000` num campo cru não diz se aquilo é dez mil ou cem: sem separador, não dá para
+conferir. Pior, o parser aceita várias formas (`$20.00`, `20,00`, `1.234,56`), então a mesma
+sequência de teclas tem mais de uma leitura possível.
+
+A saída **não** foi formatar o texto enquanto se digita. Máscara em campo numérico briga com
+a posição do cursor: quem edita o meio do número o vê pular para o fim. Em vez disso, o
+campo aceita texto livre e o valor interpretado aparece embaixo, formatado. É o mesmo
+recurso que o preço de entrada já usava.
+
+Com datas o problema é outro e a limitação é real: `<input type="date">` guarda sempre
+`aaaa-mm-dd`, mas **exibe** no formato da preferência do navegador. Com o navegador em
+inglês, aparece `mm/dd/aaaa` mesmo com a página em `lang="pt-BR"`, e isso não é configurável
+por HTML nem CSS. Quem decide é o navegador.
+
+Trocar por um seletor próprio resolveria a exibição e custaria calendário do sistema,
+navegação por teclado, leitor de tela e teclado numérico no celular, tudo o que o campo
+nativo dá pronto. Então o campo continua nativo e a data escolhida aparece embaixo em
+`dd/mm/aaaa`, com a marcação "(dia/mês/ano)".
+
+Fica registrado como limitação assumida, não como defeito resolvido: quem usa o navegador em
+inglês vai continuar vendo o campo em `mm/dd`, e agora tem embaixo a confirmação de que
+07/08 é agosto.
+
+---
+
 ## Estado atual
 
 | | |

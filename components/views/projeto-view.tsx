@@ -10,6 +10,7 @@ import {
 } from "@/components/forms/confirmar-exclusao";
 import {
   EditarLancamento,
+  EditarMeta,
   EditarProjeto,
   EditarTarefa,
   EditarVinculo,
@@ -199,6 +200,7 @@ export function ProjetoView({ slug }: { slug: string }) {
           <TabsTrigger value="contas">Contas</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
           <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
+          <TabsTrigger value="metas">Metas</TabsTrigger>
           {programa ? (
             <TabsTrigger value="pontos">{programa.rotulo}</TabsTrigger>
           ) : null}
@@ -458,7 +460,6 @@ export function ProjetoView({ slug }: { slug: string }) {
         <TabsContent value="tarefas" className="mt-6">
           <div className="mb-4 flex flex-wrap gap-2">
             <NovaTarefa projectId={projeto.id} />
-            <NovaMeta projectId={projeto.id} />
           </div>
 
           {tarefas.length === 0 ? (
@@ -507,58 +508,6 @@ export function ProjetoView({ slug }: { slug: string }) {
             </ul>
           )}
 
-          {projeto.metas.length > 0 ? (
-            <section className="mt-8">
-              <h3 className="mb-3 text-sm font-medium">Metas</h3>
-              <ul className="space-y-4">
-                {projeto.metas.map((meta) => {
-                  const pct =
-                    meta.alvo > 0
-                      ? Math.min(Math.round((meta.atual / meta.alvo) * 100), 100)
-                      : 0;
-                  return (
-                    <li key={meta.id} className="border-border rounded-lg border p-4">
-                      <div className="mb-2 flex items-baseline justify-between gap-3">
-                        <span className="text-sm">
-                          {meta.titulo}
-                          {meta.contaLabel ? (
-                            <span className="text-muted-foreground ml-2 text-xs">
-                              {meta.contaLabel}
-                            </span>
-                          ) : null}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <span className="tabular text-sm">
-                            {formatUsd(meta.atual)}
-                            <span className="text-muted-foreground">
-                              {" / "}
-                              {formatUsd(meta.alvo)}
-                            </span>
-                          </span>
-                          <ConfirmarExclusao
-                            titulo="Excluir meta"
-                            alvo={meta.titulo}
-                            aoConfirmar={() => acoes.excluirMeta(meta.id)}
-                            gatilho={<BotaoLixeira rotulo={`Excluir ${meta.titulo}`} />}
-                          />
-                        </span>
-                      </div>
-                      <div className="bg-secondary h-2 overflow-hidden rounded-full">
-                        <div
-                          className="bg-chart-1 h-full rounded-full"
-                          style={{ width: `${Math.max(pct, 1)}%` }}
-                        />
-                      </div>
-                      <p className="text-muted-foreground mt-2 text-xs">
-                        {pct}% da meta
-                        {meta.prazo ? ` · prazo ${formatDateBr(meta.prazo)}` : ""}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ) : null}
         </TabsContent>
 
         {/* ----------------------------------------------------------- pontos */}
@@ -728,6 +677,71 @@ export function ProjetoView({ slug }: { slug: string }) {
         ) : null}
 
         {/* ---------------------------------------------------------- airdrop */}
+        <TabsContent value="metas" className="mt-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="text-muted-foreground text-sm">
+              Alvos de volume, saldo ou atividade. O valor atual sai dos
+              lançamentos, não é digitado.
+            </p>
+            <NovaMeta projectId={projeto.id} />
+          </div>
+
+          {projeto.metas.length === 0 ? (
+            <p className="text-muted-foreground border-border rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+              Nenhuma meta neste projeto.
+            </p>
+          ) : (
+            <ul className="space-y-4">
+              {projeto.metas.map((meta) => {
+                const pct =
+                  meta.alvo > 0
+                    ? Math.min(Math.round((meta.atual / meta.alvo) * 100), 100)
+                    : 0;
+                return (
+                  <li key={meta.id} className="border-border rounded-lg border p-4">
+                    <div className="mb-2 flex items-baseline justify-between gap-3">
+                      <span className="text-sm">
+                        {meta.titulo}
+                        {meta.contaLabel ? (
+                          <span className="text-muted-foreground ml-2 text-xs">
+                            {meta.contaLabel}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className="tabular text-sm">
+                          {formatUsd(meta.atual)}
+                          <span className="text-muted-foreground">
+                            {" / "}
+                            {formatUsd(meta.alvo)}
+                          </span>
+                        </span>
+                        <EditarMeta goalId={meta.id} />
+                        <ConfirmarExclusao
+                          titulo="Excluir meta"
+                          alvo={meta.titulo}
+                          aoConfirmar={() => acoes.excluirMeta(meta.id)}
+                          gatilho={<BotaoLixeira rotulo={`Excluir ${meta.titulo}`} />}
+                        />
+                      </span>
+                    </div>
+                    <div className="bg-secondary h-2 overflow-hidden rounded-full">
+                      <div
+                        className="bg-chart-1 h-full rounded-full"
+                        style={{ width: `${Math.max(pct, 1)}%` }}
+                      />
+                    </div>
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      {pct}% da meta
+                      {meta.prazo ? ` · prazo ${formatDateBr(meta.prazo)}` : ""}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </TabsContent>
+
         <TabsContent value="airdrop" className="mt-6">
           <div className="mb-4">
             <RegistrarRecebimento projectId={projeto.id} />

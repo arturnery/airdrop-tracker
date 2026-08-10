@@ -6,6 +6,8 @@ import { Loader2, Pencil } from "lucide-react";
 import { useDados } from "@/components/data-provider";
 import { CampoValorToken } from "@/components/forms/campo-valor-token";
 import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
+import { CampoData } from "@/components/forms/campo-data";
+import { CampoValor } from "@/components/forms/campo-valor";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,7 +25,9 @@ import {
   tarefaSchema,
   vinculoSchema,
   contaSchema,
+  metaSchema,
 } from "@/lib/validators";
+import { fromDbNumeric, toDbNumeric } from "@/lib/money";
 
 /**
  * Formulários de edição.
@@ -239,10 +243,9 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
               defaultValue={projeto.chain ?? ""}
               erro={e.chain}
             />
-            <CampoTexto
+            <CampoData
               label="TGE previsto"
               name="expectedTgeDate"
-              type="date"
               defaultValue={projeto.expectedTgeDate ?? ""}
               erro={e.expectedTgeDate}
             />
@@ -398,10 +401,9 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
                 { valor: "other", rotulo: "Outro" },
               ]}
             />
-            <CampoTexto
+            <CampoData
               label="Data"
               name="occurredAt"
-              type="date"
               obrigatorio
               defaultValue={lancamento.occurredAt}
               erro={e.occurredAt}
@@ -474,10 +476,9 @@ export function EditarVinculo({
               { valor: "queimada", rotulo: "Queimada" },
             ]}
           />
-          <CampoTexto
+          <CampoData
             label="Início"
             name="startedAt"
-            type="date"
             obrigatorio
             defaultValue={vinculo.startedAt}
             erro={e.startedAt}
@@ -572,10 +573,9 @@ export function EditarTarefa({ taskId }: { taskId: string }) {
               defaultValue={tarefa.intervalDays ?? ""}
               erro={e.intervalDays}
             />
-            <CampoTexto
+            <CampoData
               label="Vencimento"
               name="dueDate"
-              type="date"
               defaultValue={tarefa.dueDate ?? ""}
               erro={e.dueDate}
             />
@@ -585,6 +585,96 @@ export function EditarTarefa({ taskId }: { taskId: string }) {
             name="description"
             defaultValue={tarefa.description ?? ""}
             erro={e.description}
+          />
+        </>
+      )}
+    </DialogoEdicao>
+  );
+}
+
+// ---------------------------------------------------------------------- meta
+
+export function EditarMeta({ goalId }: { goalId: string }) {
+  const { dataset, acoes } = useDados();
+  const meta = dataset.goals.find((g) => g.id === goalId);
+  // O banco guarda numeric como string; o campo trabalha com o decimal.
+  const [alvo, setAlvo] = useState(
+    meta ? toDbNumeric(fromDbNumeric(meta.targetValue)) : "",
+  );
+  if (!meta) return null;
+
+  const contas: { valor: string; rotulo: string }[] = [
+    { valor: "", rotulo: "Todas as contas" },
+    ...dataset.accounts.map((a) => ({ valor: a.id, rotulo: a.label })),
+  ];
+
+  return (
+    <DialogoEdicao
+      titulo="Editar meta"
+      rotuloGatilho={`Editar ${meta.title}`}
+      aoEnviar={(dados) => {
+        /*
+         * `projectId` vai fixo, do registro. Mover a meta de projeto mudaria o
+         * que ela mede: o valor atual é derivado dos lançamentos daquele
+         * projeto, e a barra de progresso passaria a comparar coisas
+         * diferentes. A Server Action também ignora qualquer projectId enviado.
+         */
+        const bruto = {
+          projectId: meta.projectId,
+          accountId: nulo(texto(dados, "accountId")),
+          title: texto(dados, "title"),
+          metric: texto(dados, "metric"),
+          target: texto(dados, "target"),
+          deadline: texto(dados, "deadline"),
+        };
+        const resultado = metaSchema.safeParse(bruto);
+        if (!resultado.success) return erros(resultado);
+        return acoes.atualizarMeta(goalId, bruto);
+      }}
+    >
+      {({ erros: e }) => (
+        <>
+          <CampoTexto
+            label="Meta"
+            name="title"
+            obrigatorio
+            defaultValue={meta.title}
+            erro={e.title}
+          />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <CampoSelecao
+              label="Métrica"
+              name="metric"
+              defaultValue={meta.metric}
+              erro={e.metric}
+              opcoes={[
+                { valor: "volume_usd", rotulo: "Volume (USD)" },
+                { valor: "balance_usd", rotulo: "Saldo (USD)" },
+                { valor: "tx_count", rotulo: "Nº de transações" },
+                { valor: "days_active", rotulo: "Dias ativos" },
+              ]}
+            />
+            <CampoValor
+              label="Alvo"
+              name="target"
+              obrigatorio
+              valor={alvo}
+              aoMudar={setAlvo}
+              erro={e.target}
+            />
+            <CampoData
+              label="Prazo"
+              name="deadline"
+              defaultValue={meta.deadline ?? ""}
+              erro={e.deadline}
+            />
+          </div>
+          <CampoSelecao
+            label="Conta"
+            name="accountId"
+            defaultValue={meta.accountId ?? ""}
+            erro={e.accountId}
+            opcoes={contas}
           />
         </>
       )}

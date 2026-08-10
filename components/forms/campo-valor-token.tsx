@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { CampoTexto } from "@/components/forms/fields";
+import { CampoValor } from "@/components/forms/campo-valor";
 import { formatUsd, parseUserInput, cents } from "@/lib/money";
 
 /**
@@ -40,16 +41,15 @@ export function CampoValorToken({
 
   return (
     <>
-      <CampoTexto
+      <CampoValor
         label="Valor em dólar"
         name="amount"
         obrigatorio
-        value={valor}
-        onChange={(evento) => setValor(evento.target.value)}
+        valor={valor}
+        aoMudar={setValor}
         erro={erros.amount}
-        ajuda="Negativo para perda ou saída. Aceita $20.00, 20 ou 20,00."
+        ajuda="Informe só a quantia: o sinal vem do tipo do lançamento."
         placeholder="100.00"
-        inputMode="decimal"
       />
 
       <fieldset className="border-border rounded-md border p-3">

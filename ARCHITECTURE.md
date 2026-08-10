@@ -916,6 +916,11 @@ catálogo é compartilhada.
 - Multi-moeda com cotação automática.
 - Checklist de critérios de elegibilidade por conta.
 - Notificações (Discord/e-mail) de tarefa vencendo.
+- **Internacionalização.** Idioma selecionável levando junto data, separador de milhar e
+  moeda. Um detalhe que decide a implementação: `<input type="date">` exibe no formato da
+  preferência do navegador, não da página, e isso não é configurável por HTML. Só um
+  seletor de data próprio daria controle total, ao custo de perder calendário do sistema,
+  navegação por teclado e teclado numérico no celular.
 - **Tempo de capital depositado.** Hoje o sistema sabe quanto está parado, não há quanto
   tempo. "$500 por um mês" e "$500 por seis meses" pesam muito diferente para decidir onde
   alocar, e nenhuma tela distingue os dois. Exigiria medir a posição ao longo do tempo, com

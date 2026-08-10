@@ -90,6 +90,11 @@ export type ProjectSummary = {
   prioridade: number;
   aportado: Cents;
   capitalDepositado: Cents;
+  /**
+   * Soma dos lançamentos de volume operado. Fica fora do caixa (é atividade,
+   * não dinheiro movimentado), e por isso vive num campo próprio.
+   */
+  volumeOperado: Cents;
   exposicao: Cents;
   resultado: Cents;
   roi: number | null;

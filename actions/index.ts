@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -444,7 +444,7 @@ export async function atualizarTarefa(
 ): Promise<ResultadoAcao> {
   const comAtiva = tarefaSchema.extend({ isActive: z.boolean() });
   return executar(comAtiva, entrada, async (dados, userId) => {
-    await db
+    const [atualizada] = await db
       .update(schema.tasks)
       .set({
         title: dados.title,
@@ -455,7 +455,31 @@ export async function atualizarTarefa(
         accountId: dados.accountId,
         isActive: dados.isActive,
       })
-      .where(and(eq(schema.tasks.id, id), eq(schema.tasks.userId, userId)));
+      .where(and(eq(schema.tasks.id, id), eq(schema.tasks.userId, userId)))
+      .returning({ id: schema.tasks.id });
+
+    /*
+     * A data também precisa descer para as ocorrências.
+     *
+     * A tela lista ocorrências, não tarefas, e cada uma guarda o próprio
+     * vencimento. Mudar só `tasks.dueDate` alterava um campo que ninguém
+     * exibe: a edição era salva e a tela seguia mostrando a data antiga, como
+     * se nada tivesse acontecido.
+     *
+     * Só as pendentes mudam. Ocorrência concluída é histórico: a data em que
+     * algo venceu e foi feito não muda porque a tarefa foi reagendada depois.
+     */
+    if (atualizada && dados.dueDate) {
+      await db
+        .update(schema.taskOccurrences)
+        .set({ dueDate: dados.dueDate })
+        .where(
+          and(
+            eq(schema.taskOccurrences.taskId, id),
+            isNull(schema.taskOccurrences.completedAt),
+          ),
+        );
+    }
   }, [...ROTAS_DADOS, "/tarefas"]);
 }
 
@@ -495,6 +519,29 @@ export async function alternarOcorrencia(id: string): Promise<ResultadoAcao> {
 }
 
 // --------------------------------------------------------------------- metas
+
+export async function atualizarMeta(
+  id: string,
+  entrada: unknown,
+): Promise<ResultadoAcao> {
+  return executar(metaSchema, entrada, async (dados, userId) => {
+    /*
+     * `projectId` não é alterado: mover uma meta de projeto mudaria o
+     * significado dela, e o valor atual é derivado dos lançamentos daquele
+     * projeto. Quem quer medir outro projeto cria outra meta.
+     */
+    await db
+      .update(schema.goals)
+      .set({
+        accountId: dados.accountId,
+        title: dados.title,
+        metric: dados.metric,
+        targetValue: toDbNumeric(dados.target),
+        deadline: dados.deadline,
+      })
+      .where(and(eq(schema.goals.id, id), eq(schema.goals.userId, userId)));
+  }, ROTAS_DADOS);
+}
 
 export async function criarMeta(entrada: unknown): Promise<ResultadoAcao> {
   return executar(metaSchema, entrada, async (dados, userId) => {

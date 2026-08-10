@@ -365,6 +365,12 @@ tests/            Vitest
 
 ## Roadmap
 
+- [ ] **Idioma selecionável (português e inglês).** Hoje a interface é só em português e os
+      valores saem no formato de dólar americano (`$1,234.56`). A escolha de idioma levaria
+      junto o formato de data, o separador de milhar e a apresentação da moeda, porque são
+      a mesma decisão vista de ângulos diferentes. Enquanto isso não existe, os campos de
+      data e de valor confirmam embaixo como o dado foi interpretado
+
 - [ ] **Catálogo de projetos da comunidade.** Quem administra cadastra o projeto uma vez,
       com links e data prevista de TGE, e quem farma o adiciona aos próprios com um clique,
       em vez de recadastrar tudo do zero. Modelado em
