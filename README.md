@@ -5,7 +5,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
-![Tests](https://img.shields.io/badge/testes-172%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-177%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -125,6 +125,19 @@ comportamento correto: obriga a conversão explícita em vez de deixar o JavaScr
 
 **Trade-off:** toda entrada e saída precisa de conversão. Custa código repetitivo em
 `lib/money.ts`, coberto por testes, e elimina uma classe inteira de bug silencioso.
+
+### ROI sobre o capital parado, não sobre o total depositado
+
+O denominador do retorno é o que está depositado **agora** (depósitos menos retiradas), não
+a soma histórica dos depósitos. O motivo é a reciclagem de capital: usar os mesmos $50 em
+dois projetos somaria $100 de base e derrubaria o percentual pela metade, sem nunca ter
+havido mais de $50 imobilizados.
+
+O capital nunca fica negativo, e isso não é detalhe de exibição. Depositar 50, render 10 e
+sacar 60 deixaria o líquido em -10 com um lucro de +10, e `10 ÷ -10` mostraria **-100%**
+para quem teve ganho. Base menor ou igual a zero devolve `null`, e a tela exibe só o
+resultado em dólar: sem capital parado não existe retorno sobre capital, existe ganho
+absoluto.
 
 ### Pontos são um tipo separado de dinheiro
 
@@ -304,7 +317,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 172 testes
+npm test              # 177 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint

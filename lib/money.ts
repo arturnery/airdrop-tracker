@@ -223,10 +223,19 @@ export function sumDbNumeric(values: (string | null | undefined)[]): Cents {
 }
 
 /**
- * Percentual com uma casa: (resultado / aportado).
- * Devolve null quando não há base: evita divisão por zero virar Infinity na tela.
+ * Percentual com uma casa: valor sobre uma base.
+ *
+ * Devolve `null` quando não há base positiva, e os dois casos importam:
+ *
+ * - **Base zero** faria a divisão virar Infinity na tela.
+ * - **Base negativa inverteria o sinal**, que é o erro mais grave dos dois:
+ *   um lucro de 10 sobre base -10 apareceria como -100%, dizendo o oposto do
+ *   que aconteceu. Percentual sobre base negativa não significa nada aqui.
+ *
+ * Quem chama decide o que mostrar no lugar. Nas telas de resultado, o valor em
+ * dólar já diz se foi ganho ou perda sem precisar de percentual.
  */
 export function percentOf(value: Cents, base: Cents): number | null {
-  if (base === 0) return null;
+  if (base <= 0) return null;
   return Math.round((value / base) * 1000) / 10;
 }

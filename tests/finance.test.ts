@@ -408,3 +408,82 @@ describe("capitalDepositado", () => {
     ).toBe(capitalDepositado({ aportado: cents(4000), retirado: cents(-2600) }));
   });
 });
+
+describe("ROI sobre o capital depositado", () => {
+  const resumo = (movs: MovementRow[]) =>
+    summarizeFinancials({
+      movements: movs,
+      prices: [],
+      pairs: [{ projectId: "p1", accountId: "c1" }],
+    });
+
+  it("posição aberta: percentual sobre o que ainda está lá", () => {
+    // Depositou 100, rendeu 20 e não sacou nada.
+    const r = resumo([
+      mov("p1", "c1", "deposit", "100.00"),
+      mov("p1", "c1", "yield", "20.00"),
+    ]);
+    expect(r.capitalDepositado).toBe(10000);
+    expect(r.resultado).toBe(2000);
+    expect(r.roi).toBe(20);
+  });
+
+  /*
+   * O caso que motivou a mudança: sacar tudo e esperar o airdrop. Não há
+   * capital parado, então não existe retorno sobre capital, e a tela mostra
+   * apenas o resultado em dólar.
+   */
+  it("sacou tudo: sem percentual, mas com resultado", () => {
+    const r = resumo([
+      mov("p1", "c1", "deposit", "50.00"),
+      mov("p1", "c1", "withdrawal", "-30.00"),
+      mov("p1", "c1", "withdrawal", "-20.00"),
+    ]);
+    expect(r.capitalDepositado).toBe(0);
+    expect(r.resultado).toBe(0);
+    expect(r.roi).toBeNull();
+  });
+
+  /*
+   * Depositar 50, render 10 e sacar os 60 é lucro de 10 com a posição zerada.
+   * Se o percentual saísse do líquido negativo (50 - 60 = -10), daria -100%:
+   * exatamente o oposto do que aconteceu. Por isso o capital nunca é negativo
+   * e o ROI não existe aqui.
+   */
+  it("sacar mais do que depositou não vira ROI negativo", () => {
+    const r = resumo([
+      mov("p1", "c1", "deposit", "50.00"),
+      mov("p1", "c1", "yield", "10.00"),
+      mov("p1", "c1", "withdrawal", "-60.00"),
+    ]);
+    expect(r.resultado).toBe(1000);
+    expect(r.capitalDepositado).toBe(0);
+    expect(r.roi).toBeNull();
+  });
+
+  /*
+   * O mesmo saque sem o rendimento lançado. O razão só sabe o que foi
+   * registrado: sem o lançamento de onde vieram os 10 a mais, não há ganho a
+   * reconhecer, e a exposição fica negativa denunciando a inconsistência.
+   */
+  it("saque maior que o razão sem ganho lançado não inventa lucro", () => {
+    const r = resumo([
+      mov("p1", "c1", "deposit", "50.00"),
+      mov("p1", "c1", "withdrawal", "-60.00"),
+    ]);
+    expect(r.exposicao).toBe(-1000);
+    expect(r.resultado).toBe(0);
+  });
+
+  it("perda com posição ainda aberta dá percentual negativo", () => {
+    // Depositou 50, retirou 40, perdeu 10 em trade: sobra 0 de exposição.
+    const r = resumo([
+      mov("p1", "c1", "deposit", "50.00"),
+      mov("p1", "c1", "withdrawal", "-40.00"),
+      mov("p1", "c1", "trade_pnl", "-10.00"),
+    ]);
+    expect(r.capitalDepositado).toBe(1000);
+    expect(r.resultado).toBe(-1000);
+    expect(r.roi).toBe(-100);
+  });
+});

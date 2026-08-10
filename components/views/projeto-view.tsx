@@ -163,14 +163,23 @@ export function ProjetoView({ slug }: { slug: string }) {
           accent={projeto.resultado >= 0 ? "positive" : "negative"}
           value={<Money value={projeto.resultado} tone="auto" signed />}
           hint={
-            <span className="inline-flex items-center gap-1.5">
-              ROI <Percent value={projeto.roi} />
-              {projeto.aportado > 0 ? (
+            /*
+             * Sem capital depositado não há percentual: o valor em dólar acima
+             * já diz se foi ganho ou perda, e inventar um ROI ali seria pior
+             * que omiti-lo.
+             */
+            projeto.roi === null ? (
+              projeto.aportado > 0 ? (
+                "posição encerrada"
+              ) : null
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                ROI <Percent value={projeto.roi} />
                 <span className="text-muted-foreground">
-                  sobre <Money value={projeto.aportado} /> no total
+                  sobre <Money value={projeto.capitalDepositado} />
                 </span>
-              ) : null}
-            </span>
+              </span>
+            )
           }
         />
         <StatCard

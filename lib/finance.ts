@@ -321,9 +321,11 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
     taxas,
   });
 
+  const depositado = capitalDepositado({ aportado, retirado });
+
   return {
     aportado,
-    capitalDepositado: capitalDepositado({ aportado, retirado }),
+    capitalDepositado: depositado,
     retirado,
     taxas,
     pnlTrades,
@@ -331,7 +333,16 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
     airdrops,
     exposicao,
     resultado,
-    roi: percentOf(resultado, aportado),
+    /*
+     * Sobre o capital que ainda está depositado, não sobre o total já
+     * depositado na história. O total inflava com reciclagem: usar os mesmos
+     * $50 em dois projetos somava $100 de base e derrubava o percentual pela
+     * metade, sem que nunca houvesse mais de $50 imobilizados.
+     *
+     * Fica nulo quando não há nada depositado, e a tela mostra só o resultado
+     * em dólar: sem capital parado não existe retorno sobre capital.
+     */
+    roi: percentOf(resultado, depositado),
     tokensSemCotacao: [...semCotacao],
   };
 }

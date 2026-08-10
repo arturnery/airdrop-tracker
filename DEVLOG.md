@@ -1221,6 +1221,52 @@ reflete o estado real da última execução.
 
 ---
 
+## Marco 18: ROI sobre o capital que ainda está lá
+
+O ROI era calculado sobre o total já depositado na história do projeto. O questionamento
+veio de quem usa, e o argumento decisivo é sobre **reciclagem de capital**: usar os mesmos
+$50 em dois projetos diferentes soma $100 de base e derruba o percentual pela metade, sem
+que jamais tenha havido mais de $50 imobilizados. O denominador inflava com o uso, punindo
+justamente quem gira o capital, que é o comportamento normal em farming.
+
+A base passou a ser o capital depositado, isto é, depósitos menos retiradas.
+
+### Base negativa é pior que base zero
+
+A proposta inicial era simplesmente dividir pelo líquido. Isso tem uma armadilha que quase
+passou: **depositar 50, render 10 e sacar 60 deixa o líquido em -10**, e o resultado é um
+lucro de +10.
+
+```
+ROI = +10 ÷ (-10) = -100%
+```
+
+O lucro apareceria como prejuízo de 100%. O sinal do denominador inverte a leitura inteira.
+
+Por isso o capital depositado nunca é negativo: sacar mais do que se pôs significa que o
+lucro foi realizado, e isso é zero capital parado. E `percentOf` passou a devolver `null`
+para qualquer base menor ou igual a zero, não só para zero.
+
+Quando não há capital parado, a tela mostra apenas o resultado em dólar, com "posição
+encerrada" no lugar do percentual. Sem capital, não existe retorno sobre capital: existe
+ganho absoluto, e o valor em dólar já diz se foi bom ou ruim. Omitir é mais honesto que
+inventar um número.
+
+### O teste que corrigiu o exemplo
+
+Ao escrever o teste do caso "deposita 50, saca 60", ele falhou: o sistema devolveu resultado
+zero, não os 10 esperados. O sistema estava certo e o exemplo, errado.
+
+Isto é um livro-razão. Sacar 60 tendo depositado 50 exige que os 10 a mais tenham vindo de
+algum lugar **lançado**. Sem o registro do rendimento, não há ganho a reconhecer, e a
+exposição fica negativa denunciando a inconsistência. Ficaram os dois testes: o cenário
+correto, com o rendimento lançado, e o inconsistente, provando que o sistema não inventa
+lucro a partir de um saque.
+
+É a segunda vez que escrever o teste corrigiu o entendimento em vez do código.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1231,7 +1277,7 @@ reflete o estado real da última execução.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 172, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 177, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

@@ -81,9 +81,13 @@ export function DashboardView() {
           accent={resumo.resultado >= 0 ? "positive" : "negative"}
           value={<Money value={resumo.resultado} tone="auto" signed />}
           hint={
-            <span className="inline-flex items-center gap-1.5">
-              ROI <Percent value={resumo.roi} />
-            </span>
+            resumo.roi === null ? (
+              "sem capital depositado"
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                ROI <Percent value={resumo.roi} />
+              </span>
+            )
           }
         />
         <StatCard

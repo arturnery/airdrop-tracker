@@ -171,6 +171,10 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         retirado: retiradoProjeto,
         taxas: sumOfType(doProjetoMov, "fee_gas"),
       });
+      const depositado = capitalDepositado({
+        aportado,
+        retirado: retiradoProjeto,
+      });
 
       return {
         id: projeto.id,
@@ -181,10 +185,10 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         chain: projeto.chain,
         prioridade: projeto.priority,
         aportado,
-        capitalDepositado: capitalDepositado({ aportado, retirado: retiradoProjeto }),
+        capitalDepositado: depositado,
         exposicao,
         resultado,
-        roi: percentOf(resultado, aportado),
+        roi: percentOf(resultado, depositado),
         contas: ds.projectAccounts.filter((p) => p.projectId === projeto.id).length,
         tarefasPendentes: doProjeto.length,
         tarefasAtrasadas: doProjeto.filter(
