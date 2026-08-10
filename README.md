@@ -227,6 +227,15 @@ Scripts administrativos escolhem o alvo por argumento (`--producao`), nunca edit
 arquivo. Trocar conexão editando `.env.local` faz a operação mais perigosa do sistema
 depender de lembrar de reverter um arquivo: basta esquecer uma vez.
 
+**Não existe branch `dev`, e isso é deliberado.** Separar por branch resolve problemas de
+trabalho simultâneo: revisar o código de outra pessoa antes de produção, segurar uma
+entrega enquanto outra é corrigida. Com um desenvolvedor só, nenhum desses existe, e o
+ganho restante seria abrir o sistema em outro aparelho. O que não se abriu mão foi da
+separação de **dados**: banco de produção e de desenvolvimento são distintos desde o
+começo. Branch organiza trabalho, banco separado protege dado; só o segundo é inegociável
+sozinho. A decisão está registrada com o custo assumido e o gatilho para revê-la em
+[`ARCHITECTURE.md` §11.1](ARCHITECTURE.md).
+
 ## Como rodar localmente
 
 ### Pré-requisitos

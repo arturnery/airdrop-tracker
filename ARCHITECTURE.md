@@ -769,6 +769,32 @@ parar de manter as duas coisas em paralelo. Fases 1+2 são o MVP real.
 17. **Autorização no servidor, não na interface**: esconder o botão de editar é conforto
     visual; a recusa que vale é a da Server Action. Campo não permitido não sai da query,
     em vez de sair e ser ocultado por CSS.
+18. **Sem branch `dev` nem ambiente de preview hospedado**, com um desenvolvedor só (§11.1).
+
+### 11.1. Por que não existe branch `dev`
+
+O fluxo é `main` direto para produção. A alternativa considerada era manter uma branch
+`dev` com deploy próprio na Vercel, apontando para o banco de desenvolvimento.
+
+**Descartado enquanto o projeto tiver um desenvolvedor.** A separação por branch resolve
+problemas que nascem de trabalho simultâneo: revisar o que outra pessoa escreveu antes de
+ir para produção, segurar uma entrega enquanto outra é corrigida, evitar que dois trabalhos
+inacabados se misturem. Nada disso existe aqui, e o ganho concreto restante seria abrir o
+sistema em outro aparelho.
+
+O que **não** foi descartado é a separação de dados: `production` e `dev` são bancos
+distintos desde o começo (§ ambientes), e é isso que impede um teste de tocar dado real.
+Branch é sobre organizar trabalho; banco separado é sobre proteger dado. Só o segundo é
+inegociável para uma pessoa.
+
+**Custo assumido, registrado para não ser esquecido:** o servidor local não é idêntico à
+produção. Ele roda sem otimização de build, o cache do Next se comporta de outro jeito e a
+latência até o banco é diferente. Alguns defeitos aparecem só no ambiente hospedado, e hoje
+quem faz esse papel de verificação final é o próprio deploy de produção.
+
+**Quando essa decisão deve ser revista:** no dia em que uma segunda pessoa escrever código,
+ou quando houver usuários o bastante para que um defeito em produção custe mais que o tempo
+de manter o ambiente extra.
 
 ---
 
