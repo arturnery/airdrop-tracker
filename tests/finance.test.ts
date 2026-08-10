@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   aplicarSinalDoTipo,
-  capitalEmpregado,
+  capitalDepositado,
   exposureForPair,
   isCashType,
   resultadoLiquido,
@@ -368,26 +368,26 @@ describe("resultadoLiquido", () => {
   });
 });
 
-describe("capitalEmpregado", () => {
+describe("capitalDepositado", () => {
   /*
    * O caso que motivou a mudança: depositar 500, usar o protocolo por um mês e
    * sacar tudo. O total depositado seguiria exibindo 500 para sempre, como se
    * ainda houvesse dinheiro parado ali.
    */
-  it("sacar tudo zera o capital empregado", () => {
+  it("sacar tudo zera o capital depositado", () => {
     expect(
-      capitalEmpregado({ aportado: cents(50000), retirado: cents(-50000) }),
+      capitalDepositado({ aportado: cents(50000), retirado: cents(-50000) }),
     ).toBe(0);
   });
 
   it("posição aberta mostra o que ainda é dinheiro próprio", () => {
     expect(
-      capitalEmpregado({ aportado: cents(4000), retirado: cents(-2600) }),
+      capitalDepositado({ aportado: cents(4000), retirado: cents(-2600) }),
     ).toBe(1400);
   });
 
   it("sem retirada, é o próprio depositado", () => {
-    expect(capitalEmpregado({ aportado: cents(2000), retirado: cents(0) })).toBe(
+    expect(capitalDepositado({ aportado: cents(2000), retirado: cents(0) })).toBe(
       2000,
     );
   });
@@ -398,13 +398,13 @@ describe("capitalEmpregado", () => {
    */
   it("retirar mais do que depositou não vira capital negativo", () => {
     expect(
-      capitalEmpregado({ aportado: cents(10000), retirado: cents(-15000) }),
+      capitalDepositado({ aportado: cents(10000), retirado: cents(-15000) }),
     ).toBe(0);
   });
 
   it("o sinal gravado na retirada não altera o resultado", () => {
     expect(
-      capitalEmpregado({ aportado: cents(4000), retirado: cents(2600) }),
-    ).toBe(capitalEmpregado({ aportado: cents(4000), retirado: cents(-2600) }));
+      capitalDepositado({ aportado: cents(4000), retirado: cents(2600) }),
+    ).toBe(capitalDepositado({ aportado: cents(4000), retirado: cents(-2600) }));
   });
 });

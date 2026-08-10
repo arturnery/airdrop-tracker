@@ -98,8 +98,12 @@ export function aplicarSinalDoTipo(type: string, valor: Cents): Cents {
 // ----------------------------------------------------------- resultado
 
 /**
- * Capital que ainda é dinheiro próprio dentro da posição: depositado menos
- * retirado.
+ * Capital que ainda é dinheiro próprio dentro da posição: depósitos menos
+ * retiradas.
+ *
+ * Cuidado com o nome: **não** é o total já depositado na história do projeto.
+ * Esse outro número existe e se chama `aportado`, usado só como base do ROI. O
+ * que a tela mostra é este, o que está depositado **agora**.
  *
  * Substituiu o total depositado histórico, que continuava exibindo "$500"
  * mesmo depois de a pessoa ter sacado tudo e não ter mais nada no projeto.
@@ -111,10 +115,10 @@ export function aplicarSinalDoTipo(type: string, valor: Cents): Cents {
  * sozinho, que 6 se perderam.
  *
  * Nunca negativo. Retirar mais do que se depositou significa que o lucro já foi
- * sacado e nada mais é capital próprio parado ali: isso é zero empregado, e o
+ * sacado e nada mais é capital próprio parado ali: isso é zero depositado, e o
  * ganho aparece no resultado, que é onde ele pertence.
  */
-export function capitalEmpregado(params: {
+export function capitalDepositado(params: {
   aportado: Cents;
   retirado: Cents;
 }): Cents {
@@ -319,7 +323,7 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
 
   return {
     aportado,
-    capitalEmpregado: capitalEmpregado({ aportado, retirado }),
+    capitalDepositado: capitalDepositado({ aportado, retirado }),
     retirado,
     taxas,
     pnlTrades,

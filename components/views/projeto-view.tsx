@@ -143,13 +143,13 @@ export function ProjetoView({ slug }: { slug: string }) {
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
         <StatCard
-          label="Capital empregado"
+          label="Capital depositado"
           accent="primary"
-          value={<Money value={projeto.capitalEmpregado} />}
+          value={<Money value={projeto.capitalDepositado} />}
           hint={
-            projeto.capitalEmpregado === 0 && projeto.aportado > 0
-              ? "capital recuperado"
-              : "depositado menos retirado"
+            projeto.capitalDepositado === 0 && projeto.aportado > 0
+              ? "tudo retirado"
+              : "depósitos menos retiradas"
           }
         />
         <StatCard
@@ -167,7 +167,7 @@ export function ProjetoView({ slug }: { slug: string }) {
               ROI <Percent value={projeto.roi} />
               {projeto.aportado > 0 ? (
                 <span className="text-muted-foreground">
-                  sobre <Money value={projeto.aportado} /> depositados
+                  sobre <Money value={projeto.aportado} /> no total
                 </span>
               ) : null}
             </span>

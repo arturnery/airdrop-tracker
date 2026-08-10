@@ -95,9 +95,9 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
 
       <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
         <div>
-          <dt className="text-muted-foreground text-xs">Empregado</dt>
+          <dt className="text-muted-foreground text-xs">Depositado</dt>
           <dd className="mt-0.5">
-            <Money value={projeto.capitalEmpregado} />
+            <Money value={projeto.capitalDepositado} />
           </dd>
         </div>
         <div>

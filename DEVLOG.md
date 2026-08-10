@@ -1147,7 +1147,7 @@ item "testes de componente" do roadmap: não como cobertura genérica, mas para 
 
 ---
 
-## Marco 16: Capital empregado no lugar do total depositado
+## Marco 16: Capital depositado no lugar do total depositado
 
 O cartão "Aportado" mostrava a soma histórica dos depósitos. Ele continuava exibindo $500
 depois de a pessoa ter sacado tudo e não ter mais nada no projeto.
@@ -1163,7 +1163,7 @@ só no denominador do ROI.
 
 ### O que mudou
 
-`capitalEmpregado = depositado − retirado`, e é ele que vai para a tela.
+`capitalDepositado = depositado − retirado`, e é ele que vai para a tela.
 
 A vantagem não é só ser mais fiel: a diferença entre ele e a exposição passa a ter
 significado próprio. Empregar 14 e ter 8 de exposição diz, sem mais nenhuma conta, que 6 se

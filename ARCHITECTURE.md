@@ -916,7 +916,7 @@ catálogo é compartilhada.
 - Multi-moeda com cotação automática.
 - Checklist de critérios de elegibilidade por conta.
 - Notificações (Discord/e-mail) de tarefa vencendo.
-- **Tempo de capital empregado.** Hoje o sistema sabe quanto está parado, não há quanto
+- **Tempo de capital depositado.** Hoje o sistema sabe quanto está parado, não há quanto
   tempo. "$500 por um mês" e "$500 por seis meses" pesam muito diferente para decidir onde
   alocar, e nenhuma tela distingue os dois. Exigiria medir a posição ao longo do tempo, com
   depósitos e saques parciais, e não apenas o saldo atual.
