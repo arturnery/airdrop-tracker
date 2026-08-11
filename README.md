@@ -51,11 +51,11 @@ pelo mesmo login. Cadastros novos entram numa fila de aprovação manual.
   depois mostra quanto do resultado veio do farming e quanto veio do preço do token.
 - **Programas de pontos.** Medições periódicas por projeto e conta, com evolução entre
   medições, para os projetos que distribuem por pontuação em vez de volume.
-- **Tarefas recorrentes.** Diária, semanal, mensal ou a cada N dias, com ocorrências
-  geradas por conta e conclusão em um clique.
-- **Metas e recebimentos.** Objetivos por projeto e registro dos airdrops efetivamente
-  recebidos, com valor no momento do recebimento.
-- **Importação por CSV.** Migração da planilha antiga, com validação linha a linha.
+- **Tarefas por projeto e conta.** Com prazo, conclusão em um clique e destaque para o que
+  está atrasado. A periodicidade é registrada, mas ainda não gera as próximas ocorrências
+  sozinha (ver roadmap).
+- **Metas e recebimentos.** Objetivos por projeto, com progresso derivado dos lançamentos,
+  e registro dos airdrops efetivamente recebidos.
 - **Múltiplos usuários com aprovação manual.** Cadastro livre, entrada só depois de
   liberada. Cada pessoa enxerga exclusivamente os próprios dados.
 
@@ -364,6 +364,14 @@ tests/            Vitest
 ```
 
 ## Roadmap
+
+- [ ] **Motor de recorrência.** Hoje a periodicidade da tarefa é guardada mas não gera as
+      ocorrências seguintes: concluir a de hoje não cria a de amanhã. O desenho está em
+      [`ARCHITECTURE.md` §6](ARCHITECTURE.md), com geração preguiçosa na leitura em vez de
+      cron, e unicidade por constraint para reexecução ser segura
+- [ ] **Importação da planilha por CSV.** A tela existe e explica o mapeamento de cada
+      coluna, mas o processamento não: falta o parser, a prévia e a gravação transacional.
+      Desenhado em [`ARCHITECTURE.md` §7](ARCHITECTURE.md)
 
 - [ ] **Idioma selecionável (português e inglês).** Hoje a interface é só em português e os
       valores saem no formato de dólar americano (`$1,234.56`). A escolha de idioma levaria

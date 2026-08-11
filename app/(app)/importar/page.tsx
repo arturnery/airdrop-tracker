@@ -12,8 +12,14 @@ const mapeamento = [
 ];
 
 /**
- * Tela de importação: estrutura visual pronta, sem o processamento ainda.
- * O parser e a gravação transacional entram na fase 2 (ARCHITECTURE.md §7).
+ * Tela de importação.
+ *
+ * **Só a explicação do mapeamento está pronta.** Não há parser, prévia nem
+ * gravação: o desenho está em ARCHITECTURE.md §7 e a implementação, no roadmap.
+ *
+ * A tela existe mesmo assim porque a decisão que ela documenta é a central do
+ * projeto: "Saldo Atualizado" não vira transação. Enquanto isso, o aviso diz o
+ * que a pessoa pode esperar, em vez de prometer um botão que não existe.
  */
 export default function ImportarPage() {
   return (
@@ -28,7 +34,7 @@ export default function ImportarPage() {
           className="text-muted-foreground mx-auto size-8"
           aria-hidden="true"
         />
-        <p className="mt-3 text-sm font-medium">Importação chega na fase 2</p>
+        <p className="mt-3 text-sm font-medium">Ainda não é possível importar</p>
         <p className="text-muted-foreground mx-auto mt-1 max-w-md text-sm">
           O fluxo será em duas etapas: primeiro uma prévia do que vai ser criado, do que
           será ignorado como duplicata e do que não foi reconhecido; só depois a

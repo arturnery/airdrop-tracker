@@ -1335,7 +1335,7 @@ inglês vai continuar vendo o campo em `mm/dd`, e agora tem embaixo a confirmaç
 
 | | |
 |---|---|
-| Telas | Visão geral, tarefas, projetos, aba do projeto, contas, cotações, histórico, importar |
+| Telas | Visão geral, tarefas, projetos, aba do projeto, contas, cotações, histórico |
 | Entrada | Login, cadastro, recuperação e espera por aprovação, com credencial verificada |
 | Administração | Fila de aprovação, membros com acesso e histórico de recusas |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
