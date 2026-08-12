@@ -114,6 +114,35 @@ export async function marcarFeedback(
   }
 }
 
+/**
+ * Apaga um relato. Restrito a quem administra.
+ *
+ * Sem volta: o texto não fica em lugar nenhum depois. A tela só oferece a
+ * exclusão para relatos já resolvidos, o que impede apagar algo antes de ler e
+ * dá um passo intermediário entre receber e descartar.
+ */
+export async function excluirFeedback(id: string): Promise<{ ok: boolean }> {
+  try {
+    const userId = await getCurrentUserId();
+
+    const [quem] = await db
+      .select({ role: schema.users.role })
+      .from(schema.users)
+      .where(eq(schema.users.id, userId))
+      .limit(1);
+
+    if (quem?.role !== "admin") return { ok: false };
+
+    await db.delete(schema.feedback).where(eq(schema.feedback.id, id));
+
+    revalidatePath("/", "layout");
+    return { ok: true };
+  } catch (erro) {
+    console.error("[feedback:excluir]", erro);
+    return { ok: false };
+  }
+}
+
 /** Quantos relatos ainda não foram abertos. Alimenta o contador do menu. */
 export async function contarNaoLidos(): Promise<number> {
   const [linha] = await db

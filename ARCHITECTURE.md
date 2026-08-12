@@ -981,7 +981,15 @@ O risco disso é volume. A defesa é um limite de envios por conta por dia, na m
 limite de pedidos de senha: sem ele, uma pessoa mal-intencionada enche o banco em minutos e
 a caixa deixa de ser utilizável.
 
-### 14.6. Fora do escopo desta proposta
+### 14.6. Apagar só depois de resolver
+
+A exclusão de um relato existe, e aparece **apenas para os já resolvidos**. Não é restrição
+por restrição: obriga um passo entre receber e descartar, e impede apagar algo antes de ler.
+
+Sem volta, como toda exclusão do sistema: o texto não fica guardado em lugar nenhum. Por
+isso a confirmação diz o que se perde, em vez de perguntar "tem certeza?".
+
+### 14.7. Fora do escopo desta proposta
 
 - **Anexar imagem.** Exige upload e armazenamento, e a maior parte dos relatos se resolve
   com texto mais o contexto automático.

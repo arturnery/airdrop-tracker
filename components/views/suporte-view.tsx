@@ -3,7 +3,11 @@
 import { useState, useTransition } from "react";
 import { Check, Mail } from "lucide-react";
 
-import { marcarFeedback } from "@/actions/feedback";
+import { excluirFeedback, marcarFeedback } from "@/actions/feedback";
+import {
+  BotaoLixeira,
+  ConfirmarExclusao,
+} from "@/components/forms/confirmar-exclusao";
 import { FiltroChips } from "@/components/filtro-chips";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -65,6 +69,11 @@ export function SuporteView({ relatos }: { relatos: FeedbackRow[] }) {
   const marcar = (id: string, estado: "lido" | "resolvido") =>
     iniciar(async () => {
       await marcarFeedback(id, estado);
+    });
+
+  const apagar = (id: string) =>
+    iniciar(async () => {
+      await excluirFeedback(id);
     });
 
   return (
@@ -192,7 +201,25 @@ export function SuporteView({ relatos }: { relatos: FeedbackRow[] }) {
                       Resolvido
                     </Button>
                   ) : (
-                    <span className="text-muted-foreground text-xs">resolvido</span>
+                    <>
+                      <span className="text-muted-foreground text-xs">
+                        resolvido
+                      </span>
+                      {/*
+                        A exclusão só aparece depois de resolvido: força um
+                        passo entre receber e descartar, e evita apagar um
+                        relato antes de lê-lo.
+                      */}
+                      <ConfirmarExclusao
+                        titulo="Apagar relato"
+                        alvo={`${rotulos[relato.tipo]} de ${relato.autorNome}`}
+                        impacto="O texto não fica guardado em lugar nenhum depois disso"
+                        aoConfirmar={() => apagar(relato.id)}
+                        gatilho={
+                          <BotaoLixeira rotulo={`Apagar relato de ${relato.autorNome}`} />
+                        }
+                      />
+                    </>
                   )}
                 </div>
               </li>
