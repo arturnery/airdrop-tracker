@@ -22,7 +22,9 @@ export function ContasView() {
   const { dataset, hoje, acoes } = useDados();
   const contas = selectAccounts(dataset);
 
-  const totalAportado = cents(contas.reduce((acc, c) => acc + c.aportado, 0));
+  const totalDepositado = cents(
+    contas.reduce((acc, c) => acc + c.capitalDepositado, 0),
+  );
   const totalExposicao = cents(contas.reduce((acc, c) => acc + c.exposicao, 0));
   const contaMaisExposta = contas.reduce<(typeof contas)[number] | undefined>(
     (maior, atual) => (atual.exposicao > (maior?.exposicao ?? 0) ? atual : maior),
@@ -62,7 +64,7 @@ export function ContasView() {
             <StatCard
               label="Capital distribuído"
               accent="primary"
-              value={<Money value={totalAportado} />}
+              value={<Money value={totalDepositado} />}
               hint={
                 <>
                   exposição atual{" "}
@@ -98,7 +100,7 @@ export function ContasView() {
                 <tr className="border-border text-muted-foreground border-b text-left text-xs">
                   <th scope="col" className="px-4 py-2.5 font-medium">Conta</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Projetos</th>
-                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Aportado</th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Depositado</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Exposição</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Resultado</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Pendências</th>
@@ -128,7 +130,7 @@ export function ContasView() {
                       {conta.projetos}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Money value={conta.aportado} />
+                      <Money value={conta.capitalDepositado} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Money value={conta.exposicao} tone="muted" />

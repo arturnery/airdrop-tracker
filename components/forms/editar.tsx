@@ -8,6 +8,7 @@ import { CampoValorToken } from "@/components/forms/campo-valor-token";
 import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
 import { CampoData } from "@/components/forms/campo-data";
 import { CampoValor } from "@/components/forms/campo-valor";
+import { contasDisponiveisNoProjeto } from "@/lib/tarefas";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -361,6 +362,25 @@ export function EditarConta({ accountId }: { accountId: string }) {
 export function EditarLancamento({ transactionId }: { transactionId: string }) {
   const { dataset, acoes } = useDados();
   const lancamento = dataset.transactions.find((t) => t.id === transactionId);
+
+  /*
+   * As contas oferecidas são as do projeto do lançamento. O projeto em si não
+   * muda por aqui: trocá-lo moveria dinheiro de um projeto para outro, o que
+   * altera dois saldos de uma vez e é melhor feito apagando e relançando, com
+   * o histórico mostrando o que aconteceu.
+   */
+  const permitidas = new Set(
+    contasDisponiveisNoProjeto(
+      dataset.projectAccounts
+        .filter((pa) => pa.projectId === lancamento?.projectId)
+        .map((pa) => pa.accountId),
+      dataset.accounts.map((a) => a.id),
+    ),
+  );
+  const contas = dataset.accounts
+    .filter((a) => permitidas.has(a.id))
+    .map((a) => ({ valor: a.id, rotulo: a.label }));
+
   if (!lancamento) return null;
 
   return (
@@ -370,7 +390,7 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
       aoEnviar={(dados) => {
         const bruto = {
           projectId: lancamento.projectId,
-          accountId: lancamento.accountId,
+          accountId: texto(dados, "accountId"),
           occurredAt: texto(dados, "occurredAt"),
           type: texto(dados, "type"),
           amount: texto(dados, "amount"),
@@ -385,6 +405,15 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
     >
       {({ erros: e }) => (
         <>
+          <CampoSelecao
+            label="Conta"
+            name="accountId"
+            obrigatorio
+            defaultValue={lancamento.accountId}
+            erro={e.accountId}
+            opcoes={contas}
+            ajuda="Lançar na conta errada é o engano mais comum: dá para corrigir aqui."
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoSelecao
               label="Tipo"

@@ -4,7 +4,11 @@ import { Money } from "@/components/money";
 import type { CapitalPorProjeto } from "@/lib/types";
 
 /**
- * Distribuição do capital aportado por projeto.
+ * Distribuição do capital depositado por projeto.
+ *
+ * Usa o mesmo número dos cartões (depósitos menos retiradas) e não o total já
+ * depositado: exibir bases diferentes na mesma tela faz o leitor desconfiar de
+ * ambas, sem saber qual está certa.
  *
  * Série única → cor única: a identidade de cada barra vem do rótulo, não da
  * cor. Pintar cada projeto de um tom diferente seria decoração e gastaria a
@@ -26,15 +30,15 @@ export function CapitalPorProjetoChart({ data }: { data: CapitalPorProjeto[] }) 
     );
   }
 
-  const total = data.reduce((acc, item) => acc + item.aportado, 0);
-  const maior = Math.max(...data.map((item) => item.aportado));
+  const total = data.reduce((acc, item) => acc + item.capitalDepositado, 0);
+  const maior = Math.max(...data.map((item) => item.capitalDepositado));
 
   return (
     <div className="border-border rounded-lg border p-5">
       <ol className="space-y-4">
         {data.map((item) => {
-          const proporcao = maior > 0 ? (item.aportado / maior) * 100 : 0;
-          const fatia = total > 0 ? Math.round((item.aportado / total) * 100) : 0;
+          const proporcao = maior > 0 ? (item.capitalDepositado / maior) * 100 : 0;
+          const fatia = total > 0 ? Math.round((item.capitalDepositado / total) * 100) : 0;
 
           return (
             <li key={item.slug}>
@@ -46,7 +50,7 @@ export function CapitalPorProjetoChart({ data }: { data: CapitalPorProjeto[] }) 
                   {item.nome}
                 </Link>
                 <span className="flex shrink-0 items-baseline gap-2 text-sm">
-                  <Money value={item.aportado} />
+                  <Money value={item.capitalDepositado} />
                   <span className="text-muted-foreground text-xs tabular">
                     {fatia}%
                   </span>
@@ -68,8 +72,8 @@ export function CapitalPorProjetoChart({ data }: { data: CapitalPorProjeto[] }) 
       </ol>
 
       <p className="text-muted-foreground border-border mt-5 border-t pt-4 text-xs">
-        Total aportado{" "}
-        <Money value={total as CapitalPorProjeto["aportado"]} className="text-foreground" />{" "}
+        Total depositado{" "}
+        <Money value={total as CapitalPorProjeto["capitalDepositado"]} className="text-foreground" />{" "}
         em {data.length} projetos.
       </p>
     </div>

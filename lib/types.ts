@@ -74,7 +74,8 @@ export type DashboardSummary = FinancialSummary & {
 export type CapitalPorProjeto = {
   slug: string;
   nome: string;
-  aportado: Cents;
+  /** Depósitos menos retiradas: o mesmo número dos cartões. */
+  capitalDepositado: Cents;
   exposicao: Cents;
 };
 
@@ -224,6 +225,7 @@ export type AccountSummary = {
   ativa: boolean;
   projetos: number;
   aportado: Cents;
+  capitalDepositado: Cents;
   exposicao: Cents;
   resultado: Cents;
   tarefasPendentes: number;

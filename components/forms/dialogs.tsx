@@ -9,6 +9,7 @@ import { CampoData } from "@/components/forms/campo-data";
 import { CampoValor } from "@/components/forms/campo-valor";
 import { useDados } from "@/components/data-provider";
 import { direcaoDoTipo } from "@/lib/finance";
+import { contasDisponiveisNoProjeto } from "@/lib/tarefas";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -365,6 +366,27 @@ function useOpcoes() {
   };
 }
 
+/**
+ * Contas oferecidas para um projeto: as vinculadas a ele, ou todas enquanto
+ * não houver vínculo nenhum. Ver `contasDisponiveisNoProjeto`.
+ */
+function useContasDoProjeto(projectId: string) {
+  const { dataset } = useDados();
+
+  const permitidas = new Set(
+    contasDisponiveisNoProjeto(
+      dataset.projectAccounts
+        .filter((pa) => pa.projectId === projectId)
+        .map((pa) => pa.accountId),
+      dataset.accounts.map((a) => a.id),
+    ),
+  );
+
+  return dataset.accounts
+    .filter((a) => permitidas.has(a.id))
+    .map((a) => ({ valor: a.id, rotulo: a.label }));
+}
+
 // ---------------------------------------------------------------- lançamento
 
 export function NovoLancamento({
@@ -375,7 +397,9 @@ export function NovoLancamento({
   rotulo?: string;
 }) {
   const { acoes, hoje } = useDados();
-  const { projetos, contas } = useOpcoes();
+  const { projetos } = useOpcoes();
+  const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
+  const contas = useContasDoProjeto(projetoSel);
 
   /*
    * O sinal é decidido pelo tipo (ver aplicarSinalDoTipo), então o campo pede
@@ -416,6 +440,7 @@ export function NovoLancamento({
               defaultValue={projectId}
               erro={e.projectId}
               opcoes={projetos}
+              onChange={(evento) => setProjetoSel(evento.target.value)}
             />
             <CampoSelecao
               label="Conta"
@@ -423,6 +448,11 @@ export function NovoLancamento({
               obrigatorio
               erro={e.accountId}
               opcoes={contas}
+              ajuda={
+                contas.length === 1
+                  ? "Única conta vinculada a este projeto."
+                  : undefined
+              }
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">

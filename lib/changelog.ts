@@ -39,6 +39,27 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "0.7",
+    data: "2026-08-11",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A conta de um lançamento agora pode ser trocada na edição. Antes só dava para apagar e refazer.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao lançar, só aparecem as contas vinculadas àquele projeto, em vez de todas.",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "O gráfico da visão geral, a tabela de projetos e o total de contas mostravam o total já depositado, enquanto os cartões mostravam o capital atual. Agora todos mostram o mesmo número.",
+      },
+    ],
+  },
+  {
     versao: "0.6",
     data: "2026-08-11",
     mudancas: [

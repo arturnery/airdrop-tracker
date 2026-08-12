@@ -280,9 +280,23 @@ export async function atualizarLancamento(
   entrada: unknown,
 ): Promise<ResultadoAcao> {
   return executar(lancamentoSchema, entrada, async (dados, userId) => {
+    /*
+     * A conta pode mudar: lançar na carteira errada é o engano mais comum, e
+     * antes só restava apagar e refazer.
+     *
+     * `exigirDono` confirma que projeto e conta são de quem edita, porque o
+     * accountId chega do formulário. `garantirVinculo` cria o par
+     * projeto×conta se ainda não existir: a FK composta dos movimentos exige
+     * que ele exista, e mover o lançamento para uma conta nunca usada naquele
+     * projeto é justamente um caso em que ele não existe.
+     */
+    await exigirDono(dados.projectId, dados.accountId, userId);
+    await garantirVinculo(dados.projectId, dados.accountId, dados.occurredAt);
+
     await db
       .update(schema.transactions)
       .set({
+        accountId: dados.accountId,
         occurredAt: dados.occurredAt,
         type: dados.type,
         amountUsd: toDbNumeric(dados.amount),

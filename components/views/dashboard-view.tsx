@@ -214,7 +214,7 @@ export function DashboardView() {
                 <tr className="border-border text-muted-foreground border-b text-left text-xs">
                   <th scope="col" className="px-4 py-2.5 font-medium">Projeto</th>
                   <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
-                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Aportado</th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Depositado</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Exposição</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Resultado</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Contas</th>
@@ -243,7 +243,7 @@ export function DashboardView() {
                       <ProjectStatusBadge status={projeto.status} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Money value={projeto.aportado} />
+                      <Money value={projeto.capitalDepositado} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Money value={projeto.exposicao} tone="muted" />

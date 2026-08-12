@@ -1461,6 +1461,60 @@ que não corresponde ao que está no ar, e é pior que não ter.
 
 ---
 
+## Marco 23: Conta editável, escopo por projeto e o fim da discrepância
+
+Três ajustes que vieram do uso, e o terceiro revelou um problema maior que o relatado.
+
+### Trocar a conta de um lançamento
+
+Lançar na carteira errada é o engano mais comum de quem opera com várias contas, e a
+única saída era apagar e refazer, perdendo a data e a descrição.
+
+O campo entrou na edição, e ao ligá-lo apareceu um defeito silencioso: **a Server Action
+não gravava `accountId`**. Se eu tivesse apenas adicionado o campo, ele salvaria sem efeito
+nenhum, exatamente como a data da tarefa no marco 19.
+
+Duas garantias foram junto, porque agora o `accountId` chega do formulário: `exigirDono`
+confirma que projeto e conta são de quem edita, e `garantirVinculo` cria o par
+projeto×conta se não existir, já que a FK composta dos movimentos o exige e mover para uma
+conta nunca usada naquele projeto é justamente o caso em que ele falta.
+
+O projeto continua fixo. Trocá-lo moveria dinheiro entre dois projetos de uma vez,
+alterando dois saldos; apagar e relançar deixa isso visível no histórico.
+
+### Contas oferecidas conforme o projeto
+
+O formulário listava todas as carteiras, mesmo num projeto que usa duas. Oferecer opções
+impossíveis é convite a errar, e o erro só aparece depois, num saldo que não bate.
+
+A regra é a mesma já usada para tarefas: as contas vinculadas ao projeto, ou todas enquanto
+não houver vínculo nenhum. A exceção importa: o primeiro lançamento de um projeto novo é
+justamente o que cria o vínculo, e restringir ali tornaria impossível começar.
+
+Um teste fixa que as duas regras concordam. Se divergissem, uma tarefa poderia nascer para
+uma conta em que não se pode lançar.
+
+### A discrepância era em três lugares, não um
+
+O relato era sobre o gráfico da visão geral, que ainda mostrava "Total aportado" enquanto os
+cartões já mostravam o capital depositado. Procurando, havia mais dois: a tabela de projetos
+do painel e o total da tela de contas.
+
+Isso é pior que um número errado: **dois números diferentes para a mesma coisa na mesma
+tela** fazem duvidar dos dois, sem saber qual está certo. Quem vê perde a confiança no
+sistema inteiro, não só naquele campo.
+
+A causa é a de sempre neste projeto: o cálculo novo entrou onde o pedido apontava, e as
+outras telas continuaram somando o total histórico por conta própria. `CapitalPorProjeto` e
+`AccountSummary` passaram a carregar `capitalDepositado`, e as três telas leem o mesmo
+campo.
+
+Os usos de `aportado` que sobraram são legítimos e foram conferidos um a um: a condição que
+distingue "posição encerrada" de "nunca teve nada", e o valor de entrada de uma posição em
+token, que é outro conceito.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1471,7 +1525,7 @@ que não corresponde ao que está no ar, e é pior que não ter.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 189, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 192, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

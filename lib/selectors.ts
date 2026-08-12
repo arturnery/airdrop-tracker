@@ -136,14 +136,20 @@ export function selectCapitalPorProjeto(ds: Dataset): CapitalPorProjeto[] {
     .map((projeto) => ({
       slug: projeto.slug,
       nome: projeto.name,
-      aportado: sumOfType(
-        ds.transactions.filter((t) => t.projectId === projeto.id),
-        "deposit",
-      ),
+      capitalDepositado: capitalDepositado({
+        aportado: sumOfType(
+          ds.transactions.filter((t) => t.projectId === projeto.id),
+          "deposit",
+        ),
+        retirado: sumOfType(
+          ds.transactions.filter((t) => t.projectId === projeto.id),
+          "withdrawal",
+        ),
+      }),
       exposicao: exposicoes.get(projeto.id) ?? ZERO,
     }))
-    .filter((p) => p.aportado > 0 || p.exposicao > 0)
-    .sort((a, b) => b.aportado - a.aportado);
+    .filter((p) => p.capitalDepositado > 0 || p.exposicao > 0)
+    .sort((a, b) => b.capitalDepositado - a.capitalDepositado);
 }
 
 // ------------------------------------------------------------------ projetos
@@ -466,6 +472,10 @@ export function selectAccounts(ds: Dataset): AccountSummary[] {
         ativa: conta.isActive,
         projetos: ds.projectAccounts.filter((p) => p.accountId === conta.id).length,
         aportado,
+        capitalDepositado: capitalDepositado({
+          aportado,
+          retirado: sumOfType(daConta, "withdrawal"),
+        }),
         exposicao,
         resultado: resultadoLiquido({
           exposicao,

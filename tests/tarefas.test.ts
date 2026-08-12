@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { contasAlvoDaTarefa } from "@/lib/tarefas";
+import {
+  contasAlvoDaTarefa,
+  contasDisponiveisNoProjeto,
+} from "@/lib/tarefas";
 
 describe("contasAlvoDaTarefa", () => {
   it("conta escolhida vence tudo", () => {
@@ -34,5 +37,25 @@ describe("contasAlvoDaTarefa", () => {
 
   it("string vazia conta como não escolhida", () => {
     expect(contasAlvoDaTarefa("", [], ["c1"])).toEqual(["c1"]);
+  });
+});
+
+describe("contasDisponiveisNoProjeto", () => {
+  it("projeto com vínculos oferece só as contas dele", () => {
+    expect(contasDisponiveisNoProjeto(["c2"], ["c1", "c2", "c3"])).toEqual(["c2"]);
+  });
+
+  it("projeto sem vínculo ainda oferece todas: é o primeiro lançamento", () => {
+    expect(contasDisponiveisNoProjeto([], ["c1", "c2"])).toEqual(["c1", "c2"]);
+  });
+
+  /*
+   * As duas regras precisam concordar: se a tarefa fosse criada para uma conta
+   * em que não se pode lançar, a tela cobraria algo impossível de cumprir.
+   */
+  it("concorda com o alvo das tarefas quando não há conta escolhida", () => {
+    expect(contasDisponiveisNoProjeto(["c1"], ["c1", "c2"])).toEqual(
+      contasAlvoDaTarefa(null, ["c1"], ["c1", "c2"]),
+    );
   });
 });

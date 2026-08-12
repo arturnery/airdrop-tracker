@@ -21,7 +21,7 @@ describe("selectDashboardSummary", () => {
 
   it("soma o capital aportado", () => {
     // 44 Meridian + 23 Solstice + 70 Vertex + 20 Prisma + 180 Nebula
-    expect(toDbNumeric(resumo.aportado)).toBe("337.00");
+    expect(toDbNumeric(resumo.capitalDepositado)).toBe("337.00");
   });
 
   it("exposição é a soma dos lançamentos, com token revalorizado", () => {
@@ -56,7 +56,7 @@ describe("selectProjects", () => {
 
   it("calcula o resultado de cada projeto", () => {
     const porNome = Object.fromEntries(projetos.map((p) => [p.nome, p]));
-    expect(toDbNumeric(porNome["Vertex Perp"]!.aportado)).toBe("70.00");
+    expect(toDbNumeric(porNome["Vertex Perp"]!.capitalDepositado)).toBe("70.00");
     expect(toDbNumeric(porNome["Vertex Perp"]!.resultado)).toBe("4.40");
     expect(toDbNumeric(porNome["Meridian"]!.resultado)).toBe("-6.67");
     expect(toDbNumeric(porNome["Prisma DEX"]!.resultado)).toBe("-1.10");
@@ -65,14 +65,14 @@ describe("selectProjects", () => {
   it("token valorizado aparece como resultado positivo", () => {
     const nebula = projetos.find((p) => p.slug === "nebula")!;
     // Aportou $180 em 1 SOL, que hoje vale $195.
-    expect(toDbNumeric(nebula.aportado)).toBe("180.00");
+    expect(toDbNumeric(nebula.capitalDepositado)).toBe("180.00");
     expect(toDbNumeric(nebula.exposicao)).toBe("195.00");
     expect(toDbNumeric(nebula.resultado)).toBe("15.00");
   });
 
   it("não conta volume operado como capital", () => {
     const vertex = projetos.find((p) => p.slug === "vertex-perp");
-    expect(toDbNumeric(vertex!.aportado)).toBe("70.00");
+    expect(toDbNumeric(vertex!.capitalDepositado)).toBe("70.00");
   });
 });
 
@@ -134,7 +134,7 @@ describe("selectAccounts", () => {
     const contas = selectAccounts(ds);
     const chrome = contas.find((c) => c.label === "chrome")!;
     // Meridian 9 + Solstice 9 + Vertex 40 + Prisma 20
-    expect(toDbNumeric(chrome.aportado)).toBe("78.00");
+    expect(toDbNumeric(chrome.capitalDepositado)).toBe("78.00");
     expect(chrome.projetos).toBe(4);
   });
 });
@@ -160,7 +160,7 @@ describe("selectCapitalPorProjeto", () => {
   it("ordena por capital e ignora projeto sem aporte", () => {
     const capital = selectCapitalPorProjeto(ds);
     expect(capital[0]?.nome).toBe("Nebula");
-    expect(toDbNumeric(capital[0]!.aportado)).toBe("180.00");
+    expect(toDbNumeric(capital[0]!.capitalDepositado)).toBe("180.00");
     expect(capital).toHaveLength(5);
   });
 });
