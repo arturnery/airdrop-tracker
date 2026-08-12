@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { datasDevidas, janelaPadrao } from "@/lib/recurrence";
+import { formatDateExtenso } from "@/lib/dates";
 
 const janela = { de: "2026-08-01", ate: "2026-08-10" };
 
@@ -127,5 +128,26 @@ describe("janelaPadrao", () => {
     const datas = datasDevidas({ recorrencia: "daily", ancora: "2026-08-01" }, { de, ate });
     expect(datas).toContain("2026-08-04");
     expect(datas).not.toContain("2026-08-03");
+  });
+});
+
+describe("formatDateExtenso", () => {
+  it("escreve a data sem ordem a interpretar", () => {
+    expect(formatDateExtenso("2026-08-11")).toBe("11 de agosto de 2026");
+  });
+
+  /*
+   * O caso que motivou a mudança: 08/11 e 11/08 são a mesma data em formatos
+   * diferentes, e mostrar um embaixo do outro levantava a dúvida.
+   */
+  it("distingue datas que trocadas pareceriam iguais", () => {
+    expect(formatDateExtenso("2026-11-08")).toBe("8 de novembro de 2026");
+    expect(formatDateExtenso("2026-08-11")).not.toBe(
+      formatDateExtenso("2026-11-08"),
+    );
+  });
+
+  it("não usa zero à esquerda no dia", () => {
+    expect(formatDateExtenso("2026-01-05")).toBe("5 de janeiro de 2026");
   });
 });

@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { CampoTexto } from "@/components/forms/fields";
-import { formatDateBr } from "@/lib/dates";
+import { formatDateExtenso } from "@/lib/dates";
 
 /**
  * Campo de data que confirma, por extenso, o dia escolhido.
@@ -17,9 +17,11 @@ import { formatDateBr } from "@/lib/dates";
  * nativo traz calendário do sistema, navegação por teclado, leitor de tela e
  * teclado numérico no celular, tudo de graça e testado.
  *
- * Então o campo continua nativo e a data escolhida aparece embaixo em
- * `dd/mm/aaaa`. Quem tem o navegador em inglês vê o formato estranho no campo,
- * mas confirma logo abaixo que 07/08 é agosto, não julho.
+ * Então o campo continua nativo e a data escolhida aparece embaixo **por
+ * extenso**. A primeira versão mostrava `dd/mm/aaaa` ali, e isso piorava o
+ * problema: ver "11/08/2026" logo abaixo de um campo exibindo "08/11/2026"
+ * levanta a dúvida em vez de resolvê-la, porque são a mesma data e parecem
+ * duas. "11 de agosto de 2026" não tem ordem a interpretar.
  */
 export function CampoData({
   label,
@@ -52,10 +54,9 @@ export function CampoData({
       />
       {/^\d{4}-\d{2}-\d{2}$/.test(valor) ? (
         <p className="text-muted-foreground mt-1 text-xs" aria-live="polite">
-          <strong className="text-foreground font-medium tabular">
-            {formatDateBr(valor)}
-          </strong>{" "}
-          (dia/mês/ano)
+          <strong className="text-foreground font-medium">
+            {formatDateExtenso(valor)}
+          </strong>
         </p>
       ) : null}
     </div>

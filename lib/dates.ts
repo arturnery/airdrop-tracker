@@ -65,6 +65,25 @@ export function formatDateShort(date: IsoDate): string {
   return `${day} ${meses[Number(month) - 1]}`;
 }
 
+/**
+ * Data por extenso: "11 de agosto de 2026".
+ *
+ * Existe para confirmar a data escolhida sem depender de ordem de números.
+ * A confirmação anterior mostrava `dd/mm/aaaa` logo abaixo de um campo que o
+ * navegador exibe em `mm/dd/aaaa`, e ver 11/08 embaixo de 08/11 levanta a
+ * dúvida em vez de resolvê-la: os dois são a mesma data, e parecem duas.
+ *
+ * Por extenso não há ordem a interpretar.
+ */
+export function formatDateExtenso(date: IsoDate): string {
+  const meses = [
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+  ];
+  const [ano, mes, dia] = date.split("-");
+  return `${Number(dia)} de ${meses[Number(mes) - 1]} de ${ano}`;
+}
+
 /** Texto relativo curto para listas de tarefas. */
 export function relativeLabel(dueDate: IsoDate, today: IsoDate): string {
   const diff = daysBetween(today, dueDate);

@@ -1515,6 +1515,50 @@ token, que é outro conceito.
 
 ---
 
+## Marco 24: O tipo que aceitava valor e não fazia nada
+
+Relato: "ao registrar um lançamento não está salvando quando escolho a opção Outro".
+
+O banco de produção contava outra história:
+
+| Projeto | Tipo | Valor | Descrição |
+|---|---|---|---|
+| Saturn | Outro | −$75,00 | Perca do valor em YT |
+| Saturn | Outro | −$75,00 | Perca do valor em YT |
+
+**Salvou as duas vezes.** O lançamento foi feito, nenhum número na tela se moveu, e a
+conclusão razoável foi que a gravação falhara. Daí o segundo, idêntico.
+
+`other` era o único tipo fora de `CASH_TYPES`, ao lado de `volume_traded` e `fee_gas`, mas
+sem o motivo que justifica os outros dois: volume é métrica de atividade e taxa sai do
+bolso em vez da posição. `other` simplesmente não fazia nada.
+
+Um campo que pede um valor em dólar, aceita o sinal e ignora os dois não tem defesa. Se a
+pessoa informou uma quantia, ela conta. `other` entrou em `CASH_TYPES`.
+
+### O que o defeito revelou além dele mesmo
+
+A tela nunca disse o que cada tipo faz. Quem escolhe "Taxa / gas" também não sabe que ela
+desconta do resultado sem mexer na posição, e quem escolhe "Volume operado" não sabe que
+aquilo não é dinheiro movimentado. `efeitoDoTipo` passou a explicar isso no próprio campo,
+enquanto se escolhe.
+
+O relato foi sobre um tipo. A causa era a ausência de uma frase que valia para três.
+
+### A confirmação de data que confundia mais que ajudava
+
+No marco 19 pus a data escolhida em `dd/mm/aaaa` logo abaixo do campo, para contornar o
+navegador em inglês exibindo `mm/dd/aaaa`. Em uso real isso piorou: ver "11/08/2026"
+embaixo de um campo mostrando "08/11/2026" levanta a dúvida em vez de resolvê-la, porque
+são a mesma data e parecem duas.
+
+Agora a confirmação é por extenso: "11 de agosto de 2026". Não há ordem a interpretar.
+
+A lição vale além do caso: quando a solução para uma ambiguidade é mostrar **o mesmo dado
+noutro formato**, ela costuma dobrar a ambiguidade em vez de resolver.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1525,7 +1569,7 @@ token, que é outro conceito.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 192, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 198, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

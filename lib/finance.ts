@@ -35,11 +35,23 @@ export const pairKey = (projectId: string, accountId: string): PairKey =>
 /**
  * Movimentos que alteram o saldo dentro da plataforma.
  *
- * `volume_traded` fica de fora: é métrica de atividade, não de caixa: somá-lo
+ * `volume_traded` fica de fora: é métrica de atividade, não de caixa, e somá-lo
  * inflaria o capital. `fee_gas` também fica de fora do saldo porque sai do
  * bolso, não da posição; entra no resultado como custo (§5).
+ *
+ * `other` **entra**. Ele nasceu como anotação sem efeito, e isso se mostrou uma
+ * armadilha em uso real: uma perda de US$ 75 registrada ali não mexia em número
+ * nenhum, o que pareceu falha de gravação e levou ao lançamento duplicado. Um
+ * campo que aceita valor com sinal e o ignora não tem defesa: se a pessoa
+ * informou uma quantia, ela conta.
  */
-const CASH_TYPES = ["deposit", "withdrawal", "trade_pnl", "yield"] as const;
+const CASH_TYPES = [
+  "deposit",
+  "withdrawal",
+  "trade_pnl",
+  "yield",
+  "other",
+] as const;
 
 export function isCashType(type: string): boolean {
   return (CASH_TYPES as readonly string[]).includes(type);
@@ -93,6 +105,23 @@ export function aplicarSinalDoTipo(type: string, valor: Cents): Cents {
     default:
       return valor;
   }
+}
+
+/**
+ * O que acontece com o número quando este tipo é lançado.
+ *
+ * Existe para a tela poder dizer isso antes de salvar. A ausência dessa
+ * informação já custou caro: "Outro" não alterava nada, e a falta de efeito
+ * foi lida como falha de gravação.
+ */
+export function efeitoDoTipo(type: string): string {
+  if (type === "volume_traded") {
+    return "Registra atividade: não entra no saldo nem no resultado.";
+  }
+  if (type === "fee_gas") {
+    return "Sai do bolso: desconta do resultado, sem mexer na posição.";
+  }
+  return "Entra no saldo do projeto e no resultado.";
 }
 
 // ----------------------------------------------------------- resultado

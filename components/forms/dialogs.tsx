@@ -8,7 +8,7 @@ import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
 import { CampoData } from "@/components/forms/campo-data";
 import { CampoValor } from "@/components/forms/campo-valor";
 import { useDados } from "@/components/data-provider";
-import { direcaoDoTipo } from "@/lib/finance";
+import { direcaoDoTipo, efeitoDoTipo } from "@/lib/finance";
 import { contasDisponiveisNoProjeto } from "@/lib/tarefas";
 import { Button } from "@/components/ui/button";
 import {
@@ -464,10 +464,11 @@ export function NovoLancamento({
               onChange={(evento) => setTipoSel(evento.target.value)}
               ajuda={
                 direcao === "saida"
-                  ? "Sai da posição: informe só a quantia, o sinal é aplicado."
+                  ? "Informe só a quantia: o sinal é aplicado. " +
+                    efeitoDoTipo(tipoSel)
                   : direcao === "ambos"
-                    ? "Use o sinal de menos para prejuízo."
-                    : undefined
+                    ? "Use o sinal de menos para perda. " + efeitoDoTipo(tipoSel)
+                    : efeitoDoTipo(tipoSel)
               }
               opcoes={[
                 { valor: "deposit", rotulo: "Depósito" },

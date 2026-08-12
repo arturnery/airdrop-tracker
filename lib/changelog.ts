@@ -39,6 +39,27 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "0.8",
+    data: "2026-08-11",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Lançamentos do tipo \"Outro\" eram salvos mas não entravam em nenhum cálculo, o que parecia falha ao salvar. Agora contam no saldo e no resultado como os demais.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Ao escolher o tipo do lançamento, a tela explica o que ele faz: se entra no saldo, se desconta do resultado ou se é apenas atividade.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A data escolhida passa a ser confirmada por extenso, como \"11 de agosto de 2026\", para não haver dúvida entre dia e mês.",
+      },
+    ],
+  },
+  {
     versao: "0.7",
     data: "2026-08-11",
     mudancas: [

@@ -487,3 +487,39 @@ describe("ROI sobre o capital depositado", () => {
     expect(r.roi).toBe(-100);
   });
 });
+
+describe("tipo Outro entra no caixa", () => {
+  /*
+   * Nasceu como anotação sem efeito e virou armadilha: um valor lançado ali
+   * não mexia em nada, o que parecia falha de gravação.
+   */
+  it("é tratado como movimento de caixa", () => {
+    expect(isCashType("other")).toBe(true);
+  });
+
+  it("reduz a exposição quando negativo", () => {
+    const r = summarizeFinancials({
+      movements: [
+        mov("p1", "c1", "deposit", "100.00"),
+        mov("p1", "c1", "other", "-75.00"),
+      ],
+      prices: [],
+      pairs: [{ projectId: "p1", accountId: "c1" }],
+    });
+    expect(r.exposicao).toBe(2500);
+    expect(r.resultado).toBe(-7500);
+  });
+
+  it("volume operado continua fora do caixa: é atividade, não dinheiro", () => {
+    expect(isCashType("volume_traded")).toBe(false);
+    const r = summarizeFinancials({
+      movements: [
+        mov("p1", "c1", "deposit", "100.00"),
+        mov("p1", "c1", "volume_traded", "5000.00"),
+      ],
+      prices: [],
+      pairs: [{ projectId: "p1", accountId: "c1" }],
+    });
+    expect(r.exposicao).toBe(10000);
+  });
+})
