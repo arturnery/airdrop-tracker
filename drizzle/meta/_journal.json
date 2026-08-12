@@ -15,6 +15,13 @@
       "when": 1786072802625,
       "tag": "0001_conta_demo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786499266950,
+      "tag": "0002_recuperacao_senha",
+      "breakpoints": true
     }
   ]
 }

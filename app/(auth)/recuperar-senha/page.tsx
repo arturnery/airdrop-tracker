@@ -4,38 +4,36 @@ import Link from "next/link";
 
 import { AuthForm } from "@/components/forms/auth-form";
 import { CampoTexto } from "@/components/forms/fields";
+import { pedirRedefinicaoDeSenha } from "@/actions/auth";
 import { erros as extrairErros, recuperarSenhaSchema } from "@/lib/validators";
 
 export default function RecuperarSenhaPage() {
   return (
     <AuthForm
       titulo="Recuperar senha"
-      descricao="O envio automático por e-mail ainda não está ativo."
+      descricao="Quem administra gera uma senha temporária e envia para o seu e-mail."
       rotuloCarregando="Enviando…"
       rotuloEnvio="Registrar pedido"
       destaque={
         <>
-          <strong className="font-medium">Peça a redefinição no grupo.</strong>{" "}
-          Quem administra gera uma senha temporária e entrega direto para você.
-          É mais rápido que esperar e-mail, e sem risco de cair no spam.
+          <strong className="font-medium">O envio não é automático.</strong>{" "}
+          O pedido entra numa fila e quem administra a comunidade gera a senha
+          temporária. No primeiro acesso com ela, o sistema pede que você defina
+          a sua.
         </>
       }
       aoEnviar={async (dados) => {
-        const resultado = recuperarSenhaSchema.safeParse({
-          email: String(dados.get("email") ?? ""),
-        });
+        const email = String(dados.get("email") ?? "");
+        const resultado = recuperarSenhaSchema.safeParse({ email });
         if (!resultado.success) return { erros: extrairErros(resultado) };
+
         /*
-         * Sem serviço de e-mail configurado, esta tela não envia nada. Em vez de
-         * prometer um link que não chega, ela orienta o caminho que funciona
-         * hoje: o administrador redefine pela área de membros.
-         *
-         * A resposta continua sem confirmar se o endereço existe.
+         * Envia o valor bruto: o schema tem transform e a Server Action valida
+         * de novo. Mandar o já transformado faria a segunda passada receber o
+         * que a primeira produziu.
          */
-        return {
-          aviso:
-            "Anotado. Fale com quem administra a comunidade para receber uma senha temporária.",
-        };
+        const pedido = await pedirRedefinicaoDeSenha({ email });
+        return pedido.ok ? { aviso: pedido.aviso } : { erros: pedido.erros };
       }}
       rodape={
         <Link href="/entrar" className="text-foreground underline underline-offset-4">

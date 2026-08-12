@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, ne } from "drizzle-orm";
+import { asc, isNull, ne } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -28,11 +28,29 @@ export async function listarMembros(hoje: string): Promise<MemberRow[]> {
       createdAt: schema.users.createdAt,
       reviewedAt: schema.users.reviewedAt,
       reviewNote: schema.users.reviewNote,
+      mustChangePassword: schema.users.mustChangePassword,
     })
     .from(schema.users)
     // O próprio admin não aparece na fila que ele administra.
     .where(ne(schema.users.role, "admin"))
     .orderBy(asc(schema.users.createdAt));
+
+  /*
+   * Pedidos de senha em aberto. Consulta separada em vez de join: são poucas
+   * linhas, e um join traria a lista de membros duplicada por pedido.
+   */
+  const pedidos = await db
+    .select({
+      userId: schema.passwordResetRequests.userId,
+      requestedAt: schema.passwordResetRequests.requestedAt,
+    })
+    .from(schema.passwordResetRequests)
+    .where(isNull(schema.passwordResetRequests.resolvedAt))
+    .orderBy(asc(schema.passwordResetRequests.requestedAt));
+
+  const pedidoPorUsuario = new Map(
+    pedidos.map((p) => [p.userId, p.requestedAt.toISOString().slice(0, 10)]),
+  );
 
   return linhas.map((u) => {
     const cadastradoEm = u.createdAt.toISOString().slice(0, 10);
@@ -45,6 +63,8 @@ export async function listarMembros(hoje: string): Promise<MemberRow[]> {
       revisadoEm: u.reviewedAt ? u.reviewedAt.toISOString().slice(0, 10) : null,
       nota: u.reviewNote,
       diasEsperando: Math.abs(daysBetween(hoje, cadastradoEm)),
+      pedidoSenhaEm: pedidoPorUsuario.get(u.id) ?? null,
+      senhaTemporaria: u.mustChangePassword,
     };
   });
 }

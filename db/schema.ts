@@ -126,6 +126,15 @@ export const users = pgTable("users", {
    * visitante veria na barra lateral.
    */
   isDemo: boolean("is_demo").notNull().default(false),
+  /**
+   * Senha temporária entregue por quem administra: o acesso fica restrito à
+   * troca de senha até a pessoa definir a dela.
+   *
+   * A restrição é verificada no servidor, a cada requisição. Esconder as telas
+   * não bastaria: as Server Actions continuariam alcançáveis, e é justamente
+   * quem entrou com uma senha que não escolheu que não deve poder agir.
+   */
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   /** Quando o acesso foi liberado ou recusado; nulo enquanto pendente. */
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   /** Por que foi recusado. Visível só para quem administra. */
@@ -534,3 +543,31 @@ export type Goal = typeof goals.$inferSelect;
 export type AirdropClaim = typeof airdropClaims.$inferSelect;
 export type ImportBatch = typeof importBatches.$inferSelect;
 export type ProfileSettings = typeof profileSettings.$inferSelect;
+
+/**
+ * Pedidos de redefinição de senha.
+ *
+ * Não há envio automático de e-mail, e para uma comunidade fechada com
+ * aprovação manual isso é infraestrutura que não se paga. O pedido vira uma
+ * notificação na área de administração, e quem administra gera a senha
+ * temporária.
+ *
+ * A linha só existe se a conta existir. A tela responde a mesma coisa nos dois
+ * casos, então quem testa endereços alheios não descobre nada; a diferença fica
+ * no banco, invisível para quem pediu.
+ */
+export const passwordResetRequests = pgTable(
+  "password_reset_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    requestedAt: timestamp("requested_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Quando quem administra gerou a senha. Nulo enquanto está na fila. */
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (t) => [index("reset_requests_user_idx").on(t.userId, t.requestedAt)],
+);

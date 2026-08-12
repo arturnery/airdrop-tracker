@@ -688,7 +688,16 @@ export async function redefinirSenhaDeMembro(
     const senha = gerarSenhaTemporaria();
     const resultado = await db
       .update(schema.users)
-      .set({ passwordHash: await gerarHash(senha) })
+      .set({
+        passwordHash: await gerarHash(senha),
+        /*
+         * Quem entra com uma senha que não escolheu precisa trocá-la antes de
+         * usar o sistema. Enquanto a marca estiver ligada, o acesso fica
+         * restrito à própria troca: quem administra viu esta senha, então ela
+         * não pode continuar valendo.
+         */
+        mustChangePassword: true,
+      })
       // Nunca sobre outro admin: senha de administrador não se redefine por
       // aqui, para que ninguém assuma a conta de quem administra.
       .where(and(eq(schema.users.id, analisado.data.id), ne(schema.users.role, "admin")))
@@ -697,6 +706,17 @@ export async function redefinirSenhaDeMembro(
     if (resultado.length === 0) {
       return { ok: false, erro: "Membro não encontrado." };
     }
+
+    // Tira o pedido da fila: o que estava pendente acabou de ser atendido.
+    await db
+      .update(schema.passwordResetRequests)
+      .set({ resolvedAt: sql`now()` })
+      .where(
+        and(
+          eq(schema.passwordResetRequests.userId, analisado.data.id),
+          isNull(schema.passwordResetRequests.resolvedAt),
+        ),
+      );
 
     revalidatePath("/membros");
     return { ok: true, senha };

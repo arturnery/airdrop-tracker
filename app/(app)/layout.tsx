@@ -2,7 +2,9 @@ import Link from "next/link";
 
 import { Nav } from "@/components/nav";
 import { Sair } from "@/components/sair";
+import { TrocaObrigatoria } from "@/components/views/troca-obrigatoria";
 import { carregarUsuario } from "@/db/queries/usuario";
+import { versaoAtual } from "@/lib/changelog";
 import { exigirSessao } from "@/lib/auth";
 
 /**
@@ -25,6 +27,25 @@ export default async function AppLayout({
    */
   const usuario = await carregarUsuario(sessao.id);
   const nomeExibido = usuario?.nome ?? sessao.nome;
+
+  /*
+   * Senha temporária trava o sistema na própria troca.
+   *
+   * Quem administra viu essa senha ao gerá-la, então ela não pode continuar
+   * valendo enquanto a pessoa usa o sistema.
+   *
+   * O layout **substitui** o conteúdo em vez de redirecionar. Redirecionar
+   * exigiria saber a rota atual, que um layout não recebe, e como este layout
+   * envolve toda rota autenticada, trocar o conteúdo bloqueia todas de uma vez:
+   * uma tela nova nasce protegida sem ninguém precisar lembrar.
+   *
+   * Isso é a camada visual. A que vale está em `actions/_core.ts`, que recusa
+   * qualquer escrita nesse estado: esconder a tela não impediria a requisição
+   * direta à Server Action.
+   */
+  if (usuario?.precisaTrocarSenha) {
+    return <TrocaObrigatoria nome={nomeExibido} />;
+  }
 
   return (
     <>
@@ -70,6 +91,20 @@ export default async function AppLayout({
 
         <main id="conteudo" className="px-6 py-8 lg:px-10 lg:py-10">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
+
+          {/*
+            Rodapé discreto, não item de menu: o histórico de mudanças é
+            consulta ocasional, e o menu é para o que se faz todo dia. É onde
+            produtos como Stripe e Linear colocam o changelog.
+          */}
+          <footer className="border-border text-muted-foreground mx-auto mt-16 w-full max-w-6xl border-t pt-4 text-xs">
+            <Link
+              href="/novidades"
+              className="hover:text-foreground transition-colors"
+            >
+              Novidades da versão {versaoAtual}
+            </Link>
+          </footer>
         </main>
       </div>
     </>

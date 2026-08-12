@@ -3,6 +3,10 @@ import "server-only";
 import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 
+import { eq } from "drizzle-orm";
+
+import { db } from "@/db";
+import * as schema from "@/db/schema";
 import { getCurrentUserId } from "@/lib/auth";
 import { erros } from "@/lib/validators";
 
@@ -19,6 +23,9 @@ import { erros } from "@/lib/validators";
  *    Buscar só por id significaria que conhecer um uuid alheio basta para
  *    alterá-lo. Como efeito colateral, um id inexistente e um id de outro
  *    usuário se tornam indistinguíveis: que é exatamente o desejado.
+ * 3. **Quem está com senha temporária não escreve nada.** A verificação vive
+ *    aqui, e não na tela: esconder o formulário não impede a requisição direta
+ *    à ação, que é o caminho que alguém interessado tentaria.
  */
 
 export type ResultadoAcao =
@@ -52,6 +59,14 @@ export async function executar<S extends z.ZodType>(
 
   const userId = await getCurrentUserId();
 
+  if (await precisaTrocarSenha(userId)) {
+    return falha(
+      "geral",
+      "Defina uma senha sua antes de continuar: a temporária foi vista por " +
+        "quem a gerou.",
+    );
+  }
+
   try {
     await operacao(analisado.data, userId);
   } catch (erro) {
@@ -61,6 +76,26 @@ export async function executar<S extends z.ZodType>(
 
   for (const rota of rotas) revalidatePath(rota, "layout");
   return sucesso();
+}
+
+/**
+ * Conta em senha temporária: só a troca de senha é permitida.
+ *
+ * Consulta a cada escrita, de propósito. A marca poderia viajar no token e
+ * evitar a consulta, mas o token é assinado no login e congelaria: quem
+ * trocasse a senha continuaria bloqueado até sair e entrar de novo.
+ *
+ * `trocarSenha` não passa por aqui, então a única saída do bloqueio segue
+ * aberta.
+ */
+async function precisaTrocarSenha(userId: string): Promise<boolean> {
+  const [usuario] = await db
+    .select({ marca: schema.users.mustChangePassword })
+    .from(schema.users)
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+
+  return usuario?.marca ?? false;
 }
 
 /** Rotas que dependem dos dados financeiros: revalidadas em quase toda ação. */

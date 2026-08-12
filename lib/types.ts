@@ -311,6 +311,10 @@ export type PointsSnapshotRow = {
 export type MemberStatus = "pendente" | "aprovado" | "recusado";
 
 export type MemberRow = {
+  /** Data do pedido de redefinição em aberto; nulo quando não há. */
+  pedidoSenhaEm: IsoDate | null;
+  /** Recebeu senha temporária e ainda não definiu a própria. */
+  senhaTemporaria: boolean;
   id: string;
   nome: string;
   email: string;

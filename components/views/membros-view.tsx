@@ -256,6 +256,7 @@ export function MembrosView({
     );
   };
 
+  const pedindoSenha = todos.filter((m) => m.pedidoSenhaEm !== null);
   const pendentes = filtrar(todos.filter((m) => m.status === "pendente"));
   const aprovados = filtrar(todos.filter((m) => m.status === "aprovado"));
   const recusados = filtrar(todos.filter((m) => m.status === "recusado"));
@@ -267,7 +268,7 @@ export function MembrosView({
         description="Quem pediu acesso e quem já tem. Aprovações são manuais."
       />
 
-      <section aria-label="Resumo de membros" className="grid gap-4 sm:grid-cols-3">
+      <section aria-label="Resumo de membros" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Aguardando"
           accent={resumo.pendentes > 0 ? "caution" : "idle"}
@@ -290,7 +291,62 @@ export function MembrosView({
           value={<span className="tabular">{resumo.recusados}</span>}
           hint="ficam no histórico"
         />
+        <StatCard
+          label="Pedidos de senha"
+          accent={pedindoSenha.length > 0 ? "caution" : "idle"}
+          value={<span className="tabular">{pedindoSenha.length}</span>}
+          hint={
+            pedindoSenha.length > 0
+              ? "aguardando senha temporária"
+              : "ninguém esqueceu a senha"
+          }
+        />
       </section>
+
+      {/*
+        Quem pediu redefinição aparece em destaque, no topo: é o único item
+        desta tela em que alguém está travado do lado de fora esperando uma
+        ação. Some da lista assim que a senha é gerada.
+      */}
+      {pedindoSenha.length > 0 ? (
+        <section
+          aria-labelledby="titulo-pedidos-senha"
+          className="border-caution/40 bg-caution/5 mt-8 rounded-lg border p-4"
+        >
+          <h2
+            id="titulo-pedidos-senha"
+            className="mb-1 flex items-baseline gap-2 text-sm font-medium"
+          >
+            Pediram redefinição de senha
+            <span className="text-muted-foreground tabular text-xs">
+              {pedindoSenha.length}
+            </span>
+          </h2>
+          <p className="text-muted-foreground mb-3 text-sm">
+            Gere a senha temporária e envie por e-mail. Quem entrar com ela terá
+            de definir a própria antes de usar o sistema.
+          </p>
+          <ul className="space-y-2">
+            {pedindoSenha.map((membro) => (
+              <li
+                key={`pedido-${membro.id}`}
+                className="border-border bg-background flex flex-wrap items-center justify-between gap-3 rounded-md border px-3 py-2"
+              >
+                <span className="text-sm">
+                  {membro.nome}
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    {membro.email}
+                  </span>
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    pediu em {formatDateBr(membro.pedidoSenhaEm!)}
+                  </span>
+                </span>
+                <RedefinirSenha membro={membro} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {todos.length > 3 ? (
         <div className="mt-8">

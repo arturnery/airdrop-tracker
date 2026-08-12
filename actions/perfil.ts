@@ -102,7 +102,11 @@ export async function trocarSenha(entrada: unknown): Promise<ResultadoPerfil> {
 
     await db
       .update(schema.users)
-      .set({ passwordHash: await gerarHash(analisado.data.nova) })
+      .set({
+        passwordHash: await gerarHash(analisado.data.nova),
+        // A senha agora é escolhida por quem usa: o bloqueio pode sair.
+        mustChangePassword: false,
+      })
       .where(eq(schema.users.id, userId));
 
     /*

@@ -1382,6 +1382,85 @@ documentada precisa ser relida quando o contexto muda, senão vira folclore.
 
 ---
 
+## Marco 21: Recuperação de senha sem serviço de e-mail
+
+A tela de "esqueci minha senha" existia e não fazia nada: orientava a pessoa a procurar
+quem administra. Funciona para três usuários e não para trinta.
+
+A saída convencional seria contratar um provedor de e-mail transacional, configurar domínio
+e DNS. Para uma comunidade fechada em que **cada entrada já é aprovada manualmente**, isso
+é infraestrutura que não se paga: a pessoa que redefine a senha é a mesma que aprovou o
+cadastro e conversa com o grupo todo dia.
+
+O fluxo escolhido usa o canal que já existe:
+
+1. A pessoa pede a redefinição informando o e-mail.
+2. Se a conta existir, o pedido entra numa fila na área de administração.
+3. Quem administra gera uma senha temporária e envia.
+4. Ao entrar com ela, o sistema exige que a pessoa defina a sua.
+
+### A resposta é sempre a mesma
+
+Existindo a conta ou não, a tela responde igual. Confirmar que o endereço está cadastrado
+transformaria a página num verificador de quem tem acesso, pela mesma razão que a recusa de
+login é única. A diferença fica no banco, invisível para quem pediu: sem conta, nenhuma
+linha é criada.
+
+**Uma exceção deliberada:** quando já existe pedido nas últimas 24 horas, a mensagem é
+diferente e diz para aguardar. Ali a conta certamente existe, porque só quem tem conta chega
+a ter um pedido anterior, então não há nada a proteger. O limite existe para um pedido
+repetido não virar cem notificações.
+
+### Bloqueio até a troca, e onde ele mora
+
+Quem administra **viu** a senha temporária ao gerá-la. Ela não pode continuar valendo
+enquanto a pessoa usa o sistema.
+
+O bloqueio tem duas camadas, e só uma delas é a que vale:
+
+| Camada | O que faz | Vale por si? |
+|---|---|---|
+| Layout de `(app)` | Substitui o conteúdo pela tela de troca | Não: é só o que se vê |
+| `actions/_core.ts` | Recusa **qualquer escrita** nesse estado | Sim |
+
+Esconder a tela não impede a requisição direta à Server Action, que é o caminho que alguém
+interessado tentaria. A verificação real fica no wrapper por onde toda escrita passa, então
+uma ação nova nasce protegida sem ninguém precisar lembrar.
+
+O layout **substitui** o conteúdo em vez de redirecionar. Redirecionar exigiria saber a rota
+atual, que um layout não recebe; como ele envolve toda rota autenticada, trocar o conteúdo
+bloqueia todas de uma vez. Verificado abrindo as sete rotas do aplicativo com a marca ligada.
+
+A checagem custa uma consulta por escrita. Poderia viajar no token e evitá-la, mas o token é
+assinado no login e congelaria: quem trocasse a senha continuaria bloqueado até sair e
+entrar de novo. É o mesmo aprendizado do nome no perfil, no marco 11.
+
+---
+
+## Marco 22: Página de novidades
+
+O DEVLOG registra o **porquê** de cada decisão, com nome de função e estrutura de banco.
+Para quem usa o sistema, isso não responde nada. A página de novidades responde outra
+pergunta: o que mudou para mim?
+
+A mesma correção, nos dois registros:
+
+| DEVLOG | Novidades |
+|---|---|
+| "A action atualizava `tasks.dueDate`, mas a tela lista ocorrências" | "Editar a data de uma tarefa não estava salvando" |
+| "`capitalDepositado = depositado − retirado`" | "O capital agora mostra o que ainda está aplicado" |
+
+Fica no **rodapé**, não no menu. O menu é para o que se faz todo dia; histórico de mudanças
+é consulta ocasional, e disputar espaço ali atrapalharia o uso. É onde produtos como Stripe
+e Linear colocam o changelog.
+
+Guardado como dado tipado em TypeScript e não em markdown: nenhuma dependência nova para
+renderizar, e o compilador recusa entrada pela metade. O compromisso assumido é que a
+entrada acompanha a mudança, no mesmo commit: changelog desatualizado anuncia uma versão
+que não corresponde ao que está no ar, e é pior que não ter.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1396,6 +1475,7 @@ documentada precisa ser relida quando o contexto muda, senão vira folclore.
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
+| Senha | Recuperação por fila de administração, com troca obrigatória no primeiro acesso |
 | Produção | Vercel, com banco Neon e segredo de sessão próprio |
 | Demonstração | Conta pública com nome e senha travados, dados fictícios |
 

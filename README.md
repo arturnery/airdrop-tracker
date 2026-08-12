@@ -57,6 +57,10 @@ pelo mesmo login. Cadastros novos entram numa fila de aprovação manual.
   e recalcular não tem estado a perder.
 - **Metas e recebimentos.** Objetivos por projeto, com progresso derivado dos lançamentos,
   e registro dos airdrops efetivamente recebidos.
+- **Recuperação de senha sem serviço de e-mail.** O pedido entra numa fila de
+  administração, quem administra gera uma senha temporária, e o primeiro acesso com ela
+  exige definir a própria. Para uma comunidade fechada com aprovação manual, e-mail
+  transacional é infraestrutura que não se paga.
 - **Múltiplos usuários com aprovação manual.** Cadastro livre, entrada só depois de
   liberada. Cada pessoa enxerga exclusivamente os próprios dados.
 
@@ -354,6 +358,7 @@ lib/              Funções puras, testáveis sem banco
   points.ts       Pontos em inteiros escalados
   finance.ts      Fórmulas de resultado e exposição
   recurrence.ts   Datas devidas de uma tarefa recorrente
+  changelog.ts    Histórico de mudanças, na linguagem de quem usa
   selectors.ts    Derivações do Dataset para as telas
   mutations.ts    Transformações puras (também usadas na UI otimista)
   validators.ts   Schemas Zod, compartilhados entre cliente e servidor
@@ -385,9 +390,6 @@ tests/            Vitest
 - [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
 - [ ] Edição de metas, recebimentos e medições (hoje só criar e excluir)
 - [ ] Alternância entre tema claro e escuro (o tema claro já existe, falta o controle)
-- [ ] Redefinição de senha pela área de administração, gerando senha temporária. Para uma
-      comunidade fechada com aprovação manual, e-mail transacional é infraestrutura demais
-      para o problema: a tela de recuperação existe, mas o provedor de envio não se paga
 - [ ] Criar o vínculo projeto×conta junto com o projeto, em vez de no primeiro lançamento
 
 ## O que aprendi

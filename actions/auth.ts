@@ -2,14 +2,19 @@
 
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import { signIn, signOut } from "@/auth";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { ehEmailDeAdmin } from "@/lib/auth";
 import { gerarHash } from "@/lib/senha";
-import { cadastroSchema, erros, loginSchema } from "@/lib/validators";
+import {
+  cadastroSchema,
+  erros,
+  loginSchema,
+  recuperarSenhaSchema,
+} from "@/lib/validators";
 
 /**
  * Ações de entrada.
@@ -146,4 +151,90 @@ export async function cadastrar(entrada: unknown): Promise<ErroAuth | void> {
   }
 
   redirect(destino);
+}
+
+// ------------------------------------------------------- recuperação de senha
+
+/** Uma solicitação por conta a cada 24 horas. */
+const INTERVALO_PEDIDO_MS = 24 * 60 * 60 * 1000;
+
+export type ResultadoPedido =
+  | { ok: true; aviso: string }
+  | { ok: false; erros: Record<string, string> };
+
+/**
+ * Registra um pedido de redefinição de senha.
+ *
+ * **A resposta é sempre a mesma**, exista a conta ou não. Confirmar que o
+ * endereço está cadastrado transformaria esta tela num verificador de quem tem
+ * acesso, que é a mesma razão de a recusa de login ser única. A diferença fica
+ * no banco: sem conta, nenhuma linha é criada e nada aparece na administração.
+ *
+ * Não há envio automático de e-mail, e para uma comunidade fechada com
+ * aprovação manual isso é infraestrutura que não se paga. O pedido entra numa
+ * fila que quem administra resolve gerando uma senha temporária.
+ */
+export async function pedirRedefinicaoDeSenha(
+  entrada: unknown,
+): Promise<ResultadoPedido> {
+  const analisado = recuperarSenhaSchema.safeParse(entrada);
+  if (!analisado.success) return { ok: false, erros: erros(analisado) };
+
+  const aviso =
+    "Pedido registrado. Em breve você recebe por e-mail uma senha temporária. " +
+    "Se não chegar, confira se este é mesmo o endereço do seu cadastro.";
+
+  try {
+    const [usuario] = await db
+      .select({ id: schema.users.id, isDemo: schema.users.isDemo })
+      .from(schema.users)
+      .where(eq(schema.users.email, analisado.data.email))
+      .limit(1);
+
+    // Sem conta: mesma resposta, nenhum registro. A conta de demonstração
+    // também não entra na fila, já que a senha dela é pública e fixa.
+    if (!usuario || usuario.isDemo) return { ok: true, aviso };
+
+    const [ultimo] = await db
+      .select({ requestedAt: schema.passwordResetRequests.requestedAt })
+      .from(schema.passwordResetRequests)
+      .where(eq(schema.passwordResetRequests.userId, usuario.id))
+      .orderBy(desc(schema.passwordResetRequests.requestedAt))
+      .limit(1);
+
+    if (ultimo) {
+      const desde = Date.now() - ultimo.requestedAt.getTime();
+      if (desde < INTERVALO_PEDIDO_MS) {
+        /*
+         * O limite existe para um pedido repetido não virar cem notificações
+         * para quem administra. A mensagem é diferente da normal de propósito:
+         * aqui a conta certamente existe, porque só quem tem conta chega a ter
+         * um pedido anterior, então não há nada a proteger.
+         */
+        const horas = Math.max(
+          1,
+          Math.ceil((INTERVALO_PEDIDO_MS - desde) / (60 * 60 * 1000)),
+        );
+        return {
+          ok: false,
+          erros: {
+            geral:
+              `Já existe um pedido em andamento para este e-mail. ` +
+              `Aguarde ${horas}h antes de pedir de novo: a senha temporária ` +
+              `chega no e-mail cadastrado.`,
+          },
+        };
+      }
+    }
+
+    await db
+      .insert(schema.passwordResetRequests)
+      .values({ userId: usuario.id });
+
+    return { ok: true, aviso };
+  } catch (erro) {
+    console.error("[recuperar-senha]", erro);
+    // Falha de infraestrutura não deve revelar nada: mesma resposta de sempre.
+    return { ok: true, aviso };
+  }
 }
