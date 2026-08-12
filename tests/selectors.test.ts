@@ -12,6 +12,7 @@ import {
   selectProjectBySlug,
   selectProjects,
   selectTokensSemCotacao,
+  selectVolumeDoProjeto,
 } from "@/lib/selectors";
 
 const ds = datasetInicial();
@@ -214,5 +215,50 @@ describe("helpers de dataset", () => {
   it("gera ids distintos", () => {
     expect(novoId("prj")).not.toBe(novoId("prj"));
     expect(novoId("prj").startsWith("prj-")).toBe(true);
+  });
+});
+
+describe("selectVolumeDoProjeto", () => {
+  const perp = ds.projects.find((p) => p.slug === "vertex-perp")!;
+  const volume = selectVolumeDoProjeto(ds, perp.id, HOJE);
+
+  it("soma apenas lançamentos de volume", () => {
+    const somaDireta = ds.transactions
+      .filter((t) => t.projectId === perp.id && t.type === "volume_traded")
+      .reduce((acc, t) => acc + Number(t.amountUsd) * 100, 0);
+    expect(volume.total).toBe(Math.round(somaDireta));
+  });
+
+  /*
+   * A garantia que importa: volume não é dinheiro. Se um depósito vazasse para
+   * cá, o número viraria uma mistura sem significado.
+   */
+  it("não inclui depósitos nem rendimentos", () => {
+    const tipos = new Set(
+      ds.transactions
+        .filter((t) => t.projectId === perp.id)
+        .map((t) => t.type),
+    );
+    expect(tipos.has("deposit")).toBe(true);
+    expect(volume.historico.length).toBeLessThan(
+      ds.transactions.filter((t) => t.projectId === perp.id).length,
+    );
+  });
+
+  it("o total por conta soma o total do projeto", () => {
+    const soma = volume.contas.reduce((acc, c) => acc + c.total, 0);
+    expect(soma).toBe(volume.total);
+  });
+
+  it("lista do mais recente para o mais antigo", () => {
+    const datas = volume.historico.map((l) => l.data);
+    expect([...datas].sort().reverse()).toEqual(datas);
+  });
+
+  it("projeto sem volume devolve estrutura vazia, não quebra", () => {
+    const semVolume = ds.projects.find((p) => p.slug !== "vertex-perp")!;
+    const v = selectVolumeDoProjeto(ds, semVolume.id, HOJE);
+    expect(v.total).toBeGreaterThanOrEqual(0);
+    expect(Array.isArray(v.contas)).toBe(true);
   });
 });

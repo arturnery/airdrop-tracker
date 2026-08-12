@@ -1,3 +1,4 @@
+import { somarDias, isoParaData, dataParaIso } from "./dates";
 import type { IsoDate } from "./types";
 
 /**
@@ -29,22 +30,6 @@ export type RegraRecorrencia = {
 /** Janela fechada nas duas pontas, ambas inclusive. */
 export type Janela = { de: IsoDate; ate: IsoDate };
 
-const DIA_MS = 86_400_000;
-
-/** Meio-dia UTC evita que fuso horário empurre a data para o dia anterior. */
-function paraData(iso: IsoDate): Date {
-  const [ano, mes, dia] = iso.split("-").map(Number);
-  return new Date(Date.UTC(ano!, mes! - 1, dia!, 12));
-}
-
-function paraIso(data: Date): IsoDate {
-  return data.toISOString().slice(0, 10);
-}
-
-function somarDias(iso: IsoDate, dias: number): IsoDate {
-  return paraIso(new Date(paraData(iso).getTime() + dias * DIA_MS));
-}
-
 /**
  * Soma meses preservando o dia quando possível.
  *
@@ -54,7 +39,7 @@ function somarDias(iso: IsoDate, dias: number): IsoDate {
  * combinado.
  */
 function somarMeses(iso: IsoDate, meses: number): IsoDate {
-  const base = paraData(iso);
+  const base = isoParaData(iso);
   const diaDesejado = base.getUTCDate();
   const alvo = new Date(
     Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + meses, 1, 12),
@@ -63,7 +48,7 @@ function somarMeses(iso: IsoDate, meses: number): IsoDate {
     Date.UTC(alvo.getUTCFullYear(), alvo.getUTCMonth() + 1, 0, 12),
   ).getUTCDate();
   alvo.setUTCDate(Math.min(diaDesejado, ultimoDia));
-  return paraIso(alvo);
+  return dataParaIso(alvo);
 }
 
 /**

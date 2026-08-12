@@ -48,6 +48,7 @@ import {
   descreverImpacto,
   selectHistoricoDePontos,
   selectProgramaDePontos,
+  selectVolumeDoProjeto,
   selectProjectBySlug,
   selectTasksByProject,
 } from "@/lib/selectors";
@@ -99,6 +100,7 @@ export function ProjetoView({ slug }: { slug: string }) {
 
   const tarefas = selectTasksByProject(dataset, projeto.id, hoje);
   const programa = selectProgramaDePontos(dataset, projeto.id);
+  const volume = selectVolumeDoProjeto(dataset, projeto.id, hoje);
   const historicoPontos = programa
     ? selectHistoricoDePontos(dataset, projeto.id)
     : [];
@@ -232,6 +234,10 @@ export function ProjetoView({ slug }: { slug: string }) {
           <TabsTrigger value="metas">Metas</TabsTrigger>
           {programa ? (
             <TabsTrigger value="pontos">{programa.rotulo}</TabsTrigger>
+          ) : null}
+          {/* Só existe se houver volume: aba vazia é promessa não cumprida. */}
+          {volume.total > 0 ? (
+            <TabsTrigger value="volume">Volume</TabsTrigger>
           ) : null}
           <TabsTrigger value="airdrop">Airdrop</TabsTrigger>
           <TabsTrigger value="info">Informações</TabsTrigger>
@@ -798,6 +804,108 @@ export function ProjetoView({ slug }: { slug: string }) {
             </ul>
           )}
         </TabsContent>
+
+        {volume.total > 0 ? (
+          <TabsContent value="volume" className="mt-6">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-muted-foreground text-xs tracking-wider uppercase">
+                  Total operado
+                </p>
+                <p className="font-numeric mt-1 text-4xl leading-none font-semibold">
+                  {formatUsd(volume.total)}
+                </p>
+                <p className="text-muted-foreground mt-2 text-xs">
+                  {volume.recente > 0 ? (
+                    <>
+                      <span className="text-foreground tabular font-medium">
+                        {formatUsd(volume.recente)}
+                      </span>{" "}
+                      nos últimos 30 dias
+                    </>
+                  ) : (
+                    "sem volume nos últimos 30 dias"
+                  )}
+                </p>
+              </div>
+              <NovoLancamento projectId={projeto.id} rotulo="Registrar volume" />
+            </div>
+
+            {/*
+              Volume não é dinheiro movimentado: é quanto se negociou. Fica fora
+              do capital e do resultado de propósito, e ganha espaço próprio
+              porque em projeto que qualifica por atividade é o número que se
+              acompanha ao longo do tempo.
+            */}
+            <p className="text-muted-foreground mb-6 text-sm">
+              Volume mede atividade, não dinheiro movimentado: não entra no
+              capital nem no resultado.
+            </p>
+
+            <h3 className="mb-3 text-sm font-medium">Por conta</h3>
+            <div className="border-border overflow-x-auto rounded-lg border">
+              <table className="w-full min-w-160 text-sm">
+                <caption className="sr-only">
+                  Volume operado por conta neste projeto
+                </caption>
+                <thead>
+                  <tr className="border-border text-muted-foreground border-b text-left text-xs">
+                    <th scope="col" className="px-4 py-2.5 font-medium">Conta</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Volume</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Lançamentos</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Último</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-border divide-y">
+                  {volume.contas.map((conta) => (
+                    <tr
+                      key={conta.contaId}
+                      className="hover:bg-accent/40 transition-colors"
+                    >
+                      <th scope="row" className="px-4 py-3 text-left font-medium">
+                        {conta.label}
+                      </th>
+                      <td className="tabular px-4 py-3 text-right">
+                        {formatUsd(conta.total)}
+                      </td>
+                      <td className="tabular text-muted-foreground px-4 py-3 text-right">
+                        {conta.lancamentos}
+                      </td>
+                      <td className="text-muted-foreground px-4 py-3 text-right text-xs">
+                        {conta.ultimo ? formatDateBr(conta.ultimo) : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="mt-8 mb-3 text-sm font-medium">Lançamentos</h3>
+            <ul className="border-border divide-border divide-y rounded-lg border">
+              {volume.historico.map((linha) => (
+                <li
+                  key={linha.id}
+                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm"
+                >
+                  <span className="text-muted-foreground tabular text-xs">
+                    {formatDateBr(linha.data)}
+                  </span>
+                  <span className="min-w-40 flex-1">
+                    {linha.contaLabel}
+                    {linha.descricao ? (
+                      <span className="text-muted-foreground ml-2 text-xs">
+                        {linha.descricao}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="tabular font-medium">
+                    {formatUsd(linha.valor)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </TabsContent>
+        ) : null}
 
         <TabsContent value="airdrop" className="mt-6">
           <div className="mb-4">

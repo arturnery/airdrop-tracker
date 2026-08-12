@@ -50,6 +50,11 @@ export const changelog: Versao[] = [
       {
         tipo: "novidade",
         texto:
+          "Projetos com volume ganham uma aba própria, com o total, o quanto foi operado nos últimos 30 dias, o detalhe por conta e a lista de lançamentos.",
+      },
+      {
+        tipo: "novidade",
+        texto:
           "O histórico do projeto pode ser filtrado por tipo de lançamento, mostrando quantos existem de cada.",
       },
     ],

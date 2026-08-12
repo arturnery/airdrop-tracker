@@ -298,6 +298,34 @@ export type PointsProgramRow = {
   contas: PointsAccountRow[];
 };
 
+/**
+ * Volume operado de um projeto, com o mesmo detalhamento dos pontos.
+ *
+ * Existe separado dos indicadores financeiros porque volume **não é dinheiro**:
+ * é quanto se negociou, não quanto se ganhou. Somá-lo ao capital inflaria a
+ * posição, e ignorá-lo esconde o esforço que qualifica para muitos airdrops.
+ */
+export type VolumeProjeto = {
+  total: Cents;
+  /** Volume dos últimos 30 dias, para saber se a atividade continua. */
+  recente: Cents;
+  contas: {
+    contaId: string;
+    label: string;
+    total: Cents;
+    lancamentos: number;
+    ultimo: IsoDate | null;
+  }[];
+  /** Cada lançamento de volume, do mais recente para o mais antigo. */
+  historico: {
+    id: string;
+    data: IsoDate;
+    contaLabel: string;
+    valor: Cents;
+    descricao: string | null;
+  }[];
+};
+
 export type PointsSnapshotRow = {
   id: string;
   data: IsoDate;

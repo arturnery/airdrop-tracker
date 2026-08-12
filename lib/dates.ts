@@ -50,6 +50,33 @@ export function hojeNoServidor(): IsoDate {
   }).format(new Date());
 }
 
+const DIA_MS = 86_400_000;
+
+/**
+ * Data de calendário como instante ao meio-dia UTC.
+ *
+ * O meio-dia evita que fuso horário empurre a data para o dia anterior: à
+ * meia-noite, qualquer deslocamento negativo já muda o dia.
+ */
+export function isoParaData(iso: IsoDate): Date {
+  const [ano, mes, dia] = iso.split("-").map(Number);
+  return new Date(Date.UTC(ano!, mes! - 1, dia!, 12));
+}
+
+export function dataParaIso(data: Date): IsoDate {
+  return data.toISOString().slice(0, 10);
+}
+
+/**
+ * Soma dias a uma data de calendário.
+ *
+ * Vive aqui, e não em quem usa, porque já eram duas implementações: o motor de
+ * recorrência tinha a sua e o cálculo de volume precisou da mesma conta.
+ */
+export function somarDias(iso: IsoDate, dias: number): IsoDate {
+  return dataParaIso(new Date(isoParaData(iso).getTime() + dias * DIA_MS));
+}
+
 export function formatDateBr(date: IsoDate): string {
   const [year, month, day] = date.split("-");
   return `${day}/${month}/${year}`;

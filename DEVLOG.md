@@ -1651,17 +1651,33 @@ Duas correções, e a segunda é sobre o critério:
   era um palpite sobre quando a informação interessa; a presença do dado responde isso
   diretamente.
 
-### A aba pedida virou filtro
+### A aba, depois de entender o motivo
 
-O pedido original era uma aba dedicada ao volume, ao lado de Contas e Tarefas. Uma aba por
-tipo daria sete, e cada uma repetiria o histórico com um filtro fixo.
+A primeira resposta ao pedido foi um filtro por tipo no histórico, com o argumento de que
+uma aba por tipo daria sete. O argumento estava certo e a resposta, errada, porque eu tinha
+entendido o pedido como "onde vejo esses lançamentos".
 
-O histórico ganhou filtro por tipo, mostrando só os tipos presentes naquele projeto com a
-contagem de cada um. Resolve o mesmo problema para os sete tipos, inclusive para os que
-ainda não existem, e reusa o componente de filtro já usado na lista de projetos.
+O motivo real era outro: **acompanhar o volume como se acompanha pontos**. Não é achar um
+lançamento, é ver a evolução ao longo do tempo, por conta, para saber se a atividade
+continua. Um filtro no histórico não responde isso; uma aba com totais, sim.
 
-Vale como padrão: quando o pedido é "uma aba para X", checar se o que falta é lugar para X
-ou uma forma de encontrar X no que já existe.
+A aba de Volume espelha a de pontos de propósito: total em destaque, o quanto foi feito nos
+últimos trinta dias, tabela por conta e a lista dos lançamentos. Aparece apenas quando há
+volume, como a de pontos aparece só quando há programa: aba vazia é promessa não cumprida.
+
+O filtro do histórico ficou, porque resolve outro problema e continua útil.
+
+**A lição é sobre a pergunta que não fiz.** "Quero uma aba para X" e "quero acompanhar X ao
+longo do tempo" levam a soluções diferentes, e eu respondi à primeira sem confirmar qual
+era. O pedido descrevia a solução; a segunda mensagem trouxe o problema.
+
+### Uma duplicação evitada no caminho
+
+O cálculo de volume precisou somar dias a uma data, conta que o motor de recorrência já
+fazia com uma função privada. Em vez de escrever a segunda, `somarDias` e seus auxiliares
+subiram para `lib/dates.ts` e os dois passaram a usar a mesma.
+
+É o item 2 do catálogo de erros aplicado antes de virar defeito, em vez de depois.
 
 ---
 
@@ -1675,7 +1691,7 @@ ou uma forma de encontrar X no que já existe.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 203, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 208, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

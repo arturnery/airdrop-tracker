@@ -1,5 +1,5 @@
 import type { Dataset } from "./dataset";
-import { daysBetween, urgencyOf } from "./dates";
+import { daysBetween, somarDias, urgencyOf } from "./dates";
 import {
   exposureForPair,
   netFlowByPair,
@@ -24,6 +24,7 @@ import {
 } from "./points";
 import type {
   AccountSummary,
+  VolumeProjeto,
   AirdropClaimRow,
   AtividadeRow,
   CapitalPorProjeto,
@@ -127,6 +128,67 @@ export function selectDashboardSummary(ds: Dataset, hoje: string): DashboardSumm
     tarefasHoje: pendentes.filter((o) => urgencyOf(o.dueDate, hoje) === "hoje").length,
     tarefasAtrasadas: pendentes.filter((o) => urgencyOf(o.dueDate, hoje) === "atrasada")
       .length,
+  };
+}
+
+/**
+ * Volume operado de um projeto, detalhado por conta e por lançamento.
+ *
+ * Mesmo nível de detalhe que os pontos recebem, e pelo mesmo motivo: em projeto
+ * que qualifica por atividade, o volume é o que se acompanha ao longo do tempo.
+ * Um total sozinho não diz se a atividade continua ou parou há um mês.
+ *
+ * `recente` cobre trinta dias porque é o horizonte em que "andou ou parou"
+ * ainda é acionável: dá tempo de retomar antes de um encerramento de temporada.
+ */
+export function selectVolumeDoProjeto(
+  ds: Dataset,
+  projectId: string,
+  hoje: string,
+): VolumeProjeto {
+  const lancamentos = ds.transactions
+    .filter((t) => t.projectId === projectId && t.type === "volume_traded")
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+
+  const trintaDiasAtras = somarDias(hoje, -30);
+
+  const porConta = new Map<string, { total: Cents; qtd: number; ultimo: string }>();
+  for (const l of lancamentos) {
+    const atual = porConta.get(l.accountId) ?? {
+      total: ZERO,
+      qtd: 0,
+      ultimo: l.occurredAt,
+    };
+    porConta.set(l.accountId, {
+      total: addCents(atual.total, fromDbNumeric(l.amountUsd)),
+      qtd: atual.qtd + 1,
+      // A lista vem decrescente, então o primeiro visto é o mais recente.
+      ultimo: atual.qtd === 0 ? l.occurredAt : atual.ultimo,
+    });
+  }
+
+  return {
+    total: sumOfType(lancamentos, "volume_traded"),
+    recente: sumOfType(
+      lancamentos.filter((l) => l.occurredAt >= trintaDiasAtras),
+      "volume_traded",
+    ),
+    contas: [...porConta.entries()]
+      .map(([contaId, dados]) => ({
+        contaId,
+        label: labelDaConta(ds, contaId),
+        total: dados.total,
+        lancamentos: dados.qtd,
+        ultimo: dados.ultimo,
+      }))
+      .sort((a, b) => b.total - a.total),
+    historico: lancamentos.map((l) => ({
+      id: l.id,
+      data: l.occurredAt,
+      contaLabel: labelDaConta(ds, l.accountId),
+      valor: fromDbNumeric(l.amountUsd),
+      descricao: l.description,
+    })),
   };
 }
 
