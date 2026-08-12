@@ -43,6 +43,11 @@ export const changelog: Versao[] = [
     data: "2026-08-12",
     mudancas: [
       {
+        tipo: "correcao",
+        texto:
+          "Ao gerar uma senha temporária pela lista de pedidos, a janela com a senha sumia antes de dar tempo de copiar.",
+      },
+      {
         tipo: "melhoria",
         texto:
           "A lista de tarefas mostra apenas a próxima ocorrência de cada tarefa em \"Próximas\", em vez de todas as próximas semanas. Atrasadas e de hoje continuam aparecendo inteiras.",

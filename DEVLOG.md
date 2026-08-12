@@ -1601,6 +1601,35 @@ problema costuma ser ele estar visível na hora errada, não a legenda estar mal
 
 ---
 
+## Marco 26: A senha que sumia da tela
+
+Gerar a senha temporária pelo bloco de pedidos abria o diálogo e ele desaparecia antes de
+dar tempo de copiar. Pelo caminho antigo, a lista de aprovados, funcionava.
+
+A diferença entre os dois caminhos explica tudo. O diálogo morava **dentro** do componente
+de cada linha, e gerar a senha resolve o pedido: o membro sai da lista de pendentes, o
+React desmonta aquele `<li>`, e o diálogo vai junto. Na lista de aprovados a linha continua
+existindo, então nada some.
+
+Gravidade acima do normal por causa de uma decisão anterior: **o banco guarda só o hash**,
+então a senha só existe naquele retorno. Perder o diálogo significa perder a senha, sem
+consulta possível. A escolha certa de não guardar senha em texto transformou um defeito de
+interface em perda de dado.
+
+O conserto separa quem dispara de quem exibe: o botão só chama a ação e entrega a senha
+para cima; o diálogo vive no nível da página, que continua montada quando a linha some.
+Como efeito, existe um diálogo em vez de um por membro.
+
+**A causa não estava no componente antigo, estava na composição.** Ele funcionava
+perfeitamente enquanto vivia numa lista estável; foi a seção nova de pedidos, criada no
+marco 21, que introduziu uma lista onde o próprio item desaparece como consequência da ação
+que ele dispara. Nada no componente sinalizava essa dependência.
+
+Fica a regra: **interface que mostra um resultado irrecuperável não pode viver dentro do
+que a ação remove.**
+
+---
+
 ## Estado atual
 
 | | |

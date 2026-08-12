@@ -146,29 +146,34 @@ function LinhaPendente({ membro, hoje }: { membro: MemberRow; hoje: string }) {
 }
 
 /**
- * Redefinição de senha pelo administrador.
+ * Botão que gera a senha temporária.
  *
- * A senha aparece uma única vez, num diálogo: o banco guarda só o hash, então
- * não há como consultá-la depois. Se sumir da tela antes de ser copiada, gera-se
- * outra. O diálogo evita espremer a senha dentro da célula da tabela, onde ela
- * ficaria difícil de ler e de copiar.
+ * Só dispara a ação e entrega o resultado para cima. **O diálogo com a senha
+ * não mora aqui**, e essa separação é o conserto de um defeito real: gerar a
+ * senha resolve o pedido, o membro sai da lista de pendentes e o React desmonta
+ * a linha inteira. Com o diálogo dentro dela, a senha sumia da tela antes de
+ * ser copiada, e como o banco guarda só o hash, não havia como recuperá-la.
+ *
+ * Quem mostra a senha é a página, que continua montada.
  */
-function RedefinirSenha({ membro }: { membro: MemberRow }) {
-  const [senha, setSenha] = useState<string | null>(null);
+function RedefinirSenha({
+  membro,
+  aoGerar,
+}: {
+  membro: MemberRow;
+  aoGerar: (senha: string, nome: string) => void;
+}) {
   const [erro, setErro] = useState<string | null>(null);
-  const [copiada, setCopiada] = useState(false);
   const [gerando, iniciar] = useTransition();
 
   const gerar = () =>
     iniciar(async () => {
       const resultado = await redefinirSenhaDeMembro(membro.id);
       if (resultado.ok) {
-        setSenha(resultado.senha);
         setErro(null);
-        setCopiada(false);
+        aoGerar(resultado.senha, membro.nome);
       } else {
         setErro(resultado.erro);
-        setSenha(null);
       }
     });
 
@@ -186,54 +191,76 @@ function RedefinirSenha({ membro }: { membro: MemberRow }) {
         Redefinir senha
       </Button>
 
-      <Dialog
-        open={senha !== null}
-        onOpenChange={(aberto) => {
-          if (!aberto) setSenha(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Senha temporária</DialogTitle>
-            <DialogDescription>
-              Para {membro.nome}. Aparece só agora: o sistema guarda apenas o
-              hash, então não dá para consultá-la depois.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex items-center gap-2">
-            <code className="bg-secondary flex-1 rounded-md px-3 py-2.5 text-center font-mono text-lg tracking-wider select-all">
-              {senha}
-            </code>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (senha) void navigator.clipboard.writeText(senha);
-                setCopiada(true);
-              }}
-            >
-              <Copy className="size-4" aria-hidden="true" />
-              {copiada ? "Copiada" : "Copiar"}
-            </Button>
-          </div>
-
-          <p className="text-muted-foreground text-sm">
-            Entregue por Discord ou WhatsApp e peça para trocar depois de entrar.
-            A senha antiga deixou de valer.
-          </p>
-
-          <DialogFooter>
-            <Button onClick={() => setSenha(null)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {erro ? (
         <p role="alert" className="text-negative text-xs">
           {erro}
         </p>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Diálogo da senha temporária, montado no nível da página.
+ *
+ * A senha aparece uma única vez: o banco guarda apenas o hash, então não há
+ * como consultá-la depois. Se sumir antes de ser copiada, resta gerar outra.
+ */
+function DialogoSenha({
+  dados,
+  aoFechar,
+}: {
+  dados: { senha: string; nome: string } | null;
+  aoFechar: () => void;
+}) {
+  const [copiada, setCopiada] = useState(false);
+
+  return (
+    <Dialog
+      open={dados !== null}
+      onOpenChange={(aberto) => {
+        if (!aberto) {
+          setCopiada(false);
+          aoFechar();
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Senha temporária</DialogTitle>
+          <DialogDescription>
+            Para {dados?.nome}. Aparece só agora: o sistema guarda apenas o
+            hash, então não dá para consultá-la depois.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-center gap-2">
+          <code className="bg-secondary flex-1 rounded-md px-3 py-2.5 text-center font-mono text-lg tracking-wider select-all">
+            {dados?.senha}
+          </code>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (dados) void navigator.clipboard.writeText(dados.senha);
+              setCopiada(true);
+            }}
+          >
+            <Copy className="size-4" aria-hidden="true" />
+            {copiada ? "Copiada" : "Copiar"}
+          </Button>
+        </div>
+
+        <p className="text-muted-foreground text-sm">
+          Envie por e-mail e peça para trocar ao entrar: o sistema exige que a
+          pessoa defina a própria senha antes de usar o sistema. A senha antiga
+          deixou de valer.
+        </p>
+
+        <DialogFooter>
+          <Button onClick={aoFechar}>Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -256,6 +283,16 @@ export function MembrosView({
     );
   };
 
+  /*
+   * A senha vive aqui, e não na linha que a gerou: gerar resolve o pedido, o
+   * membro sai da lista de pendentes e aquela linha é desmontada. O diálogo
+   * precisa sobreviver a isso.
+   */
+  const [senhaGerada, setSenhaGerada] = useState<{
+    senha: string;
+    nome: string;
+  } | null>(null);
+
   const pedindoSenha = todos.filter((m) => m.pedidoSenhaEm !== null);
   const pendentes = filtrar(todos.filter((m) => m.status === "pendente"));
   const aprovados = filtrar(todos.filter((m) => m.status === "aprovado"));
@@ -263,6 +300,8 @@ export function MembrosView({
 
   return (
     <>
+      <DialogoSenha dados={senhaGerada} aoFechar={() => setSenhaGerada(null)} />
+
       <PageHeader
         title="Membros"
         description="Quem pediu acesso e quem já tem. Aprovações são manuais."
@@ -341,7 +380,10 @@ export function MembrosView({
                     pediu em {formatDateBr(membro.pedidoSenhaEm!)}
                   </span>
                 </span>
-                <RedefinirSenha membro={membro} />
+                <RedefinirSenha
+                  membro={membro}
+                  aoGerar={(senha, nome) => setSenhaGerada({ senha, nome })}
+                />
               </li>
             ))}
           </ul>
@@ -430,7 +472,12 @@ export function MembrosView({
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex flex-wrap items-center justify-end gap-1">
-                        <RedefinirSenha membro={membro} />
+                        <RedefinirSenha
+                          membro={membro}
+                          aoGerar={(senha, nome) =>
+                            setSenhaGerada({ senha, nome })
+                          }
+                        />
                         <ConfirmarExclusao
                           titulo="Revogar acesso"
                           alvo={membro.nome}
