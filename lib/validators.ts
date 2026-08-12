@@ -133,6 +133,40 @@ export const lancamentoSchema = z.object({
     amount: aplicarSinalDoTipo(dados.type, dados.amount),
   }));
 
+/**
+ * Relato de suporte. Ver ARCHITECTURE.md §14.
+ *
+ * `rota` e `versao` chegam do cliente e são apenas contexto: entram como texto
+ * curto e não influenciam nenhuma decisão do servidor, então um valor forjado
+ * atrapalha só quem forjou.
+ */
+export const feedbackSchema = z.object({
+  tipo: z.enum(["bug", "duvida", "sugestao"]),
+  mensagem: z
+    .string()
+    .trim()
+    .min(10, "Descreva com pelo menos 10 caracteres: relato curto demais rende ida e volta.")
+    .max(2000, "Máximo de 2000 caracteres."),
+  /*
+   * Mesmo padrão de `textoOpcional`: vazio vira `null`, não string vazia.
+   * `.nullable().or(literal(""))` não funcionaria, porque a string vazia já
+   * satisfaz o primeiro ramo e o segundo nunca seria alcançado: o banco
+   * receberia "" onde deveria receber NULL.
+   */
+  rota: z
+    .string()
+    .trim()
+    .max(200)
+    .transform((v) => (v === "" ? null : v))
+    .nullable(),
+  versao: z
+    .string()
+    .trim()
+    .max(20)
+    .transform((v) => (v === "" ? null : v))
+    .nullable(),
+});
+
 export const cotacaoSchema = z.object({
   symbol: z
     .string()

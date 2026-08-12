@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  feedbackSchema,
   cotacaoSchema,
   lancamentoSchema,
   perfilSchema,
@@ -159,5 +160,47 @@ describe("perfil", () => {
   it("remove espaços das pontas", () => {
     const r = perfilSchema.safeParse({ name: "  Artur Nery  " });
     expect(r.data!.name).toBe("Artur Nery");
+  });
+});
+
+describe("feedbackSchema", () => {
+  const base = {
+    tipo: "bug",
+    mensagem: "Ao salvar a retirada o saldo aumentou em vez de diminuir.",
+    rota: "/projetos/saturn",
+    versao: "1.0",
+  };
+
+  it("aceita um relato completo", () => {
+    expect(feedbackSchema.safeParse(base).success).toBe(true);
+  });
+
+  /*
+   * Relato curto demais custa uma ida e volta só para descobrir o que
+   * aconteceu, que é justamente o que o formulário existe para evitar.
+   */
+  it("recusa mensagem curta demais", () => {
+    const r = feedbackSchema.safeParse({ ...base, mensagem: "quebrou" });
+    expect(r.success).toBe(false);
+  });
+
+  it("recusa tipo fora dos três previstos", () => {
+    expect(
+      feedbackSchema.safeParse({ ...base, tipo: "reclamacao" }).success,
+    ).toBe(false);
+  });
+
+  it("aceita sem rota nem versão: o contexto é opcional", () => {
+    const r = feedbackSchema.safeParse({ ...base, rota: "", versao: "" });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.rota).toBeNull();
+      expect(r.data.versao).toBeNull();
+    }
+  });
+
+  it("recusa mensagem acima do limite", () => {
+    const r = feedbackSchema.safeParse({ ...base, mensagem: "a".repeat(2001) });
+    expect(r.success).toBe(false);
   });
 });

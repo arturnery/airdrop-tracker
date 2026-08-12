@@ -5,7 +5,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
-![Tests](https://img.shields.io/badge/testes-211%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-216%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -102,6 +102,9 @@ senhas temporárias, mas não vê o farming de ninguém.
   administração, quem administra gera uma senha temporária, e o primeiro acesso com ela
   exige definir a própria. Para uma comunidade fechada com aprovação manual, e-mail
   transacional é infraestrutura que não se paga.
+- **Suporte com contexto.** O relato leva sozinho a tela de origem, a versão e quem
+  enviou, o que costuma bastar para o diagnóstico começar do lugar certo. A resposta sai
+  por e-mail, com o rascunho já montado.
 - **Múltiplos usuários com aprovação manual.** Cadastro livre, entrada só depois de
   liberada. Cada pessoa enxerga exclusivamente os próprios dados.
 
@@ -363,7 +366,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 211 testes
+npm test              # 216 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -423,11 +426,6 @@ tests/            Vitest
       a mesma decisão vista de ângulos diferentes. Enquanto isso não existe, os campos de
       data e de valor confirmam embaixo como o dado foi interpretado
 
-- [ ] **Suporte e feedback dentro do sistema.** Um formulário que anexa sozinho quem
-      enviou, de qual tela veio e em que versão, porque relato sem contexto custa três idas
-      e voltas. Modelado em [`ARCHITECTURE.md` §14](ARCHITECTURE.md): caixa de entrada em
-      vez de sistema de tickets, com resposta por e-mail, já que a quarta fila com o mesmo
-      desenho não acrescentaria nada tecnicamente
 - [ ] **Catálogo de projetos da comunidade.** Quem administra cadastra o projeto uma vez,
       com links e data prevista de TGE, e quem farma o adiciona aos próprios com um clique,
       em vez de recadastrar tudo do zero. Modelado em

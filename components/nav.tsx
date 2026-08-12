@@ -8,6 +8,7 @@ import {
   UserCheck,
   LayoutDashboard,
   Layers,
+  LifeBuoy,
   ListChecks,
   Upload,
   Wallet,
@@ -31,7 +32,14 @@ const itens = [
  * `ehAdmin` esconde o item de administração de quem não é: conforto visual,
  * não segurança. A rota se protege sozinha no servidor (§9.4).
  */
-export function Nav({ ehAdmin = false }: { ehAdmin?: boolean }) {
+export function Nav({
+  ehAdmin = false,
+  feedbackNaoLido = 0,
+}: {
+  ehAdmin?: boolean;
+  /** Só chega preenchido para quem administra: ver o layout. */
+  feedbackNaoLido?: number;
+}) {
   const pathname = usePathname();
   const { dataset, hoje } = useDados();
 
@@ -40,7 +48,12 @@ export function Nav({ ehAdmin = false }: { ehAdmin?: boolean }) {
   ).length;
   // A contagem de membros pendentes não entra aqui: ela vive em `users` e é
   // dado de administração, que não deve ser carregado em toda navegação.
-  const contagem = (href: string) => (href === "/tarefas" ? urgentes : 0);
+  const contagem = (href: string) =>
+    href === "/tarefas"
+      ? urgentes
+      : href === "/suporte"
+        ? feedbackNaoLido
+        : 0;
 
   const estaAtivo = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -51,7 +64,10 @@ export function Nav({ ehAdmin = false }: { ehAdmin?: boolean }) {
         {[
           ...itens,
           ...(ehAdmin
-            ? [{ href: "/membros", label: "Membros", icon: UserCheck } as const]
+            ? ([
+                { href: "/membros", label: "Membros", icon: UserCheck },
+                { href: "/suporte", label: "Suporte", icon: LifeBuoy },
+              ] as const)
             : []),
         ].map((item) => {
           const ativo = estaAtivo(item.href);

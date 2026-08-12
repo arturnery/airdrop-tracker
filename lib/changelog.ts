@@ -39,6 +39,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.1",
+    data: "2026-08-12",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Botão de suporte no rodapé: dá para relatar um erro, tirar dúvida ou sugerir algo de qualquer tela. A resposta vai para o e-mail do seu cadastro.",
+      },
+    ],
+  },
+  {
     versao: "1.0",
     data: "2026-08-12",
     mudancas: [

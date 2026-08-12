@@ -1688,6 +1688,52 @@ subiram para `lib/dates.ts` e os dois passaram a usar a mesma.
 
 ---
 
+## Marco 28: Suporte com contexto
+
+Implementação do que estava modelado na §14. O desenho sobreviveu inteiro, e a construção
+acrescentou duas coisas que não estavam previstas.
+
+### Onde o formulário mora decide se ele serve
+
+O relato precisa levar a tela de origem, e **só quem está na tela sabe qual é**. Uma rota
+`/suporte` com formulário registraria sempre `/suporte`, e perguntar "em qual tela
+aconteceu?" traz resposta imprecisa quando traz alguma.
+
+Por isso o envio é um diálogo no rodapé, aberto de qualquer lugar, capturando `usePathname`
+e a versão do changelog. É a diferença entre "está dando erro ao lançar" e "erro em
+/projetos/saturn, versão 0.9".
+
+A leitura é o oposto: rota própria, `/suporte`, protegida por `exigirAdmin()` no servidor,
+porque a lista traz mensagens e e-mails de outras pessoas e não pode viajar no Dataset
+geral. Verificado: a conta de demonstração vê o botão de envio e recebe 307 ao tentar abrir
+a tela de leitura.
+
+### Responder é o gargalo, não ler
+
+A resposta sai por e-mail, e o botão monta um `mailto:` com destinatário, assunto e o
+relato citado no corpo. Parece detalhe e não é: o custo de responder é o que decide se as
+respostas acontecem. Ter que abrir outra aba, procurar o e-mail na lista de membros e
+copiar o texto original transformaria cada resposta numa pequena tarefa adiável.
+
+### O teste que pegou um NULL virando string vazia
+
+`rota` e `versao` foram escritos como
+`z.string().nullable().or(z.literal("").transform(() => null))`. Parece razoável e está
+errado: a string vazia **já satisfaz** o primeiro ramo, então o segundo nunca é alcançado.
+O campo iria para o banco como `""` em vez de `NULL`.
+
+Ninguém veria isso na tela: os dois casos exibem vazio. Apareceria muito depois, numa
+consulta filtrando por `rota is null` que devolveria menos linhas do que deveria.
+
+O projeto já tinha `textoOpcional` com a forma correta, usada em cinco campos. Escrevi uma
+variante nova em vez de reusar, e é exatamente o item 2 do catálogo de erros: regra que já
+existe, reescrita à mão em outro lugar.
+
+O teste que pegou verificava `toBeNull()` no campo vazio, não que o schema aceitava a
+entrada. Asserção sobre a **forma do dado**, não sobre o parse ter passado.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1698,7 +1744,7 @@ subiram para `lib/dates.ts` e os dois passaram a usar a mesma.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 211, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 216, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

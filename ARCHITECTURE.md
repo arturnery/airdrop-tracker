@@ -909,7 +909,7 @@ catálogo é compartilhada.
 
 ---
 
-## 14. Suporte e feedback (modelado, não implementado)
+## 14. Suporte e feedback
 
 ### 14.1. O problema
 

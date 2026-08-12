@@ -4,6 +4,8 @@ import { Nav } from "@/components/nav";
 import { Sair } from "@/components/sair";
 import { TrocaObrigatoria } from "@/components/views/troca-obrigatoria";
 import { carregarUsuario } from "@/db/queries/usuario";
+import { contarNaoLidos } from "@/actions/feedback";
+import { Suporte } from "@/components/forms/suporte";
 import { versaoAtual } from "@/lib/changelog";
 import { exigirSessao } from "@/lib/auth";
 
@@ -27,6 +29,13 @@ export default async function AppLayout({
    */
   const usuario = await carregarUsuario(sessao.id);
   const nomeExibido = usuario?.nome ?? sessao.nome;
+
+  /*
+   * A contagem só é consultada para quem administra: ela lê a tabela inteira,
+   * sem filtro por usuário, e não deve custar uma consulta a cada navegação de
+   * quem nunca vai ver o número.
+   */
+  const naoLidos = sessao.papel === "admin" ? await contarNaoLidos() : 0;
 
   /*
    * Senha temporária trava o sistema na própria troca.
@@ -82,7 +91,10 @@ export default async function AppLayout({
                 {nomeExibido}
               </Link>
             </div>
-            <Nav ehAdmin={sessao.papel === "admin"} />
+            <Nav
+              ehAdmin={sessao.papel === "admin"}
+              feedbackNaoLido={naoLidos}
+            />
           </div>
           <div className="mt-auto hidden lg:block">
             <Sair />
@@ -97,13 +109,16 @@ export default async function AppLayout({
             consulta ocasional, e o menu é para o que se faz todo dia. É onde
             produtos como Stripe e Linear colocam o changelog.
           */}
-          <footer className="border-border text-muted-foreground mx-auto mt-16 w-full max-w-6xl border-t pt-4 text-xs">
+          <footer className="border-border text-muted-foreground mx-auto mt-16 flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 border-t pt-4 text-xs">
             <Link
               href="/novidades"
               className="hover:text-foreground transition-colors"
             >
               Novidades da versão {versaoAtual}
             </Link>
+            {/* Aberto de qualquer tela de propósito: é o que permite anexar a
+                rota de origem ao relato sem perguntar nada. */}
+            <Suporte />
           </footer>
         </main>
       </div>

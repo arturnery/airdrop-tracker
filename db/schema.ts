@@ -571,3 +571,42 @@ export const passwordResetRequests = pgTable(
   },
   (t) => [index("reset_requests_user_idx").on(t.userId, t.requestedAt)],
 );
+
+export const feedbackTipoEnum = pgEnum("feedback_tipo", [
+  "bug",
+  "duvida",
+  "sugestao",
+]);
+
+/**
+ * Relatos de suporte e feedback. Ver ARCHITECTURE.md §14.
+ *
+ * O valor está nos três campos de contexto (`rota`, `versao`, `user_id`), não
+ * na mensagem: relato que chega por fora vem sem eles, e descobrir em qual tela
+ * e em qual versão algo quebrou custa mais idas e voltas que o próprio conserto.
+ *
+ * Não há tabela de respostas: a resposta sai por e-mail, que já está no
+ * cadastro. Conversa registrada exigiria thread e estado, e seria a quarta fila
+ * com o mesmo desenho das outras três.
+ */
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tipo: feedbackTipoEnum("tipo").notNull(),
+    mensagem: text("mensagem").notNull(),
+    /** Tela de origem, capturada no envio: metade dos relatos se resolve com ela. */
+    rota: text("rota"),
+    /** Versão do changelog no momento do envio, para separar defeito já corrigido. */
+    versao: text("versao"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lidoEm: timestamp("lido_em", { withTimezone: true }),
+    resolvidoEm: timestamp("resolvido_em", { withTimezone: true }),
+  },
+  (t) => [index("feedback_criado_idx").on(t.createdAt)],
+);
