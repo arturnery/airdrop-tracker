@@ -423,6 +423,11 @@ tests/            Vitest
       a mesma decisão vista de ângulos diferentes. Enquanto isso não existe, os campos de
       data e de valor confirmam embaixo como o dado foi interpretado
 
+- [ ] **Suporte e feedback dentro do sistema.** Um formulário que anexa sozinho quem
+      enviou, de qual tela veio e em que versão, porque relato sem contexto custa três idas
+      e voltas. Modelado em [`ARCHITECTURE.md` §14](ARCHITECTURE.md): caixa de entrada em
+      vez de sistema de tickets, com resposta por e-mail, já que a quarta fila com o mesmo
+      desenho não acrescentaria nada tecnicamente
 - [ ] **Catálogo de projetos da comunidade.** Quem administra cadastra o projeto uma vez,
       com links e data prevista de TGE, e quem farma o adiciona aos próprios com um clique,
       em vez de recadastrar tudo do zero. Modelado em

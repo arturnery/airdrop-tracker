@@ -909,13 +909,105 @@ catálogo é compartilhada.
 
 ---
 
-## 12. Fora de escopo (registrado para depois)
+## 14. Suporte e feedback (modelado, não implementado)
+
+### 14.1. O problema
+
+Quando algo quebra, o relato chega por fora e sem contexto: "está dando erro ao lançar".
+Descobrir o que aconteceu exige perguntar em qual tela, o que foi digitado e quando, e cada
+ida e volta custa horas.
+
+O caso do tipo "Outro" ilustra o custo. O relato foi "não está salvando", e o defeito era
+outro: salvava e não movia nenhum número. Só ficou claro consultando o banco e encontrando
+dois lançamentos idênticos, sinal de que a pessoa tentou duas vezes. Um formulário dentro
+do sistema teria trazido a tela de origem e a versão junto, e o diagnóstico começaria do
+lugar certo.
+
+### 14.2. O que o formulário anexa sozinho
+
+É isto que justifica construir em vez de pedir um e-mail:
+
+| Campo | Origem | Por que importa |
+|---|---|---|
+| `user_id` | Sessão, nunca o formulário | Identifica sem perguntar, e permite responder |
+| `rota` | Tela onde o botão foi clicado | Metade dos relatos se resolve sabendo só isso |
+| `versao` | Changelog no momento do envio | Distingue defeito já corrigido de defeito atual |
+| `created_at` | Servidor | Cruza com o que foi publicado naquele dia |
+
+```
+feedback
+  id            uuid
+  user_id       -> users.id, ON DELETE CASCADE
+  tipo          bug | duvida | sugestao
+  mensagem      text
+  rota          text
+  versao        text
+  created_at    timestamptz
+  lido_em       timestamptz, nulo enquanto não aberto
+  resolvido_em  timestamptz, nulo enquanto em aberto
+```
+
+### 14.3. Caixa de entrada, não sistema de tickets
+
+Responder **dentro** do sistema exigiria thread de mensagens, estado de conversa, tela de
+resposta para quem administra, tela de leitura para quem enviou e um segundo contador
+avisando que houve resposta. Cerca de três vezes o trabalho.
+
+Descartado por uma razão que vale registrar: **não acrescenta nada tecnicamente**. O
+projeto já tem três filas com o mesmo desenho (aprovação de membro, pedido de senha e este
+feedback), e todas usam autorização por papel, estado pendente/resolvido e isolamento por
+usuário. A quarta seria repetição.
+
+A resposta sai por e-mail, que **já está no cadastro**. A tela de suporte oferece um
+`mailto:` com destinatário, assunto e o relato citado no corpo: responder vira escrever e
+enviar, sem procurar o endereço nem copiar o texto. O atrito de responder é o que decide se
+as respostas acontecem.
+
+### 14.4. Como quem administra fica sabendo
+
+Contador de não lidos no menu lateral, visível apenas para admin.
+
+É o conserto de uma lacuna que já existe: os pedidos de senha (§ recuperação) só aparecem
+para quem abre a tela de membros. Uma fila que depende de alguém lembrar de olhar é uma
+fila que acumula.
+
+### 14.5. A conta pública pode enviar
+
+A conta de demonstração está no README, então qualquer visitante pode escrever. Foi
+decidido **aceitar e marcar**, em vez de bloquear: quem experimenta sem cadastro também tem
+o que dizer, e é justamente quem esbarra nas arestas do primeiro uso.
+
+O risco disso é volume. A defesa é um limite de envios por conta por dia, na mesma linha do
+limite de pedidos de senha: sem ele, uma pessoa mal-intencionada enche o banco em minutos e
+a caixa deixa de ser utilizável.
+
+### 14.6. Fora do escopo desta proposta
+
+- **Anexar imagem.** Exige upload e armazenamento, e a maior parte dos relatos se resolve
+  com texto mais o contexto automático.
+- **Status visível para quem enviou.** Só faz sentido havendo resposta pelo sistema, que foi
+  descartada em 14.3.
+- **Categorias além das três.** Refinar depois de ver o que realmente chega, em vez de
+  adivinhar agora.
+
+---
+
+## 15. Fora de escopo (registrado para depois)
 
 - Leitura on-chain automática de saldos (Alchemy/DeBank).
 - Integração com CEX via API key.
 - Multi-moeda com cotação automática.
 - Checklist de critérios de elegibilidade por conta.
 - Notificações (Discord/e-mail) de tarefa vencendo.
+- **Paginação e carregamento sob demanda.** Hoje o Dataset inteiro é carregado numa
+  requisição. Adequado a dezenas de projetos e centenas de lançamentos; deixa de ser quando
+  o histórico crescer. É a lacuna técnica mais relevante do projeto hoje.
+- **Upload de arquivo.** Nada aqui lida com armazenamento de binário. Seria o caminho para
+  anexar print a um relato de bug (§14.6).
+- **Busca no histórico.** Não há como procurar um lançamento por texto, o que passa a doer
+  junto com o crescimento que motiva a paginação.
+- **Atualização em tempo real.** Nenhuma tela usa websocket ou polling; tudo depende de
+  recarregar. Só se justifica se mais de uma pessoa passar a mexer nos mesmos dados.
 - **Internacionalização.** Idioma selecionável levando junto data, separador de milhar e
   moeda. Um detalhe que decide a implementação: `<input type="date">` exibe no formato da
   preferência do navegador, não da página, e isso não é configurável por HTML. Só um
