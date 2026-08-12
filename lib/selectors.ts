@@ -13,6 +13,7 @@ import {
   type PairExposure,
 } from "./finance";
 import { addCents, cents, fromDbNumeric, percentOf, subtractCents, ZERO, type Cents } from "./money";
+import { apenasProximaDeCada } from "./tarefas";
 import {
   addPoints,
   fromDbPoints,
@@ -421,7 +422,7 @@ function montarTarefa(
 }
 
 export function selectPendingTasks(ds: Dataset, hoje: string): TaskOccurrenceRow[] {
-  return ocorrenciasPendentes(ds)
+  const ordenadas = ocorrenciasPendentes(ds)
     .map((o) => montarTarefa(ds, o, hoje))
     .filter((r): r is TaskOccurrenceRow => r !== null)
     .sort(
@@ -430,6 +431,15 @@ export function selectPendingTasks(ds: Dataset, hoje: string): TaskOccurrenceRow
         a.projetoNome.localeCompare(b.projetoNome) ||
         a.contaLabel.localeCompare(b.contaLabel),
     );
+
+  /*
+   * Só a próxima futura de cada tarefa e conta. Uma diária materializa um mês
+   * à frente, e mostrar tudo soterrava o que exige atenção hoje.
+   *
+   * A ordenação vem antes de propósito: "próxima" só significa algo numa lista
+   * já ordenada por data.
+   */
+  return apenasProximaDeCada(ordenadas);
 }
 
 export function selectCompletedToday(ds: Dataset, hoje: string): TaskOccurrenceRow[] {

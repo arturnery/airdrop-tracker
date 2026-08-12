@@ -49,3 +49,39 @@ export function contasDisponiveisNoProjeto(
 ): string[] {
   return vinculadasAoProjeto.length > 0 ? vinculadasAoProjeto : todasDoUsuario;
 }
+
+type OcorrenciaVisivel = {
+  taskId: string;
+  contaLabel: string;
+  vencimento: string;
+  urgencia: "atrasada" | "hoje" | "proxima";
+};
+
+/**
+ * Reduz as ocorrências futuras à próxima de cada tarefa e conta.
+ *
+ * Uma tarefa diária materializa um mês à frente, e a tela mostrava as trinta,
+ * repetidas por conta: o que exige atenção hoje ficava soterrado por dezenas de
+ * linhas idênticas com datas diferentes.
+ *
+ * Atrasadas e de hoje passam inteiras, porque cada uma é uma pendência real e
+ * distinta. Das futuras sobra só a primeira de cada par, que é a única
+ * acionável: ninguém marca o check-in de daqui a duas semanas.
+ *
+ * O par é tarefa mais conta, não só tarefa. A mesma tarefa em três carteiras
+ * são três coisas a fazer, e colapsar por tarefa esconderia duas.
+ */
+export function apenasProximaDeCada<T extends OcorrenciaVisivel>(
+  ocorrencias: T[],
+): T[] {
+  const jaTemFutura = new Set<string>();
+
+  return ocorrencias.filter((o) => {
+    if (o.urgencia !== "proxima") return true;
+
+    const chave = `${o.taskId}|${o.contaLabel}`;
+    if (jaTemFutura.has(chave)) return false;
+    jaTemFutura.add(chave);
+    return true;
+  });
+}

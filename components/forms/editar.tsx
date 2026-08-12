@@ -523,6 +523,9 @@ export function EditarVinculo({
 export function EditarTarefa({ taskId }: { taskId: string }) {
   const { dataset, acoes } = useDados();
   const tarefa = dataset.tasks.find((t) => t.id === taskId);
+  const [repeticao, setRepeticao] = useState<string>(
+    tarefa?.recurrence ?? "daily",
+  );
   if (!tarefa) return null;
 
   const contas: { valor: string; rotulo: string }[] = [
@@ -586,6 +589,7 @@ export function EditarTarefa({ taskId }: { taskId: string }) {
               name="recurrence"
               defaultValue={tarefa.recurrence}
               erro={e.recurrence}
+              onChange={(evento) => setRepeticao(evento.target.value)}
               opcoes={[
                 { valor: "none", rotulo: "Prazo fixo" },
                 { valor: "daily", rotulo: "Diária" },
@@ -594,14 +598,18 @@ export function EditarTarefa({ taskId }: { taskId: string }) {
                 { valor: "every_n_days", rotulo: "A cada N dias" },
               ]}
             />
-            <CampoTexto
-              label="Intervalo (dias)"
-              name="intervalDays"
-              type="number"
-              min={1}
-              defaultValue={tarefa.intervalDays ?? ""}
-              erro={e.intervalDays}
-            />
+            {/* Só aparece para "a cada N dias": ver NovaTarefa. */}
+            {repeticao === "every_n_days" ? (
+              <CampoTexto
+                label="A cada quantos dias?"
+                name="intervalDays"
+                type="number"
+                min={1}
+                obrigatorio
+                defaultValue={tarefa.intervalDays ?? ""}
+                erro={e.intervalDays}
+              />
+            ) : null}
             <CampoData
               label="Vencimento"
               name="dueDate"

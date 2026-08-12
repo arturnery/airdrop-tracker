@@ -651,6 +651,7 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
    */
   const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
   const [contaSel, setContaSel] = useState("");
+  const [repeticao, setRepeticao] = useState("daily");
 
   // Espelha a regra do servidor: vínculos do projeto ou, na falta deles, todas
   // as contas. Ver `contasDoProjeto` em actions/index.ts.
@@ -734,6 +735,7 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
               defaultValue="daily"
               erro={e.recurrence}
               className="sm:col-span-1"
+              onChange={(evento) => setRepeticao(evento.target.value)}
               opcoes={[
                 { valor: "none", rotulo: "Prazo fixo" },
                 { valor: "daily", rotulo: "Diária" },
@@ -742,14 +744,23 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
                 { valor: "every_n_days", rotulo: "A cada N dias" },
               ]}
             />
-            <CampoTexto
-              label="Intervalo (dias)"
-              name="intervalDays"
-              type="number"
-              min={1}
-              erro={e.intervalDays}
-              ajuda="Só para 'a cada N dias'."
-            />
+            {/*
+              O intervalo só existe para "a cada N dias": as outras repetições
+              já dizem a frequência no próprio nome. Deixá-lo sempre visível
+              punha na tela um campo que quase nunca se aplica, e a explicação
+              de quando aplicar ocupava mais espaço que o campo.
+            */}
+            {repeticao === "every_n_days" ? (
+              <CampoTexto
+                label="A cada quantos dias?"
+                name="intervalDays"
+                type="number"
+                min={1}
+                obrigatorio
+                erro={e.intervalDays}
+                placeholder="3"
+              />
+            ) : null}
             <CampoData
               label="Vencimento"
               name="dueDate"

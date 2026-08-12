@@ -1559,6 +1559,48 @@ noutro formato**, ela costuma dobrar a ambiguidade em vez de resolver.
 
 ---
 
+## Marco 25: A tela que o motor de recorrência entupiu
+
+O motor do marco 20 materializa trinta dias à frente, e isso apareceu na tela como 220
+linhas em "Próximas": a mesma tarefa diária repetida por dia e por conta. O que exigia
+atenção hoje ficava soterrado.
+
+Um efeito colateral que não estava no desenho. A janela é dimensionada para o **banco** ter
+o que mostrar; a **tela** tem outra necessidade, e as duas foram tratadas como uma só.
+
+### Só a próxima de cada, e por que não colapsar mais
+
+`apenasProximaDeCada` deixa passar todas as atrasadas e as de hoje, e reduz as futuras à
+primeira de cada tarefa. As três categorias respondem a perguntas diferentes: atrasada é
+dívida acumulada, cada uma sua; hoje é o trabalho do dia; futura serve só para saber que
+existe. Ninguém marca o check-in de daqui a duas semanas.
+
+O par é **tarefa mais conta**, não só tarefa. A mesma tarefa em três carteiras são três
+coisas a fazer, e colapsar por tarefa esconderia duas.
+
+| | Antes | Depois |
+|---|---|---|
+| Atrasadas | 49 | 49 |
+| Para hoje | 7 | 7 |
+| Próximas | **220** | **11** |
+
+O filtro é de exibição, não de dados: as ocorrências continuam no banco, o que mantém o
+histórico e a idempotência do motor intactos.
+
+### O campo que só valia para uma opção em cinco
+
+"Intervalo (dias)" ficava sempre visível, com a explicação "Só para 'a cada N dias'". Ou
+seja, um campo inútil em quatro das cinco repetições, mais uma frase para dizer isso.
+
+Agora ele aparece apenas quando a repetição é "a cada N dias", e aí vira obrigatório com o
+rótulo "A cada quantos dias?". A pergunta responde a si mesma e a explicação some junto com
+o campo.
+
+Vale como padrão: quando um campo precisa de uma legenda dizendo quando se aplica, o
+problema costuma ser ele estar visível na hora errada, não a legenda estar mal escrita.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1569,7 +1611,7 @@ noutro formato**, ela costuma dobrar a ambiguidade em vez de resolver.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 198, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 203, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

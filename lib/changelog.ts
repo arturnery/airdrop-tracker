@@ -39,6 +39,22 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "0.9",
+    data: "2026-08-12",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "A lista de tarefas mostra apenas a próxima ocorrência de cada tarefa em \"Próximas\", em vez de todas as próximas semanas. Atrasadas e de hoje continuam aparecendo inteiras.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O campo de intervalo em dias só aparece quando a repetição é \"a cada N dias\", em vez de ficar sempre na tela.",
+      },
+    ],
+  },
+  {
     versao: "0.8",
     data: "2026-08-11",
     mudancas: [
