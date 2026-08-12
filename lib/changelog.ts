@@ -43,6 +43,11 @@ export const changelog: Versao[] = [
     data: "2026-08-12",
     mudancas: [
       {
+        tipo: "correcao",
+        texto:
+          "Editar uma tarefa que se repete falhava com \"não foi possível salvar\". Ao mudar a data de uma tarefa recorrente, as próximas ocorrências passam a ser reagendadas a partir da nova data, e as atrasadas continuam onde estavam.",
+      },
+      {
         tipo: "novidade",
         texto:
           "Botão de suporte no rodapé: dá para relatar um erro, tirar dúvida ou sugerir algo de qualquer tela. A resposta vai para o e-mail do seu cadastro.",

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -8,6 +8,7 @@ import * as schema from "@/db/schema";
 import { uniqueSlug } from "@/lib/dataset";
 import { toDbNumeric } from "@/lib/money";
 import { toDbPoints } from "@/lib/points";
+import { hojeNoServidor } from "@/lib/dates";
 import { contasAlvoDaTarefa } from "@/lib/tarefas";
 import {
   contaSchema,
@@ -473,26 +474,47 @@ export async function atualizarTarefa(
       .returning({ id: schema.tasks.id });
 
     /*
-     * A data também precisa descer para as ocorrências.
+     * A data precisa descer para as ocorrências, porque a tela lista
+     * ocorrências e cada uma guarda o próprio vencimento. Mas o que fazer com
+     * elas depende do tipo de tarefa, e tratar os dois casos igual quebrava.
      *
-     * A tela lista ocorrências, não tarefas, e cada uma guarda o próprio
-     * vencimento. Mudar só `tasks.dueDate` alterava um campo que ninguém
-     * exibe: a edição era salva e a tela seguia mostrando a data antiga, como
-     * se nada tivesse acontecido.
+     * **Prazo fixo** tem uma ocorrência por conta: mudar a data dela é
+     * exatamente o que se espera ao remarcar o prazo.
      *
-     * Só as pendentes mudam. Ocorrência concluída é histórico: a data em que
-     * algo venceu e foi feito não muda porque a tarefa foi reagendada depois.
+     * **Recorrente** tem dezenas, materializadas pelo motor (§6). Empurrar
+     * todas para a mesma data violava `unique(task_id, account_id, due_date)`,
+     * e a ação inteira falhava com "não foi possível salvar". A constraint
+     * evitou a corrupção que a lógica teria causado.
+     *
+     * Para recorrente, `dueDate` é a **âncora da série**, não a data de uma
+     * ocorrência: mudá-la significa reagendar dali para a frente. Então as
+     * pendentes futuras são apagadas e o motor as recria pela nova regra na
+     * próxima leitura. As atrasadas ficam, porque são dívida acumulada e não
+     * somem porque a tarefa foi reagendada.
      */
     if (atualizada && dados.dueDate) {
-      await db
-        .update(schema.taskOccurrences)
-        .set({ dueDate: dados.dueDate })
-        .where(
-          and(
-            eq(schema.taskOccurrences.taskId, id),
-            isNull(schema.taskOccurrences.completedAt),
-          ),
-        );
+      if (dados.recurrence === "none") {
+        await db
+          .update(schema.taskOccurrences)
+          .set({ dueDate: dados.dueDate })
+          .where(
+            and(
+              eq(schema.taskOccurrences.taskId, id),
+              isNull(schema.taskOccurrences.completedAt),
+            ),
+          );
+      } else {
+        const hoje = hojeNoServidor();
+        await db
+          .delete(schema.taskOccurrences)
+          .where(
+            and(
+              eq(schema.taskOccurrences.taskId, id),
+              isNull(schema.taskOccurrences.completedAt),
+              gte(schema.taskOccurrences.dueDate, hoje),
+            ),
+          );
+      }
     }
   }, [...ROTAS_DADOS, "/tarefas"]);
 }

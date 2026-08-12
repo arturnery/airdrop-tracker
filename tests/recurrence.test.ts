@@ -151,3 +151,34 @@ describe("formatDateExtenso", () => {
     expect(formatDateExtenso("2026-01-05")).toBe("5 de janeiro de 2026");
   });
 });
+
+describe("reagendar tarefa recorrente", () => {
+  /*
+   * Ao editar a data de uma recorrente, `dueDate` é a âncora da série, não a
+   * data de uma ocorrência. Empurrar todas as pendentes para a mesma data
+   * violava unique(task_id, account_id, due_date) e derrubava a ação inteira.
+   * O correto é apagar as futuras e deixar o motor recriá-las pela nova âncora.
+   */
+  it("a nova âncora gera uma série diferente da anterior", () => {
+    const janela = { de: "2026-08-12", ate: "2026-08-20" };
+    const antes = datasDevidas(
+      { recorrencia: "weekly", ancora: "2026-08-12" },
+      janela,
+    );
+    const depois = datasDevidas(
+      { recorrencia: "weekly", ancora: "2026-08-14" },
+      janela,
+    );
+    expect(antes).toEqual(["2026-08-12", "2026-08-19"]);
+    expect(depois).toEqual(["2026-08-14"]);
+    expect(antes).not.toEqual(depois);
+  });
+
+  it("cada data da série é única: não há duas iguais para colidir", () => {
+    const datas = datasDevidas(
+      { recorrencia: "daily", ancora: "2026-08-01" },
+      { de: "2026-08-01", ate: "2026-08-31" },
+    );
+    expect(new Set(datas).size).toBe(datas.length);
+  });
+});

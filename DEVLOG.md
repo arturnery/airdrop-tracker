@@ -1734,6 +1734,55 @@ entrada. Asserção sobre a **forma do dado**, não sobre o parse ter passado.
 
 ---
 
+## Marco 29: Duas mudanças corretas que juntas quebraram
+
+Editar qualquer tarefa recorrente falhava com "não foi possível salvar", a mensagem
+genérica do `catch`. O erro real era do banco:
+
+```
+duplicate key value violates unique constraint "occurrences_task_account_date_unq"
+```
+
+Nenhuma das duas mudanças que causaram isso estava errada sozinha:
+
+- **Marco 19**: a edição de data passou a descer para as ocorrências, porque a tela lista
+  ocorrências e alterar só `tasks.dueDate` mexia num campo que ninguém exibe.
+- **Marco 20**: o motor de recorrência passou a materializar dezenas de ocorrências por
+  tarefa.
+
+Juntas, mandavam 150 ocorrências para a **mesma data**, e a unicidade `(tarefa, conta,
+data)` recusava. A primeira foi escrita quando uma tarefa tinha uma ou duas ocorrências, e
+a segunda mudou essa premissa sem que nada apontasse para a primeira.
+
+**A constraint fez o trabalho dela.** Sem ela, o resultado seria 150 linhas duplicadas na
+mesma data, corrupção silenciosa que apareceria semanas depois como tarefas repetidas na
+tela. Falhar alto foi o melhor desfecho possível.
+
+### O conserto é conceitual, não técnico
+
+Para tarefa recorrente, `dueDate` **não é a data de uma ocorrência**: é a âncora da série.
+Mudá-la significa reagendar dali para a frente, não achatar tudo num dia.
+
+| Tipo | O que acontece ao mudar a data |
+|---|---|
+| Prazo fixo | A ocorrência é atualizada: é uma por conta, e remarcar o prazo é exatamente isso |
+| Recorrente | As pendentes **futuras** são apagadas e o motor as recria pela nova âncora |
+
+As atrasadas ficam, porque são dívida acumulada e não somem porque a tarefa foi reagendada.
+As concluídas nunca são tocadas: histórico.
+
+Verificado de ponta a ponta: 124 futuras apagadas, 26 atrasadas preservadas, 2 concluídas
+intactas, e as 124 recriadas na leitura seguinte pela nova regra.
+
+### O que fica de padrão
+
+O catálogo de erros ganha uma entrada: **mudança que altera a cardinalidade de um
+relacionamento precisa de uma revisão de quem já dependia da cardinalidade antiga.** O motor
+transformou "uma tarefa tem poucas ocorrências" em "tem dezenas", e nenhum teste ou tipo
+apontava para o código escrito sob a premissa anterior.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1744,7 +1793,7 @@ entrada. Asserção sobre a **forma do dado**, não sobre o parse ter passado.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 216, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 218, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
