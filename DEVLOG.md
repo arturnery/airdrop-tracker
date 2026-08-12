@@ -1630,6 +1630,41 @@ que a ação remove.**
 
 ---
 
+## Marco 27: Onde o volume operado aparece
+
+Quase todo tipo de lançamento tem para onde ir: depósito, retirada, rendimento, resultado
+de trade e "Outro" somam no capital, na exposição e no resultado. Sobrava um.
+
+**Volume operado não é dinheiro movimentado.** É atividade: quanto se negociou, não quanto
+se ganhou ou perdeu. Por isso fica fora de todos os cálculos, o que está certo e criava um
+problema: dentro do projeto, ele não aparecia em número nenhum, só como uma linha no
+histórico, perdida entre depósitos e retiradas.
+
+E na lista de projetos ele só aparecia quando a categoria era `perps`. A regra parecia
+razoável quando foi escrita, e escondia o número em projetos de interações que também
+operam volume, como mercados de previsão. Quem lançava ali não via o valor em lugar algum.
+
+Duas correções, e a segunda é sobre o critério:
+
+- Um indicador de volume no topo do projeto, quando houver volume.
+- Na lista, o critério deixou de ser a categoria e passou a ser **ter volume**. A categoria
+  era um palpite sobre quando a informação interessa; a presença do dado responde isso
+  diretamente.
+
+### A aba pedida virou filtro
+
+O pedido original era uma aba dedicada ao volume, ao lado de Contas e Tarefas. Uma aba por
+tipo daria sete, e cada uma repetiria o histórico com um filtro fixo.
+
+O histórico ganhou filtro por tipo, mostrando só os tipos presentes naquele projeto com a
+contagem de cada um. Resolve o mesmo problema para os sete tipos, inclusive para os que
+ainda não existem, e reusa o componente de filtro já usado na lista de projetos.
+
+Vale como padrão: quando o pedido é "uma aba para X", checar se o que falta é lugar para X
+ou uma forma de encontrar X no que já existe.
+
+---
+
 ## Estado atual
 
 | | |

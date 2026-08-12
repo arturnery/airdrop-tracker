@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
+
 import Link from "next/link";
 import { ExternalLink, Unlink } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
+import { FiltroChips } from "@/components/filtro-chips";
 import {
   BotaoLixeira,
   ConfirmarExclusao,
@@ -63,6 +66,14 @@ const tipoLabels: Record<TransactionRow["tipo"], string> = {
 };
 
 export function ProjetoView({ slug }: { slug: string }) {
+  /*
+   * Filtro do histórico por tipo. Nasceu de um pedido para dar aba própria ao
+   * volume operado: uma aba por tipo daria sete, e o filtro resolve o mesmo
+   * problema para todos, inclusive os que ainda não existem.
+   */
+  const [tipoFiltro, setTipoFiltro] = useState<TransactionRow["tipo"] | null>(
+    null,
+  );
   const { dataset, hoje, acoes } = useDados();
   const projeto = selectProjectBySlug(dataset, slug, hoje);
 
@@ -139,9 +150,19 @@ export function ProjetoView({ slug }: { slug: string }) {
         }
       />
 
+      {/*
+        Cinco colunas quando há volume operado, quatro quando não há. O volume
+        não é dinheiro movimentado (não entra em saldo nem em resultado), então
+        antes ele não tinha onde aparecer dentro do projeto: ficava só como uma
+        linha no histórico, perdido entre depósitos e retiradas.
+        Em projetos que qualificam por atividade, ele é o número que importa.
+      */}
       <section
         aria-label="Indicadores do projeto"
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className={cn(
+          "grid gap-4 sm:grid-cols-2",
+          projeto.volumeOperado > 0 ? "xl:grid-cols-5" : "xl:grid-cols-4",
+        )}
       >
         <StatCard
           label="Capital depositado"
@@ -183,6 +204,14 @@ export function ProjetoView({ slug }: { slug: string }) {
             )
           }
         />
+        {projeto.volumeOperado > 0 ? (
+          <StatCard
+            label="Volume operado"
+            accent="idle"
+            value={<Money value={projeto.volumeOperado} />}
+            hint="atividade, não dinheiro movimentado"
+          />
+        ) : null}
         <StatCard
           label="Tarefas pendentes"
           accent={projeto.tarefasAtrasadas > 0 ? "negative" : "caution"}
@@ -389,6 +418,32 @@ export function ProjetoView({ slug }: { slug: string }) {
             />
           ) : (
             <>
+              <div className="border-border mb-4 rounded-lg border p-4">
+                <FiltroChips
+                  legenda="Tipo de lançamento"
+                  selecionado={tipoFiltro}
+                  aoSelecionar={setTipoFiltro}
+                  opcoes={[
+                    {
+                      valor: null,
+                      rotulo: "Todos",
+                      contagem: projeto.historico.length,
+                    },
+                    // Só os tipos presentes: oferecer filtro que devolve nada
+                    // é ruído, e a lista de sete tipos não cabe em tela estreita.
+                    ...(
+                      Object.keys(tipoLabels) as TransactionRow["tipo"][]
+                    ).flatMap((tipo) => {
+                      const qtd = projeto.historico.filter(
+                        (l) => l.tipo === tipo,
+                      ).length;
+                      return qtd > 0
+                        ? [{ valor: tipo, rotulo: tipoLabels[tipo], contagem: qtd }]
+                        : [];
+                    }),
+                  ]}
+                />
+              </div>
               <div className="border-border overflow-x-auto rounded-lg border">
                 <table className="w-full min-w-160 text-sm">
                   <caption className="sr-only">
@@ -407,7 +462,9 @@ export function ProjetoView({ slug }: { slug: string }) {
                     </tr>
                   </thead>
                   <tbody className="divide-border divide-y">
-                    {projeto.historico.map((linha) => (
+                    {projeto.historico
+                      .filter((l) => tipoFiltro === null || l.tipo === tipoFiltro)
+                      .map((linha) => (
                       <tr
                         key={linha.id}
                         className="hover:bg-accent/40 transition-colors"

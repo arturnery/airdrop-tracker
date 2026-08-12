@@ -115,12 +115,13 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         </div>
 
         {/*
-          Em perps, o que qualifica para o airdrop costuma ser volume operado,
-          não quanto ficou parado. Sem isso, abrir o projeto era a única forma
-          de saber se a meta de volume andou. Só aparece nessa categoria: nas
-          outras seria uma coluna vazia ocupando espaço.
+          Aparece sempre que houver volume, e não só em perps.
+          A regra por categoria escondia o número em projetos de interações que
+          também operam volume, como mercados de previsão: quem lançava ali não
+          via o valor em lugar nenhum. O critério passou a ser ter volume, que
+          é o que de fato indica se a informação interessa àquele projeto.
         */}
-        {projeto.categoria === "perps" ? (
+        {projeto.volumeOperado > 0 ? (
           <div className="col-span-3 border-t border-border pt-3">
             <dt className="text-muted-foreground text-xs">Volume operado</dt>
             <dd className="mt-0.5">

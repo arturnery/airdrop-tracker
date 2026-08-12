@@ -39,6 +39,22 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.0",
+    data: "2026-08-12",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O volume operado aparece como indicador dentro do projeto, e no cartão da lista sempre que houver volume, não só em projetos de perps.",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "O histórico do projeto pode ser filtrado por tipo de lançamento, mostrando quantos existem de cada.",
+      },
+    ],
+  },
+  {
     versao: "0.9",
     data: "2026-08-12",
     mudancas: [
