@@ -43,6 +43,47 @@ pelo mesmo login. Cadastros novos entram numa fila de aprovação manual.
 
 `[ADICIONAR AQUI: GIF do fluxo de lançamento ou da aba do projeto]`
 
+## Como funciona, na prática
+
+O caminho de quem usa, do primeiro acesso ao dia a dia. Este é o fluxo **funcional**: a
+arquitetura técnica está mais abaixo.
+
+```mermaid
+flowchart TD
+    A["Cria conta<br/>com e-mail e senha"] --> B{"É o e-mail<br/>do administrador?"}
+    B -->|"Não"| C["Fica aguardando<br/>aprovação"]
+    B -->|"Sim"| E
+    C --> D["Administrador aprova<br/>na tela de Membros"]
+    D --> E["Entra no sistema"]
+
+    F["Esqueceu a senha"] --> G["Pede redefinição"]
+    G --> H["Pedido aparece<br/>para o administrador"]
+    H --> I["Recebe senha temporária<br/>e define a sua ao entrar"]
+    I --> E
+
+    E --> J["Visão geral:<br/>quanto está aplicado,<br/>resultado e o que fazer hoje"]
+
+    J --> K["Cadastra as carteiras<br/>em Contas"]
+    K --> L["Cadastra o projeto<br/>que está farmando"]
+    L --> M["Lança depósitos, rendimentos,<br/>retiradas e perdas"]
+    M --> N["Cria tarefas do projeto<br/>diárias, semanais ou por prazo"]
+
+    N --> O["Rotina: abre e vê<br/>o que vence hoje"]
+    O --> P["Marca como feita:<br/>a próxima aparece sozinha"]
+    P --> O
+
+    M --> Q["Acompanha por projeto:<br/>saldo, metas, pontos e airdrops"]
+    Q --> R["Quando o airdrop sai,<br/>registra o recebimento"]
+    R --> S["O resultado mostra<br/>se valeu o capital travado"]
+
+    style E fill:#1f6feb,color:#fff
+    style J fill:#1f6feb,color:#fff
+    style S fill:#238636,color:#fff
+```
+
+Cada pessoa enxerga apenas os próprios dados. O administrador aprova quem entra e gera
+senhas temporárias, mas não vê o farming de ninguém.
+
 ## Funcionalidades
 
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
