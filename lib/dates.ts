@@ -29,6 +29,27 @@ export function urgencyOf(dueDate: IsoDate, today: IsoDate): TaskUrgency {
 }
 
 /** "2026-07-28" -> "28/07/2026" */
+/**
+ * Data de hoje no fuso de quem usa, no formato `aaaa-mm-dd`.
+ *
+ * Roda no servidor a cada requisição, porque todas as rotas são dinâmicas.
+ * A versão anterior usava uma constante das fixtures, com a justificativa de
+ * que `new Date()` congelaria a data no momento do build: isso valia quando
+ * havia páginas pré-renderizadas, e deixou de valer.
+ *
+ * O fuso é fixo em São Paulo em vez de UTC porque a diferença de três horas
+ * muda o dia: às 22h de Brasília o UTC já virou, e uma tarefa marcada para
+ * "hoje" apareceria como sendo de amanhã.
+ */
+export function hojeNoServidor(): IsoDate {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 export function formatDateBr(date: IsoDate): string {
   const [year, month, day] = date.split("-");
   return `${day}/${month}/${year}`;

@@ -3,7 +3,7 @@ import { Crimson_Text, Geist, Geist_Mono } from "next/font/google";
 
 import { DataProvider } from "@/components/data-provider";
 import { carregarDataset } from "@/db/queries/dataset";
-import { HOJE } from "@/db/queries/fixtures";
+import { hojeNoServidor } from "@/lib/dates";
 import { emptyDataset } from "@/lib/dataset";
 import { sessaoAtual } from "@/lib/auth";
 import "./globals.css";
@@ -32,7 +32,10 @@ export default async function RootLayout({
    * é feita, então não há o que vazar.
    */
   const sessao = await sessaoAtual();
-  const dataset = sessao ? await carregarDataset(sessao.id) : emptyDataset();
+  const hoje = hojeNoServidor();
+  const dataset = sessao
+    ? await carregarDataset(sessao.id, hoje)
+    : emptyDataset();
 
   return (
     <html
@@ -40,9 +43,10 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${crimson.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        {/* `initialToday` é só o valor que o HTML carrega; o provider troca
-            pela data real do navegador ao hidratar. */}
-        <DataProvider initialDataset={dataset} initialToday={HOJE}>
+        {/* A data do servidor já nasce correta; o provider ainda troca pela do
+            navegador ao hidratar, que é o que vale para quem está em outro
+            fuso. */}
+        <DataProvider initialDataset={dataset} initialToday={hoje}>
           {children}
         </DataProvider>
       </body>

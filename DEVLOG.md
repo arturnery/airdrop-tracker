@@ -1331,6 +1331,57 @@ inglês vai continuar vendo o campo em `mm/dd`, e agora tem embaixo a confirmaç
 
 ---
 
+## Marco 20: Motor de recorrência
+
+A periodicidade das tarefas era guardada e nada acontecia com ela: concluir a de hoje não
+criava a de amanhã. O desenho estava em ARCHITECTURE §6 desde o começo, sem implementação.
+
+### Materialização preguiçosa, não cron
+
+A escolha foi feita pelo **modo de falhar**. Um job diário que não roda numa noite deixa o
+dia seguinte sem tarefas, e ninguém percebe: a ausência é silenciosa. Recalcular a cada
+leitura não tem estado a perder, e o pior caso é uma consulta a mais.
+
+Ao carregar o dataset, o sistema calcula as datas que deveriam existir na janela de
+`[hoje − 7d, hoje + 30d]` e insere o que falta. Para trás porque quem some por alguns dias
+precisa ver o que ficou atrasado, e não um painel limpo como se nada tivesse vencido.
+
+A garantia de não duplicar é do banco: `unique(task_id, account_id, due_date)` mais
+`ON CONFLICT DO NOTHING`. Verificado abrindo a tela três vezes seguidas, com os mesmos
+números depois de cada uma.
+
+Antes de inserir, a função compara com o que já existe e desiste se não falta nada. Sem
+isso, ler uma tela custaria uma escrita a cada visita.
+
+### O teste que pegou a deriva mensal
+
+A primeira versão avançava mês a mês a partir da **última data gerada**. Uma tarefa do dia
+31 caía em 28 de fevereiro, e o mês seguinte, contado a partir do 28, dava 28 de março em
+vez de 31.
+
+O erro seria permanente, porque cada ajuste vira a nova base: a série inteira escorrega
+depois do primeiro mês curto. A correção foi calcular sempre a n-ésima data **a partir da
+âncora**, de modo que cada mês aplique o ajuste de forma independente.
+
+Não foi revisão que encontrou isso, foi o teste do dia 31 falhando na primeira execução.
+
+### Uma decisão que tinha envelhecido
+
+A data de "hoje" vinha de uma constante das fixtures (`2026-07-28`), com a justificativa de
+que `new Date()` no servidor congelaria a data no momento do build. Isso valia quando havia
+páginas pré-renderizadas; hoje **todas as rotas são dinâmicas**, e a função roda a cada
+requisição.
+
+A materialização não podia usar uma data de julho para decidir o que criar em agosto, então
+a constante saiu. O fuso é fixo em São Paulo, não UTC: às 22h de Brasília o UTC já virou o
+dia, e uma tarefa marcada para hoje apareceria como sendo de amanhã.
+
+É o terceiro caso registrado de guarda ou justificativa que sobreviveu ao motivo que a
+criou, depois de `SEED_USER_ID` e da validação de ambiente. Vale como padrão: decisão
+documentada precisa ser relida quando o contexto muda, senão vira folclore.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1341,7 +1392,7 @@ inglês vai continuar vendo o campo em `mm/dd`, e agora tem embaixo a confirmaç
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 177, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 189, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
@@ -1350,11 +1401,9 @@ inglês vai continuar vendo o campo em `mm/dd`, e agora tem embaixo a confirmaç
 
 ### Pendências conhecidas
 
-- Meta, recebimento e medição de pontos só podem ser criados e excluídos, não editados.
+- Recebimento e medição de pontos só podem ser criados e excluídos, não editados. Metas já
+  são editáveis.
 - Categorias das fixtures são um palpite e precisam de conferência.
-- A data no HTML estático fica congelada na constante das fixtures; o navegador corrige ao
-  hidratar. Usar `new Date()` no servidor congelaria a data no momento do *build*, o que
-  seria pior.
 - Sem alternância entre tema claro e escuro: o tema claro está escrito e funcional, falta
   o controle.
 - O vínculo projeto×conta só nasce no primeiro lançamento. Funciona, mas é implícito:

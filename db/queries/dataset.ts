@@ -4,6 +4,7 @@ import { asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import { materializarOcorrencias } from "@/db/queries/recorrencia";
 import type { Dataset } from "@/lib/dataset";
 
 /**
@@ -22,7 +23,21 @@ import type { Dataset } from "@/lib/dataset";
  * mover a agregação para SQL: os selectors passam a ser a especificação do
  * que as queries precisam devolver.
  */
-export async function carregarDataset(userId: string): Promise<Dataset> {
+export async function carregarDataset(
+  userId: string,
+  hoje?: string,
+): Promise<Dataset> {
+  /*
+   * Antes de ler, cria as ocorrências recorrentes que faltam. É o motor de
+   * recorrência (ARCHITECTURE §6): sem cron, calculado a cada leitura.
+   *
+   * Uma escrita dentro de uma função de leitura é uma exceção consciente, e o
+   * motivo é o modo de falhar: um cron que não roda deixa o dia sem tarefas em
+   * silêncio. Aqui não há estado a perder. A função só grava quando falta algo,
+   * então a leitura normal não paga nenhuma escrita.
+   */
+  if (hoje) await materializarOcorrencias(userId, hoje);
+
   const [
     contas,
     projetos,

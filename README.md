@@ -5,7 +5,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
-![Tests](https://img.shields.io/badge/testes-177%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-189%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -51,9 +51,10 @@ pelo mesmo login. Cadastros novos entram numa fila de aprovação manual.
   depois mostra quanto do resultado veio do farming e quanto veio do preço do token.
 - **Programas de pontos.** Medições periódicas por projeto e conta, com evolução entre
   medições, para os projetos que distribuem por pontuação em vez de volume.
-- **Tarefas por projeto e conta.** Com prazo, conclusão em um clique e destaque para o que
-  está atrasado. A periodicidade é registrada, mas ainda não gera as próximas ocorrências
-  sozinha (ver roadmap).
+- **Tarefas recorrentes.** Diária, semanal, mensal ou a cada N dias, expandidas por conta,
+  com conclusão em um clique e destaque para o que está atrasado. As ocorrências são
+  calculadas na leitura, sem cron: um job que não roda deixa o dia sem tarefas em silêncio,
+  e recalcular não tem estado a perder.
 - **Metas e recebimentos.** Objetivos por projeto, com progresso derivado dos lançamentos,
   e registro dos airdrops efetivamente recebidos.
 - **Múltiplos usuários com aprovação manual.** Cadastro livre, entrada só depois de
@@ -317,7 +318,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 177 testes
+npm test              # 189 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -352,6 +353,7 @@ lib/              Funções puras, testáveis sem banco
   money.ts        Aritmética monetária em centavos
   points.ts       Pontos em inteiros escalados
   finance.ts      Fórmulas de resultado e exposição
+  recurrence.ts   Datas devidas de uma tarefa recorrente
   selectors.ts    Derivações do Dataset para as telas
   mutations.ts    Transformações puras (também usadas na UI otimista)
   validators.ts   Schemas Zod, compartilhados entre cliente e servidor
@@ -365,10 +367,6 @@ tests/            Vitest
 
 ## Roadmap
 
-- [ ] **Motor de recorrência.** Hoje a periodicidade da tarefa é guardada mas não gera as
-      ocorrências seguintes: concluir a de hoje não cria a de amanhã. O desenho está em
-      [`ARCHITECTURE.md` §6](ARCHITECTURE.md), com geração preguiçosa na leitura em vez de
-      cron, e unicidade por constraint para reexecução ser segura
 - [ ] **Importação da planilha por CSV.** A tela existe e explica o mapeamento de cada
       coluna, mas o processamento não: falta o parser, a prévia e a gravação transacional.
       Desenhado em [`ARCHITECTURE.md` §7](ARCHITECTURE.md)
