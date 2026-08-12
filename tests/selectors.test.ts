@@ -262,3 +262,32 @@ describe("selectVolumeDoProjeto", () => {
     expect(Array.isArray(v.contas)).toBe(true);
   });
 });
+
+describe("selectVolumeDoProjeto: período coberto", () => {
+  const perp = ds.projects.find((p) => p.slug === "vertex-perp")!;
+  const volume = selectVolumeDoProjeto(ds, perp.id, HOJE);
+
+  it("desde é o lançamento mais antigo, não o mais recente", () => {
+    const datas = ds.transactions
+      .filter((t) => t.projectId === perp.id && t.type === "volume_traded")
+      .map((t) => t.occurredAt)
+      .sort();
+    expect(volume.desde).toBe(datas[0]);
+  });
+
+  /*
+   * Quando todo o volume é recente, os dois números coincidem. A tela usa essa
+   * igualdade para não repetir o mesmo valor duas vezes, o que parecia erro.
+   */
+  it("recente iguala o total quando não há volume antigo", () => {
+    const recentes = selectVolumeDoProjeto(ds, perp.id, volume.desde!);
+    expect(recentes.recente).toBe(recentes.total);
+  });
+
+  it("recente exclui o que ficou fora da janela de 30 dias", () => {
+    // Um "hoje" bem no futuro joga todos os lançamentos para fora da janela.
+    const futuro = selectVolumeDoProjeto(ds, perp.id, "2027-01-01");
+    expect(futuro.total).toBe(volume.total);
+    expect(futuro.recente).toBe(0);
+  });
+});

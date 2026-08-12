@@ -173,6 +173,8 @@ export function selectVolumeDoProjeto(
       lancamentos.filter((l) => l.occurredAt >= trintaDiasAtras),
       "volume_traded",
     ),
+    // A lista vem decrescente: o último item é o lançamento mais antigo.
+    desde: lancamentos.at(-1)?.occurredAt ?? null,
     contas: [...porConta.entries()]
       .map(([contaId, dados]) => ({
         contaId,

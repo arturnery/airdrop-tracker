@@ -1667,6 +1667,13 @@ volume, como a de pontos aparece só quando há programa: aba vazia é promessa 
 
 O filtro do histórico ficou, porque resolve outro problema e continua útil.
 
+**Um ajuste logo depois de subir.** A linha secundária mostrava sempre "X nos últimos 30
+dias", e enquanto todo o volume é recente esse número é idêntico ao total exibido logo
+acima. Dois números iguais empilhados não informam nada e parecem erro de cálculo. Agora a
+linha muda conforme o caso: informa o período coberto quando não há o que comparar, compara
+quando há volume mais antigo, e avisa que a atividade parou quando nada aconteceu nos
+últimos trinta dias.
+
 **A lição é sobre a pergunta que não fiz.** "Quero uma aba para X" e "quero acompanhar X ao
 longo do tempo" levam a soluções diferentes, e eu respondi à primeira sem confirmar qual
 era. O pedido descrevia a solução; a segunda mensagem trouxe o problema.
@@ -1691,7 +1698,7 @@ subiram para `lib/dates.ts` e os dois passaram a usar a mesma.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 208, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 211, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

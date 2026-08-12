@@ -815,16 +815,35 @@ export function ProjetoView({ slug }: { slug: string }) {
                 <p className="font-numeric mt-1 text-4xl leading-none font-semibold">
                   {formatUsd(volume.total)}
                 </p>
+                {/*
+                  A linha só compara com os últimos 30 dias quando isso
+                  distingue algo. Enquanto todo o volume for recente, os dois
+                  números são iguais e repeti-los parece erro de cálculo: aí ela
+                  informa o período coberto, que é o dado que ainda falta.
+                */}
                 <p className="text-muted-foreground mt-2 text-xs">
-                  {volume.recente > 0 ? (
+                  {volume.recente === volume.total ? (
+                    volume.desde ? (
+                      <>
+                        todo o volume desde{" "}
+                        <span className="text-foreground">
+                          {formatDateBr(volume.desde)}
+                        </span>
+                      </>
+                    ) : null
+                  ) : volume.recente > 0 ? (
                     <>
                       <span className="text-foreground tabular font-medium">
                         {formatUsd(volume.recente)}
                       </span>{" "}
-                      nos últimos 30 dias
+                      nos últimos 30 dias, de um total desde{" "}
+                      {volume.desde ? formatDateBr(volume.desde) : "o início"}
                     </>
                   ) : (
-                    "sem volume nos últimos 30 dias"
+                    <>
+                      parado há mais de 30 dias, com atividade desde{" "}
+                      {volume.desde ? formatDateBr(volume.desde) : "o início"}
+                    </>
                   )}
                 </p>
               </div>

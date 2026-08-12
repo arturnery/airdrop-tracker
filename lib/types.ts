@@ -309,6 +309,8 @@ export type VolumeProjeto = {
   total: Cents;
   /** Volume dos últimos 30 dias, para saber se a atividade continua. */
   recente: Cents;
+  /** Data do primeiro lançamento: o período que o total cobre. */
+  desde: IsoDate | null;
   contas: {
     contaId: string;
     label: string;
