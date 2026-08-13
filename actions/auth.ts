@@ -204,27 +204,22 @@ export async function pedirRedefinicaoDeSenha(
 
     if (ultimo) {
       const desde = Date.now() - ultimo.requestedAt.getTime();
-      if (desde < INTERVALO_PEDIDO_MS) {
-        /*
-         * O limite existe para um pedido repetido não virar cem notificações
-         * para quem administra. A mensagem é diferente da normal de propósito:
-         * aqui a conta certamente existe, porque só quem tem conta chega a ter
-         * um pedido anterior, então não há nada a proteger.
-         */
-        const horas = Math.max(
-          1,
-          Math.ceil((INTERVALO_PEDIDO_MS - desde) / (60 * 60 * 1000)),
-        );
-        return {
-          ok: false,
-          erros: {
-            geral:
-              `Já existe um pedido em andamento para este e-mail. ` +
-              `Aguarde ${horas}h antes de pedir de novo: a senha temporária ` +
-              `chega no e-mail cadastrado.`,
-          },
-        };
-      }
+
+      /*
+       * Já pediu nas últimas 24h: não cria outra linha, e responde o mesmo de
+       * sempre.
+       *
+       * A versão anterior avisava "já existe um pedido em andamento", com a
+       * justificativa de que só quem tem conta chega a ter pedido anterior.
+       * O raciocínio estava invertido: era justamente isso que vazava. Bastava
+       * enviar o mesmo e-mail duas vezes e ler a segunda resposta, porque a
+       * mensagem diferente só aparecia para endereços cadastrados. A recusa
+       * única do login não protegeria nada com essa porta aberta ao lado.
+       *
+       * O que se perde é pequeno: quem pediu de novo por não ter recebido lê a
+       * mesma frase, que já explica que a senha chega por e-mail.
+       */
+      if (desde < INTERVALO_PEDIDO_MS) return { ok: true, aviso };
     }
 
     await db
