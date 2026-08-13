@@ -143,8 +143,29 @@ export async function excluirFeedback(id: string): Promise<{ ok: boolean }> {
   }
 }
 
-/** Quantos relatos ainda não foram abertos. Alimenta o contador do menu. */
+/**
+ * Quantos relatos ainda não foram abertos. Alimenta o contador do menu.
+ *
+ * Exige papel de administrador, mesmo devolvendo só um número. Este arquivo é
+ * `"use server"`, então toda função exportada aqui é um endpoint alcançável por
+ * qualquer pessoa com sessão, e não apenas pelo componente que a chama.
+ *
+ * O número parece inofensivo e não é: ele conta uma tabela que a pessoa não
+ * pode ler, e revela atividade administrativa de quem não deveria enxergá-la.
+ * Devolver 0 em vez de erro mantém o chamador simples, já que a interface só
+ * mostra o contador quando há o que contar.
+ */
 export async function contarNaoLidos(): Promise<number> {
+  const userId = await getCurrentUserId();
+
+  const [quem] = await db
+    .select({ role: schema.users.role })
+    .from(schema.users)
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+
+  if (quem?.role !== "admin") return 0;
+
   const [linha] = await db
     .select({ total: sql<number>`count(*)::int` })
     .from(schema.feedback)
