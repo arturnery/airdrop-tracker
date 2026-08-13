@@ -39,7 +39,7 @@ export function CascaApp({
     <>
       <a
         href="#conteudo"
-        className="bg-primary text-primary-foreground sr-only rounded-md px-4 py-2 focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50"
+        className="bg-brand-legivel text-background sr-only rounded-md px-4 py-2 focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50"
       >
         Pular para o conteúdo
       </a>
@@ -77,11 +77,16 @@ export function CascaApp({
 
               {/* O nome ganha o peso visual: é o dado da pessoa, e clicar nele
                   leva ao perfil. Some quando a barra recolhe, porque nome
-                  truncado em 68px não identifica ninguém. */}
+                  truncado em 68px não identifica ninguém.
+
+                  O realce do mouse é azul, e não a cor primária: verde aqui
+                  diria "deu certo", que é o significado que ele carrega em todo
+                  o resto do sistema. Passar o mouse num nome não é resultado
+                  de nada. */}
               <Link
                 href="/perfil"
                 className={cn(
-                  "hover:text-primary focus-visible:ring-ring mt-3 hidden max-w-full truncate rounded-sm px-2 text-base font-semibold tracking-tight transition-colors focus-visible:ring-2 focus-visible:outline-none lg:block",
+                  "hover:text-brand-legivel focus-visible:ring-ring mt-3 hidden max-w-full truncate rounded-sm px-2 text-base font-semibold tracking-tight transition-colors focus-visible:ring-2 focus-visible:outline-none lg:block",
                   recolhida && "lg:hidden",
                 )}
                 title="Ver perfil"

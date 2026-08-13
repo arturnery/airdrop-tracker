@@ -54,7 +54,7 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
      * único link real (bom para teclado e leitor de tela), mas seu ::after
      * cobre o card todo. Envolver o card no <Link> aninharia os links internos.
      */
-    <article className="group bg-card border-border hover:border-primary/40 focus-within:border-primary/60 relative rounded-lg border p-5 transition-colors">
+    <article className="group bg-card border-border hover:border-brand/40 focus-within:border-brand/60 relative rounded-lg border p-5 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-base font-medium">

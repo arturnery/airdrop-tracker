@@ -36,8 +36,8 @@ export function FiltroChips<T extends string>({
             className={cn(
               "focus-visible:ring-ring rounded-md border px-2.5 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none",
               ativo
-                ? "border-primary/50 bg-primary/10 text-primary font-medium"
-                : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground",
+                ? "border-brand/50 bg-brand/10 text-brand-legivel font-medium"
+                : "border-border text-muted-foreground hover:border-brand/30 hover:text-foreground",
             )}
           >
             {opcao.rotulo}

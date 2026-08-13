@@ -88,7 +88,7 @@ export function ProjetoView({ slug }: { slug: string }) {
           action={
             <Link
               href="/projetos"
-              className="text-primary text-sm underline underline-offset-4"
+              className="text-brand-legivel text-sm underline underline-offset-4"
             >
               Voltar para projetos
             </Link>
@@ -1043,7 +1043,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                           href={link.href}
                           target="_blank"
                           rel="noreferrer noopener"
-                          className="border-border hover:border-primary/50 focus-visible:ring-ring inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                          className="border-border hover:border-brand/50 focus-visible:ring-ring inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
                         >
                           {link.label}
                           <ExternalLink className="size-3" aria-hidden="true" />

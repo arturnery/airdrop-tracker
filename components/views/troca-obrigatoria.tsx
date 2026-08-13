@@ -24,7 +24,7 @@ export function TrocaObrigatoria({ nome }: { nome: string }) {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
       <div className="border-border rounded-lg border p-6">
-        <KeyRound className="text-primary size-6" aria-hidden="true" />
+        <KeyRound className="text-brand-legivel size-6" aria-hidden="true" />
         <h1 className="mt-3 text-lg font-medium">Defina uma senha sua</h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Olá, {nome}. Você entrou com uma senha temporária, que foi vista por
