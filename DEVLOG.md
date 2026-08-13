@@ -1845,6 +1845,56 @@ não volte sem que alguém reveja a medição.
 
 ---
 
+## Marco 31: Backup, e o script que se sabotou
+
+Nem o rollback da Vercel nem o git alcançam o banco. Apagar um projeto por engano leva
+lançamentos, tarefas, metas e pontos por cascata, e não havia de onde voltar.
+
+`npm run backup` grava todas as tabelas num JSON com data no nome, e
+`npm run backup:restaurar` devolve o arquivo a um banco.
+
+### Senhas ficam de fora
+
+A decisão foi tomada com números. Guardar os hashes economizaria, num desastre, os poucos
+minutos de gerar senhas temporárias para três contas. Em troca, criaria um arquivo sensível
+que se multiplica em cópias pelo Drive e por máquinas antigas durante anos.
+
+Bcrypt com custo 12 torna senha forte inviável de quebrar, e senha fraca não.
+
+O efeito colateral é bom: **se o backup vazar, ele não dá acesso a nada.** Isso muda como o
+arquivo é tratado, e permite guardá-lo em qualquer lugar sem pensar duas vezes.
+
+### O erro que provou a regra do próprio backup
+
+Escrevi "backup não testado não é backup" no comentário do arquivo, e o teste derrubou o
+banco de desenvolvimento.
+
+`restaurar.ts` importava a lista de tabelas de `backup.ts`. Importar aquele módulo
+**executa um backup**, porque ele chama `main()` no nível do arquivo. Na primeira
+restauração, o backup rodou no meio do processo, capturou o banco já parcialmente apagado e
+gravou por cima do arquivo bom.
+
+Resultado: dados de desenvolvimento perdidos e o backup corrompido pelo próprio restore.
+Produção ficou intacta, porque o teste foi feito onde devia.
+
+O conserto foi mover a constante para `scripts/_tabelas.ts`, um módulo que só exporta dados.
+Módulo sem efeito não tem como se executar sozinho.
+
+**A lição não é sobre o import.** É que o teste do backup encontrou um defeito que só
+existia no caminho de restauração, que é justamente o caminho que ninguém percorre até
+precisar. Se o primeiro uso real tivesse sido num desastre de verdade, o backup teria
+falhado exatamente quando era a única saída.
+
+### O que o teste ensinou sobre o processo
+
+Restaurar deixa o sistema **inacessível** até alguém recriar as senhas: o login falha, o
+painel redireciona. É consequência direta de não guardar hashes, e é aceitável, mas precisa
+estar escrito, porque no meio de um desastre ninguém quer descobrir isso sozinho.
+
+A ordem de recuperação ficou: migrar, restaurar, gerar senhas, conferir.
+
+---
+
 ## Estado atual
 
 | | |

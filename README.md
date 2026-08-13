@@ -416,6 +416,8 @@ tests/            Vitest
 
 ## Roadmap
 
+- [ ] **Exportar dados pela interface.** O backup por script já existe; falta a versão que
+      quem usa consegue acionar sozinho, sem terminal
 - [ ] **Exportar todos os dados.** Projetos, contas, lançamentos, tarefas, metas, pontos e
       recebimentos, num formato legível fora daqui. Não é sobre espaço, e a distinção muda o
       desenho: exportar existe por confiança, então nada é apagado ao exportar. Registrado

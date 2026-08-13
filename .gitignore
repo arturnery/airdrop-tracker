@@ -45,3 +45,6 @@ next-env.d.ts
 
 # material de divulgação, não faz parte do projeto
 roteiro-video.md
+
+# cópias de segurança: dados reais, nunca versionados
+backups/
