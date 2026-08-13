@@ -515,6 +515,7 @@ export function NovoLancamento({
 
 export function DefinirCotacao({ symbol }: { symbol?: string }) {
   const { acoes, hoje } = useDados();
+  const [preco, setPreco] = useState("");
 
   return (
     <Formulario
@@ -552,13 +553,14 @@ export function DefinirCotacao({ symbol }: { symbol?: string }) {
               autoFocus
             />
           )}
-          <CampoTexto
+          <CampoValor
             label="Preço em dólar"
             name="priceUsd"
             obrigatorio
+            valor={preco}
+            aoMudar={setPreco}
             erro={e.priceUsd}
             placeholder="195.00"
-            inputMode="decimal"
             autoFocus={Boolean(symbol)}
           />
           <CampoData
@@ -887,6 +889,8 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
   const { projetos } = useOpcoes();
   const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
   const contas = useContasDoProjeto(projetoSel);
+  const [quantidade, setQuantidade] = useState("");
+  const [precoToken, setPrecoToken] = useState("");
 
   return (
     <Formulario
@@ -935,21 +939,24 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
               erro={e.tokenSymbol}
               placeholder="VTX"
             />
-            <CampoTexto
+            <CampoValor
               label="Quantidade"
               name="tokenAmount"
               obrigatorio
+              valor={quantidade}
+              aoMudar={setQuantidade}
               erro={e.tokenAmount}
               placeholder="1250"
-              inputMode="decimal"
+              formato="quantidade"
             />
-            <CampoTexto
+            <CampoValor
               label="Preço (USD)"
               name="priceUsd"
               obrigatorio
+              valor={precoToken}
+              aoMudar={setPrecoToken}
               erro={e.priceUsd}
               placeholder="0.42"
-              inputMode="decimal"
             />
           </div>
           <CampoData
@@ -979,6 +986,7 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
     projectId ?? comPrograma[0]?.valor ?? "",
   );
   const contas = useContasDoProjeto(projetoSel);
+  const [pontos, setPontos] = useState("");
 
   if (comPrograma.length === 0) return null;
 
@@ -1021,14 +1029,16 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <CampoTexto
+            <CampoValor
               label="Total acumulado"
               name="points"
               obrigatorio
+              valor={pontos}
+              aoMudar={setPontos}
               erro={e.points}
               ajuda="O número que a plataforma exibe, não o ganho."
               placeholder="12.450"
-              inputMode="decimal"
+              formato="pontos"
             />
             <CampoData
               label="Data"

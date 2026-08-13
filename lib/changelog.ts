@@ -43,6 +43,11 @@ export const changelog: Versao[] = [
     data: "2026-08-13",
     mudancas: [
       {
+        tipo: "melhoria",
+        texto:
+          "Todo campo numérico agora confirma embaixo como o valor foi entendido: dinheiro, pontos e quantidade de token, cada um no seu formato.",
+      },
+      {
         tipo: "correcao",
         texto:
           "Ao criar tarefa, meta, medição de pontos ou recebimento, apareciam todas as suas carteiras em vez das vinculadas àquele projeto. Só a tela de vincular conta continua mostrando todas, porque é ela que cria o vínculo.",

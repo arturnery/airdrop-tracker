@@ -1947,6 +1947,44 @@ os três formulários de edição chamam a mesma função.
 
 ---
 
+## Marco 33: O eco em todo campo numérico
+
+O eco que confirma o valor digitado existia em dois campos, e o pedido foi estendê-lo a
+todos. Eram cinco faltando: preço da cotação, quantidade e preço do recebimento, total de
+pontos e quantidade de token do lançamento.
+
+A parte interessante não é a repetição, é que **três grandezas diferentes passam por esses
+campos**, e elas não se somam entre si:
+
+| Grandeza | Formato | Onde |
+|---|---|---|
+| Dinheiro | `$10,000.00` | lançamento, meta, cotação, preço do airdrop |
+| Pontos | escala própria (§4.4) | medição de pontos |
+| Quantidade de token | `1,250.5` até 8 casas | aporte em token, airdrop recebido |
+
+Usar o formatador errado exibiria um número **plausível e falso**, que é pior que não mostrar
+nada: o eco existe justamente para conferir, e um eco errado dá confiança em cima de um
+engano.
+
+Por isso o componente ganhou um parâmetro de formato em vez de virar três componentes: um
+campo de dinheiro e um de pontos compartilham tudo menos a função que interpreta, e separar
+em três arquivos convidaria a divergirem.
+
+A quantidade de token aceita mais casas decimais que dinheiro, porque token costuma ter mais
+precisão que centavo.
+
+### A regra do backup
+
+Junto disso ficou registrado em `AGENTS.md` e na memória do projeto: **rodar
+`npm run backup -- --producao` antes de qualquer alteração que possa afetar dados
+existentes**, e avisar que foi feito.
+
+Vale para migração, script em lote, mudança em como um valor é calculado ou gravado, e
+qualquer coisa que toque produção. Não vale para interface, texto ou documentação, que é o
+caso desta mudança.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1957,7 +1995,7 @@ os três formulários de edição chamam a mesma função.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 225, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 229, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

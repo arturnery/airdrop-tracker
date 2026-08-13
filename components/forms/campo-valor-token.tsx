@@ -65,14 +65,14 @@ export function CampoValorToken({
             erro={erros.tokenSymbol}
             placeholder="SOL"
           />
-          <CampoTexto
+          <CampoValor
             label="Quantidade"
             name="tokenAmount"
-            value={quantidade}
-            onChange={(evento) => setQuantidade(evento.target.value)}
+            valor={quantidade}
+            aoMudar={setQuantidade}
             erro={erros.tokenAmount}
             placeholder="2"
-            inputMode="decimal"
+            formato="quantidade"
           />
         </div>
 
