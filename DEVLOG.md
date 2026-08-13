@@ -2012,6 +2012,24 @@ por azul quebraria a leitura que já está construída em cada tela.
 Então as duas convivem com papéis distintos: o azul é a marca, e aparece onde a marca fala
 (símbolo, ícone da aba, tela de entrada). O verde continua sendo o vocabulário do domínio.
 
+### O azul entrou onde não disputa leitura
+
+A primeira versão do brilho atrás do cartão usava a cor **primária**, que é verde. Contradizia
+a regra escrita minutos antes: o verde carrega significado no domínio e não empresta para
+identidade.
+
+O azul foi amostrado do próprio símbolo, que tem um degradê de `#0040d0` a `#0080f8`, e virou
+`--brand` no tema, com uma versão mais escura no tema claro, porque azul de tela escura some
+no branco.
+
+Ele aparece em dois lugares, ambos de superfície: o brilho radial de fundo e um fio de luz na
+borda superior do cartão. O fio resolve um problema específico de tema escuro, que sombra não
+resolve: **cartão escuro sobre fundo escuro se dissolve nas bordas**, e a linha marca onde ele
+começa.
+
+Contraste conferido depois: 14:1 no texto principal e 5,7:1 no secundário, contra os 4,5:1 que
+a norma exige. O azul não toca texto nenhum, então não entra nessa conta.
+
 ### Ícones
 
 `app/favicon.ico` cobre a aba do navegador pela convenção do App Router, e os demais tamanhos

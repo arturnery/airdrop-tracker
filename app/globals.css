@@ -35,6 +35,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-brand: var(--brand);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -62,6 +63,16 @@
  * para um toggle futuro via classe .light no <html>.
  */
 :root {
+  /*
+   * Azul da marca LVL, amostrado do símbolo. **Não é cor de estado.**
+   *
+   * O par verde/vermelho carrega significado no domínio (ganho e prejuízo) e é
+   * lido sem pensar; a marca não pode disputar esse espaço. Este azul vale para
+   * superfície e identidade: brilho de fundo, borda de destaque, o símbolo.
+   * Nunca para dizer que algo deu certo ou errado.
+   */
+  --brand: oklch(0.593 0.211 257.1);
+
   /* slate-950 / slate-50 */
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
@@ -111,6 +122,8 @@
 }
 
 .light {
+  /* Um passo mais escuro no tema claro: o azul de tela escura some no branco. */
+  --brand: oklch(0.451 0.227 263);
   --background: oklch(0.984 0.003 247.858);
   --foreground: oklch(0.208 0.042 265.755);
   --card: oklch(1 0 0);

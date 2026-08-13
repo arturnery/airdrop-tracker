@@ -52,7 +52,17 @@ export function AuthForm({
   const [enviando, setEnviando] = useState(false);
 
   return (
-    <section className="border-border bg-card/60 rounded-xl border p-8 backdrop-blur-sm sm:p-10">
+    <section className="border-border bg-card/70 relative overflow-hidden rounded-xl border p-8 shadow-2xl shadow-black/30 backdrop-blur-sm sm:p-10">
+      {/*
+        Fio de luz na borda superior, na cor da marca. Um cartão escuro sobre
+        fundo escuro se dissolve nas bordas; esta linha marca onde ele começa,
+        e é o tipo de detalhe que a sombra sozinha não resolve num tema escuro.
+      */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-px [background:linear-gradient(90deg,transparent,color-mix(in_oklch,var(--brand)_70%,transparent),transparent)]"
+      />
+
       {/*
         A marca abre a tela porque é o primeiro sinal de que se chegou ao lugar
         certo. O tamanho fixo evita o salto de layout que uma imagem sem
