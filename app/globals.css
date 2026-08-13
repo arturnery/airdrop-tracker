@@ -36,6 +36,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-brand: var(--brand);
+  --color-brand-legivel: var(--brand-legivel);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -73,6 +74,26 @@
    */
   --brand: oklch(0.593 0.211 257.1);
 
+  /*
+   * O mesmo azul, clareado até dar para ler.
+   *
+   * `--brand` vale para superfície: brilho de fundo, borda, o símbolo. Como
+   * **texto** ele dá 4,28:1 sobre a barra lateral, e a norma pede 4,5:1. Reprova
+   * por pouco, e por pouco basta: é a palavra que desbota para quem enxerga
+   * menos. Este dá 6,33:1.
+   *
+   * Os números foram medidos sobre o CSS compilado, e a diferença importa: a
+   * primeira tentativa calculou a conversão de oklch à mão, errou, e teria feito
+   * escolher um azul quase branco para resolver um problema que era menor do que
+   * a conta dizia. **Medir na saída, não na fonte.**
+   *
+   * O valor é o mesmo de `--ring`, e existe separado por significado, não por
+   * cor: um anel de foco diz onde o teclado está e responde a outra exigência
+   * (3:1, de indicador). Se um dia um dos dois mudar, o outro não muda junto por
+   * acidente.
+   */
+  --brand-legivel: oklch(0.686 0.170 251.8);
+
   /* slate-950 / slate-50 */
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
@@ -102,10 +123,10 @@
    * certo ou errado. Verde ali competia com o significado que o verde tem no
    * resto do sistema.
    *
-   * É um azul mais claro que `--brand` de propósito: o da marca dá 3,5:1 sobre
-   * a superfície do cartão, e a norma exige 3:1 para indicador de foco. Passar
-   * raspando num item de acessibilidade é o mesmo que não passar. Este dá
-   * 5,2:1.
+   * É um azul mais claro que `--brand` de propósito. Medido sobre o CSS
+   * compilado: este dá 6,33:1 na barra e 7,15:1 no fundo, contra 4,28:1 do azul
+   * da marca. A exigência de um indicador de foco é 3:1, e passar raspando num
+   * item de acessibilidade é o mesmo que não passar.
    */
   --ring: oklch(0.686 0.170 251.8);
 
@@ -136,6 +157,8 @@
 .light {
   /* Um passo mais escuro no tema claro: o azul de tela escura some no branco. */
   --brand: oklch(0.451 0.227 263);
+  /* Sobre fundo claro o azul da marca já passa como texto: não precisa de par. */
+  --brand-legivel: oklch(0.451 0.227 263);
   --background: oklch(0.984 0.003 247.858);
   --foreground: oklch(0.208 0.042 265.755);
   --card: oklch(1 0 0);

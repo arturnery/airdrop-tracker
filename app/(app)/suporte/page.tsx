@@ -2,8 +2,6 @@ import { listarFeedback } from "@/db/queries/feedback";
 import { exigirAdmin } from "@/lib/auth";
 import { SuporteView } from "@/components/views/suporte-view";
 
-export const metadata = { title: "Suporte · LVL Airdrops" };
-
 /**
  * Caixa de entrada dos relatos. Ver ARCHITECTURE.md §14.
  *

@@ -18,6 +18,18 @@ const crimson = Crimson_Text({
   subsets: ["latin"],
 });
 
+/**
+ * O título da aba é o mesmo em toda tela, e é assim de propósito.
+ *
+ * Cada página já declarou o próprio ("Perfil · LVL Airdrops"), e foi retirado:
+ * a tela em que a pessoa está ela já enxerga, e repetir isso na aba só afasta o
+ * nome do produto do começo do texto, que é a parte que sobrevive quando a aba
+ * encolhe. **Não recriar `metadata` nas páginas**, ou o prefixo volta uma a uma.
+ *
+ * O que se perde: com várias abas abertas do sistema, elas ficam indistinguíveis
+ * pelo texto, e um favorito nasce com o nome do produto em vez do da tela.
+ * Aceito, porque nenhuma das duas é a forma como este sistema é usado.
+ */
 export const metadata: Metadata = {
   title: "LVL Airdrops",
   description: "Controle de farming de airdrops: capital, tarefas e resultado.",

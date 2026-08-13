@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { MailCheck } from "lucide-react";
 
-export const metadata = { title: "Cadastro recebido · LVL Airdrops" };
-
 /**
  * Tela de espera após o cadastro.
  *
@@ -14,7 +12,7 @@ export default function AguardandoAprovacaoPage() {
   return (
     <section className="text-center">
       <span
-        className="bg-primary/10 text-primary mx-auto flex size-12 items-center justify-center rounded-full"
+        className="bg-brand/10 text-brand-legivel mx-auto flex size-12 items-center justify-center rounded-full"
         aria-hidden="true"
       >
         <MailCheck className="size-6" />
