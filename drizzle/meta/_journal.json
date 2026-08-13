@@ -36,6 +36,13 @@
       "when": 1786580532437,
       "tag": "0004_marca_materializacao",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786590669575,
+      "tag": "0005_limite_login",
+      "breakpoints": true
     }
   ]
 }

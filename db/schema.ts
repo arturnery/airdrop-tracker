@@ -621,3 +621,27 @@ export const feedback = pgTable(
   },
   (t) => [index("feedback_criado_idx").on(t.createdAt)],
 );
+
+/**
+ * Tentativas de login que falharam. Ver a auditoria em ARCHITECTURE §16.3.
+ *
+ * Existe para limitar força bruta. Sem ela, uma senha fraca cai por tentativa
+ * e erro: bcrypt com custo 12 torna cada tentativa cara (~250ms), o que atrasa
+ * um ataque mas não o impede quando ele roda em paralelo por horas.
+ *
+ * Guarda o e-mail tentado, e não o usuário, de propósito: tentativa contra
+ * conta inexistente também precisa ser contada, senão o tempo de resposta
+ * passaria a distinguir e-mail cadastrado de não cadastrado, que é justamente o
+ * que a recusa única evita.
+ */
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull(),
+    tentadoEm: timestamp("tentado_em", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("login_attempts_email_idx").on(t.email, t.tentadoEm)],
+);
