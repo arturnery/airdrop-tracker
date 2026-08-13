@@ -20,7 +20,9 @@
     "db:studio:prod": "DB_ENV=producao drizzle-kit studio",
     "backup": "tsx scripts/backup.ts",
     "backup:restaurar": "tsx scripts/restaurar.ts",
-    "admin:liberar": "tsx scripts/liberar-admin.ts"
+    "admin:liberar": "tsx scripts/liberar-admin.ts",
+    "demo:restaurar": "tsx scripts/criar-demo.ts",
+    "auditar": "tsx scripts/auditar-isolamento.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
