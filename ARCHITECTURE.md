@@ -1000,6 +1000,29 @@ isso a confirmação diz o que se perde, em vez de perguntar "tem certeza?".
 
 ---
 
+## 14.8. Cores: a marca não substitui o significado
+
+O produto é **LVL Airdrops**, ligado à marca do cliente, cuja identidade é azul. O sistema
+usa verde como cor primária desde o começo. As duas convivem com papéis separados, e a
+separação é a decisão:
+
+| | Onde vale |
+|---|---|
+| **Azul (marca)** | Símbolo, ícone da aba, tela de entrada, estilização |
+| **Verde (domínio)** | Resultado positivo, ganho, conclusão, capital |
+| **Vermelho (domínio)** | Prejuízo, atraso, exclusão |
+
+Trocar o sistema inteiro por azul seria o caminho óbvio ao adotar a marca, e quebraria a
+leitura construída em cada tela: **aqui o verde não é decoração, é vocabulário.** Ele se
+opõe ao vermelho num par que a pessoa lê sem pensar, e que aparece em cartão, tabela,
+gráfico e badge.
+
+A regra que fica: cor com significado no domínio não é reaproveitável para identidade
+visual. Se um dia a marca precisar dominar mais, o caminho é ampliar o azul em superfícies
+neutras (fundos, bordas, destaques de navegação), nunca substituindo o par verde/vermelho.
+
+---
+
 ## 15. Consumo do banco: o que medir antes de otimizar
 
 Medição de 12/08/2026, com um usuário real e a conta de demonstração:

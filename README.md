@@ -419,6 +419,9 @@ tests/            Vitest
 
 ## Roadmap
 
+- [ ] **Entrar com Google.** Reduz o atrito de criar senha e elimina boa parte do suporte de
+      recuperação. Adiado por decisão: a aprovação manual continua existindo de qualquer
+      forma, e não há usuários além do dono para confirmar que a senha é mesmo o atrito
 - [ ] **Exportar dados pela interface.** O backup por script já existe; falta a versão que
       quem usa consegue acionar sozinho, sem terminal
 - [ ] **Exportar todos os dados.** Projetos, contas, lançamentos, tarefas, metas, pontos e
