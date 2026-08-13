@@ -19,8 +19,22 @@ const crimson = Crimson_Text({
 });
 
 export const metadata: Metadata = {
-  title: "airdrop-tracker",
+  title: "LVL Airdrops",
   description: "Controle de farming de airdrops: capital, tarefas e resultado.",
+  /*
+   * `app/favicon.ico` já é servido pela convenção do App Router. Os demais
+   * ficam declarados porque cada um atende um contexto diferente: o de 180px é
+   * o que o iOS usa ao salvar na tela de início, e sem ele o sistema recorta o
+   * favicon pequeno e o resultado fica borrado.
+   */
+  icons: {
+    icon: [
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  applicationName: "LVL Airdrops",
 };
 
 export default async function RootLayout({

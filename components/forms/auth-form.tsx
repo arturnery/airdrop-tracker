@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Image from "next/image";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -51,11 +52,28 @@ export function AuthForm({
   const [enviando, setEnviando] = useState(false);
 
   return (
-    <section>
-      <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
-      {descricao ? (
-        <p className="text-muted-foreground mt-2 text-sm">{descricao}</p>
-      ) : null}
+    <section className="border-border bg-card/60 rounded-xl border p-8 backdrop-blur-sm sm:p-10">
+      {/*
+        A marca abre a tela porque é o primeiro sinal de que se chegou ao lugar
+        certo. O tamanho fixo evita o salto de layout que uma imagem sem
+        dimensão causa ao carregar.
+      */}
+      <div className="flex flex-col items-center text-center">
+        <Image
+          src="/android-chrome-192x192.png"
+          alt="LVL"
+          width={56}
+          height={56}
+          priority
+          className="rounded-xl"
+        />
+        <h1 className="mt-5 text-2xl font-semibold tracking-tight">{titulo}</h1>
+        {descricao ? (
+          <p className="text-muted-foreground mt-2 text-sm text-balance">
+            {descricao}
+          </p>
+        ) : null}
+      </div>
 
       {/*
         Faixa informativa em tom neutro: verde comunicaria acerto, e aqui é só
@@ -83,7 +101,7 @@ export function AuthForm({
 
       <form
         noValidate
-        className="mt-8 space-y-4"
+        className="mt-8 space-y-4 text-left"
         onSubmit={async (evento) => {
           evento.preventDefault();
           setEnviando(true);

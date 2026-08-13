@@ -2,7 +2,7 @@ import { ArrowRight, FileSpreadsheet } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 
-export const metadata = { title: "Importar · airdrop-tracker" };
+export const metadata = { title: "Importar · LVL Airdrops" };
 
 const mapeamento = [
   { de: "Depósito na Plataforma", para: "Transação · Depósito", destaque: false },

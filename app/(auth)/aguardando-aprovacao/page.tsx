@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MailCheck } from "lucide-react";
 
-export const metadata = { title: "Cadastro recebido · airdrop-tracker" };
+export const metadata = { title: "Cadastro recebido · LVL Airdrops" };
 
 /**
  * Tela de espera após o cadastro.

@@ -1,37 +1,30 @@
-import Link from "next/link";
-
 /**
- * Casca das telas de entrada: uma coluna centrada, sem navegação.
+ * Casca das telas de entrada: um cartão centrado, sem navegação.
  *
- * Quem ainda não entrou não tem para onde navegar: oferecer menu aqui só
- * daria caminhos que terminam em erro de permissão.
+ * Quem ainda não entrou não tem para onde navegar: oferecer menu aqui só daria
+ * caminhos que terminam em erro de permissão.
+ *
+ * O fundo tem um brilho radial atrás do cartão, e ele faz trabalho: numa tela
+ * escura e vazia, uma superfície plana não indica onde olhar. O brilho cria o
+ * ponto focal sem precisar de borda grossa nem sombra pesada.
  */
 export default function AuthLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="px-6 py-6">
-        <Link
-          href="/"
-          className="focus-visible:ring-ring rounded-sm text-sm font-semibold tracking-tight focus-visible:ring-2 focus-visible:outline-none"
-        >
-          airdrop
-          <span className="text-primary">·</span>
-          tracker
-        </Link>
-      </header>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-12">
+      {/*
+        Decoração pura: `aria-hidden` porque não carrega informação, e leitor de
+        tela anunciando "imagem" aqui seria ruído antes do formulário.
+      */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 [background:radial-gradient(60%_50%_at_50%_35%,color-mix(in_oklch,var(--primary)_12%,transparent),transparent_70%)]"
+      />
 
-      <main
-        id="conteudo"
-        className="flex flex-1 items-start justify-center px-6 pb-16 sm:items-center sm:pb-24"
-      >
-        <div className="w-full max-w-sm">{children}</div>
+      <main id="conteudo" className="relative w-full max-w-md">
+        {children}
       </main>
-
-      <footer className="text-muted-foreground px-6 py-6 text-center text-xs">
-        Controle de farming de airdrops
-      </footer>
     </div>
   );
 }

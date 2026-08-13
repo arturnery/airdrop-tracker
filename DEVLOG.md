@@ -1985,6 +1985,42 @@ caso desta mudança.
 
 ---
 
+## Marco 34: A marca entra
+
+Até aqui o produto se chamava `airdrop-tracker`, nome de repositório usado como nome de
+produto. Ele passa a ser **LVL Airdrops**, ligado à marca do cliente (Level Cripto), com o
+símbolo LVL no lugar do texto.
+
+### O que mudou, e o que deliberadamente não mudou
+
+A tela de entrada virou um cartão centrado, com a marca no topo. O fundo ganhou um brilho
+radial atrás dele, e isso faz trabalho em vez de enfeitar: numa tela escura e vazia, uma
+superfície plana não indica onde olhar, e o brilho cria o ponto focal sem borda grossa nem
+sombra pesada.
+
+A referência trazida tinha botões de Google, Apple e e-mail. **Não foram copiados**, porque
+o sistema não tem login social: desenhar o botão sem o que está atrás dele seria prometer
+uma entrada que não existe.
+
+### Azul da marca e verde do domínio
+
+A identidade LVL é azul, e o sistema usa verde como cor primária. A tentação seria trocar
+tudo por azul, e seria um erro: **aqui o verde não é decoração, é significado**. Ele marca
+resultado positivo, ganho e conclusão, em oposição ao vermelho de prejuízo e atraso. Trocar
+por azul quebraria a leitura que já está construída em cada tela.
+
+Então as duas convivem com papéis distintos: o azul é a marca, e aparece onde a marca fala
+(símbolo, ícone da aba, tela de entrada). O verde continua sendo o vocabulário do domínio.
+
+### Ícones
+
+`app/favicon.ico` cobre a aba do navegador pela convenção do App Router, e os demais tamanhos
+entraram declarados no `metadata`. O de 180px importa mais do que parece: é o que o iOS usa
+ao salvar na tela de início, e sem ele o sistema recorta o favicon pequeno e o resultado sai
+borrado.
+
+---
+
 ## Estado atual
 
 | | |

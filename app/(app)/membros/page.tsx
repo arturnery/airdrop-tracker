@@ -2,7 +2,7 @@ import { listarMembros } from "@/db/queries/membros";
 import { exigirAdmin } from "@/lib/auth";
 import { MembrosView } from "@/components/views/membros-view";
 
-export const metadata = { title: "Membros · airdrop-tracker" };
+export const metadata = { title: "Membros · LVL Airdrops" };
 
 /**
  * Área do administrador.

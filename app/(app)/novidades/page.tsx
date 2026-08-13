@@ -3,7 +3,7 @@ import { changelog, rotulos } from "@/lib/changelog";
 import { formatDateBr } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Novidades · airdrop-tracker" };
+export const metadata = { title: "Novidades · LVL Airdrops" };
 
 /**
  * O que mudou a cada atualização.

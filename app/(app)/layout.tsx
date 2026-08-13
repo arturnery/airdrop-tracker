@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { Nav } from "@/components/nav";
@@ -72,13 +73,21 @@ export default async function AppLayout({
         <aside className="bg-sidebar border-border sticky top-0 z-40 border-b lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
           <div className="flex items-center justify-between gap-2 lg:block">
             <div className="min-w-0 shrink-0 px-5 py-4">
+              {/* A marca com o símbolo: o LVL identifica de quem é o produto,
+                  e o nome diz o que ele faz. Juntos numa linha discreta, porque
+                  o protagonista da barra é o nome de quem entrou. */}
               <Link
                 href="/"
-                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm text-xs font-medium tracking-tight transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring flex items-center gap-2 rounded-sm text-xs font-medium tracking-tight transition-colors focus-visible:ring-2 focus-visible:outline-none"
               >
-                airdrop
-                <span className="text-primary">·</span>
-                tracker
+                <Image
+                  src="/android-chrome-192x192.png"
+                  alt=""
+                  width={18}
+                  height={18}
+                  className="rounded"
+                />
+                LVL Airdrops
               </Link>
 
               {/* O nome ganha o peso visual: é o dado da pessoa, e clicar nele

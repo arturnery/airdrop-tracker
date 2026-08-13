@@ -1,4 +1,4 @@
-# airdrop-tracker
+# LVL Airdrops
 
 [![CI](https://github.com/arturnery/airdrop-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/arturnery/airdrop-tracker/actions/workflows/ci.yml)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
