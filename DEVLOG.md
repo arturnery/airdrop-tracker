@@ -1893,6 +1893,25 @@ estar escrito, porque no meio de um desastre ninguém quer descobrir isso sozinh
 
 A ordem de recuperação ficou: migrar, restaurar, gerar senhas, conferir.
 
+### O administrador não tinha saída
+
+A pergunta seguinte expôs um buraco: e se a senha perdida for a de quem administra?
+
+`redefinirSenhaDeMembro` recusa contas admin de propósito, para que um administrador não
+assuma a conta de outro. A consequência não intencional é que **ninguém pode gerar a senha
+do administrador**, e um backup restaurado o tranca fora do próprio sistema, com os dados
+intactos do outro lado.
+
+`npm run admin:liberar` apaga o hash em vez de definir senha. Uma conta sem hash pode ser
+reivindicada pela tela de cadastro, usando o mesmo caminho pelo qual a conta semeada virou
+conta de verdade. Gerar senha no script a deixaria no histórico do terminal.
+
+Testado inteiro em desenvolvimento: a senha antiga deixa de valer na hora, o recadastro
+devolve o papel de admin, e `/membros` volta a abrir.
+
+A janela entre apagar o hash e recadastrar é risco assumido e está escrito: nela, quem
+souber o e-mail pode reivindicar a conta.
+
 ---
 
 ## Estado atual

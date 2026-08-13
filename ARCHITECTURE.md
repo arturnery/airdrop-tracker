@@ -1080,7 +1080,35 @@ mexer nela: quando as duas primeiras não bastarem, porque ela altera a fronteir
 troca de fixtures por Postgres custar um arquivo só, e esse é o ativo arquitetural mais
 valioso do projeto.
 
-### 15.3. Exportar os dados, e por que não é sobre custo
+### 15.3. Recuperar o acesso de administrador
+
+O administrador é o único sem saída pela interface, e isso é consequência direta de uma
+decisão de segurança: `redefinirSenhaDeMembro` recusa gerar senha para contas admin, senão
+quem administra poderia assumir a conta de outro administrador. O efeito colateral é que
+**ninguém pode gerar a sua**.
+
+Dois caminhos levam ao problema: esquecer a senha, ou restaurar um backup, que não guarda
+hashes e apaga a senha de todos, inclusive a de quem vai restaurar.
+
+`npm run admin:liberar -- --confirmar` **apaga o hash** em vez de definir uma senha nova. A
+diferença importa: uma conta sem hash pode ser reivindicada pela tela de cadastro com o
+mesmo e-mail, usando o fluxo que já existe e pelo qual a conta semeada virou conta de
+verdade. Gerar senha no script a colocaria no histórico do terminal, que é o lugar errado
+para ela.
+
+**A janela de risco é real e assumida.** Entre apagar o hash e recadastrar, quem souber o
+e-mail pode reivindicar a conta pela mesma tela. Por isso o script insiste em fazer o
+recadastro imediatamente, e por isso ele exige acesso ao `DATABASE_URL`: quem já o tem,
+já podia tudo.
+
+Ordem de recuperação depois de um desastre, na sequência que funciona:
+
+1. `npm run db:migrate` (a estrutura vem das migrações no git)
+2. `npm run backup:restaurar` (os dados vêm do arquivo)
+3. `npm run admin:liberar` e recadastro pela tela (o seu acesso)
+4. Senhas temporárias na tela de membros (o acesso dos demais)
+
+### 15.4. Exportar os dados, e por que não é sobre custo
 
 Registrado como funcionalidade futura: **exportar tudo, não só o histórico**. Projetos,
 contas, lançamentos, tarefas, metas, pontos e recebimentos, num formato que possa ser lido
@@ -1104,7 +1132,7 @@ estrutura e volta inteiro) ou vários CSVs (que abrem no Excel e no Sheets, e po
 mais úteis para quem só quer conferir). E se a reimportação faz parte do escopo, porque
 exportação sem volta é backup, não portabilidade.
 
-### 15.4. O que a medição ensina
+### 15.5. O que a medição ensina
 
 O gargalo suposto era o histórico do usuário, e o real é a estrutura fixa mais a quantidade
 de consultas por navegação. Nenhum dos dois apareceria sem medir por tabela e contar as

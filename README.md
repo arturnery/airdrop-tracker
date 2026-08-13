@@ -98,6 +98,9 @@ senhas temporárias, mas não vê o farming de ninguém.
   e recalcular não tem estado a perder.
 - **Metas e recebimentos.** Objetivos por projeto, com progresso derivado dos lançamentos,
   e registro dos airdrops efetivamente recebidos.
+- **Recuperação do próprio administrador.** Quem administra não pode gerar a própria senha,
+  senão um admin poderia assumir a conta de outro. O acesso volta por um script que libera a
+  conta para ser reivindicada pela tela, sem senha passando pelo terminal.
 - **Recuperação de senha sem serviço de e-mail.** O pedido entra numa fila de
   administração, quem administra gera uma senha temporária, e o primeiro acesso com ela
   exige definir a própria. Para uma comunidade fechada com aprovação manual, e-mail
