@@ -39,6 +39,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.2",
+    data: "2026-08-13",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Ao criar tarefa, meta, medição de pontos ou recebimento, apareciam todas as suas carteiras em vez das vinculadas àquele projeto. Só a tela de vincular conta continua mostrando todas, porque é ela que cria o vínculo.",
+      },
+    ],
+  },
+  {
     versao: "1.1",
     data: "2026-08-12",
     mudancas: [

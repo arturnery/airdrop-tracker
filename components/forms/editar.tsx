@@ -31,6 +31,27 @@ import {
 import { fromDbNumeric, toDbNumeric } from "@/lib/money";
 
 /**
+ * Contas oferecidas para um projeto: as vinculadas a ele, ou todas enquanto não
+ * houver vínculo. Mesma regra dos formulários de cadastro.
+ */
+function contasDoProjeto(
+  dataset: { projectAccounts: { projectId: string; accountId: string }[]; accounts: { id: string; label: string }[] },
+  projectId: string,
+) {
+  const permitidas = new Set(
+    contasDisponiveisNoProjeto(
+      dataset.projectAccounts
+        .filter((pa) => pa.projectId === projectId)
+        .map((pa) => pa.accountId),
+      dataset.accounts.map((a) => a.id),
+    ),
+  );
+  return dataset.accounts
+    .filter((a) => permitidas.has(a.id))
+    .map((a) => ({ valor: a.id, rotulo: a.label }));
+}
+
+/**
  * Formulários de edição.
  *
  * Cada um recebe o registro atual e pré-preenche os campos. A validação usa os
@@ -369,17 +390,7 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
    * altera dois saldos de uma vez e é melhor feito apagando e relançando, com
    * o histórico mostrando o que aconteceu.
    */
-  const permitidas = new Set(
-    contasDisponiveisNoProjeto(
-      dataset.projectAccounts
-        .filter((pa) => pa.projectId === lancamento?.projectId)
-        .map((pa) => pa.accountId),
-      dataset.accounts.map((a) => a.id),
-    ),
-  );
-  const contas = dataset.accounts
-    .filter((a) => permitidas.has(a.id))
-    .map((a) => ({ valor: a.id, rotulo: a.label }));
+  const contas = contasDoProjeto(dataset, lancamento?.projectId ?? "");
 
   if (!lancamento) return null;
 
@@ -530,7 +541,7 @@ export function EditarTarefa({ taskId }: { taskId: string }) {
 
   const contas: { valor: string; rotulo: string }[] = [
     { valor: "", rotulo: "Todas as contas" },
-    ...dataset.accounts.map((a) => ({ valor: a.id, rotulo: a.label })),
+    ...contasDoProjeto(dataset, tarefa.projectId),
   ];
 
   return (
@@ -642,7 +653,7 @@ export function EditarMeta({ goalId }: { goalId: string }) {
 
   const contas: { valor: string; rotulo: string }[] = [
     { valor: "", rotulo: "Todas as contas" },
-    ...dataset.accounts.map((a) => ({ valor: a.id, rotulo: a.label })),
+    ...contasDoProjeto(dataset, meta.projectId),
   ];
 
   return (

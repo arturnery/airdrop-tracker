@@ -1914,6 +1914,39 @@ souber o e-mail pode reivindicar a conta.
 
 ---
 
+## Marco 32: A regra que valia num formulário só
+
+O filtro de contas por projeto foi pedido no marco 23 e implementado nos formulários de
+lançamento. A regra, porém, valia para todos: **cinco outros continuaram oferecendo todas as
+carteiras** em projetos que usam uma.
+
+| Formulário | Antes |
+|---|---|
+| Novo e editar lançamento | Filtrado |
+| Nova e editar tarefa | Todas |
+| Nova e editar meta | Todas |
+| Registrar pontos | Todas |
+| Registrar recebimento | Todas |
+| Vincular conta | Todas, e correto |
+
+O relato veio de quem usa: "apareceu todas as contas e o projeto tinha uma vinculada". A
+correção foi trivial; o que interessa é por que passou.
+
+**A regra foi escrita como resposta a um pedido, não como propriedade do sistema.** O pedido
+falava de lançamentos, então a implementação parou ali. Nada no código apontava que os
+outros formulários tinham a mesma necessidade: cada um monta sua lista de contas por conta
+própria, e nenhum tipo os obriga a concordar.
+
+`VincularConta` continua com a lista completa, e agora está escrito por quê: é ele que
+**cria** o vínculo, e oferecer só as vinculadas tornaria impossível vincular a primeira. Sem
+esse comentário, a próxima auditoria trataria a exceção como esquecimento e a "corrigiria",
+quebrando o único caminho para vincular contas.
+
+O helper de edição também foi unificado: `EditarLancamento` tinha a lógica copiada, e agora
+os três formulários de edição chamam a mesma função.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1924,7 +1957,7 @@ souber o e-mail pode reivindicar a conta.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 223, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 225, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

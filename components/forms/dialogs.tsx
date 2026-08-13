@@ -362,6 +362,15 @@ function useOpcoes() {
   const { dataset } = useDados();
   return {
     projetos: dataset.projects.map((p) => ({ valor: p.id, rotulo: p.name })),
+    /**
+     * Todas as contas, sem filtrar por projeto.
+     *
+     * Só `VincularConta` usa: é o formulário que **cria** o vínculo, e oferecer
+     * apenas as já vinculadas ali tornaria impossível vincular a primeira.
+     *
+     * Todo formulário que registra algo **dentro** de um projeto usa
+     * `useContasDoProjeto`, que respeita o vínculo.
+     */
     contas: dataset.accounts.map((a) => ({ valor: a.id, rotulo: a.label })),
   };
 }
@@ -569,6 +578,7 @@ export function DefinirCotacao({ symbol }: { symbol?: string }) {
 
 export function VincularConta({ projectId }: { projectId?: string }) {
   const { acoes, hoje } = useDados();
+  // A lista completa aqui é proposital: ver o comentário em `useOpcoes`.
   const { projetos, contas } = useOpcoes();
 
   return (
@@ -641,7 +651,7 @@ export function VincularConta({ projectId }: { projectId?: string }) {
 
 export function NovaTarefa({ projectId }: { projectId?: string }) {
   const { acoes, hoje, dataset } = useDados();
-  const { projetos, contas } = useOpcoes();
+  const { projetos } = useOpcoes();
 
   /*
    * Deixar a conta em branco cria a tarefa para várias contas de uma vez. Isso
@@ -652,6 +662,7 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
   const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
   const [contaSel, setContaSel] = useState("");
   const [repeticao, setRepeticao] = useState("daily");
+  const contas = useContasDoProjeto(projetoSel);
 
   // Espelha a regra do servidor: vínculos do projeto ou, na falta deles, todas
   // as contas. Ver `contasDoProjeto` em actions/index.ts.
@@ -784,8 +795,10 @@ export function NovaTarefa({ projectId }: { projectId?: string }) {
 
 export function NovaMeta({ projectId }: { projectId?: string }) {
   const { acoes } = useDados();
-  const { projetos, contas } = useOpcoes();
+  const { projetos } = useOpcoes();
   const [alvo, setAlvo] = useState("");
+  const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
+  const contas = useContasDoProjeto(projetoSel);
 
   return (
     <Formulario
@@ -828,6 +841,7 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
               defaultValue={projectId}
               erro={e.projectId}
               opcoes={projetos}
+              onChange={(evento) => setProjetoSel(evento.target.value)}
             />
             <CampoSelecao
               label="Conta"
@@ -870,7 +884,9 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
 
 export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
   const { acoes, hoje } = useDados();
-  const { projetos, contas } = useOpcoes();
+  const { projetos } = useOpcoes();
+  const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
+  const contas = useContasDoProjeto(projetoSel);
 
   return (
     <Formulario
@@ -901,6 +917,7 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
               defaultValue={projectId}
               erro={e.projectId}
               opcoes={projetos}
+              onChange={(evento) => setProjetoSel(evento.target.value)}
             />
             <CampoSelecao
               label="Conta"
@@ -952,12 +969,16 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
 
 export function RegistrarPontos({ projectId }: { projectId?: string }) {
   const { dataset, acoes, hoje } = useDados();
-  const { contas } = useOpcoes();
 
   // Só projetos que declararam ter programa de pontos.
   const comPrograma = dataset.projects
     .filter((p) => p.pointsLabel !== null)
     .map((p) => ({ valor: p.id, rotulo: `${p.name} · ${p.pointsLabel}` }));
+
+  const [projetoSel, setProjetoSel] = useState(
+    projectId ?? comPrograma[0]?.valor ?? "",
+  );
+  const contas = useContasDoProjeto(projetoSel);
 
   if (comPrograma.length === 0) return null;
 
@@ -989,6 +1010,7 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
               defaultValue={projectId}
               erro={e.projectId}
               opcoes={comPrograma}
+              onChange={(evento) => setProjetoSel(evento.target.value)}
             />
             <CampoSelecao
               label="Conta"

@@ -118,3 +118,20 @@ describe("apenasProximaDeCada", () => {
     expect(r).toHaveLength(2);
   });
 });
+
+describe("escopo de contas nos formulários", () => {
+  /*
+   * A regra vale para todo formulário que registra algo dentro de um projeto:
+   * lançamento, tarefa, meta, pontos e recebimento. A exceção é o de vincular
+   * conta, que precisa oferecer todas para a primeira vinculação existir.
+   */
+  it("projeto com uma conta vinculada oferece só ela, mesmo havendo seis", () => {
+    const todas = ["c1", "c2", "c3", "c4", "c5", "c6"];
+    expect(contasDisponiveisNoProjeto(["c3"], todas)).toEqual(["c3"]);
+  });
+
+  it("duas vinculadas oferecem as duas", () => {
+    const todas = ["c1", "c2", "c3", "c4", "c5", "c6"];
+    expect(contasDisponiveisNoProjeto(["c2", "c5"], todas)).toEqual(["c2", "c5"]);
+  });
+})
