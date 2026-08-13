@@ -1189,7 +1189,7 @@ de apoio ao lado do resultado: "ROI -15% sobre $40 depositados".
 
 Nenhuma tela mede **tempo**. "$500 parados por um mês" e "$500 por seis meses" aparecem
 iguais, e para eficiência de capital essa é a variável que falta. Ficou registrado em
-ARCHITECTURE §15, não implementado: exigiria medir a posição ao longo do tempo, com
+ARCHITECTURE §16, não implementado: exigiria medir a posição ao longo do tempo, com
 depósitos e saques parciais, e não apenas o saldo atual.
 
 ---

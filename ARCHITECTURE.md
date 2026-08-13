@@ -1000,7 +1000,68 @@ isso a confirmação diz o que se perde, em vez de perguntar "tem certeza?".
 
 ---
 
-## 15. Fora de escopo (registrado para depois)
+## 15. Consumo do banco: o que medir antes de otimizar
+
+Medição de 12/08/2026, com um usuário real e a conta de demonstração:
+
+| | Valor |
+|---|---|
+| Compute | 3,23 de 100 CU-hrs (3%) |
+| Storage | 0,07 de 0,5 GB (14%) |
+| Banco inteiro, por branch | 8,7 MB |
+| **Só as tabelas do aplicativo** | **~750 kB** |
+
+**O storage é dominado por estrutura, não por dados.** Cada branch Postgres nasce com uns
+8 MB de catálogo do sistema, tipos e extensões, mesmo vazio; com dois branches, isso é pago
+duas vezes. Os dados de verdade não chegam a 1 MB.
+
+Consequência registrada para não ser esquecida: **limitar o histórico do usuário não
+economizaria nada**. Apagar todos os lançamentos derrubaria o storage em menos de 2%, e a
+restrição custaria a confiança de quem depende do histórico. A ideia foi levantada e
+descartada com base nesta medição.
+
+### 15.1. O desperdício que existe de verdade
+
+Cada navegação dispara cerca de 17 consultas, no layout raiz, mesmo em telas que usam parte
+dos dados:
+
+| Origem | Consultas |
+|---|---|
+| `carregarDataset` | 10 |
+| `materializarOcorrencias` | 5 |
+| `carregarUsuario` | 1 |
+| Contador de suporte (admin) | 1 |
+
+Com 3% de compute isso não incomoda. Com dezenas de pessoas navegando, incomoda. Três
+correções, da mais barata para a mais estrutural:
+
+**1. Materializar no máximo uma vez por hora, por usuário.** Hoje as 5 consultas rodam a
+cada clique só para concluir que não há nada a criar. Basta guardar o instante da última
+materialização e sair cedo.
+
+**2. Materializar o que a tela mostra.** A janela cria 30 dias à frente e a lista exibe
+apenas a próxima ocorrência de cada tarefa (§ tarefas): as outras 29 são linhas que ninguém
+vê. Materializar por contagem (as próximas N de cada tarefa) em vez de por janela de dias
+resolve, e serve igual para recorrência diária e mensal, que hoje precisam de janelas
+diferentes.
+
+**3. Carregar por rota, não tudo no layout.** O `Dataset` inteiro é montado em toda
+navegação porque o provider o expõe a todas as telas. É a mudança de maior alcance e a de
+maior risco: mexe na fronteira que fez a troca de fixtures por Postgres custar um arquivo.
+Fica para quando as duas primeiras não bastarem.
+
+### 15.2. O que a medição ensina
+
+O gargalo suposto era o histórico do usuário, e o real é a estrutura fixa mais a quantidade
+de consultas por navegação. Nenhum dos dois apareceria sem medir por tabela e contar as
+consultas.
+
+Vale como método: **antes de otimizar, medir onde o custo está**. A intuição apontou para os
+dados, que são menos de 1 MB.
+
+---
+
+## 16. Fora de escopo (registrado para depois)
 
 - Leitura on-chain automática de saldos (Alchemy/DeBank).
 - Integração com CEX via API key.

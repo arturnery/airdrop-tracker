@@ -416,6 +416,13 @@ tests/            Vitest
 
 ## Roadmap
 
+- [ ] **Reduzir as consultas por navegação.** Cada carregamento dispara cerca de 17
+      consultas no layout raiz, e a materialização de ocorrências roda a cada clique só
+      para concluir que não há nada a criar. Medido e detalhado em
+      [`ARCHITECTURE.md` §15](ARCHITECTURE.md), junto do motivo de **não** limitar o
+      histórico do usuário: os dados ocupam menos de 1 MB, e o storage é dominado pela
+      estrutura fixa do Postgres
+
 - [ ] **Importação da planilha por CSV.** A tela existe e explica o mapeamento de cada
       coluna, mas o processamento não: falta o parser, a prévia e a gravação transacional.
       Desenhado em [`ARCHITECTURE.md` §7](ARCHITECTURE.md)
