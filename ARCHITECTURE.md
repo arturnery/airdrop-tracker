@@ -1172,7 +1172,99 @@ dados, que são menos de 1 MB.
 
 ---
 
-## 16. Fora de escopo (registrado para depois)
+## 16. Auditoria de segurança antes da divulgação
+
+Feita quando o projeto deixou de ser uso próprio e passou a ser mostrado a quem não
+conhece o código. Muda a pergunta: não é mais "eu consigo quebrar isso sem querer?", e sim
+"o que alguém consegue fazer de propósito?".
+
+### 16.1. O que já estava certo
+
+Verificado contra o banco de produção, não só lido no código:
+
+| Item | Como foi conferido | Resultado |
+|---|---|---|
+| Isolamento entre contas | `UPDATE`/`DELETE` com id real de outra pessoa | 0 linhas afetadas |
+| `user_id` em toda tabela de dados | varredura do schema | nenhuma exceção |
+| Senhas | bcrypt custo 12, inclusive na demo | sem exceção |
+| Segredo no pacote do cliente | busca por `DATABASE_URL`/`AUTH_SECRET` no build | nada |
+| Injeção de SQL | toda consulta por Drizzle ou `sql` parametrizado | nenhuma concatenação |
+| Rotas de administração | requisição direta sem sessão e com sessão comum | 307 nas duas |
+| Cookie de sessão | inspeção dos atributos | `HttpOnly`, `Secure`, `SameSite` |
+
+O que sustenta a primeira linha está em `actions/_core.ts`: `userId` vem da sessão, e todo
+`UPDATE`/`DELETE` filtra por ele além do id do registro. Como efeito colateral, id
+inexistente e id alheio ficam indistinguíveis, que é o desejado.
+
+### 16.2. Três defeitos encontrados
+
+**1. `contarNaoLidos` era exportada de um arquivo `"use server"` sem checar papel.**
+Toda função exportada desses arquivos vira endpoint acessível por requisição direta, e não
+adianta a tela só chamá-la para quem administra. Ela devolvia quantos relatos de suporte
+existiam por aí, para qualquer pessoa logada. Ganhou a checagem de papel dentro da própria
+função. **A lição que fica:** em Server Action, a autorização mora na ação, nunca em quem
+a chama.
+
+**2. Faltavam cabeçalhos de segurança.** Sem `X-Frame-Options`/`frame-ancestors`, outro
+site pode embutir o sistema num iframe invisível e capturar cliques de quem está logado.
+Num app onde um clique aprova membro ou apaga projeto, era o buraco mais sério da lista.
+Resolvido em `next.config.ts`, que também fecha *sniffing* de tipo, vazamento de URL pelo
+`Referer` e acesso a câmera, microfone e localização.
+
+Uma CSP completa ficou de fora, e a ausência é deliberada: sem *nonce* por requisição ela
+quebra a hidratação do Next, e liberar `unsafe-inline` para não quebrar não protege quase
+nada. Fica registrado como próximo passo, não como esquecimento.
+
+**3. O "esqueci minha senha" dizia quem tinha conta.** A resposta era sempre igual, exceto
+quando já havia um pedido nas últimas 24h: aí vinha "já existe um pedido em andamento".
+Como só quem tem conta chega a ter pedido anterior, bastava enviar o mesmo endereço duas
+vezes e ler a segunda resposta. O comentário no código chegava a justificar a diferença
+("aqui a conta certamente existe, não há o que proteger"), com o raciocínio invertido: era
+justamente isso que vazava. Agora o pedido repetido não cria linha e devolve a frase de
+sempre.
+
+### 16.3. Limite de tentativas de login
+
+Não havia nenhum: seis senhas erradas seguidas eram seis tentativas processadas. Com a
+senha sendo a única barreira, isso é força bruta sem custo.
+
+Agora cinco falhas em quinze minutos bloqueiam o endereço pelo resto da janela. Quatro
+decisões dentro disso:
+
+- **A recusa por bloqueio é idêntica à recusa por senha errada.** Dizer "bloqueado"
+  confirmaria que aquele endereço existe, que é a informação que a recusa única esconde.
+- **A falha é contada mesmo quando o e-mail não existe.** Contar só os cadastrados faria o
+  próprio limite virar o oráculo que a mensagem única evita.
+- **O bloqueio é por e-mail, não por IP.** O custo é conhecido: dá para travar a conta de
+  outra pessoa por quinze minutos de propósito. Aceito porque a alternativa protege menos.
+  IP em *serverless* chega por cabeçalho, que o cliente influencia, e um ataque distribuído
+  troca de IP a cada tentativa enquanto o e-mail alvo continua o mesmo.
+- **A demonstração fica de fora.** A senha dela está publicada no README, então não há o
+  que descobrir por tentativa e erro, e limitá-la só criaria um jeito barato de derrubar a
+  vitrine: cinco erros de propósito e a demo passa quinze minutos recusando visitante.
+
+A decisão vive em `lib/limite-login.ts`, pura e recebendo o instante atual; o banco só
+entrega os carimbos de tempo, em `db/queries/tentativas.ts`. A separação existe para a
+regra ser testável sem subir Postgres, e os sete testes cobrem as bordas que importam:
+uma falha antes do limite, a falha que fecha, a janela que expira e as falhas velhas que
+não podem completar a conta de uma nova.
+
+A tabela se limpa sozinha: cada falha registrada apaga o que passou de quatro janelas.
+Sem isso ela cresceria para sempre guardando tentativas que já não decidem nada.
+
+### 16.4. Limites conhecidos, assumidos
+
+- **O cadastro confirma se um e-mail já tem conta.** Foi decisão explícita (§14): quem
+  tentava recadastrar não entendia o silêncio. Com o sistema exposto, isso permite mapear
+  membros testando endereços. Continua valendo enquanto o grupo for fechado e pequeno.
+- **Não há limite de cadastros novos.** Um script pode encher a fila de aprovação. Conter
+  isso exigiria limite por IP, que aqui protege pouco pelo motivo de §16.3, e o caminho
+  melhor é regra de *firewall* na borda: configuração de infraestrutura, não código.
+- **A demo é pública e gravável.** Quem entrar pode bagunçar os dados dela, e é assim de
+  propósito, porque uma demonstração só de leitura não demonstra nada. `npm run
+  demo:restaurar -- --producao` devolve senha e dados originais.
+
+## 17. Fora de escopo (registrado para depois)
 
 - Leitura on-chain automática de saldos (Alchemy/DeBank).
 - Integração com CEX via API key.

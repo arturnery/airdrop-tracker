@@ -1189,7 +1189,7 @@ de apoio ao lado do resultado: "ROI -15% sobre $40 depositados".
 
 Nenhuma tela mede **tempo**. "$500 parados por um mês" e "$500 por seis meses" aparecem
 iguais, e para eficiência de capital essa é a variável que falta. Ficou registrado em
-ARCHITECTURE §16, não implementado: exigiria medir a posição ao longo do tempo, com
+ARCHITECTURE §17, não implementado: exigiria medir a posição ao longo do tempo, com
 depósitos e saques parciais, e não apenas o saldo atual.
 
 ---
@@ -2102,6 +2102,109 @@ quanto.
 
 ---
 
+## Marco 36: A auditoria antes de mostrar para alguém
+
+O sistema estava prestes a sair do uso próprio: o autor ia começar a falar dele
+publicamente, e gente que não conhece o código passaria a entrar. Isso muda a pergunta que
+importa. Até aqui a preocupação era *"eu quebro isso sem querer?"*. Agora é *"o que alguém
+consegue fazer de propósito?"*, e as duas não têm a mesma resposta.
+
+A auditoria completa está em [`ARCHITECTURE.md` §16](ARCHITECTURE.md). O que segue é o que
+ela ensinou.
+
+### O que já estava certo, e por que valeu conferir mesmo assim
+
+Isolamento entre contas, `user_id` em toda tabela de dados, bcrypt custo 12, nenhum
+segredo no pacote do cliente, nenhuma concatenação de SQL, rotas de administração
+recusando quem não é administrador, cookie de sessão com `HttpOnly` e `Secure`.
+
+A parte que valeu foi **testar contra o banco em vez de reler o código**. `UPDATE` e
+`DELETE` disparados com o id real de outro usuário, para ver quantas linhas caíam: zero.
+Ler o código teria dado a mesma resposta com menos confiança, porque ler confirma o que se
+espera encontrar.
+
+### Três defeitos, e o padrão comum entre dois deles
+
+**A Server Action sem dono.** `contarNaoLidos` estava exportada de um arquivo `"use
+server"` sem nenhuma checagem de papel. A tela só a chamava para quem administra, e isso
+parecia suficiente: não é. Toda função exportada de um arquivo desses vira um endereço que
+qualquer pessoa logada alcança por requisição direta, sem passar pela tela. Ela devolvia
+quantos relatos de suporte existiam.
+
+A correção é de três linhas. O que fica é a regra: **em Server Action, a autorização mora
+dentro da ação**, nunca em quem a chama. Quem chama é sugestão; a ação é a porta.
+
+**Os cabeçalhos que faltavam.** Sem `X-Frame-Options`, outro site embute o sistema num
+iframe invisível e captura os cliques de quem está logado. Num app onde um clique aprova
+membro ou apaga projeto, era o pior item da lista, e era também o mais barato de fechar:
+um arquivo `next.config.ts` que não existia.
+
+**O "esqueci minha senha" que dizia quem tinha conta.** Esse é o mais interessante dos
+três, porque o defeito estava justificado por escrito. A resposta era sempre igual, exceto
+quando já havia pedido nas últimas 24h, e aí vinha "já existe um pedido em andamento". O
+comentário no código explicava: *"aqui a conta certamente existe, porque só quem tem conta
+chega a ter um pedido anterior, então não há nada a proteger"*.
+
+A frase está correta e a conclusão está invertida. Sim, só quem tem conta chega a ter
+pedido anterior: **é exatamente por isso que a mensagem vaza**. Bastava enviar o mesmo
+endereço duas vezes e ler a segunda resposta. Todo o cuidado de manter a recusa de login
+única não valia nada com essa porta aberta ao lado.
+
+O padrão comum entre o primeiro e o terceiro: os dois eram protegidos por uma suposição
+sobre **como a pessoa chega ali**. Pela tela certa, na ordem certa, uma vez só. Auditar é,
+em boa parte, listar essas suposições e tirá-las.
+
+### O limite de tentativas, e os três oráculos que ele quase criou
+
+Não havia limite nenhum. O teste foi simples: seis senhas erradas seguidas, seis
+tentativas processadas. Com senha como única barreira, é força bruta sem custo.
+
+Escrever o limite foi fácil. O difícil foi não transformá-lo num delator, e apareceram três
+chances de fazer isso:
+
+1. **Responder "bloqueado".** Seria útil para quem esqueceu a senha e fatal para o resto:
+   a mensagem confirmaria que aquele endereço existe. A recusa por bloqueio ficou idêntica
+   à recusa por senha errada.
+2. **Contar só os e-mails cadastrados.** Parece a coisa natural, já que não-existentes não
+   têm o que proteger. Mas aí o comportamento passa a distinguir os dois casos: cinco erros
+   num endereço cadastrado começam a ser recusados, num não cadastrado não. O limite viraria
+   o oráculo que a mensagem única evita. Conta-se o e-mail tentado, exista ou não.
+3. **Bloquear a demonstração junto.** A senha dela está no README, então não há o que
+   descobrir por tentativa e erro, e limitá-la só criaria um jeito barato de derrubar a
+   vitrine do projeto: cinco erros de propósito e a demo passa quinze minutos recusando
+   visitante. Ela ficou de fora, e essa é a exceção que a regra ganhou.
+
+Sobrou um custo que não dá para eliminar: o bloqueio é por e-mail, então dá para travar a
+conta de alguém por quinze minutos de propósito. A alternativa seria por IP, que aqui
+protege menos: IP em *serverless* chega por cabeçalho, que o cliente influencia, e um
+ataque distribuído troca de IP a cada tentativa enquanto o e-mail alvo continua o mesmo.
+Fica assumido, não resolvido.
+
+### Onde a regra foi morar, e por quê
+
+A decisão ficou em `lib/limite-login.ts`, pura, recebendo os carimbos de tempo e o instante
+atual como argumento. O banco entrega os dados de `db/queries/tentativas.ts` e não decide
+nada.
+
+A separação não é preferência estética: é o que torna a regra testável. Os testes deste
+projeto são todos puros, sem Postgres, e uma função que consulta o banco não caberia neles.
+Com a decisão isolada, os sete testes cobrem as bordas que importam, inclusive as duas que
+eu erraria numa segunda escrita: falhas velhas não podem completar a conta de uma nova, e a
+janela solta *na* borda, porque um limite de quinze minutos que ainda segura no minuto
+quinze é, na prática, maior do que o anunciado.
+
+### O que ficou por fazer, dito em voz alta
+
+Uma CSP completa exige *nonce* por requisição, senão quebra a hidratação do Next; liberar
+`unsafe-inline` para não quebrar seria teatro. O cadastro continua confirmando se um e-mail
+já tem conta, que foi decisão consciente do autor e agora tem um custo maior do que tinha.
+E não há limite de cadastros novos, o que deixa a fila de aprovação aberta a um script.
+
+Os três estão registrados como limites assumidos, não como pendências esquecidas. A
+diferença entre as duas coisas é só uma: alguém ter escrito.
+
+---
+
 ## Estado atual
 
 | | |
@@ -2112,10 +2215,11 @@ quanto.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 229, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 236, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas e limite de login |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
+| Segurança | Auditada antes da divulgação: limite de tentativas, cabeçalhos e sem oráculo de e-mail cadastrado no login |
 | Senha | Recuperação por fila de administração, com troca obrigatória no primeiro acesso |
 | Produção | Vercel, com banco Neon e segredo de sessão próprio |
 | Demonstração | Conta pública com nome e senha travados, dados fictícios |

@@ -5,7 +5,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
-![Tests](https://img.shields.io/badge/testes-229%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-236%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -256,6 +256,60 @@ Uma exceção deliberada: o **cadastro** informa que o e-mail já existe. Isso c
 existência da conta, e foi escolhido mesmo assim: sem esse aviso a pessoa preenche o
 formulário de novo achando que errou algo. Decisão consciente, não descuido.
 
+### O limite de tentativas que quase virou um delator
+
+Cinco senhas erradas em quinze minutos bloqueiam o endereço. Escrever a contagem foi a
+parte fácil; a difícil foi impedir que o próprio limite contasse o que a recusa única
+esconde, e havia três formas de estragar isso:
+
+- **Responder "bloqueado"** confirmaria que aquele endereço existe. A recusa por bloqueio
+  ficou idêntica à recusa por senha errada.
+- **Contar só os e-mails cadastrados** parece natural, já que os inexistentes não têm o que
+  proteger. Mas aí cinco erros passam a ser recusados num endereço cadastrado e não num
+  inexistente, e o comportamento vira o oráculo que a mensagem evita. Conta-se o e-mail
+  tentado, exista ele ou não.
+- **Bloquear a conta de demonstração** só criaria um jeito barato de derrubá-la: a senha
+  dela está publicada aqui neste arquivo, então não há o que descobrir por tentativa e
+  erro, e cinco erros de propósito a deixariam quinze minutos recusando visitante.
+
+O trade-off que sobra: o bloqueio é por e-mail, então dá para travar a conta de alguém de
+propósito. A alternativa por IP protege menos, porque em *serverless* o IP chega por
+cabeçalho e um ataque distribuído troca de IP a cada tentativa enquanto o e-mail alvo
+continua o mesmo.
+
+A decisão vive numa função pura que recebe os carimbos de tempo e o instante atual
+([`lib/limite-login.ts`](lib/limite-login.ts)); o banco só busca e grava. É o que permite
+testá-la sem subir Postgres, e os testes cobrem as bordas: a falha que fecha o limite, a
+janela que expira e as falhas velhas que não podem completar a conta de uma nova.
+
+### Auditar é listar as suposições e tirá-las
+
+Antes de divulgar o projeto, uma auditoria trocou a pergunta de *"eu quebro isso sem
+querer?"* para *"o que alguém consegue fazer de propósito?"*. Ela achou três defeitos, e
+dois tinham a mesma raiz: eram protegidos por uma suposição sobre **como a pessoa chega
+ali**, pela tela certa e na ordem certa.
+
+Uma Server Action estava exportada sem checar papel porque só a tela de administração a
+chamava. Mas toda função exportada de um arquivo `"use server"` é um endereço alcançável
+por requisição direta: **em Server Action, a autorização mora dentro da ação**, nunca em
+quem a chama.
+
+O outro tinha o defeito justificado por escrito. O "esqueci minha senha" respondia igual
+para todos, exceto quando já havia pedido nas últimas 24h, e o comentário no código
+explicava que ali não havia o que proteger *"porque só quem tem conta chega a ter um pedido
+anterior"*. A frase está certa e a conclusão invertida: era exatamente isso que vazava, e
+bastava enviar o mesmo endereço duas vezes.
+
+O isolamento entre contas não foi conferido lendo o código, e sim disparando contra o banco
+os mesmos `UPDATE` e `DELETE` das Server Actions com o id de outro usuário. O script ficou
+no repositório ([`npm run auditar`](scripts/auditar-isolamento.ts)), escrito para ser seguro
+mesmo se encontrar o problema: o `UPDATE` grava o valor que a linha já tem e o `DELETE` é
+substituído pelo `SELECT` da mesma condição. Uma auditoria que corrompe dados ao achar o
+furo é pior do que não auditar.
+
+O relatório completo, com o que foi conferido e os limites assumidos, está em
+[`ARCHITECTURE.md` §16](ARCHITECTURE.md).
+
 ### Funções puras que pagaram duas vezes
 
 `lib/selectors.ts` e `lib/mutations.ts` recebem um `Dataset` e devolvem outro, sem saber de
@@ -354,6 +408,9 @@ histórico do shell.
 | `npm run db:studio` | Drizzle Studio |
 | `npm run db:seed` | Cria a conta de administrador sem senha |
 | `npm run db:seed-demo` | Carrega dados de demonstração |
+| `npm run backup` | Salva todas as tabelas num JSON datado |
+| `npm run demo:restaurar` | Devolve senha e dados originais à conta de demonstração |
+| `npm run auditar` | Confere no banco que uma conta não alcança dados de outra |
 | `npx tsx scripts/limpar-dados.ts` | Relata o que uma limpeza apagaria, preservando as contas de acesso |
 
 Scripts que tocam o banco rodam contra desenvolvimento por padrão e anunciam o alvo antes
@@ -369,7 +426,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 229 testes
+npm test              # 236 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint

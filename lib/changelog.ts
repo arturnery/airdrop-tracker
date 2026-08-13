@@ -39,6 +39,32 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.3",
+    data: "2026-08-13",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "O sistema agora se chama LVL Airdrops e usa o azul da Level Cripto. A tela de entrada foi redesenhada junto.",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A barra lateral recolhe, e a preferência fica guardada. Suporte, Novidades e Sair passaram para o rodapé dela.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Depois de cinco senhas erradas seguidas, o acesso àquele e-mail fica bloqueado por quinze minutos. Serve para impedir que alguém descubra uma senha por tentativa e erro.",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Ao pedir uma senha nova pela segunda vez no mesmo dia, o aviso deixava de fora quem não tinha cadastro. Agora a resposta é a mesma para todo mundo, e um endereço qualquer não pode mais ser usado para descobrir quem tem conta aqui.",
+      },
+    ],
+  },
+  {
     versao: "1.2",
     data: "2026-08-13",
     mudancas: [
