@@ -2205,6 +2205,71 @@ diferença entre as duas coisas é só uma: alguém ter escrito.
 
 ---
 
+## Marco 37: A aba, a cor e uma conta de contraste errada
+
+Dois ajustes pedidos depois de usar o sistema, e o segundo rendeu mais do que aparentava.
+
+### O título da aba
+
+Cada página declarava o próprio: "Perfil · LVL Airdrops", "Contas · LVL Airdrops". A tela
+em que a pessoa está ela já enxerga, e repetir isso na aba só empurra o nome do produto
+para longe do começo, que é a parte que sobrevive quando a aba encolhe. As onze
+declarações saíram e o título do layout raiz passou a valer para todas.
+
+Ficou um comentário no layout dizendo para não recriar `metadata` nas páginas, porque o
+prefixo voltaria uma a uma sem ninguém perceber, e dizendo também o que se perde: com
+várias abas do sistema abertas elas ficam iguais, e um favorito nasce com o nome do
+produto em vez do da tela. Nenhuma das duas é como este sistema é usado.
+
+### O verde que sobrou
+
+O nome do perfil realçava em verde ao passar o mouse, contra a regra que já estava escrita
+(§14.8): verde e vermelho carregam significado de domínio, ganho e prejuízo, e a marca não
+disputa esse espaço. Passar o mouse num nome não é resultado de nada.
+
+Aproveitei para varrer o resto e achei mais sete lugares com o mesmo problema: realce de
+cartão, chip de filtro, links, o ícone da tela de espera de aprovação e o da troca
+obrigatória de senha. Os dois últimos eram os piores: verde na tela de "aguardando
+aprovação" diz justamente *aprovado*, que é o oposto do estado.
+
+O verde ficou onde significa algo: depósito no histórico, projeto distribuído, barra de
+progresso de meta.
+
+### A conta de contraste que estava errada
+
+Aqui é onde a coisa ficou interessante. Trocar verde por azul não é trocar uma palavra:
+`--brand` é cor de superfície, e como texto ele não passa no contraste. Criei
+`--brand-legivel` para isso.
+
+Só que calculei a conversão de `oklch` para sRGB à mão, e a conta estava errada. Ela dizia
+que o azul da marca dava 2,6:1 e que o azul do anel de foco dava 3,73:1. Os valores reais,
+medidos no CSS compilado, são 4,28:1 e 6,33:1.
+
+A diferença entre acreditar e medir foi grande. Pela conta errada, o azul do anel não
+serviria para texto e eu precisaria de um azul bem mais claro. Cheguei a escolher um, em
+L=0,780, e ele passava com 8,7:1: um azul-céu que resolvia com folga um problema muito
+menor do que a conta anunciava, e que já não lembrava a marca. O valor final é o mesmo do
+anel de foco, com 6,33:1, e mantém o azul reconhecível.
+
+A regra que fica: **medir sobre o CSS compilado, não sobre o que está escrito na fonte.**
+A fonte está em `oklch`, o navegador moderno lê `lab()`, e há um hex de reserva para os
+antigos. Entre a intenção escrita e o pixel exibido há uma conversão que não se confere de
+cabeça, e eu tinha acabado de escrever no `globals.css` um número que não vinha de lugar
+nenhum.
+
+A mesma medição, agora feita sobre a saída, encontrou de quebra um contraste reprovado que
+nada tinha a ver com o pedido: o atalho "pular para o conteúdo" ficou com 4,17:1 quando eu
+o passei para azul. É um elemento que só aparece navegando por teclado, então ninguém
+reclamaria: seria um defeito de acessibilidade descoberto por acidente e corrigido só
+porque a verificação passou a ser automática, e não visual.
+
+`--brand-legivel` continua separado de `--ring` mesmo tendo hoje o mesmo valor. O motivo é
+significado, não cor: um anel de foco diz onde o teclado está e responde a outra exigência
+da norma (3:1, de indicador, contra 4,5:1 de texto). Se um dia um dos dois mudar, o outro
+não muda junto por acidente.
+
+---
+
 ## Estado atual
 
 | | |

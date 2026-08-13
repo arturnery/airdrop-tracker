@@ -55,6 +55,16 @@ export const changelog: Versao[] = [
       {
         tipo: "melhoria",
         texto:
+          "A aba do navegador mostra só LVL Airdrops, sem repetir o nome da tela em que você já está.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Os realces de mouse e os links passaram para o azul da marca. O verde ficou reservado ao que ele significa: depósito, projeto distribuído e progresso de meta.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
           "Depois de cinco senhas erradas seguidas, o acesso àquele e-mail fica bloqueado por quinze minutos. Serve para impedir que alguém descubra uma senha por tentativa e erro.",
       },
       {

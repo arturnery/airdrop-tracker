@@ -1029,6 +1029,40 @@ neutras (fundos, bordas, destaques de navegação), nunca substituindo o par ver
 
 ---
 
+## 14.9. Medir a cor na saída, não na fonte
+
+O nome do perfil realçava em verde ao passar o mouse, contrariando a regra de §14.8. A
+troca por azul parecia trivial e não foi, porque `--brand` não serve para texto: como cor
+de superfície ele funciona, e como palavra escrita reprova por pouco no contraste.
+
+Nasceu daí `--brand-legivel`, o mesmo azul mais claro, para texto. Ele existe separado de
+`--ring` por significado, não por cor: os dois têm o mesmo valor hoje, mas respondem a
+exigências diferentes (4,5:1 para texto, 3:1 para indicador de foco), e um mudar não deve
+arrastar o outro.
+
+O erro que valeu a lição foi outro. A primeira medição converteu `oklch` para sRGB à mão e
+errou a conta, dizendo que o azul da marca dava 2,6:1 quando dá 4,28:1, e que o azul do
+anel dava 3,73:1 quando dá 6,33:1. Confiando nela, a escolha teria sido um azul-céu quase
+branco, resolvendo com folga um problema muito menor do que a conta anunciava, e trocando
+a cor da marca por outra que já não a lembra.
+
+**A regra que fica: medir sobre o CSS compilado, que é o que o navegador recebe.** A fonte
+está em `oklch`, o navegador lê `lab()`, e há um hex de reserva; entre a intenção escrita e
+o pixel exibido há uma conversão que não se confere de cabeça. O mesmo cálculo achou de
+quebra um contraste reprovado no atalho "pular para o conteúdo", que ninguém veria porque
+ele só aparece com o teclado.
+
+| Onde | Antes | Agora |
+|---|---|---|
+| Nome do perfil (hover) | verde | 6,33:1 escuro, 7,94:1 claro |
+| Cartão de projeto e chips (hover) | verde | azul da marca na borda |
+| Links | verde | 7,15:1 escuro, 7,59:1 claro |
+| Espera de aprovação e troca de senha | verde | azul: nenhuma das duas é sucesso |
+| Pular para o conteúdo | verde | 7,15:1 escuro, 7,59:1 claro |
+
+O verde ficou onde significa algo: depósito no histórico, projeto distribuído, barra de
+progresso de meta. É a fronteira de §14.8 aplicada, e não uma troca de paleta.
+
 ## 15. Consumo do banco: o que medir antes de otimizar
 
 Medição de 12/08/2026, com um usuário real e a conta de demonstração:
