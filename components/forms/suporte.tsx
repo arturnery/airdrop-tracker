@@ -30,7 +30,13 @@ import { versaoAtual } from "@/lib/changelog";
  * este formulário de um pedido de e-mail: metade dos relatos se resolve sabendo
  * apenas onde a pessoa estava e o que estava publicado naquele momento.
  */
-export function Suporte() {
+export function Suporte({
+  className,
+  rotuloOculto = false,
+}: {
+  className?: string;
+  rotuloOculto?: boolean;
+}) {
   const pathname = usePathname();
   const [aberto, setAberto] = useState(false);
   const [erros, setErros] = useState<Record<string, string>>({});
@@ -51,10 +57,13 @@ export function Suporte() {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          className={
+            className ??
+            "text-muted-foreground hover:text-foreground focus-visible:ring-ring flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          }
         >
           <LifeBuoy className="size-4 shrink-0" aria-hidden="true" />
-          Suporte
+          <span className={rotuloOculto ? "sr-only" : "truncate"}>Suporte</span>
         </button>
       </DialogTrigger>
 

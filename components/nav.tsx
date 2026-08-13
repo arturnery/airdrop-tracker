@@ -35,10 +35,13 @@ const itens = [
 export function Nav({
   ehAdmin = false,
   feedbackNaoLido = 0,
+  recolhida = false,
 }: {
   ehAdmin?: boolean;
   /** Só chega preenchido para quem administra: ver o layout. */
   feedbackNaoLido?: number;
+  /** Barra estreita: sobram os ícones, os rótulos viram texto acessível. */
+  recolhida?: boolean;
 }) {
   const pathname = usePathname();
   const { dataset, hoje } = useDados();
@@ -77,8 +80,10 @@ export function Nav({
               <Link
                 href={item.href}
                 aria-current={ativo ? "page" : undefined}
+                title={recolhida ? item.label : undefined}
                 className={cn(
-                  "flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm transition-colors lg:justify-start",
+                  "relative flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm transition-colors lg:justify-start",
+                  recolhida && "lg:justify-center lg:px-0",
                   "focus-visible:ring-ring focus-visible:ring-offset-sidebar focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                   ativo
                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
@@ -86,11 +91,30 @@ export function Nav({
                 )}
               >
                 <Icon className="size-4 shrink-0" aria-hidden="true" />
-                <span className="hidden sm:inline">{item.label}</span>
+                {/* Recolhida, o rótulo sai da tela e permanece no DOM: leitor
+                    de tela e busca da página continuam encontrando a palavra. */}
+                <span
+                  className={cn(
+                    "hidden sm:inline",
+                    recolhida && "lg:sr-only",
+                  )}
+                >
+                  {item.label}
+                </span>
                 {contagem(item.href) > 0 ? (
-                  <span className="bg-caution/15 text-caution tabular ml-auto hidden rounded px-1.5 py-0.5 text-xs font-medium lg:inline">
-                    {contagem(item.href)}
-                  </span>
+                  /* Recolhida, o número vira um ponto: dizer "3" em 68px
+                     empurraria o ícone, e o que importa ali é saber que há
+                     algo esperando. */
+                  recolhida ? (
+                    <span
+                      aria-label={`${contagem(item.href)} pendente(s)`}
+                      className="bg-caution absolute top-1.5 right-1.5 hidden size-1.5 rounded-full lg:block"
+                    />
+                  ) : (
+                    <span className="bg-caution/15 text-caution tabular ml-auto hidden rounded px-1.5 py-0.5 text-xs font-medium lg:inline">
+                      {contagem(item.href)}
+                    </span>
+                  )
                 ) : null}
               </Link>
             </li>

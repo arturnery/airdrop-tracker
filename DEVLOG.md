@@ -2048,6 +2048,60 @@ borrado.
 
 ---
 
+## Marco 35: A barra lateral ganha o rodapé e recolhe
+
+Reorganização vinda de uma referência visual trazida por quem usa. O pedido foi explícito
+sobre o escopo: **estilização, não reestruturação**. A navegação continua como estava, com os
+mesmos itens na mesma ordem.
+
+### O rodapé mudou de lugar, e ganhou sentido
+
+Suporte e novidades viviam no rodapé do conteúdo, abaixo da área que rola. Subiram para o pé
+da barra lateral, separados da navegação por uma linha.
+
+A separação é semântica, não estética: **acima ficam os lugares do trabalho, abaixo as ações
+sobre o sistema**. E resolve um problema de previsibilidade: quem procura ajuda olha o menu,
+não o fim da página. O suporte continua sendo diálogo, então segue capturando a tela de
+origem sem tirar ninguém de onde o problema apareceu.
+
+Sair foi junto, e ficar ali é melhor que no meio dos links de dados: é um clique perigoso, e
+misturá-lo aos cotidianos convida ao engano.
+
+### Recolher exigiu dividir a casca
+
+A barra recolhe para 68px, guardando só os ícones, e a preferência persiste: quem recolhe
+quer trabalhar assim, não naquela página só.
+
+Isso obrigou uma divisão que vale registrar. O layout de `(app)` era inteiramente servidor, e
+recolher é estado de navegador. A saída foi separar em duas camadas:
+
+| Camada | O que faz | Onde roda |
+|---|---|---|
+| `app/(app)/layout.tsx` | Sessão, permissão, dados, bloqueio de senha temporária | Servidor |
+| `components/casca-app.tsx` | Estrutura visual, estado recolhido | Cliente |
+
+**O que decide o que pode ser visto continua no servidor.** Se a verificação de sessão
+tivesse descido junto com o visual, a proteção passaria a depender de algo que o navegador
+controla.
+
+O estado usa `useSyncExternalStore` e não `useState`, pelo mesmo motivo do relógio no marco 6:
+o valor nasce no `localStorage`, que o servidor não conhece. Ler durante a renderização
+causaria divergência de hidratação; o snapshot do servidor devolve o padrão e o navegador
+corrige depois.
+
+### O que some da tela e o que some do DOM
+
+Recolhida, os rótulos viram `sr-only`: saem da vista e **permanecem no documento**. Leitor de
+tela continua anunciando "Projetos", e a busca da página continua encontrando a palavra.
+Remover o texto seria mais simples e tornaria a barra recolhida inutilizável para quem navega
+por leitura de tela.
+
+O contador de pendências vira um ponto colorido no canto do ícone: escrever "3" em 68px
+empurraria o ícone, e o que importa naquele espaço é saber que **há** algo esperando, não
+quanto.
+
+---
+
 ## Estado atual
 
 | | |
