@@ -1008,7 +1008,7 @@ separação é a decisão:
 
 | | Onde vale |
 |---|---|
-| **Azul (marca)** | Símbolo, ícone da aba, tela de entrada, estilização |
+| **Azul (marca)** | Símbolo, ícone da aba, tela de entrada, anel de foco, estilização |
 | **Verde (domínio)** | Resultado positivo, ganho, conclusão, capital |
 | **Vermelho (domínio)** | Prejuízo, atraso, exclusão |
 
@@ -1016,6 +1016,12 @@ Trocar o sistema inteiro por azul seria o caminho óbvio ao adotar a marca, e qu
 leitura construída em cada tela: **aqui o verde não é decoração, é vocabulário.** Ele se
 opõe ao vermelho num par que a pessoa lê sem pensar, e que aparece em cartão, tabela,
 gráfico e badge.
+
+**O anel de foco é azul pelo mesmo raciocínio.** Ele diz onde o teclado está, não se algo
+deu certo: usar verde ali fazia a cor competir com o significado que ela tem no resto do
+sistema. É um tom mais claro que o do símbolo, porque o azul da marca dá 3,5:1 sobre a
+superfície do cartão e a norma exige 3:1 para indicador de foco. Passar raspando num item
+de acessibilidade é o mesmo que não passar; o tom escolhido dá 5,2:1.
 
 A regra que fica: cor com significado no domínio não é reaproveitável para identidade
 visual. Se um dia a marca precisar dominar mais, o caminho é ampliar o azul em superfícies

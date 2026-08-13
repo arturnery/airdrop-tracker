@@ -2030,6 +2030,15 @@ começa.
 Contraste conferido depois: 14:1 no texto principal e 5,7:1 no secundário, contra os 4,5:1 que
 a norma exige. O azul não toca texto nenhum, então não entra nessa conta.
 
+**O anel de foco também virou azul**, e por argumento, não por estética: ele indica onde o
+teclado está, não se algo deu certo. Verde ali competia com o significado que a cor tem no
+resto do sistema.
+
+Não é o mesmo azul do símbolo. Aquele dá 3,5:1 sobre a superfície do cartão, contra os 3:1
+que a norma exige para indicador de foco, e **passar raspando num item de acessibilidade é o
+mesmo que não passar**: qualquer ajuste futuro de fundo derrubaria abaixo do mínimo sem
+ninguém notar. O tom mais claro dá 5,2:1 e mantém a família da marca.
+
 ### Ícones
 
 `app/favicon.ico` cobre a aba do navegador pela convenção do App Router, e os demais tamanhos

@@ -95,7 +95,19 @@
   --destructive: oklch(0.645 0.246 16.439);
   --border: oklch(0.279 0.041 260.031);
   --input: oklch(0.279 0.041 260.031);
-  --ring: oklch(0.696 0.17 162.48);
+  /*
+   * Foco na cor da marca, não na primária.
+   *
+   * O anel de foco é navegação: ele diz onde o teclado está, e não se algo deu
+   * certo ou errado. Verde ali competia com o significado que o verde tem no
+   * resto do sistema.
+   *
+   * É um azul mais claro que `--brand` de propósito: o da marca dá 3,5:1 sobre
+   * a superfície do cartão, e a norma exige 3:1 para indicador de foco. Passar
+   * raspando num item de acessibilidade é o mesmo que não passar. Este dá
+   * 5,2:1.
+   */
+  --ring: oklch(0.686 0.170 251.8);
 
   --positive: oklch(0.765 0.177 163.223);
   --negative: oklch(0.712 0.194 13.428);
@@ -118,7 +130,7 @@
   --sidebar-accent: oklch(0.279 0.041 260.031);
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(0.279 0.041 260.031);
-  --sidebar-ring: oklch(0.696 0.17 162.48);
+  --sidebar-ring: oklch(0.686 0.170 251.8);
 }
 
 .light {
@@ -141,7 +153,7 @@
   --destructive: oklch(0.586 0.222 17.585);
   --border: oklch(0.869 0.022 252.894);
   --input: oklch(0.869 0.022 252.894);
-  --ring: oklch(0.508 0.118 165.612);
+  --ring: oklch(0.451 0.227 263);
 
   --positive: oklch(0.508 0.118 165.612);
   --negative: oklch(0.586 0.222 17.585);
@@ -155,7 +167,7 @@
   --sidebar-accent: oklch(0.929 0.013 255.508);
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.869 0.022 252.894);
-  --sidebar-ring: oklch(0.508 0.118 165.612);
+  --sidebar-ring: oklch(0.451 0.227 263);
 }
 
 @layer base {
