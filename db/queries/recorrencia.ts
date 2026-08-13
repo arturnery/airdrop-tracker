@@ -1,11 +1,11 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { contasAlvoDaTarefa } from "@/lib/tarefas";
-import { datasDevidas, janelaPadrao, type Recorrencia } from "@/lib/recurrence";
+import { datasParaMaterializar, type Recorrencia } from "@/lib/recurrence";
 
 /**
  * Cria as ocorrências que deveriam existir e ainda não existem.
@@ -22,12 +22,25 @@ import { datasDevidas, janelaPadrao, type Recorrencia } from "@/lib/recurrence";
  *
  * Só grava quando há algo faltando. Sem essa checagem, toda abertura de página
  * dispararia um INSERT, e ler uma tela não deveria custar uma escrita.
+ *
+ * E só **calcula** de hora em hora. Antes, cinco consultas rodavam a cada
+ * navegação para concluir, quase sempre, que nada havia mudado: uma tarefa
+ * diária não ganha ocorrência nova entre dois cliques. A marca em `users` faz a
+ * função sair com uma consulta em vez de cinco no caso comum.
  */
+const INTERVALO_MS = 60 * 60 * 1000;
+
 export async function materializarOcorrencias(
   userId: string,
   hoje: string,
 ): Promise<void> {
-  const janela = janelaPadrao(hoje);
+  const [dono] = await db
+    .select({ em: schema.users.ocorrenciasEm })
+    .from(schema.users)
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+
+  if (dono?.em && Date.now() - dono.em.getTime() < INTERVALO_MS) return;
 
   const tarefas = await db
     .select({
@@ -98,13 +111,18 @@ export async function materializarOcorrencias(
      */
     const ancora = tarefa.dueDate ?? tarefa.createdAt.toISOString().slice(0, 10);
 
-    const datas = datasDevidas(
+    /*
+     * Contagem em vez de janela de dias: as próximas de cada tarefa, não os
+     * próximos trinta dias. A tela mostra apenas a próxima ocorrência de cada
+     * uma, então materializar um mês criava dezenas de linhas invisíveis.
+     */
+    const datas = datasParaMaterializar(
       {
         recorrencia: tarefa.recurrence as Recorrencia,
         intervaloDias: tarefa.intervalDays,
         ancora,
       },
-      janela,
+      hoje,
     );
 
     for (const dueDate of datas) {
@@ -115,7 +133,17 @@ export async function materializarOcorrencias(
     }
   }
 
-  if (novas.length === 0) return;
+  if (novas.length > 0) {
+    await db.insert(schema.taskOccurrences).values(novas).onConflictDoNothing();
+  }
 
-  await db.insert(schema.taskOccurrences).values(novas).onConflictDoNothing();
+  /*
+   * A marca é gravada mesmo quando nada foi criado, e é justamente esse o caso
+   * que ela existe para evitar: refazer o cálculo inteiro na próxima navegação
+   * para chegar à mesma conclusão.
+   */
+  await db
+    .update(schema.users)
+    .set({ ocorrenciasEm: sql`now()` })
+    .where(eq(schema.users.id, userId));
 }

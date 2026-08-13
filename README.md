@@ -5,7 +5,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
-![Tests](https://img.shields.io/badge/testes-218%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-223%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -366,7 +366,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 218 testes
+npm test              # 223 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -416,12 +416,13 @@ tests/            Vitest
 
 ## Roadmap
 
-- [ ] **Reduzir as consultas por navegação.** Cada carregamento dispara cerca de 17
-      consultas no layout raiz, e a materialização de ocorrências roda a cada clique só
-      para concluir que não há nada a criar. Medido e detalhado em
-      [`ARCHITECTURE.md` §15](ARCHITECTURE.md), junto do motivo de **não** limitar o
-      histórico do usuário: os dados ocupam menos de 1 MB, e o storage é dominado pela
-      estrutura fixa do Postgres
+- [ ] **Exportar todos os dados.** Projetos, contas, lançamentos, tarefas, metas, pontos e
+      recebimentos, num formato legível fora daqui. Não é sobre espaço, e a distinção muda o
+      desenho: exportar existe por confiança, então nada é apagado ao exportar. Registrado
+      em [`ARCHITECTURE.md` §15.3](ARCHITECTURE.md)
+- [ ] **Carregar dados por rota, não tudo no layout.** O `Dataset` inteiro é montado a cada
+      navegação. Só vale mexer quando as otimizações já feitas não bastarem, porque altera a
+      fronteira que fez a troca de fixtures por Postgres custar um arquivo
 
 - [ ] **Importação da planilha por CSV.** A tela existe e explica o mapeamento de cada
       coluna, mas o processamento não: falta o parser, a prévia e a gravação transacional.

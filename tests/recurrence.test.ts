@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { datasDevidas, janelaPadrao } from "@/lib/recurrence";
+import {
+  datasDevidas,
+  datasParaMaterializar,
+  janelaPadrao,
+} from "@/lib/recurrence";
 import { formatDateExtenso } from "@/lib/dates";
 
 const janela = { de: "2026-08-01", ate: "2026-08-10" };
@@ -116,11 +120,16 @@ describe("datasDevidas", () => {
 });
 
 describe("janelaPadrao", () => {
-  it("cobre uma semana atrás e trinta dias à frente", () => {
-    expect(janelaPadrao("2026-08-11")).toEqual({
-      de: "2026-08-04",
-      ate: "2026-09-10",
-    });
+  /*
+   * O limite à frente é amplo de propósito desde que o corte passou a ser por
+   * contagem: a janela só precisa ser larga o bastante para uma recorrência
+   * mensal encontrar as próximas dentro dela. Quem limita é
+   * `datasParaMaterializar`.
+   */
+  it("cobre uma semana atrás e um horizonte largo à frente", () => {
+    const { de, ate } = janelaPadrao("2026-08-11");
+    expect(de).toBe("2026-08-04");
+    expect(ate > "2027-01-01").toBe(true);
   });
 
   it("o atrasado da semana passada continua visível", () => {
@@ -182,3 +191,58 @@ describe("reagendar tarefa recorrente", () => {
     expect(new Set(datas).size).toBe(datas.length);
   });
 });
+
+describe("datasParaMaterializar", () => {
+  const hoje = "2026-08-12";
+
+  /*
+   * O defeito que motivou a mudança: a janela de trinta dias criava trinta
+   * linhas de uma tarefa diária, e a tela mostra só a próxima.
+   */
+  it("diária cria poucas datas futuras, não um mês inteiro", () => {
+    const datas = datasParaMaterializar(
+      { recorrencia: "daily", ancora: hoje },
+      hoje,
+    );
+    const futuras = datas.filter((d) => d >= hoje);
+    expect(futuras).toEqual(["2026-08-12", "2026-08-13", "2026-08-14"]);
+  });
+
+  /*
+   * O defeito oposto, na mesma janela: trinta dias mal alcançavam a próxima
+   * ocorrência de uma tarefa mensal.
+   */
+  it("mensal alcança os próximos meses, que trinta dias não cobririam", () => {
+    const datas = datasParaMaterializar(
+      { recorrencia: "monthly", ancora: "2026-08-12" },
+      hoje,
+    );
+    expect(datas).toEqual(["2026-08-12", "2026-09-12", "2026-10-12"]);
+  });
+
+  it("atrasadas não entram na contagem: são dívida, não previsão", () => {
+    const datas = datasParaMaterializar(
+      { recorrencia: "daily", ancora: "2026-08-05" },
+      hoje,
+    );
+    const atrasadas = datas.filter((d) => d < hoje);
+    const futuras = datas.filter((d) => d >= hoje);
+    // A janela cobre sete dias para trás, e as próximas seguem limitadas a três.
+    expect(atrasadas.length).toBeGreaterThan(3);
+    expect(futuras).toHaveLength(3);
+  });
+
+  it("prazo fixo continua sendo uma data só", () => {
+    expect(
+      datasParaMaterializar({ recorrencia: "none", ancora: "2026-08-20" }, hoje),
+    ).toEqual(["2026-08-20"]);
+  });
+
+  it("semanal conta semanas, não dias", () => {
+    const datas = datasParaMaterializar(
+      { recorrencia: "weekly", ancora: "2026-08-12" },
+      hoje,
+    );
+    expect(datas).toEqual(["2026-08-12", "2026-08-19", "2026-08-26"]);
+  });
+})

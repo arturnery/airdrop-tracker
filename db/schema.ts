@@ -135,6 +135,17 @@ export const users = pgTable("users", {
    * quem entrou com uma senha que não escolheu que não deve poder agir.
    */
   mustChangePassword: boolean("must_change_password").notNull().default(false),
+  /**
+   * Última vez que as ocorrências recorrentes foram materializadas.
+   *
+   * O motor roda na leitura (§6), e sem esta marca ele refazia o cálculo a cada
+   * navegação: cinco consultas para concluir, quase sempre, que não havia nada
+   * a criar. Ler uma tela não deveria custar isso.
+   *
+   * Fica em `users` e não numa tabela própria porque é um dado por pessoa, lido
+   * junto do resto e escrito raramente.
+   */
+  ocorrenciasEm: timestamp("ocorrencias_em", { withTimezone: true }),
   /** Quando o acesso foi liberado ou recusado; nulo enquanto pendente. */
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   /** Por que foi recusado. Visível só para quem administra. */

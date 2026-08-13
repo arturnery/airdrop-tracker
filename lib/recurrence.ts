@@ -111,10 +111,42 @@ export function datasDevidas(regra: RegraRecorrencia, janela: Janela): IsoDate[]
  * Janela padrão de materialização: uma semana atrás, trinta dias à frente.
  *
  * Para trás porque quem some por alguns dias precisa ver o que ficou atrasado,
- * e não encontrar um painel limpo como se nada tivesse vencido. Para a frente o
- * suficiente para planejar o mês sem encher o banco de datas distantes que
- * podem nunca ser cumpridas.
+ * e não encontrar um painel limpo como se nada tivesse vencido.
+ *
+ * O limite à frente é generoso de propósito: quem corta de verdade é
+ * `datasParaMaterializar`, contando ocorrências em vez de dias. Esta janela só
+ * garante que uma recorrência mensal encontre suas próximas dentro dela.
  */
 export function janelaPadrao(hoje: IsoDate): Janela {
-  return { de: somarDias(hoje, -7), ate: somarDias(hoje, 30) };
+  return { de: somarDias(hoje, -7), ate: somarDias(hoje, 400) };
+}
+
+/**
+ * Datas que valem a pena existir no banco: as atrasadas recentes e as próximas
+ * `proximas` de cada tarefa.
+ *
+ * Substituiu o corte por janela de dias, que tinha dois defeitos opostos ao
+ * mesmo tempo. Para uma tarefa **diária**, trinta dias criavam trinta linhas
+ * enquanto a tela mostra só a próxima: vinte e nove registros que ninguém vê.
+ * Para uma **mensal**, os mesmos trinta dias mal alcançavam a ocorrência
+ * seguinte.
+ *
+ * Contar ocorrências em vez de dias resolve os dois: três próximas são três
+ * dias na diária e três meses na mensal, que é o que "próximas" significa em
+ * cada caso.
+ *
+ * As atrasadas não entram na contagem. Elas são dívida acumulada, e limitar
+ * quantas aparecem esconderia trabalho pendente.
+ */
+export function datasParaMaterializar(
+  regra: RegraRecorrencia,
+  hoje: IsoDate,
+  proximas = 3,
+): IsoDate[] {
+  const todas = datasDevidas(regra, janelaPadrao(hoje));
+
+  const atrasadas = todas.filter((d) => d < hoje);
+  const futuras = todas.filter((d) => d >= hoje).slice(0, proximas);
+
+  return [...atrasadas, ...futuras];
 }

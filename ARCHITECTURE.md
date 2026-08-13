@@ -1050,7 +1050,61 @@ navegação porque o provider o expõe a todas as telas. É a mudança de maior 
 maior risco: mexe na fronteira que fez a troca de fixtures por Postgres custar um arquivo.
 Fica para quando as duas primeiras não bastarem.
 
-### 15.2. O que a medição ensina
+### 15.2. O que foi corrigido
+
+As duas primeiras correções entraram, com resultado medido:
+
+| | Antes | Depois |
+|---|---|---|
+| Ocorrências (produção) | 279 | 88 |
+| Ocorrências (dev) | 3.237 | 176 |
+| Tabela em dev | 760 kB | 64 kB |
+| Consultas por navegação, caso comum | ~17 | ~13 |
+
+**A marca de materialização** (`users.ocorrencias_em`) faz o motor recalcular no máximo de
+hora em hora. Antes, cinco consultas rodavam a cada clique para concluir que nada havia
+mudado, o que é o caso quase sempre: uma tarefa diária não ganha ocorrência nova entre duas
+navegações.
+
+**A contagem no lugar da janela** resolveu dois defeitos opostos que a janela de trinta dias
+tinha ao mesmo tempo. Para uma tarefa diária, criava trinta linhas enquanto a tela mostra
+uma. Para uma mensal, mal alcançava a ocorrência seguinte. Contar ocorrências dá três dias
+na diária e três meses na mensal, que é o que "as próximas três" significa em cada caso.
+
+`scripts/limpar-ocorrencias-futuras.ts` fez a limpeza única do que já estava no banco,
+preservando atrasadas e concluídas. Depois dela, a tela de tarefas exibia exatamente os
+mesmos números: as 3.061 linhas removidas eram invisíveis.
+
+A terceira correção, **carregar por rota**, fica registrada e não foi feita. A condição para
+mexer nela: quando as duas primeiras não bastarem, porque ela altera a fronteira que fez a
+troca de fixtures por Postgres custar um arquivo só, e esse é o ativo arquitetural mais
+valioso do projeto.
+
+### 15.3. Exportar os dados, e por que não é sobre custo
+
+Registrado como funcionalidade futura: **exportar tudo, não só o histórico**. Projetos,
+contas, lançamentos, tarefas, metas, pontos e recebimentos, num formato que possa ser lido
+fora daqui e reimportado.
+
+O motivo não é economia de espaço, e isso importa para não desenhar errado: os dados de um
+usuário ocupam menos de 1 MB (§15). Exportar existe por **confiança**, que é outro
+requisito e leva a outro desenho:
+
+| Se fosse por custo | Sendo por confiança |
+|---|---|
+| Exportar e **apagar** do sistema | Exportar e **manter** tudo no lugar |
+| Só o histórico antigo | Tudo, inclusive o que está em uso |
+| Formato compacto qualquer | Formato legível e reimportável |
+
+Quem coloca dados financeiros num sistema quer poder tirá-los sem pedir nada a ninguém, e
+saber que a saída existe é o que torna aceitável colocá-los ali.
+
+Duas decisões a tomar quando for implementar: um arquivo único (JSON, que preserva a
+estrutura e volta inteiro) ou vários CSVs (que abrem no Excel e no Sheets, e por isso são
+mais úteis para quem só quer conferir). E se a reimportação faz parte do escopo, porque
+exportação sem volta é backup, não portabilidade.
+
+### 15.4. O que a medição ensina
 
 O gargalo suposto era o histórico do usuário, e o real é a estrutura fixa mais a quantidade
 de consultas por navegação. Nenhum dos dois apareceria sem medir por tabela e contar as

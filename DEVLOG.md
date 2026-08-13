@@ -1783,6 +1783,68 @@ apontava para o código escrito sob a premissa anterior.
 
 ---
 
+## Marco 30: Medir antes de otimizar
+
+O plano gratuito do banco apareceu com quase 20% de uso, com um único usuário real. A
+suspeita natural foi o histórico de lançamentos, e a proposta que veio junto era limitar
+quanto cada conta pode guardar, com exportação para liberar espaço.
+
+A medição desmontou a hipótese:
+
+| | Valor |
+|---|---|
+| Banco inteiro, por branch | 8,7 MB |
+| **Só as tabelas do aplicativo** | **~750 kB** |
+| Compute | 3 de 100 CU-hrs |
+
+Menos de 1 MB são dados. Os outros 8 MB são catálogo do Postgres, que todo banco tem mesmo
+vazio, pago duas vezes por haver dois branches. **Apagar todos os lançamentos derrubaria o
+uso em menos de 2%**, e a restrição custaria a confiança de quem depende do histórico.
+
+O que existia de verdade era outra coisa, e ninguém teria olhado para ela: cerca de dezessete
+consultas por navegação, e uma tabela cheia de linhas que a interface nunca mostrava.
+
+### O desperdício estava entre duas decisões corretas
+
+O motor de recorrência materializava trinta dias à frente. A tela de tarefas, desde o marco
+25, mostra apenas a próxima ocorrência de cada tarefa. Cada uma estava certa isolada, e
+juntas produziam vinte e nove linhas invisíveis por tarefa.
+
+Em números: **3.237 ocorrências em dev, das quais 3.061 eram excesso**. Depois da limpeza, a
+tela de tarefas exibia exatamente os mesmos 49 atrasados, 7 de hoje e 11 próximas. A tabela
+foi de 760 kB para 64 kB.
+
+### Contar ocorrências em vez de dias
+
+A janela de trinta dias tinha dois defeitos **opostos** ao mesmo tempo, o que a torna
+insalvável por ajuste de número:
+
+- Diária: criava trinta linhas para exibir uma.
+- Mensal: mal alcançava a ocorrência seguinte.
+
+Aumentar a janela pioraria o primeiro; diminuir quebraria o segundo. Contar ocorrências
+resolve os dois de uma vez, porque "as próximas três" são três dias na diária e três meses
+na mensal.
+
+### A marca que evita recalcular
+
+`users.ocorrencias_em` faz o motor sair cedo se já rodou na última hora. Antes, cinco
+consultas rodavam a cada clique para concluir que nada mudara, e é o que acontece quase
+sempre: uma tarefa diária não ganha ocorrência nova entre duas navegações.
+
+A marca é gravada **mesmo quando nada foi criado**, e esse é justamente o caso que ela
+existe para evitar.
+
+### O método, que vale mais que o resultado
+
+A intuição apontou para os dados do usuário. A medição por tabela mostrou estrutura fixa, e
+a contagem de consultas mostrou o custo real. Nenhum dos dois apareceria sem medir.
+
+Fica registrado em ARCHITECTURE §15, com os números, para que a ideia de limitar o histórico
+não volte sem que alguém reveja a medição.
+
+---
+
 ## Estado atual
 
 | | |
@@ -1793,7 +1855,7 @@ apontava para o código escrito sob a premissa anterior.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 218, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
+| Testes | 223, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil e alvo de tarefas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

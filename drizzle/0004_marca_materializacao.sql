@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "ocorrencias_em" timestamp with time zone;
