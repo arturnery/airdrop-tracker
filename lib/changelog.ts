@@ -45,6 +45,11 @@ export const changelog: Versao[] = [
       {
         tipo: "correcao",
         texto:
+          "O resultado de trade estava somando no saldo do projeto. Como o saldo real você confere na plataforma e lança à parte, o mesmo ganho era contado duas vezes. Agora ele entra só no resultado, como a taxa de gas já fazia. Os resultados não mudaram: só o saldo exibido, que passa a ser o dinheiro que está lá.",
+      },
+      {
+        tipo: "correcao",
+        texto:
           "O airdrop recebido não estava entrando no resultado da lista de projetos nem na de contas. Um projeto que já distribuiu aparecia no vermelho na lista e no azul dentro da própria aba. Agora as duas telas mostram o mesmo número.",
       },
       {

@@ -263,6 +263,7 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         retirado: retiradoProjeto,
         airdrops: airdropsDe(ds, (c) => c.projectId === projeto.id),
         taxas: sumOfType(doProjetoMov, "fee_gas"),
+        pnl: sumOfType(doProjetoMov, "trade_pnl"),
       });
       const depositado = capitalDepositado({
         aportado,
@@ -340,6 +341,7 @@ export function selectProjectBySlug(
             (c) => c.projectId === projeto.id && c.accountId === par.accountId,
           ),
           taxas: sumOfType(doPar, "fee_gas"),
+          pnl: sumOfType(doPar, "trade_pnl"),
         }),
         tarefasPendentes: pendentes.filter((o) => o.accountId === par.accountId).length,
         ultimaAtividade: ultimaAtividade(
@@ -591,6 +593,7 @@ export function selectAccounts(ds: Dataset): AccountSummary[] {
           retirado: sumOfType(daConta, "withdrawal"),
           airdrops: airdropsDe(ds, (c) => c.accountId === conta.id),
           taxas: sumOfType(daConta, "fee_gas"),
+          pnl: sumOfType(daConta, "trade_pnl"),
         }),
         tarefasPendentes: pendentes.filter((o) => o.accountId === conta.id).length,
         ultimaAtividade: ultimaAtividade(ds, (r) => r.accountId === conta.id),

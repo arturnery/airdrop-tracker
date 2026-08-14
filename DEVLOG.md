@@ -2294,6 +2294,42 @@ Os testes que travam isso não conferem valor absoluto, conferem **telas contra
 telas**: a lista tem de concordar com a aba, e o total do painel com a soma dos
 projetos. É a forma do defeito que estava ali, e é a que voltaria.
 
+### O resultado de trade que virava saldo
+
+Relatado logo depois dos outros cinco, e é da mesma família do primeiro: um
+número aparecendo onde não devia.
+
+`trade_pnl` estava entre os tipos que somam no saldo. A lógica original não era
+boba: lucrar num trade deixa mais dinheiro na plataforma. Ela só não combina com
+o jeito de trabalhar dele, que confere o saldo real na própria corretora e o
+lança à parte. Somar o resultado do trade por cima disso conta o mesmo ganho
+duas vezes, e a exposição exibida deixa de bater com o que a plataforma mostra.
+
+A correção já tinha modelo pronto dentro do próprio arquivo: `fee_gas` faz
+exatamente isso desde sempre, fica fora do saldo e entra no resultado como custo.
+`trade_pnl` passou a seguir o mesmo caminho, e os dois viraram o par natural, o
+custo e o ganho da operação.
+
+O cuidado que sobrou é o sinal. Airdrop e taxa têm direção conhecida e entram com
+`abs`, que protege de alguém digitar o sinal ao contrário. Trade dá lucro ou
+prejuízo, então `pnl` é a única parcela que preserva o sinal recebido.
+
+**Seis testes quebraram, e era exatamente o que tinha de acontecer:** todos
+afirmavam que o saldo incluía o trade. O que não podia mudar era o resultado, e
+o teste que fixa isso mede as duas coisas juntas: as fixtures somam $10,27 de
+prejuízo em trade, a exposição sobe exatamente esses $10,27 e o resultado
+continua $11,18. Se o resultado tivesse se mexido, o valor estaria sendo contado
+duas vezes ou nenhuma.
+
+Na base real o efeito é grande: a exposição total cai US$ 6.450,73, e num projeto
+sozinho cai US$ 7.380. Nenhum resultado muda. Vale dizer em voz alta porque uma
+queda dessas na tela, sem explicação, parece defeito.
+
+E os três lugares que montam `resultadoLiquido` à mão precisaram receber a
+parcela nova, um a um: os mesmos três que tinham esquecido o airdrop poucas horas
+antes. É a segunda vez no mesmo dia que a fórmula duplicada cobra pedágio, e fica
+anotado como o que merece ser refeito.
+
 ### As três metas que mostravam o mesmo número
 
 A Unit tem três metas de volume: perps, ponte e spot. As três mostravam o mesmo
@@ -2389,7 +2425,7 @@ afirmação, e não a ausência dela.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 258, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco e independência entre metas |
+| Testes | 260, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco e independência entre metas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

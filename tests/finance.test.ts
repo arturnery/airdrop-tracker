@@ -47,25 +47,40 @@ const expor = (movs: MovementRow[], precos: TokenPriceRow[] = []) =>
   );
 
 describe("tipos de caixa", () => {
-  it("volume operado e taxa ficam fora do saldo", () => {
+  it("volume, taxa e resultado de trade ficam fora do saldo", () => {
     expect(isCashType("deposit")).toBe(true);
     expect(isCashType("yield")).toBe(true);
-    expect(isCashType("trade_pnl")).toBe(true);
     expect(isCashType("withdrawal")).toBe(true);
+    expect(isCashType("other")).toBe(true);
+
     // Volume é atividade; taxa sai do bolso, não da posição.
     expect(isCashType("volume_traded")).toBe(false);
     expect(isCashType("fee_gas")).toBe(false);
+    /* Resultado de trade também não: o saldo é conferido na plataforma e
+       lançado à parte, então somá-lo aqui contaria o mesmo ganho duas vezes.
+       Ele entra no resultado, e só lá. */
+    expect(isCashType("trade_pnl")).toBe(false);
   });
 });
 
 describe("saldo como soma de lançamentos", () => {
-  it("acumula depósito, rendimento e perda", () => {
+  it("acumula depósito e rendimento", () => {
     const saldo = expor([
       mov("p1", "a1", "deposit", "100.00"),
       mov("p1", "a1", "yield", "1.00"),
-      mov("p1", "a1", "trade_pnl", "-5.00"),
     ]);
-    expect(toDbNumeric(saldo.value)).toBe("96.00");
+    expect(toDbNumeric(saldo.value)).toBe("101.00");
+  });
+
+  it("resultado de trade não mexe no saldo", () => {
+    const saldo = expor([
+      mov("p1", "a1", "deposit", "100.00"),
+      mov("p1", "a1", "trade_pnl", "-5.00"),
+      mov("p1", "a1", "trade_pnl", "20.00"),
+    ]);
+    // O saldo continua o que foi depositado: quem sabe o valor real é a
+    // plataforma, e ele chega aqui por lançamento próprio.
+    expect(toDbNumeric(saldo.value)).toBe("100.00");
   });
 
   it("desconta retirada", () => {

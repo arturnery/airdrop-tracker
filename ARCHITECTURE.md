@@ -1063,6 +1063,31 @@ ele só aparece com o teclado.
 O verde ficou onde significa algo: depósito no histórico, projeto distribuído, barra de
 progresso de meta. É a fronteira de §14.8 aplicada, e não uma troca de paleta.
 
+## 14.9-B. Resultado de trade não é saldo
+
+`trade_pnl` estava entre os tipos que somam no saldo, pela lógica de que lucrar
+num trade deixa mais dinheiro na plataforma. A lógica está certa e desencontrada
+do jeito de trabalhar: o saldo real é conferido na própria corretora e lançado à
+parte, então somar o resultado do trade fazia a conta contar o mesmo ganho duas
+vezes, e a exposição exibida deixava de bater com o que a plataforma mostrava.
+
+Agora ele segue o caminho que `fee_gas` já seguia: fora do saldo, dentro do
+resultado. Os dois formam o par natural, o custo e o ganho da operação.
+
+**A mudança é de lugar, não de conta.** O resultado de cada recorte continua
+idêntico: o valor apenas deixou de chegar por dentro da exposição e passou a
+entrar como parcela própria em `resultadoLiquido`. O teste que fixa isso mede as
+duas coisas ao mesmo tempo: a exposição muda exatamente pelo valor do trade, e o
+resultado não muda nada.
+
+`pnl` é a única das três parcelas de fora da exposição que **preserva o sinal**.
+Airdrop e taxa têm direção conhecida e levam `abs`, que protege de um sinal
+digitado ao contrário; trade dá lucro ou prejuízo, e forçar sinal ali destruiria
+metade dos casos.
+
+O efeito visível na base real foi grande: a exposição total caiu US$ 6.450,73, e
+num projeto sozinho caiu US$ 7.380. Nenhum resultado mudou.
+
 ## 14.10. A meta é dona do próprio progresso
 
 Até aqui o progresso de uma meta era derivado: `volume_usd` somava todo o

@@ -27,9 +27,27 @@ describe("selectDashboardSummary", () => {
 
   it("exposição é a soma dos lançamentos, com token revalorizado", () => {
     // Nebula entra com 1 SOL a $195, não com os $180 aportados.
-    expect(toDbNumeric(resumo.exposicao)).toBe("348.18");
+    expect(toDbNumeric(resumo.exposicao)).toBe("358.45");
     expect(toDbNumeric(resumo.resultado)).toBe("11.18");
     expect(resumo.roi).toBe(3.3);
+  });
+
+  /*
+   * O resultado de trade saiu do saldo e passou a entrar direto no resultado.
+   *
+   * A prova de que a mudança foi de lugar, e não de conta: as fixtures somam
+   * $10,27 de **prejuízo** em trade, a exposição sobe exatamente esses $10,27
+   * (deixou de carregar a perda) e o resultado fica idêntico ao de antes,
+   * $11,18. Se o resultado tivesse mudado, o valor estaria sendo contado duas
+   * vezes ou nenhuma.
+   */
+  it("tirar o trade do saldo não mexeu no resultado", () => {
+    expect(toDbNumeric(resumo.pnlTrades)).toBe("-10.27");
+    expect(toDbNumeric(resumo.exposicao)).toBe("358.45");
+    expect(toDbNumeric(resumo.resultado)).toBe("11.18");
+
+    // 348,18 é o que a exposição valia quando o prejuízo do trade estava nela.
+    expect(resumo.exposicao + resumo.pnlTrades).toBe(34818);
   });
 
   it("separa rendimentos do capital aportado", () => {
@@ -85,9 +103,10 @@ describe("selectProjectBySlug", () => {
   it("saldo da conta é a soma dos lançamentos dela", () => {
     const meridian = selectProjectBySlug(ds, "meridian", HOJE)!;
     const brave = meridian.contasDetalhe.find((c) => c.label === "brave")!;
-    // Depósito de 15 menos perda de 7,67.
+    // O saldo é o depósito: a perda de 7,67 é resultado de trade, e trade não
+    // mexe no saldo. O resultado continua mostrando o prejuízo.
     expect(toDbNumeric(brave.aportado)).toBe("15.00");
-    expect(toDbNumeric(brave.saldo)).toBe("7.33");
+    expect(toDbNumeric(brave.saldo)).toBe("15.00");
     expect(toDbNumeric(brave.resultado)).toBe("-7.67");
   });
 

@@ -39,19 +39,20 @@ export const pairKey = (projectId: string, accountId: string): PairKey =>
  * inflaria o capital. `fee_gas` também fica de fora do saldo porque sai do
  * bolso, não da posição; entra no resultado como custo (§5).
  *
+ * `trade_pnl` **saiu daqui**, a pedido de quem usa. Ele estava no saldo pela
+ * lógica de que lucrar num trade deixa mais dinheiro na plataforma, e a lógica
+ * está certa e desencontrada do jeito de trabalhar: o saldo real é conferido na
+ * própria corretora e lançado à parte, então somar o resultado do trade fazia
+ * a conta contar o mesmo ganho duas vezes. Agora ele move só o resultado, como
+ * `fee_gas` já fazia, e o par dos dois é o custo e o ganho da operação.
+ *
  * `other` **entra**. Ele nasceu como anotação sem efeito, e isso se mostrou uma
  * armadilha em uso real: uma perda de US$ 75 registrada ali não mexia em número
  * nenhum, o que pareceu falha de gravação e levou ao lançamento duplicado. Um
  * campo que aceita valor com sinal e o ignora não tem defesa: se a pessoa
  * informou uma quantia, ela conta.
  */
-const CASH_TYPES = [
-  "deposit",
-  "withdrawal",
-  "trade_pnl",
-  "yield",
-  "other",
-] as const;
+const CASH_TYPES = ["deposit", "withdrawal", "yield", "other"] as const;
 
 export function isCashType(type: string): boolean {
   return (CASH_TYPES as readonly string[]).includes(type);
@@ -143,6 +144,9 @@ export function efeitoDoTipo(type: string): string {
   if (type === "fee_gas") {
     return "Sai do bolso: desconta do resultado, sem mexer na posição.";
   }
+  if (type === "trade_pnl") {
+    return "Entra só no resultado: o saldo você confere na plataforma.";
+  }
   return "Entra no saldo do projeto e no resultado.";
 }
 
@@ -189,6 +193,11 @@ export function capitalDepositado(params: {
  * (é negativo no razão), mas o dinheiro sacado continua sendo de quem sacou.
  * Aportar 20, perder 6 e sacar 14 zera a posição sem ser prejuízo de 20: o
  * prejuízo é 6, que é exatamente o que se perdeu.
+ *
+ * Três parcelas entram por fora da exposição, e cada uma por não pertencer ao
+ * saldo: airdrop recebido, taxa paga e resultado de trade. `pnl` é o único que
+ * **preserva o sinal**, porque trade dá lucro ou prejuízo; os outros dois têm
+ * direção conhecida e o `abs` protege de um sinal digitado ao contrário.
  */
 export function resultadoLiquido(params: {
   exposicao: Cents;
@@ -196,10 +205,18 @@ export function resultadoLiquido(params: {
   retirado: Cents;
   airdrops?: Cents;
   taxas?: Cents;
+  pnl?: Cents;
 }): Cents {
-  const { exposicao, aportado, retirado, airdrops = ZERO, taxas = ZERO } = params;
+  const {
+    exposicao,
+    aportado,
+    retirado,
+    airdrops = ZERO,
+    taxas = ZERO,
+    pnl = ZERO,
+  } = params;
   return cents(
-    exposicao + Math.abs(retirado) + airdrops - aportado - Math.abs(taxas),
+    exposicao + Math.abs(retirado) + airdrops + pnl - aportado - Math.abs(taxas),
   );
 }
 
@@ -370,6 +387,7 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
     retirado,
     airdrops,
     taxas,
+    pnl: pnlTrades,
   });
 
   const depositado = capitalDepositado({ aportado, retirado });
