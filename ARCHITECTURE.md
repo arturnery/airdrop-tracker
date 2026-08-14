@@ -345,12 +345,20 @@ a tabela conta-por-conta nunca fica desatualizada.
 Na versão anterior `goals.metric = volume_usd` não tinha de onde sair: volume de trading
 não se deriva de depósito. Furo corrigido:
 
-| métrica | fonte | agregação |
+A tabela abaixo é do desenho original e **já não descreve o sistema**. Fica registrada
+porque enganou: ela cita `balance_snapshots`, uma tabela que foi desenhada aqui e nunca
+chegou a existir, e essa citação foi lida um ano depois como se a funcionalidade estivesse
+pronta (ver §14.9-B).
+
+| métrica | fonte planejada em 2025 | virou |
 |---|---|---|
-| `volume_usd` | `transactions` tipo `volume_traded` **+** `goal_entries` | SUM |
-| `balance_usd` | `balance_snapshots` | último valor |
-| `tx_count` | `transactions` | COUNT |
-| `days_active` | `transactions` | COUNT(DISTINCT occurred_at) |
+| `volume_usd` | `transactions` tipo `volume_traded` | `goal_entries` (§14.10) |
+| `balance_usd` | `balance_snapshots` | `goal_entries`; a tabela nunca existiu |
+| `tx_count` | `transactions` | `goal_entries` (§14.10) |
+| `days_active` | `transactions` | `goal_entries` (§14.10) |
+
+Hoje **toda** meta soma os próprios lançamentos, qualquer que seja a métrica. O motivo está
+em §14.10.
 
 ### 4.4. Programas de pontos
 
@@ -1063,30 +1071,35 @@ ele só aparece com o teclado.
 O verde ficou onde significa algo: depósito no histórico, projeto distribuído, barra de
 progresso de meta. É a fronteira de §14.8 aplicada, e não uma troca de paleta.
 
-## 14.9-B. Resultado de trade não é saldo
+## 14.9-B. O que é saldo, e como o dinheiro sai dele
 
-`trade_pnl` estava entre os tipos que somam no saldo, pela lógica de que lucrar
-num trade deixa mais dinheiro na plataforma. A lógica está certa e desencontrada
-do jeito de trabalhar: o saldo real é conferido na própria corretora e lançado à
-parte, então somar o resultado do trade fazia a conta contar o mesmo ganho duas
-vezes, e a exposição exibida deixava de bater com o que a plataforma mostrava.
+A exposição é a soma dos lançamentos de caixa: depósito, retirada, rendimento, resultado de
+trade e `other`, mais a posição em token revalorizada. **Não há outra fonte.**
 
-Agora ele segue o caminho que `fee_gas` já seguia: fora do saldo, dentro do
-resultado. Os dois formam o par natural, o custo e o ganho da operação.
+Isso precisa estar escrito porque a ausência de outra fonte já foi esquecida. Uma mudança
+tirou `trade_pnl` do saldo com a justificativa de que "o saldo real é conferido na
+plataforma e lançado à parte". O lançamento à parte não existe: `balance_snapshots` foi
+desenhada em §4.3-C, nunca implementada, e ficou na documentação parecendo pronta. O efeito
+foi imediato e grande: uma venda de token de US$ 7.380, registrada como `trade_pnl`,
+desapareceu do saldo sem ter saído da conta. Revertido no mesmo dia.
 
-**A mudança é de lugar, não de conta.** O resultado de cada recorte continua
-idêntico: o valor apenas deixou de chegar por dentro da exposição e passou a
-entrar como parcela própria em `resultadoLiquido`. O teste que fixa isso mede as
-duas coisas ao mesmo tempo: a exposição muda exatamente pelo valor do trade, e o
-resultado não muda nada.
+A regra que vale, e que a legenda do campo agora diz em voz alta:
 
-`pnl` é a única das três parcelas de fora da exposição que **preserva o sinal**.
-Airdrop e taxa têm direção conhecida e levam `abs`, que protege de um sinal
-digitado ao contrário; trade dá lucro ou prejuízo, e forçar sinal ali destruiria
-metade dos casos.
+> Lucro soma ao saldo, prejuízo desconta, e os dois entram no resultado. Se você tirar o
+> dinheiro da plataforma, isso é uma retirada.
 
-O efeito visível na base real foi grande: a exposição total caiu US$ 6.450,73, e
-num projeto sozinho caiu US$ 7.380. Nenhum resultado mudou.
+**A simetria é o ponto**, e uma primeira redação a perdeu: ela dizia que só a retirada
+tirava dinheiro da exposição. Não é verdade, e não deveria ser. Se lucro aumenta o saldo,
+prejuízo tem de diminuí-lo na mesma medida, porque o dinheiro perdido operando não está mais
+na plataforma. A retirada é para o dinheiro que sai **inteiro**, não para o que foi perdido.
+
+É por isso que `direcaoDoTipo` devolve `ambos` para `trade_pnl` e o sinal digitado não é
+forçado, ao contrário de depósito e retirada, que têm direção conhecida e levam o sinal
+imposto por `aplicarSinalDoTipo`. Quatro testes fixam a simetria, incluindo a igualdade do
+desvio para cima e para baixo.
+
+`fee_gas` continua sendo a exceção legítima: ele sai do bolso, não da posição, e por isso
+desconta do resultado sem nunca ter entrado no saldo.
 
 ## 14.10. A meta é dona do próprio progresso
 

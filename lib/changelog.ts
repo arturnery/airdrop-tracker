@@ -45,7 +45,7 @@ export const changelog: Versao[] = [
       {
         tipo: "correcao",
         texto:
-          "O resultado de trade estava somando no saldo do projeto. Como o saldo real você confere na plataforma e lança à parte, o mesmo ganho era contado duas vezes. Agora ele entra só no resultado, como a taxa de gas já fazia. Os resultados não mudaram: só o saldo exibido, que passa a ser o dinheiro que está lá.",
+          "Por algumas horas do dia 14, o lucro de trade deixou de contar no saldo dos projetos, e o saldo exibido ficou menor do que o real. Já voltou ao normal: lucro soma ao saldo e prejuízo desconta, como sempre foi.",
       },
       {
         tipo: "correcao",

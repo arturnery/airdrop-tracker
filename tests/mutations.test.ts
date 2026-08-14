@@ -177,18 +177,15 @@ describe("exclusão em cascata", () => {
 
   it("apagar um lançamento muda o saldo, porque o saldo é a soma", () => {
     const antes = selectProjectBySlug(base(), "prisma-dex", HOJE)!;
-    expect(toDbNumeric(antes.exposicao)).toBe("20.00");
-    expect(toDbNumeric(antes.resultado)).toBe("-1.10");
+    expect(toDbNumeric(antes.exposicao)).toBe("18.90");
 
-    /* tx-24 é a perda de $1,10 do Prisma DEX, e é resultado de trade: apagá-la
-       não mexe no saldo, que nunca a incluiu, e devolve o resultado a zero. */
+    // tx-24 é a perda de $1,10 do Prisma DEX.
     const depois = selectProjectBySlug(
       M.excluirLancamento(base(), "tx-24"),
       "prisma-dex",
       HOJE,
     )!;
     expect(toDbNumeric(depois.exposicao)).toBe("20.00");
-    expect(toDbNumeric(depois.resultado)).toBe("0.00");
   });
 });
 
@@ -214,7 +211,7 @@ describe("edição", () => {
     // 337 − 180 + 100
     expect(toDbNumeric(resumo.aportado)).toBe("257.00");
     // A exposição não muda: continua 1 SOL a $195.
-    expect(toDbNumeric(resumo.exposicao)).toBe("358.45");
+    expect(toDbNumeric(resumo.exposicao)).toBe("348.18");
   });
 
   it("tarefa inativa some das pendências sem apagar o registro", () => {

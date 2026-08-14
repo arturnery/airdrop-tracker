@@ -39,12 +39,17 @@ export const pairKey = (projectId: string, accountId: string): PairKey =>
  * inflaria o capital. `fee_gas` também fica de fora do saldo porque sai do
  * bolso, não da posição; entra no resultado como custo (§5).
  *
- * `trade_pnl` **saiu daqui**, a pedido de quem usa. Ele estava no saldo pela
- * lógica de que lucrar num trade deixa mais dinheiro na plataforma, e a lógica
- * está certa e desencontrada do jeito de trabalhar: o saldo real é conferido na
- * própria corretora e lançado à parte, então somar o resultado do trade fazia
- * a conta contar o mesmo ganho duas vezes. Agora ele move só o resultado, como
- * `fee_gas` já fazia, e o par dos dois é o custo e o ganho da operação.
+ * `trade_pnl` **entra**, e chegou a sair por algumas horas. A ideia era que o
+ * saldo real fosse conferido na plataforma e lançado à parte, e o lançamento à
+ * parte não existe: nunca houve tabela de saldo conferido, a exposição sempre
+ * saiu da soma dos lançamentos. Sem ele aqui, uma venda de token de US$ 7.380
+ * sumia do saldo sem ter saído da conta.
+ *
+ * Ele entra **com o sinal que foi digitado**, e é isso que fecha a lógica: se
+ * lucro aumenta o saldo, prejuízo tem de diminuí-lo, porque o dinheiro perdido
+ * não está mais na plataforma. Por isso `direcaoDoTipo` devolve `ambos` aqui e
+ * o sinal não é forçado, ao contrário de depósito e retirada, que têm direção
+ * conhecida.
  *
  * `other` **entra**. Ele nasceu como anotação sem efeito, e isso se mostrou uma
  * armadilha em uso real: uma perda de US$ 75 registrada ali não mexia em número
@@ -52,7 +57,13 @@ export const pairKey = (projectId: string, accountId: string): PairKey =>
  * campo que aceita valor com sinal e o ignora não tem defesa: se a pessoa
  * informou uma quantia, ela conta.
  */
-const CASH_TYPES = ["deposit", "withdrawal", "yield", "other"] as const;
+const CASH_TYPES = [
+  "deposit",
+  "withdrawal",
+  "trade_pnl",
+  "yield",
+  "other",
+] as const;
 
 export function isCashType(type: string): boolean {
   return (CASH_TYPES as readonly string[]).includes(type);
@@ -145,7 +156,18 @@ export function efeitoDoTipo(type: string): string {
     return "Sai do bolso: desconta do resultado, sem mexer na posição.";
   }
   if (type === "trade_pnl") {
-    return "Entra só no resultado: o saldo você confere na plataforma.";
+    /*
+     * A frase diz os dois lados de propósito. Uma versão anterior dizia só
+     * "fica no saldo, e para tirar lance uma retirada", o que sugeria que sair
+     * do saldo dependia de registrar retirada. Não depende: prejuízo desconta
+     * sozinho, e tem de descontar, porque o dinheiro perdido não está mais lá.
+     * A retirada é para o dinheiro que sai da plataforma **inteiro**, não para
+     * o que foi perdido operando.
+     */
+    return (
+      "Lucro soma ao saldo, prejuízo desconta, e os dois entram no resultado. " +
+      "Se você tirar o dinheiro da plataforma, isso é uma retirada."
+    );
   }
   return "Entra no saldo do projeto e no resultado.";
 }
@@ -193,11 +215,6 @@ export function capitalDepositado(params: {
  * (é negativo no razão), mas o dinheiro sacado continua sendo de quem sacou.
  * Aportar 20, perder 6 e sacar 14 zera a posição sem ser prejuízo de 20: o
  * prejuízo é 6, que é exatamente o que se perdeu.
- *
- * Três parcelas entram por fora da exposição, e cada uma por não pertencer ao
- * saldo: airdrop recebido, taxa paga e resultado de trade. `pnl` é o único que
- * **preserva o sinal**, porque trade dá lucro ou prejuízo; os outros dois têm
- * direção conhecida e o `abs` protege de um sinal digitado ao contrário.
  */
 export function resultadoLiquido(params: {
   exposicao: Cents;
@@ -205,18 +222,10 @@ export function resultadoLiquido(params: {
   retirado: Cents;
   airdrops?: Cents;
   taxas?: Cents;
-  pnl?: Cents;
 }): Cents {
-  const {
-    exposicao,
-    aportado,
-    retirado,
-    airdrops = ZERO,
-    taxas = ZERO,
-    pnl = ZERO,
-  } = params;
+  const { exposicao, aportado, retirado, airdrops = ZERO, taxas = ZERO } = params;
   return cents(
-    exposicao + Math.abs(retirado) + airdrops + pnl - aportado - Math.abs(taxas),
+    exposicao + Math.abs(retirado) + airdrops - aportado - Math.abs(taxas),
   );
 }
 
@@ -387,7 +396,6 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
     retirado,
     airdrops,
     taxas,
-    pnl: pnlTrades,
   });
 
   const depositado = capitalDepositado({ aportado, retirado });

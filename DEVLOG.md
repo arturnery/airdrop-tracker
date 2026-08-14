@@ -2294,42 +2294,6 @@ Os testes que travam isso não conferem valor absoluto, conferem **telas contra
 telas**: a lista tem de concordar com a aba, e o total do painel com a soma dos
 projetos. É a forma do defeito que estava ali, e é a que voltaria.
 
-### O resultado de trade que virava saldo
-
-Relatado logo depois dos outros cinco, e é da mesma família do primeiro: um
-número aparecendo onde não devia.
-
-`trade_pnl` estava entre os tipos que somam no saldo. A lógica original não era
-boba: lucrar num trade deixa mais dinheiro na plataforma. Ela só não combina com
-o jeito de trabalhar dele, que confere o saldo real na própria corretora e o
-lança à parte. Somar o resultado do trade por cima disso conta o mesmo ganho
-duas vezes, e a exposição exibida deixa de bater com o que a plataforma mostra.
-
-A correção já tinha modelo pronto dentro do próprio arquivo: `fee_gas` faz
-exatamente isso desde sempre, fica fora do saldo e entra no resultado como custo.
-`trade_pnl` passou a seguir o mesmo caminho, e os dois viraram o par natural, o
-custo e o ganho da operação.
-
-O cuidado que sobrou é o sinal. Airdrop e taxa têm direção conhecida e entram com
-`abs`, que protege de alguém digitar o sinal ao contrário. Trade dá lucro ou
-prejuízo, então `pnl` é a única parcela que preserva o sinal recebido.
-
-**Seis testes quebraram, e era exatamente o que tinha de acontecer:** todos
-afirmavam que o saldo incluía o trade. O que não podia mudar era o resultado, e
-o teste que fixa isso mede as duas coisas juntas: as fixtures somam $10,27 de
-prejuízo em trade, a exposição sobe exatamente esses $10,27 e o resultado
-continua $11,18. Se o resultado tivesse se mexido, o valor estaria sendo contado
-duas vezes ou nenhuma.
-
-Na base real o efeito é grande: a exposição total cai US$ 6.450,73, e num projeto
-sozinho cai US$ 7.380. Nenhum resultado muda. Vale dizer em voz alta porque uma
-queda dessas na tela, sem explicação, parece defeito.
-
-E os três lugares que montam `resultadoLiquido` à mão precisaram receber a
-parcela nova, um a um: os mesmos três que tinham esquecido o airdrop poucas horas
-antes. É a segunda vez no mesmo dia que a fórmula duplicada cobra pedágio, e fica
-anotado como o que merece ser refeito.
-
 ### As três metas que mostravam o mesmo número
 
 A Unit tem três metas de volume: perps, ponte e spot. As três mostravam o mesmo
@@ -2415,6 +2379,99 @@ afirmação, e não a ausência dela.
 
 ---
 
+## Marco 39: A funcionalidade que só existia na documentação
+
+Uma ida e volta em menos de um dia, e o erro foi meu do começo ao fim.
+
+### O pedido, e o que eu inferi por conta própria
+
+O pedido foi curto: *"os resultados de trade viram exposicao, nao quero isso, entra apenas
+no resultado"*. Tirei `trade_pnl` do saldo, ajustei o resultado para receber a parcela por
+fora, seis testes quebraram e foram atualizados, tudo verde, publicado.
+
+E escrevi no comentário do código, com todas as letras, a justificativa:
+
+> o saldo real é conferido na própria corretora e lançado à parte, então somar o resultado
+> do trade fazia a conta contar o mesmo ganho duas vezes
+
+**Ninguém me disse isso.** Eu inferi. E o "lançado à parte" não existe neste sistema: nunca
+houve tabela de saldo conferido. A exposição sempre saiu, e só, da soma dos lançamentos.
+
+De onde veio a inferência: `balance_snapshots` está no `ARCHITECTURE.md` desde o Marco 0,
+numa tabela de "fonte de cada métrica". Foi desenhada e nunca implementada. Um ano depois,
+a documentação do plano foi lida como documentação do sistema.
+
+### O que aconteceu com os números
+
+O relato seguinte veio no dia: o campo de capital estava confuso. Fui olhar os dados reais
+e o Lighter contava a história inteira:
+
+```
+2026-07-08  deposit      20,00
+2026-08-13  deposit      20,00
+2026-08-14  trade_pnl  6.474,00  "Venda dos tokens tb"
+2026-08-14  trade_pnl    906,00  "Venda dos tokens tb"
+```
+
+`trade_pnl` estava sendo usado para registrar **venda de token**, que é dinheiro que entrou
+de verdade e continua na plataforma. Antes da minha mudança o saldo mostrava $7.420; depois,
+$40. Sumiram $7.380 que não tinham saído de lugar nenhum.
+
+O que eu chamei de "contar o mesmo ganho duas vezes" era, na verdade, contar uma vez só.
+
+### A decisão
+
+Ofereci três caminhos, com os números reais dele em cada um, e a escolha foi a primeira:
+lucro de trade volta a somar no saldo, e o dinheiro sai da exposição quando a **retirada**
+for lançada.
+
+Além de reverter, a legenda do campo passou a dizer a regra na hora do lançamento. Reverter
+desfaz o estrago; a frase é o que impede a dúvida de nascer de novo.
+
+### E aí eu errei a descrição da regra que acabara de restaurar
+
+Escrevi que a escolha era boa por manter *"uma única forma de tirar dinheiro da exposição, a
+retirada"*, e a primeira legenda dizia *"fica no saldo; ao tirar esse dinheiro da
+plataforma, lance uma retirada"*.
+
+A correção veio na hora, e é elementar: **se lucro aumenta o saldo, prejuízo tem de
+diminuir.** O dinheiro perdido operando não está mais na plataforma. A retirada é para o
+dinheiro que sai inteiro, não para o que foi perdido.
+
+Fui conferir o código antes de responder, e ele já estava certo: depósito de 100 mais lucro
+de 40 dá 140, mais prejuízo de 40 dá 60. `direcaoDoTipo` devolve `ambos` para `trade_pnl`
+justamente para não forçar sinal, ao contrário de depósito e retirada. **Só a minha
+descrição estava errada.**
+
+O que fica: eu tinha acabado de errar por inferir comportamento em vez de verificar, e no
+parágrafo seguinte inferi de novo, agora sobre um código que eu mesmo tinha revertido cinco
+minutos antes. Descrever é uma afirmação sobre o sistema como qualquer outra, e paga a mesma
+conferência.
+
+A simetria virou quatro testes, incluindo o desvio para cima ser igual ao desvio para baixo.
+Um deles quase passou sem valer nada: a primeira versão comparava `NaN` com `NaN`, o que o
+`toBe` aceita, porque eu tinha esquecido de pegar o `.value` do objeto de exposição. Foi
+salvo pelos outros dois asserts do mesmo bloco, que exigiam o número exato.
+
+### O que fica
+
+**Documentação de plano e documentação de sistema precisam ser distinguíveis.** A tabela do
+§4.3-C não mentia quando foi escrita: descrevia o que ia ser construído. Ela virou mentira
+sem ninguém tocá-la, porque o sistema seguiu por outro caminho. Agora a tabela diz, em cada
+linha, o que foi planejado e o que virou de fato.
+
+E a lição maior, que virou item no catálogo global: **quando a razão de uma mudança é um
+comportamento do sistema, esse comportamento tem de ser verificado, não lembrado.** Bastava
+procurar `balance_snapshots` no schema. Levaria dez segundos e teria custado zero
+publicações.
+
+Vale anotar o que os testes não pegaram, e não tinham como: 260 testes verdes sobre uma
+regra de negócio errada. Teste confere se o código faz o que se pediu, não se o que se pediu
+faz sentido no domínio. Quem pega isso é olhar o dado real, que foi exatamente o que
+resolveu aqui.
+
+---
+
 ## Estado atual
 
 | | |
@@ -2425,7 +2482,7 @@ afirmação, e não a ausência dela.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 260, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco e independência entre metas |
+| Testes | 258, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco e independência entre metas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
