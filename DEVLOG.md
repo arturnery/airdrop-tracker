@@ -2270,6 +2270,115 @@ não muda junto por acidente.
 
 ---
 
+## Marco 38: Cinco pedidos, e o teste que mentia
+
+Cinco ajustes vindos de uso real. Três eram pequenos, dois mexeram em regra de
+negócio, e um deles ensinou mais do que os outros quatro juntos.
+
+**Cópia de segurança antes de mexer:** `backups/producao-2026-08-14.json`, 385
+linhas. Duas das mudanças alteram como um valor é gravado.
+
+### O airdrop que sumia conforme a tela
+
+O relato: um projeto aparecia positivo dentro da própria aba e negativo na lista
+geral. O palpite dele estava certo: era o airdrop recebido não sendo somado.
+
+A causa é conhecida e já tinha mordido antes: **a mesma fórmula morando em dois
+lugares**. A aba do projeto chamava `summarizeFinancials`, que soma o airdrop.
+A lista de projetos e a de contas montavam `resultadoLiquido` à mão, e o
+argumento `airdrops` é opcional. Esquecer um argumento opcional não dá erro de
+compilação, não dá erro em teste, e não dá erro em tela: dá um número diferente
+em cada lugar, e nenhum dos dois parece errado de fora.
+
+Os testes que travam isso não conferem valor absoluto, conferem **telas contra
+telas**: a lista tem de concordar com a aba, e o total do painel com a soma dos
+projetos. É a forma do defeito que estava ali, e é a que voltaria.
+
+### As três metas que mostravam o mesmo número
+
+A Unit tem três metas de volume: perps, ponte e spot. As três mostravam o mesmo
+valor, porque o progresso era **derivado**: uma meta de `volume_usd` somava todo
+o `volume_traded` do projeto. Com uma meta funcionava; com três, o número não era
+de nenhuma delas.
+
+Perguntei como resolver e a escolha foi tornar toda meta manual. Ela acumula o
+que for lançado nela, e o lançamento do projeto não a toca mais.
+
+A tabela `goal_entries` já existia no schema desde o começo, com o comentário
+"progresso manual de meta" e nunca usada. Foi escrita para isso e ficou parada
+esperando o caso aparecer.
+
+O detalhe que a escolha trazia junto era zerar as metas existentes. Em vez de
+aceitar isso, um script de uso único
+([`semear-progresso-de-metas.ts`](scripts/semear-progresso-de-metas.ts)) gravou
+em cada meta um lançamento com o valor que ela exibia, marcado na nota como o que
+é. Quatro metas em produção foram semeadas, três estavam em zero: **as três da
+Unit**, que é exatamente a queixa original: elas nunca tiveram como receber
+volume próprio.
+
+O SQL do script repete a regra antiga em vez de importar o código dela, de
+propósito: a regra antiga estava sendo apagada no mesmo commit.
+
+`balance_usd` ficou de fora da semeadura. O saldo vinha da exposição, que
+revaloriza posição em token pela cotação do dia: congelar isso num lançamento
+gravaria como progresso permanente um número que era uma foto.
+
+### O erro genérico, e o teste que confirmava a coisa errada
+
+"Não foi possível salvar. Tente de novo." Segura, e quase inútil: quem cadastrava
+projeto com nome repetido tentava de novo, dava igual, e não tinha como descobrir
+que o problema era o nome. **"Tente de novo" só ajuda quando tentar de novo
+funciona.**
+
+A tradução mapeia o nome da constraint do Postgres para uma frase escrita à mão,
+e devolve junto o campo, para o erro aparecer embaixo dele. O motivo da mensagem
+genérica continua de pé, e um teste o defende: nenhuma frase pode conter nome de
+tabela, de constraint, valor que colidiu ou id de usuário.
+
+**E aqui vem a parte que interessa.** Escrevi o módulo, escrevi sete testes, todos
+passando. Fui conferir no navegador e a tela continuava dizendo "tente de novo".
+
+O Drizzle não repassa o erro do driver: ele lança um `Error("Failed query: …")` e
+pendura o original em `cause`. Meus testes montavam o objeto do driver cru,
+porque foi assim que eu tinha inspecionado o erro: com `neon()` direto, sem o
+Drizzle no meio. Testei o formato que eu tinha visto, não o formato que a
+aplicação recebe.
+
+Sete testes verdes sobre um módulo que não funcionava em lugar nenhum. **Um teste
+que usa o formato errado é pior do que nenhum teste, porque compra a sensação de
+cobertura sem entregar nada.** A correção percorre a cadeia de `cause`, e os
+testes passaram a montar o erro como a aplicação o recebe.
+
+### O que só o navegador achou
+
+Depois desse susto, escrevi um roteiro de navegador de verdade para os cinco
+itens: abre o diálogo, confere onde o cursor caiu, muda o modo do formulário,
+envia, e lê a tela depois.
+
+Ele reprovou cinco checagens na primeira rodada. Duas eram defeito meu no roteiro
+(esperar 2,5s por uma revalidação que leva mais). As outras três eram o erro do
+`cause`, invisível para os testes unitários e para o `curl`, porque as abas do
+projeto são Radix e o conteúdo da aba inativa nem chega ao HTML.
+
+Fica a divisão: teste puro para a regra, navegador para o caminho até ela.
+
+### Os dois ajustes menores
+
+"Registrar volume" abria o formulário em "Depósito" e com o foco no projeto: a
+pessoa trocava o tipo e descia até a quantia, sendo que o botão que ela apertou
+já tinha dito as duas coisas. Agora o tipo vem escolhido, o título do diálogo diz
+qual é, e o cursor nasce no valor. O mesmo vale para os outros botões de seção.
+
+A aba de projetos ganhou filtro de status, primeiro da lista por ser o eixo em
+que a tela já se organiza. Status sem nenhum projeto não vira chip.
+
+E o airdrop recebido aceita só o total em dólar. Quantidade e preço passaram a
+aceitar nulo, e `value_usd` continua obrigatório: é o único número que entra no
+resultado. Guardar zero diria "recebi zero token a zero dólar", que é uma
+afirmação, e não a ausência dela.
+
+---
+
 ## Estado atual
 
 | | |
@@ -2280,7 +2389,7 @@ não muda junto por acidente.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 236, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas e limite de login |
+| Testes | 258, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco e independência entre metas |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

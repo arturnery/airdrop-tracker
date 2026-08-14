@@ -39,6 +39,42 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.4",
+    data: "2026-08-14",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O airdrop recebido não estava entrando no resultado da lista de projetos nem na de contas. Um projeto que já distribuiu aparecia no vermelho na lista e no azul dentro da própria aba. Agora as duas telas mostram o mesmo número.",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Cada meta agora acumula o próprio progresso, lançado nela. Antes o número saía do volume do projeto inteiro, então três metas do mesmo projeto mostravam todas o mesmo valor. O progresso que suas metas já exibiam foi preservado como o primeiro lançamento de cada uma.",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "No airdrop recebido dá para informar só o total em dólar, sem quantidade e preço. Serve para quando o token já foi vendido ou o número veio pronto da corretora.",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "A aba de projetos ganhou filtro por status.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Os botões de seção abrem o formulário já preenchido com o que o clique disse: \"Registrar volume\" abre em volume, com o cursor no valor.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Quando algo é recusado ao salvar, a mensagem agora diz o motivo e aparece embaixo do campo certo. Cadastrar um projeto com nome repetido dizia apenas \"tente de novo\", e tentar de novo dava igual.",
+      },
+    ],
+  },
+  {
     versao: "1.3",
     data: "2026-08-13",
     mudancas: [

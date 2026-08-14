@@ -1063,6 +1063,57 @@ ele só aparece com o teclado.
 O verde ficou onde significa algo: depósito no histórico, projeto distribuído, barra de
 progresso de meta. É a fronteira de §14.8 aplicada, e não uma troca de paleta.
 
+## 14.10. A meta é dona do próprio progresso
+
+Até aqui o progresso de uma meta era derivado: `volume_usd` somava todo o
+`volume_traded` do projeto, filtrado pela conta quando a meta tinha uma.
+Funcionava com uma meta e ruía com duas, porque as duas somavam a mesma coisa.
+Um projeto com metas de perps, ponte e spot mostrava o mesmo número nas três, que
+não era o de nenhuma.
+
+A alternativa a lançar na meta seria o lançamento dizer a que meta pertence. Dá
+o mesmo trabalho de digitação e espalha a regra por duas tabelas: um lançamento
+sem meta some do progresso sem aviso, e um lançamento de volume que serve a duas
+metas obrigaria a escolher uma. `goal_entries` já existia no schema para isso,
+escrita e nunca usada.
+
+Três consequências que a mudança carrega:
+
+- **O valor soma, não substitui.** A pergunta que a pessoa se faz é "quanto rodei
+  agora", não "quanto tenho no total": a segunda obrigaria a refazer a conta de
+  cabeça a cada lançamento.
+- **Negativo é aceito**, para corrigir um lançamento a mais sem apagar e refazer.
+- **`goal_entries` não tem `user_id`.** Pende de `goals`, que tem. As ações
+  conferem o dono por um SELECT em `goals` antes de escrever, e o DELETE filtra
+  pelas metas do usuário: sem isso, conhecer o uuid de uma meta alheia bastaria
+  para escrever nela.
+
+As metas que já existiam foram semeadas com um lançamento igual ao progresso que
+exibiam ([`scripts/semear-progresso-de-metas.ts`](scripts/semear-progresso-de-metas.ts)),
+para o número não sumir da tela sem nada ter acontecido. `balance_usd` ficou de
+fora: vinha da exposição, que revaloriza posição em token pela cotação do dia, e
+congelar isso gravaria como progresso permanente o que era uma foto.
+
+## 14.11. Erro do banco traduzido, sem repassar o banco
+
+O `catch` das ações devolvia sempre "Não foi possível salvar. Tente de novo.",
+e a frase só ajuda quando tentar de novo funciona. Agora
+[`lib/erros-do-banco.ts`](lib/erros-do-banco.ts) mapeia o nome da constraint para
+uma frase escrita à mão e devolve junto o campo, para o erro aparecer embaixo
+dele em vez de num aviso solto.
+
+A chave é o nome da constraint, não o texto da mensagem: o nome está em
+`db/schema.ts` e só muda por migração, enquanto o texto muda com a versão e o
+idioma do Postgres. O que não está na lista continua genérico, e **nenhuma frase
+repassa texto do banco**, que era a razão de o genérico existir. Um teste
+percorre todas as combinações de código e constraint procurando vazamento de
+nome de tabela, valor colidido ou id de usuário.
+
+**O Drizzle embrulha o erro do driver.** Ele lança `Error("Failed query: …")` e
+pendura o original em `cause`, então `erro.code` no nível de fora é `undefined`.
+A tradução percorre a cadeia. Esse detalhe custou uma rodada inteira de testes
+verdes sobre um módulo que não funcionava: ver o Marco 38 do DEVLOG.
+
 ## 15. Consumo do banco: o que medir antes de otimizar
 
 Medição de 12/08/2026, com um usuário real e a conta de demonstração:
