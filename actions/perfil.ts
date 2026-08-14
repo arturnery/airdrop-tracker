@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import { traduzirErroDeBanco } from "@/lib/erros-do-banco";
 import { getCurrentUserId } from "@/lib/auth";
 import { conferirSenha, gerarHash } from "@/lib/senha";
 import { erros, perfilSchema, trocaSenhaSchema } from "@/lib/validators";
@@ -66,7 +67,8 @@ export async function atualizarPerfil(
     return { ok: true, aviso: "Nome atualizado." };
   } catch (erro) {
     console.error("[perfil]", erro);
-    return { ok: false, erros: { geral: "Não foi possível salvar." } };
+    const traduzido = traduzirErroDeBanco(erro);
+    return { ok: false, erros: { [traduzido.campo]: traduzido.mensagem } };
   }
 }
 

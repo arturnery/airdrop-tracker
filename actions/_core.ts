@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { getCurrentUserId } from "@/lib/auth";
+import { traduzirErroDeBanco } from "@/lib/erros-do-banco";
 import { erros } from "@/lib/validators";
 
 /**
@@ -42,9 +43,10 @@ export const falha = (campo: string, mensagem: string): ResultadoAcao => ({
 /**
  * Valida a entrada, resolve o usuário da sessão e executa.
  *
- * O `catch` devolve mensagem genérica de propósito: erro de banco costuma
- * conter nome de tabela, constraint e valor, que não deve chegar ao cliente.
- * O detalhe fica no log do servidor.
+ * O `catch` traduz a recusa do banco numa frase escrita à mão, e devolve junto
+ * o campo a que ela pertence, para o erro aparecer embaixo dele. O texto do
+ * Postgres nunca é repassado: ele traz nome de tabela, de constraint e o valor
+ * que colidiu. Ver `lib/erros-do-banco`; o detalhe fica no log do servidor.
  */
 export async function executar<S extends z.ZodType>(
   schema: S,
@@ -71,7 +73,8 @@ export async function executar<S extends z.ZodType>(
     await operacao(analisado.data, userId);
   } catch (erro) {
     console.error("[action]", erro);
-    return falha("geral", "Não foi possível salvar. Tente de novo.");
+    const traduzido = traduzirErroDeBanco(erro);
+    return falha(traduzido.campo, traduzido.mensagem);
   }
 
   for (const rota of rotas) revalidatePath(rota, "layout");
