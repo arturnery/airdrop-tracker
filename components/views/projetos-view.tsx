@@ -162,13 +162,15 @@ export function ProjetosView() {
   const { dataset, hoje } = useDados();
   const [categoria, setCategoria] = useState<ProjectCategory | null>(null);
   const [prioridade, setPrioridade] = useState<string | null>(null);
+  const [status, setStatus] = useState<ProjectStatus | null>(null);
 
   const todos = selectProjects(dataset, hoje);
 
   const filtrados = todos.filter(
     (p) =>
       (categoria === null || p.categoria === categoria) &&
-      (prioridade === null || String(p.prioridade) === prioridade),
+      (prioridade === null || String(p.prioridade) === prioridade) &&
+      (status === null || p.status === status),
   );
 
   // Contagens vêm do conjunto completo: um filtro que zera a própria contagem
@@ -177,6 +179,8 @@ export function ProjetosView() {
     todos.filter((p) => p.categoria === valor).length;
   const contarPrioridade = (valor: number) =>
     todos.filter((p) => p.prioridade === valor).length;
+  const contarStatus = (valor: ProjectStatus) =>
+    todos.filter((p) => p.status === valor).length;
 
   const grupos = ordemStatus
     .map((secao) => ({
@@ -188,7 +192,7 @@ export function ProjetosView() {
     }))
     .filter((grupo) => grupo.projetos.length > 0);
 
-  const temFiltro = categoria !== null || prioridade !== null;
+  const temFiltro = categoria !== null || prioridade !== null || status !== null;
 
   return (
     <>
@@ -200,6 +204,29 @@ export function ProjetosView() {
 
       {todos.length > 0 ? (
         <div className="border-border mb-8 flex flex-col gap-3 rounded-lg border p-4">
+          {/*
+            Primeiro da lista porque é o eixo em que a tela já se organiza: os
+            grupos são os status. Filtrar por um deles não muda a estrutura,
+            reduz a página a uma seção só, que é o que se quer quando a lista
+            cresce e "Ativos" fica longe do topo.
+          */}
+          <FiltroChips
+            legenda="Status"
+            selecionado={status}
+            aoSelecionar={setStatus}
+            opcoes={[
+              { valor: null, rotulo: "Todos", contagem: todos.length },
+              ...ordemStatus
+                .map((secao) => ({
+                  valor: secao.chave,
+                  rotulo: secao.titulo,
+                  contagem: contarStatus(secao.chave),
+                }))
+                // Status sem projeto nenhum não vira chip: a lista tem seis, e
+                // oferecer os vazios enche a barra de opção que não leva a nada.
+                .filter((secao) => secao.contagem > 0),
+            ]}
+          />
           <FiltroChips
             legenda="Categoria"
             selecionado={categoria}
@@ -243,6 +270,7 @@ export function ProjetosView() {
                 onClick={() => {
                   setCategoria(null);
                   setPrioridade(null);
+                  setStatus(null);
                 }}
               >
                 Limpar filtros
