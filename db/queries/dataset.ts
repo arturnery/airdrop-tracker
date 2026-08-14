@@ -88,7 +88,9 @@ export async function carregarDataset(
   const idsProjeto = projetos.map((p) => p.id);
   const idsTarefa = tarefas.map((t) => t.id);
 
-  const [pares, ocorrencias] = await Promise.all([
+  const idsMeta = metas.map((m) => m.id);
+
+  const [pares, ocorrencias, lancamentosDeMeta] = await Promise.all([
     idsProjeto.length > 0
       ? db
           .select()
@@ -101,6 +103,14 @@ export async function carregarDataset(
           .from(schema.taskOccurrences)
           .where(inArray(schema.taskOccurrences.taskId, idsTarefa))
           .orderBy(asc(schema.taskOccurrences.dueDate))
+      : Promise.resolve([]),
+    // Progresso das metas: pende de `goals`, já filtrado por usuário acima.
+    idsMeta.length > 0
+      ? db
+          .select()
+          .from(schema.goalEntries)
+          .where(inArray(schema.goalEntries.goalId, idsMeta))
+          .orderBy(asc(schema.goalEntries.occurredAt))
       : Promise.resolve([]),
   ]);
 
@@ -188,6 +198,13 @@ export async function carregarDataset(
       targetValue: g.targetValue,
       deadline: g.deadline,
       achievedAt: g.achievedAt ? g.achievedAt.toISOString().slice(0, 10) : null,
+    })),
+    goalEntries: lancamentosDeMeta.map((e) => ({
+      id: e.id,
+      goalId: e.goalId,
+      occurredAt: e.occurredAt,
+      value: e.value,
+      note: e.note,
     })),
     airdropClaims: recebimentos.map((c) => ({
       id: c.id,

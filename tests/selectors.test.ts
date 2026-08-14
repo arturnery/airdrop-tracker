@@ -122,11 +122,19 @@ describe("selectProjectBySlug", () => {
     expect(lancamento.tokenAmount).toBe("1");
   });
 
-  it("calcula progresso de meta a partir do volume operado", () => {
+  it("soma o progresso dos lançamentos feitos na própria meta", () => {
     const vertex = selectProjectBySlug(ds, "vertex-perp", HOJE)!;
     const meta = vertex.metas[0]!;
     expect(toDbNumeric(meta.alvo)).toBe("10000.00");
-    expect(toDbNumeric(meta.atual)).toBe("3450.00");
+    // 2500 + 1800, os dois lançamentos daquela meta. Antes este número saía do
+    // volume operado do projeto inteiro, e por isso não era de meta nenhuma.
+    expect(toDbNumeric(meta.atual)).toBe("4300.00");
+  });
+
+  it("lista os lançamentos da meta, do mais novo para o mais antigo", () => {
+    const vertex = selectProjectBySlug(ds, "vertex-perp", HOJE)!;
+    const datas = vertex.metas[0]!.lancamentos.map((l) => l.data);
+    expect(datas).toEqual(["2026-07-24", "2026-07-10"]);
   });
 });
 

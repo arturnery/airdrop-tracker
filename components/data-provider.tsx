@@ -68,6 +68,8 @@ type Acoes = {
   criarMeta: Acao<[unknown]>;
   atualizarMeta: Acao<[string, unknown]>;
   excluirMeta: Acao<[string]>;
+  lancarProgressoMeta: Acao<[unknown]>;
+  excluirProgressoMeta: Acao<[string]>;
 
   registrarRecebimento: Acao<[unknown]>;
   excluirRecebimento: Acao<[string]>;
@@ -191,6 +193,8 @@ export function DataProvider({
       criarMeta: envolver(A.criarMeta),
       atualizarMeta: envolver(A.atualizarMeta),
       excluirMeta: envolver(A.excluirMeta),
+      lancarProgressoMeta: envolver(A.lancarProgressoMeta),
+      excluirProgressoMeta: envolver(A.excluirProgressoMeta),
 
       registrarRecebimento: envolver(A.registrarRecebimento),
       excluirRecebimento: envolver(A.excluirRecebimento),
