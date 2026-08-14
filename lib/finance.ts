@@ -108,6 +108,28 @@ export function aplicarSinalDoTipo(type: string, valor: Cents): Cents {
 }
 
 /**
+ * Os tipos de lançamento, com o rótulo que a pessoa lê.
+ *
+ * Ficam aqui, e não dentro do formulário, porque três lugares precisam da mesma
+ * lista: as opções do select, o título do diálogo quando o tipo já vem
+ * escolhido pelo botão da seção, e a legenda do histórico. Com a lista dentro
+ * do formulário, "Volume operado" virava "volume_traded" nos outros dois.
+ */
+export const TIPOS_LANCAMENTO = [
+  { valor: "deposit", rotulo: "Depósito" },
+  { valor: "withdrawal", rotulo: "Retirada" },
+  { valor: "yield", rotulo: "Rendimento" },
+  { valor: "trade_pnl", rotulo: "Resultado de trade" },
+  { valor: "fee_gas", rotulo: "Taxa / gas" },
+  { valor: "volume_traded", rotulo: "Volume operado" },
+  { valor: "other", rotulo: "Outro" },
+] as const;
+
+export function rotuloDoTipo(type: string): string | null {
+  return TIPOS_LANCAMENTO.find((t) => t.valor === type)?.rotulo ?? null;
+}
+
+/**
  * O que acontece com o número quando este tipo é lançado.
  *
  * Existe para a tela poder dizer isso antes de salvar. A ausência dessa

@@ -20,11 +20,14 @@ export function CampoValorToken({
   valorInicial = "",
   simboloInicial = "",
   quantidadeInicial = "",
+  focar = false,
 }: {
   erros: Record<string, string>;
   valorInicial?: string;
   simboloInicial?: string;
   quantidadeInicial?: string;
+  /** Recebe o cursor ao abrir: para quando o tipo já veio decidido pelo botão. */
+  focar?: boolean;
 }) {
   const [valor, setValor] = useState(valorInicial);
   const [simbolo, setSimbolo] = useState(simboloInicial);
@@ -45,6 +48,7 @@ export function CampoValorToken({
         label="Valor em dólar"
         name="amount"
         obrigatorio
+        autoFocus={focar}
         valor={valor}
         aoMudar={setValor}
         erro={erros.amount}
