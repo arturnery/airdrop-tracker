@@ -387,6 +387,14 @@ export type RawGoal = {
   achievedAt: string | null;
 };
 
+export type RawGoalEntry = {
+  id: string;
+  goalId: string;
+  occurredAt: string;
+  value: string;
+  note: string | null;
+};
+
 export const rawGoals: RawGoal[] = [
   {
     id: "gol-01",
@@ -410,14 +418,46 @@ export const rawGoals: RawGoal[] = [
   },
 ];
 
+/**
+ * Lançamentos de progresso das metas acima.
+ *
+ * Duas metas de volume, cada uma com o próprio histórico: é o caso que motivou
+ * a mudança, em que várias metas do mesmo projeto e da mesma métrica precisam
+ * de números independentes.
+ */
+export const rawGoalEntries: RawGoalEntry[] = [
+  {
+    id: "gle-01",
+    goalId: "gol-01",
+    occurredAt: "2026-07-10",
+    value: "2500.00",
+    note: "Semana de abertura",
+  },
+  {
+    id: "gle-02",
+    goalId: "gol-01",
+    occurredAt: "2026-07-24",
+    value: "1800.00",
+    note: null,
+  },
+  {
+    id: "gle-03",
+    goalId: "gol-02",
+    occurredAt: "2026-07-20",
+    value: "900.00",
+    note: null,
+  },
+];
+
 export type RawAirdropClaim = {
   id: string;
   projectId: string;
   accountId: string;
   receivedAt: string;
   tokenSymbol: string;
-  tokenAmount: string;
-  priceUsd: string;
+  /** Nulos quando o valor foi lançado direto em dólar: ver `airdropClaims`. */
+  tokenAmount: string | null;
+  priceUsd: string | null;
   valueUsd: string;
 };
 
@@ -439,6 +479,7 @@ export function datasetInicial() {
     tasks: [...rawTasks],
     taskOccurrences: [...rawTaskOccurrences],
     goals: [...rawGoals],
+    goalEntries: [...rawGoalEntries],
     tokenPrices: [...rawTokenPrices],
     pointsSnapshots: [...rawPointsSnapshots],
     airdropClaims: [...rawAirdropClaims],

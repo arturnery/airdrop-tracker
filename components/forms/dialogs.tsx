@@ -8,7 +8,12 @@ import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
 import { CampoData } from "@/components/forms/campo-data";
 import { CampoValor } from "@/components/forms/campo-valor";
 import { useDados } from "@/components/data-provider";
-import { direcaoDoTipo, efeitoDoTipo } from "@/lib/finance";
+import {
+  direcaoDoTipo,
+  efeitoDoTipo,
+  rotuloDoTipo,
+  TIPOS_LANCAMENTO,
+} from "@/lib/finance";
 import { contasDisponiveisNoProjeto } from "@/lib/tarefas";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +31,7 @@ import {
   lancamentoSchema,
   metaSchema,
   pontosSchema,
+  progressoMetaSchema,
   projetoSchema,
   recebimentoSchema,
   cotacaoSchema,
@@ -398,11 +404,25 @@ function useContasDoProjeto(projectId: string) {
 
 // ---------------------------------------------------------------- lançamento
 
+/**
+ * Lançamento novo, opcionalmente já com o tipo escolhido.
+ *
+ * `tipo` existe por causa dos botões de seção. "Registrar volume", clicado na
+ * área de volume, abria o formulário em "Depósito" e com o foco no projeto: a
+ * pessoa tinha de trocar o tipo e descer até a quantia, sendo que as duas
+ * respostas já estavam ditas no botão que ela apertou.
+ *
+ * Com o tipo definido, o título e a descrição também mudam. Um diálogo que diz
+ * "Novo lançamento: depósito, retirada, resultado de trade ou volume" depois de
+ * um clique em "Registrar volume" faz duvidar se o clique funcionou.
+ */
 export function NovoLancamento({
   projectId,
+  tipo,
   rotulo = "Novo lançamento",
 }: {
   projectId?: string;
+  tipo?: string;
   rotulo?: string;
 }) {
   const { acoes, hoje } = useDados();
@@ -415,13 +435,17 @@ export function NovoLancamento({
    * só a quantia. Mostrar para onde o dinheiro vai evita a dúvida de digitar
    * ou não o menos, que antes produzia um saque somando à posição.
    */
-  const [tipoSel, setTipoSel] = useState("deposit");
+  const [tipoSel, setTipoSel] = useState(tipo ?? "deposit");
   const direcao = direcaoDoTipo(tipoSel);
 
   return (
     <Formulario
-      titulo="Novo lançamento"
-      descricao="Depósito, retirada, resultado de trade ou volume operado."
+      titulo={tipo ? (rotuloDoTipo(tipo) ?? "Novo lançamento") : "Novo lançamento"}
+      descricao={
+        tipo
+          ? efeitoDoTipo(tipo)
+          : "Depósito, retirada, resultado de trade ou volume operado."
+      }
       gatilho={<BotaoNovo>{rotulo}</BotaoNovo>}
       aoEnviar={(dados) => {
         const bruto = {
@@ -468,7 +492,7 @@ export function NovoLancamento({
             <CampoSelecao
               label="Tipo"
               name="type"
-              defaultValue="deposit"
+              defaultValue={tipo ?? "deposit"}
               erro={e.type}
               onChange={(evento) => setTipoSel(evento.target.value)}
               ajuda={
@@ -479,15 +503,7 @@ export function NovoLancamento({
                     ? "Use o sinal de menos para perda. " + efeitoDoTipo(tipoSel)
                     : efeitoDoTipo(tipoSel)
               }
-              opcoes={[
-                { valor: "deposit", rotulo: "Depósito" },
-                { valor: "withdrawal", rotulo: "Retirada" },
-                { valor: "yield", rotulo: "Rendimento" },
-                { valor: "trade_pnl", rotulo: "Resultado de trade" },
-                { valor: "fee_gas", rotulo: "Taxa / gas" },
-                { valor: "volume_traded", rotulo: "Volume operado" },
-                { valor: "other", rotulo: "Outro" },
-              ]}
+              opcoes={[...TIPOS_LANCAMENTO]}
             />
             <CampoData
               label="Data"
@@ -497,7 +513,7 @@ export function NovoLancamento({
               erro={e.occurredAt}
             />
           </div>
-          <CampoValorToken erros={e} />
+          <CampoValorToken erros={e} focar={Boolean(tipo)} />
 
           <CampoTexto
             label="Descrição"
@@ -619,6 +635,7 @@ export function VincularConta({ projectId }: { projectId?: string }) {
               label="Conta"
               name="accountId"
               obrigatorio
+              autoFocus={Boolean(projectId)}
               erro={e.accountId}
               opcoes={contas}
             />
@@ -882,20 +899,111 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
   );
 }
 
+/**
+ * Lançamento de progresso numa meta.
+ *
+ * O gatilho é discreto de propósito: fica dentro do cartão da meta, ao lado do
+ * número, porque é ali que a pergunta nasce. Um botão no topo da seção
+ * obrigaria a escolher a meta de novo numa lista, sendo que o clique já disse
+ * qual era.
+ *
+ * O valor é **somado** ao que já existe, e não substitui. Volume acumula, e a
+ * pergunta que a pessoa se faz é "quanto rodei agora", não "quanto tenho no
+ * total": a segunda exigiria refazer a conta de cabeça a cada lançamento.
+ */
+export function LancarProgressoMeta({
+  goalId,
+  titulo,
+}: {
+  goalId: string;
+  titulo: string;
+}) {
+  const { acoes, hoje } = useDados();
+  const [valor, setValor] = useState("");
+
+  return (
+    <Formulario
+      titulo="Lançar progresso"
+      descricao={`Soma ao que já foi registrado em "${titulo}".`}
+      gatilho={
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+          Lançar
+        </Button>
+      }
+      aoEnviar={(dados) => {
+        const bruto = {
+          goalId,
+          occurredAt: texto(dados, "occurredAt"),
+          value: texto(dados, "value"),
+          note: texto(dados, "note"),
+        };
+        const resultado = progressoMetaSchema.safeParse(bruto);
+        if (!resultado.success) return erros(resultado);
+        return acoes.lancarProgressoMeta(bruto);
+      }}
+    >
+      {({ erros: e }) => (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoValor
+              label="Quanto somar"
+              name="value"
+              obrigatorio
+              autoFocus
+              valor={valor}
+              aoMudar={setValor}
+              erro={e.value}
+              ajuda="Use o sinal de menos para corrigir um lançamento a mais."
+              placeholder="1500.00"
+            />
+            <CampoData
+              label="Data"
+              name="occurredAt"
+              obrigatorio
+              defaultValue={hoje}
+              erro={e.occurredAt}
+            />
+          </div>
+          <CampoTexto
+            label="Nota"
+            name="note"
+            erro={e.note}
+            placeholder="Semana de volume alto no perp"
+          />
+        </>
+      )}
+    </Formulario>
+  );
+}
+
 // -------------------------------------------------------------- recebimento
 
+/**
+ * Registro de airdrop recebido, em duas formas de dizer a mesma coisa.
+ *
+ * Quem sabe quanto recebeu e a que preço informa os dois, e o valor sai da
+ * multiplicação. Quem só sabe que "deu uns $75" informa o total direto: é o
+ * caso comum de token já vendido, ou de número que veio de um resumo da
+ * corretora. Exigir a decomposição obrigaria a inventar quantidade ou preço.
+ *
+ * A escolha fica antes dos campos, e não depois, porque ela decide **quais
+ * campos aparecem**: mostrada no fim, a pessoa preencheria para depois
+ * descobrir que preencheu o formulário errado.
+ */
 export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
   const { acoes, hoje } = useDados();
   const { projetos } = useOpcoes();
   const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
   const contas = useContasDoProjeto(projetoSel);
+  const [modo, setModo] = useState<"token" | "total">("token");
   const [quantidade, setQuantidade] = useState("");
   const [precoToken, setPrecoToken] = useState("");
+  const [total, setTotal] = useState("");
 
   return (
     <Formulario
       titulo="Registrar airdrop recebido"
-      descricao="Quanto cada conta recebeu e a que preço. É o que fecha o ROI real."
+      descricao="Quanto cada conta recebeu. É o que fecha o ROI real."
       gatilho={<BotaoNovo>Registrar recebimento</BotaoNovo>}
       aoEnviar={(dados) => {
         const bruto = {
@@ -903,8 +1011,10 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
           accountId: texto(dados, "accountId"),
           receivedAt: texto(dados, "receivedAt"),
           tokenSymbol: texto(dados, "tokenSymbol"),
+          modo,
           tokenAmount: texto(dados, "tokenAmount"),
           priceUsd: texto(dados, "priceUsd"),
+          valueUsd: texto(dados, "valueUsd"),
         };
         const resultado = recebimentoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
@@ -931,34 +1041,77 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
               opcoes={contas}
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <CampoTexto
-              label="Token"
-              name="tokenSymbol"
-              obrigatorio
-              erro={e.tokenSymbol}
-              placeholder="VTX"
-            />
-            <CampoValor
-              label="Quantidade"
-              name="tokenAmount"
-              obrigatorio
-              valor={quantidade}
-              aoMudar={setQuantidade}
-              erro={e.tokenAmount}
-              placeholder="1250"
-              formato="quantidade"
-            />
-            <CampoValor
-              label="Preço (USD)"
-              name="priceUsd"
-              obrigatorio
-              valor={precoToken}
-              aoMudar={setPrecoToken}
-              erro={e.priceUsd}
-              placeholder="0.42"
-            />
-          </div>
+          <CampoSelecao
+            label="Como informar"
+            name="modo"
+            value={modo}
+            onChange={(evento) =>
+              setModo(evento.target.value === "total" ? "total" : "token")
+            }
+            ajuda={
+              modo === "token"
+                ? "O valor em dólar sai da quantidade vezes o preço."
+                : "Use quando o token já foi vendido ou você só tem o total."
+            }
+            opcoes={[
+              { valor: "token", rotulo: "Quantidade e preço do token" },
+              { valor: "total", rotulo: "Só o total em dólar" },
+            ]}
+          />
+
+          {modo === "token" ? (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <CampoTexto
+                label="Token"
+                name="tokenSymbol"
+                obrigatorio
+                autoFocus={Boolean(projectId)}
+                erro={e.tokenSymbol}
+                placeholder="VTX"
+              />
+              <CampoValor
+                label="Quantidade"
+                name="tokenAmount"
+                obrigatorio
+                valor={quantidade}
+                aoMudar={setQuantidade}
+                erro={e.tokenAmount}
+                placeholder="1250"
+                formato="quantidade"
+              />
+              <CampoValor
+                label="Preço (USD)"
+                name="priceUsd"
+                obrigatorio
+                valor={precoToken}
+                aoMudar={setPrecoToken}
+                erro={e.priceUsd}
+                placeholder="0.42"
+              />
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* O token continua sendo pedido: saber que o airdrop foi em VTX
+                  não depende de saber quanto era cada um, e é o que identifica
+                  a linha na tabela depois. */}
+              <CampoTexto
+                label="Token"
+                name="tokenSymbol"
+                obrigatorio
+                erro={e.tokenSymbol}
+                placeholder="VTX"
+              />
+              <CampoValor
+                label="Total recebido (USD)"
+                name="valueUsd"
+                obrigatorio
+                valor={total}
+                aoMudar={setTotal}
+                erro={e.valueUsd}
+                placeholder="525.00"
+              />
+            </div>
+          )}
           <CampoData
             label="Data"
             name="receivedAt"
@@ -1030,6 +1183,7 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoValor
+              autoFocus={Boolean(projectId)}
               label="Total acumulado"
               name="points"
               obrigatorio

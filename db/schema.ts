@@ -455,8 +455,21 @@ export const airdropClaims = pgTable(
     accountId: uuid("account_id").notNull(),
     receivedAt: date("received_at").notNull(),
     tokenSymbol: text("token_symbol").notNull(),
-    tokenAmount: numeric("token_amount", { precision: 36, scale: 18 }).notNull(),
-    priceUsd: numeric("price_usd", { precision: 18, scale: 8 }).notNull(),
+    /*
+     * Quantidade e preço são opcionais, e o valor em dólar não.
+     *
+     * Quem sabe quanto recebeu e a que preço informa os dois, e o valor sai da
+     * multiplicação. Quem só sabe que "deu uns $75" informa o total direto. O
+     * segundo caso é comum quando o token já foi vendido, ou quando o valor
+     * veio de um resumo da corretora: exigir a decomposição obrigaria a
+     * inventar um dos dois números, e um número inventado no banco é pior do
+     * que um campo vazio.
+     *
+     * `value_usd` continua obrigatório porque é o que entra no resultado.
+     * Nenhuma soma depende de quantidade ou preço.
+     */
+    tokenAmount: numeric("token_amount", { precision: 36, scale: 18 }),
+    priceUsd: numeric("price_usd", { precision: 18, scale: 8 }),
     /** Congelado no registro: o preço muda depois, o histórico não. */
     valueUsd: numeric("value_usd", { precision: 18, scale: 2 }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })

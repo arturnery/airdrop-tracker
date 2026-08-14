@@ -1,5 +1,6 @@
 import { novoId, uniqueSlug, type Dataset } from "./dataset";
 import { toDbNumeric, type Cents } from "./money";
+import { valorDoRecebimento } from "./validators";
 import { toDbPoints, type Points } from "./points";
 
 /**
@@ -187,12 +188,13 @@ export function registrarRecebimento(
     accountId: string;
     receivedAt: string;
     tokenSymbol: string;
-    tokenAmount: string;
-    priceUsd: string;
+    modo?: "token" | "total";
+    tokenAmount?: string;
+    priceUsd?: string;
+    valueUsd?: string;
   },
 ): Dataset {
-  // Valor congelado no momento do registro: o preço muda depois, o histórico não.
-  const valueUsd = (Number(dados.tokenAmount) * Number(dados.priceUsd)).toFixed(2);
+  const porToken = (dados.modo ?? "token") === "token";
   return {
     ...ds,
     airdropClaims: [
@@ -203,9 +205,10 @@ export function registrarRecebimento(
         accountId: dados.accountId,
         receivedAt: dados.receivedAt,
         tokenSymbol: dados.tokenSymbol.toUpperCase(),
-        tokenAmount: dados.tokenAmount,
-        priceUsd: dados.priceUsd,
-        valueUsd,
+        tokenAmount: porToken ? (dados.tokenAmount ?? null) : null,
+        priceUsd: porToken ? (dados.priceUsd ?? null) : null,
+        // Congelado no registro: o preço muda depois, o histórico não.
+        valueUsd: valorDoRecebimento(dados),
       },
     ],
   };
@@ -309,6 +312,11 @@ export function excluirProjeto(ds: Dataset, id: string): Dataset {
   const idsTarefas = new Set(
     ds.tasks.filter((t) => t.projectId === id).map((t) => t.id),
   );
+  // As metas caem por serem do projeto, e o progresso delas cai junto: uma
+  // cascata de dois níveis, como no banco.
+  const idsMetas = new Set(
+    ds.goals.filter((g) => g.projectId === id).map((g) => g.id),
+  );
   return {
     ...ds,
     projects: ds.projects.filter((p) => p.id !== id),
@@ -317,6 +325,7 @@ export function excluirProjeto(ds: Dataset, id: string): Dataset {
     tasks: ds.tasks.filter((t) => t.projectId !== id),
     taskOccurrences: ds.taskOccurrences.filter((o) => !idsTarefas.has(o.taskId)),
     goals: ds.goals.filter((g) => g.projectId !== id),
+    goalEntries: ds.goalEntries.filter((e) => !idsMetas.has(e.goalId)),
     airdropClaims: ds.airdropClaims.filter((c) => c.projectId !== id),
   };
 }
@@ -349,12 +358,46 @@ export function excluirTarefa(ds: Dataset, taskId: string): Dataset {
   };
 }
 
+export function lancarProgressoMeta(
+  ds: Dataset,
+  dados: {
+    goalId: string;
+    occurredAt: string;
+    value: Cents;
+    note: string | null;
+  },
+): Dataset {
+  return {
+    ...ds,
+    goalEntries: [
+      ...ds.goalEntries,
+      {
+        id: novoId("gle"),
+        goalId: dados.goalId,
+        occurredAt: dados.occurredAt,
+        value: toDbNumeric(dados.value),
+        note: dados.note,
+      },
+    ],
+  };
+}
+
 export function excluirOcorrencia(ds: Dataset, id: string): Dataset {
   return { ...ds, taskOccurrences: ds.taskOccurrences.filter((o) => o.id !== id) };
 }
 
 export function excluirMeta(ds: Dataset, id: string): Dataset {
-  return { ...ds, goals: ds.goals.filter((g) => g.id !== id) };
+  return {
+    ...ds,
+    goals: ds.goals.filter((g) => g.id !== id),
+    // Espelha o ON DELETE CASCADE: progresso de meta apagada não deve
+    // sobreviver somando em lugar nenhum.
+    goalEntries: ds.goalEntries.filter((e) => e.goalId !== id),
+  };
+}
+
+export function excluirProgressoMeta(ds: Dataset, id: string): Dataset {
+  return { ...ds, goalEntries: ds.goalEntries.filter((e) => e.id !== id) };
 }
 
 export function excluirRecebimento(ds: Dataset, id: string): Dataset {

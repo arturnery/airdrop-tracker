@@ -162,12 +162,21 @@ export type TokenPriceRow2 = {
   usadoEm: number;
 };
 
+export type GoalEntryRow = {
+  id: string;
+  data: IsoDate;
+  valor: Cents;
+  nota: string | null;
+};
+
 export type GoalRow = {
   id: string;
   titulo: string;
   metrica: GoalMetric;
   alvo: Cents;
+  /** Soma dos lançamentos da própria meta, do mais novo para o mais antigo. */
   atual: Cents;
+  lancamentos: GoalEntryRow[];
   contaLabel: string | null;
   prazo: IsoDate | null;
   concluidaEm: IsoDate | null;
@@ -178,8 +187,9 @@ export type AirdropClaimRow = {
   contaLabel: string;
   recebidoEm: IsoDate;
   token: string;
-  quantidade: string;
-  precoUsd: string;
+  /** Nulos quando só o total em dólar foi informado. `valor` nunca é nulo. */
+  quantidade: string | null;
+  precoUsd: string | null;
   valor: Cents;
 };
 

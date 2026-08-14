@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -16,9 +16,11 @@ import {
   lancamentoSchema,
   metaSchema,
   pontosSchema,
+  progressoMetaSchema,
   projetoSchema,
   recebimentoSchema,
   tarefaSchema,
+  valorDoRecebimento,
   vinculoSchema,
 } from "@/lib/validators";
 
@@ -601,6 +603,59 @@ export async function excluirMeta(id: string): Promise<ResultadoAcao> {
   }, ROTAS_DADOS);
 }
 
+/**
+ * Progresso lançado numa meta.
+ *
+ * `goal_entries` não tem `user_id`: pende de `goals`, que tem. O dono é
+ * conferido aqui, com um SELECT que filtra pelos dois, e não por confiar no id
+ * que veio do formulário. Sem essa checagem, conhecer o uuid de uma meta alheia
+ * bastaria para escrever nela, que é exatamente o buraco que a regra do
+ * `actions/_core.ts` fecha nas tabelas que têm a coluna.
+ */
+export async function lancarProgressoMeta(
+  entrada: unknown,
+): Promise<ResultadoAcao> {
+  return executar(progressoMetaSchema, entrada, async (dados, userId) => {
+    const [meta] = await db
+      .select({ id: schema.goals.id })
+      .from(schema.goals)
+      .where(and(eq(schema.goals.id, dados.goalId), eq(schema.goals.userId, userId)))
+      .limit(1);
+
+    if (!meta) throw new Error("meta inexistente ou de outro usuário");
+
+    await db.insert(schema.goalEntries).values({
+      goalId: dados.goalId,
+      occurredAt: dados.occurredAt,
+      value: toDbNumeric(dados.value),
+      note: dados.note,
+    });
+  }, ROTAS_DADOS);
+}
+
+export async function excluirProgressoMeta(id: string): Promise<ResultadoAcao> {
+  return executar(idSchema, { id }, async (dados, userId) => {
+    /*
+     * O DELETE passa por `goals` para chegar ao dono. Apagar só por id do
+     * lançamento deixaria qualquer uuid conhecido apagável por qualquer pessoa,
+     * e o `goal_entries` não tem coluna própria para filtrar.
+     */
+    const metasDoDono = db
+      .select({ id: schema.goals.id })
+      .from(schema.goals)
+      .where(eq(schema.goals.userId, userId));
+
+    await db
+      .delete(schema.goalEntries)
+      .where(
+        and(
+          eq(schema.goalEntries.id, dados.id),
+          inArray(schema.goalEntries.goalId, metasDoDono),
+        ),
+      );
+  }, ROTAS_DADOS);
+}
+
 // -------------------------------------------------------------- recebimentos
 
 export async function registrarRecebimento(
@@ -610,10 +665,7 @@ export async function registrarRecebimento(
     await exigirDono(dados.projectId, dados.accountId, userId);
     await garantirVinculo(dados.projectId, dados.accountId, dados.receivedAt);
 
-    // Valor congelado no registro: o preço muda depois, o histórico não.
-    const valueUsd = (
-      Number(dados.tokenAmount) * Number(dados.priceUsd)
-    ).toFixed(2);
+    const porToken = dados.modo === "token";
 
     await db.insert(schema.airdropClaims).values({
       userId,
@@ -621,9 +673,12 @@ export async function registrarRecebimento(
       accountId: dados.accountId,
       receivedAt: dados.receivedAt,
       tokenSymbol: dados.tokenSymbol.toUpperCase(),
-      tokenAmount: dados.tokenAmount,
-      priceUsd: dados.priceUsd,
-      valueUsd,
+      // Nulos quando o total veio direto: guardar zero diria "recebi zero
+      // token a zero dólar", que é uma afirmação, e não a ausência dela.
+      tokenAmount: porToken ? dados.tokenAmount : null,
+      priceUsd: porToken ? dados.priceUsd : null,
+      // Congelado no registro: o preço muda depois, o histórico não.
+      valueUsd: valorDoRecebimento(dados),
     });
   }, ROTAS_DADOS);
 }

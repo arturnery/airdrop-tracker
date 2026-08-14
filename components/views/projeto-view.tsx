@@ -20,6 +20,7 @@ import {
 } from "@/components/forms/editar";
 import { Button } from "@/components/ui/button";
 import {
+  LancarProgressoMeta,
   NovaMeta,
   NovaTarefa,
   NovoLancamento,
@@ -743,8 +744,8 @@ export function ProjetoView({ slug }: { slug: string }) {
         <TabsContent value="metas" className="mt-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <p className="text-muted-foreground text-sm">
-              Alvos de volume, saldo ou atividade. O valor atual sai dos
-              lançamentos, não é digitado.
+              Alvos de volume, saldo ou atividade. Cada meta acumula o próprio
+              progresso: lance nela o que contar para ela.
             </p>
             <NovaMeta projectId={projeto.id} />
           </div>
@@ -779,6 +780,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                             {formatUsd(meta.alvo)}
                           </span>
                         </span>
+                        <LancarProgressoMeta goalId={meta.id} titulo={meta.titulo} />
                         <EditarMeta goalId={meta.id} />
                         <ConfirmarExclusao
                           titulo="Excluir meta"
@@ -797,7 +799,55 @@ export function ProjetoView({ slug }: { slug: string }) {
                     <p className="text-muted-foreground mt-2 text-xs">
                       {pct}% da meta
                       {meta.prazo ? ` · prazo ${formatDateBr(meta.prazo)}` : ""}
+                      {meta.lancamentos.length > 0
+                        ? ` · ${meta.lancamentos.length} ${
+                            meta.lancamentos.length === 1
+                              ? "lançamento"
+                              : "lançamentos"
+                          }`
+                        : ""}
                     </p>
+
+                    {/*
+                      O histórico fica dobrado. Aberto, ele empurraria as outras
+                      metas para fora da tela; escondido de todo, não haveria
+                      como corrigir um lançamento errado sem apagar a meta.
+                    */}
+                    {meta.lancamentos.length > 0 ? (
+                      <details className="mt-3">
+                        <summary className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex cursor-pointer rounded-sm text-xs focus-visible:ring-2 focus-visible:outline-none">
+                          Ver os lançamentos
+                        </summary>
+                        <ul className="divide-border border-border mt-2 divide-y border-t">
+                          {meta.lancamentos.map((entrada) => (
+                            <li
+                              key={entrada.id}
+                              className="flex items-center gap-3 py-2 text-xs"
+                            >
+                              <span className="text-muted-foreground tabular shrink-0">
+                                {formatDateBr(entrada.data)}
+                              </span>
+                              <span className="tabular shrink-0 font-medium">
+                                {formatUsd(entrada.valor)}
+                              </span>
+                              <span className="text-muted-foreground min-w-0 flex-1 truncate">
+                                {entrada.nota}
+                              </span>
+                              <ConfirmarExclusao
+                                titulo="Excluir lançamento"
+                                alvo={`${formatUsd(entrada.valor)} em ${meta.titulo}`}
+                                aoConfirmar={() =>
+                                  acoes.excluirProgressoMeta(entrada.id)
+                                }
+                                gatilho={
+                                  <BotaoLixeira rotulo="Excluir lançamento da meta" />
+                                }
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    ) : null}
                   </li>
                 );
               })}
@@ -847,7 +897,11 @@ export function ProjetoView({ slug }: { slug: string }) {
                   )}
                 </p>
               </div>
-              <NovoLancamento projectId={projeto.id} rotulo="Registrar volume" />
+              <NovoLancamento
+                projectId={projeto.id}
+                tipo="volume_traded"
+                rotulo="Registrar volume"
+              />
             </div>
 
             {/*
@@ -963,7 +1017,14 @@ export function ProjetoView({ slug }: { slug: string }) {
                       </td>
                       <td className="px-4 py-3">{claim.token}</td>
                       <td className="tabular px-4 py-3 text-right">
-                        {claim.quantidade}
+                        {/* Traço, e não zero: o valor foi lançado direto em
+                            dólar, então a quantidade não é desconhecida por
+                            engano, ela simplesmente não faz parte do registro. */}
+                        {claim.quantidade ?? (
+                          <span className="text-muted-foreground" title="Lançado direto em dólar">
+                            &ndash;
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Money value={claim.valor} tone="auto" />
@@ -972,7 +1033,11 @@ export function ProjetoView({ slug }: { slug: string }) {
                         <div className="flex items-center justify-end">
                           <ConfirmarExclusao
                             titulo="Excluir recebimento"
-                            alvo={`${claim.quantidade} ${claim.token} de ${claim.contaLabel}`}
+                            alvo={
+                              claim.quantidade
+                                ? `${claim.quantidade} ${claim.token} de ${claim.contaLabel}`
+                                : `${claim.token} de ${claim.contaLabel}`
+                            }
                             aoConfirmar={() => acoes.excluirRecebimento(claim.id)}
                             gatilho={<BotaoLixeira rotulo="Excluir recebimento" />}
                           />

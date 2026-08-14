@@ -43,6 +43,13 @@
       "when": 1786590669575,
       "tag": "0005_limite_login",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786747447235,
+      "tag": "0006_airdrop_total_em_dolar",
+      "breakpoints": true
     }
   ]
 }

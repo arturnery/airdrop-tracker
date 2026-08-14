@@ -215,20 +215,87 @@ export const metaSchema = z.object({
   deadline: dataIso.nullable().or(z.literal("").transform(() => null)),
 });
 
-export const recebimentoSchema = z.object({
-  projectId: z.string().min(1, "Escolha o projeto."),
-  accountId: z.string().min(1, "Escolha a conta."),
-  receivedAt: dataIso,
-  tokenSymbol: z.string().trim().min(1, "Informe o símbolo do token.").max(20),
-  tokenAmount: z
+/**
+ * Lançamento de progresso numa meta.
+ *
+ * O valor aceita negativo, e isso é deliberado: volume não volta atrás, mas
+ * saldo sim, e corrigir um lançamento errado sem poder subtrair obrigaria a
+ * apagar e refazer. `valorUsd` já cobre o sinal.
+ */
+export const progressoMetaSchema = z.object({
+  goalId: z.string().min(1, "Escolha a meta."),
+  occurredAt: dataIso,
+  value: valorUsd,
+  note: z
     .string()
     .trim()
-    .refine((v) => /^\d+(\.\d+)?$/.test(v), "Quantidade inválida."),
-  priceUsd: z
-    .string()
-    .trim()
-    .refine((v) => /^\d+(\.\d+)?$/.test(v), "Preço inválido."),
+    .max(140, "Máximo de 140 caracteres.")
+    .nullable()
+    .or(z.literal("").transform(() => null)),
 });
+
+const numeroPositivo = (mensagem: string) =>
+  z
+    .string()
+    .trim()
+    .refine((v) => /^\d+(\.\d+)?$/.test(v), mensagem);
+
+/**
+ * Recebimento de airdrop, em duas formas de dizer a mesma coisa.
+ *
+ * `token`: quantidade e preço, e o valor sai da multiplicação. É o registro
+ * completo, e o preferido quando os dois números são conhecidos.
+ *
+ * `total`: só quanto deu em dólar. Serve para quando o token já foi vendido ou
+ * o número veio de um resumo da corretora. Exigir a decomposição nesse caso
+ * obrigaria a inventar quantidade ou preço, e valor inventado no banco engana
+ * mais do que campo vazio.
+ *
+ * O que os dois têm em comum é o que importa: **sempre sai um valor em dólar**,
+ * que é o único número que entra no resultado.
+ */
+export const recebimentoSchema = z
+  .object({
+    projectId: z.string().min(1, "Escolha o projeto."),
+    accountId: z.string().min(1, "Escolha a conta."),
+    receivedAt: dataIso,
+    tokenSymbol: z.string().trim().min(1, "Informe o símbolo do token.").max(20),
+    modo: z.enum(["token", "total"]).default("token"),
+    tokenAmount: numeroPositivo("Quantidade inválida.").optional().or(z.literal("")),
+    priceUsd: numeroPositivo("Preço inválido.").optional().or(z.literal("")),
+    valueUsd: numeroPositivo("Valor inválido.").optional().or(z.literal("")),
+  })
+  .superRefine((dados, ctx) => {
+    const exigir = (campo: "tokenAmount" | "priceUsd" | "valueUsd", msg: string) => {
+      if (!dados[campo]) {
+        ctx.addIssue({ code: "custom", path: [campo], message: msg });
+      }
+    };
+
+    if (dados.modo === "token") {
+      exigir("tokenAmount", "Informe a quantidade recebida.");
+      exigir("priceUsd", "Informe o preço do token.");
+    } else {
+      exigir("valueUsd", "Informe quanto deu em dólar.");
+    }
+  });
+
+/**
+ * O dólar do recebimento, venha ele de onde vier.
+ *
+ * Vive aqui, e não nos dois lugares que gravam, porque a ação e a mutação
+ * precisam do mesmo número: a versão anterior calculava só na ação, e a mutação
+ * repetia a multiplicação por conta própria.
+ */
+export function valorDoRecebimento(dados: {
+  modo?: "token" | "total";
+  tokenAmount?: string;
+  priceUsd?: string;
+  valueUsd?: string;
+}): string {
+  if (dados.modo === "total") return Number(dados.valueUsd).toFixed(2);
+  return (Number(dados.tokenAmount) * Number(dados.priceUsd)).toFixed(2);
+}
 
 /** Converte os erros do Zod no formato { campo: mensagem } que os forms usam. */
 export function erros(resultado: z.ZodSafeParseResult<unknown>) {
