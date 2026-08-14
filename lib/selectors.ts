@@ -99,6 +99,25 @@ function ultimaAtividade(
   return datas.reduce((maior, atual) => (atual > maior ? atual : maior));
 }
 
+/**
+ * Airdrop recebido, somado em dólar sobre um recorte qualquer do dataset.
+ *
+ * Existe porque o esquecimento de somá-lo era invisível: a aba do projeto
+ * chamava `summarizeFinancials`, que já o inclui, e as listas montavam o
+ * resultado à mão sem ele. O mesmo projeto aparecia positivo numa tela e
+ * negativo na outra, e nenhuma das duas estava obviamente errada de fora.
+ */
+function airdropsDe(
+  ds: Dataset,
+  filtro: (c: Dataset["airdropClaims"][number]) => boolean,
+): Cents {
+  return cents(
+    ds.airdropClaims
+      .filter(filtro)
+      .reduce<number>((acc, c) => acc + fromDbNumeric(c.valueUsd), 0),
+  );
+}
+
 function ocorrenciasPendentes(ds: Dataset) {
   const ativas = new Set(ds.tasks.filter((t) => t.isActive).map((t) => t.id));
   return ds.taskOccurrences.filter(
@@ -236,10 +255,13 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
       const retiradoProjeto = sumOfType(doProjetoMov, "withdrawal");
       const exposicao = exposicoes.get(projeto.id) ?? ZERO;
       // Mesma fórmula da aba do projeto: ver resultadoLiquido em finance.ts.
+      // O airdrop recebido entra aqui: sem ele o projeto que já distribuiu
+      // aparecia no vermelho nesta lista e no azul dentro da própria aba.
       const resultado = resultadoLiquido({
         exposicao,
         aportado,
         retirado: retiradoProjeto,
+        airdrops: airdropsDe(ds, (c) => c.projectId === projeto.id),
         taxas: sumOfType(doProjetoMov, "fee_gas"),
       });
       const depositado = capitalDepositado({
@@ -313,6 +335,10 @@ export function selectProjectBySlug(
           exposicao: exposure.value,
           aportado,
           retirado: sumOfType(doPar, "withdrawal"),
+          airdrops: airdropsDe(
+            ds,
+            (c) => c.projectId === projeto.id && c.accountId === par.accountId,
+          ),
           taxas: sumOfType(doPar, "fee_gas"),
         }),
         tarefasPendentes: pendentes.filter((o) => o.accountId === par.accountId).length,
@@ -339,32 +365,40 @@ export function selectProjectBySlug(
     }))
     .sort((a, b) => b.data.localeCompare(a.data));
 
+  /*
+   * O progresso de cada meta vem dos lançamentos feitos **nela**, e não dos
+   * lançamentos do projeto.
+   *
+   * Antes era derivado: uma meta de volume somava todo `volume_traded` do
+   * projeto. Funcionava com uma meta e ruía com duas, porque as duas somavam a
+   * mesma coisa. A Unit tem três metas de volume (perps, ponte e spot) e as três
+   * mostravam o mesmo número, que não era o de nenhuma delas.
+   *
+   * Derivar exigiria o lançamento dizer a que meta pertence, o que é o mesmo
+   * trabalho de lançar na meta, com a diferença de espalhar a regra por duas
+   * tabelas. Aqui a meta é dona do próprio número.
+   */
   const metas: GoalRow[] = ds.goals
     .filter((g) => g.projectId === projeto.id)
     .map((g) => {
-      const relevantes = movimentos.filter(
-        (t) => g.accountId === null || t.accountId === g.accountId,
-      );
-      // Fonte de cada métrica: ARCHITECTURE.md §4.3-C.
-      let atual: Cents;
-      if (g.metric === "volume_usd") {
-        atual = sumOfType(relevantes, "volume_traded");
-      } else if (g.metric === "balance_usd") {
-        atual = g.accountId
-          ? exposicaoDoPar(ds, projeto.id, g.accountId).value
-          : financeiro.exposicao;
-      } else if (g.metric === "tx_count") {
-        atual = cents(relevantes.length);
-      } else {
-        atual = cents(new Set(relevantes.map((t) => t.occurredAt)).size);
-      }
+      const lancamentos = ds.goalEntries
+        .filter((e) => e.goalId === g.id)
+        .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 
       return {
         id: g.id,
         titulo: g.title,
         metrica: g.metric,
         alvo: fromDbNumeric(g.targetValue),
-        atual,
+        atual: cents(
+          lancamentos.reduce<number>((acc, e) => acc + fromDbNumeric(e.value), 0),
+        ),
+        lancamentos: lancamentos.map((e) => ({
+          id: e.id,
+          data: e.occurredAt,
+          valor: fromDbNumeric(e.value),
+          nota: e.note,
+        })),
         contaLabel: g.accountId ? labelDaConta(ds, g.accountId) : null,
         prazo: g.deadline,
         concluidaEm: g.achievedAt,
@@ -555,6 +589,7 @@ export function selectAccounts(ds: Dataset): AccountSummary[] {
           exposicao,
           aportado,
           retirado: sumOfType(daConta, "withdrawal"),
+          airdrops: airdropsDe(ds, (c) => c.accountId === conta.id),
           taxas: sumOfType(daConta, "fee_gas"),
         }),
         tarefasPendentes: pendentes.filter((o) => o.accountId === conta.id).length,
