@@ -4,7 +4,7 @@ import { daysBetween, somarDias, urgencyOf } from "./dates";
 import {
   exposureForPair,
   netFlowByPair,
-  capitalDepositado,
+  capitalDepositadoPorPosicao,
   pairKey,
   priceMap,
   resultadoLiquido,
@@ -221,16 +221,9 @@ export function selectCapitalPorProjeto(ds: Dataset): CapitalPorProjeto[] {
     .map((projeto) => ({
       slug: projeto.slug,
       nome: projeto.name,
-      capitalDepositado: capitalDepositado({
-        aportado: sumOfType(
-          ds.transactions.filter((t) => t.projectId === projeto.id),
-          "deposit",
-        ),
-        retirado: sumOfType(
-          ds.transactions.filter((t) => t.projectId === projeto.id),
-          "withdrawal",
-        ),
-      }),
+      capitalDepositado: capitalDepositadoPorPosicao(
+        ds.transactions.filter((t) => t.projectId === projeto.id),
+      ),
       exposicao: exposicoes.get(projeto.id) ?? ZERO,
     }))
     /*
@@ -271,10 +264,9 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         airdrops: airdropsDe(ds, (c) => c.projectId === projeto.id),
         taxas: sumOfType(doProjetoMov, "fee_gas"),
       });
-      const depositado = capitalDepositado({
-        aportado,
-        retirado: retiradoProjeto,
-      });
+      // Por posição: um projeto com duas contas tem duas, e sacar demais numa
+      // não pode descontar o capital que está parado na outra.
+      const depositado = capitalDepositadoPorPosicao(doProjetoMov);
 
       return {
         id: projeto.id,
@@ -596,10 +588,7 @@ export function selectAccounts(ds: Dataset): AccountSummary[] {
         ativa: conta.isActive,
         projetos: ds.projectAccounts.filter((p) => p.accountId === conta.id).length,
         aportado,
-        capitalDepositado: capitalDepositado({
-          aportado,
-          retirado: sumOfType(daConta, "withdrawal"),
-        }),
+        capitalDepositado: capitalDepositadoPorPosicao(daConta),
         exposicao,
         resultado: resultadoLiquido({
           exposicao,

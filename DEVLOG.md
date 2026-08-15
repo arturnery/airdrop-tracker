@@ -2560,12 +2560,42 @@ partes da mesma tela**: cada barra tem de bater com a coluna Exposição da tabe
 É a mesma forma de teste que travou o defeito do airdrop, e pelo mesmo motivo: quando o
 sistema mostra o mesmo número em dois lugares, o que quebra é a concordância entre eles.
 
+### O zero que aparecia com o capital todo comprometido
+
+A pergunta veio no dia seguinte: *"na visão geral fica mostrando capital depositado 0, isso
+está certo ou está com bug"*.
+
+Medi antes de opinar, que é a lição das últimas rodadas. Depósitos US$ 3.636, retiradas
+US$ 7.490. `max(0, 3636 − 7490)` dá zero, e o cartão estava fazendo a conta que mandaram
+fazer.
+
+**E é bug.** A soma da coluna Depositado da tabela logo abaixo dava US$ 3.486, com o mesmo
+dado, na mesma tela. Um dos dois estava errado, e era o cartão.
+
+A causa é a diferença entre `max(0, Σ)` e `Σ max(0, …)`. O corte em zero existe por posição:
+sacar mais do que se pôs num projeto quer dizer que ali não sobrou capital próprio. Aplicado
+ao total, o excesso de US$ 7.340 do Lighter (entraram 40, saíram 7.380 da venda dos tokens)
+virava desconto no capital que está parado em Polymarket, Hylo e todos os outros. Sacar
+demais do projeto A não devolve o dinheiro que está no projeto B.
+
+A unidade certa é o par projeto×conta, e não o projeto: é ali que existe "dinheiro meu
+parado". Um projeto com duas contas tem duas posições, e foi justamente isso que o primeiro
+teste que escrevi errou. Eu afirmava que o painel cairia o capital do **projeto** sacado;
+caiu o da **posição**, porque o Vertex das fixtures tem mais de uma conta. O código estava
+certo e a asserção não. Terceira vez na semana que descrevo errado um comportamento que
+acabei de escrever.
+
+O ROI muda junto, por usar esse número como base: passou de "sem base" (o painel omite o
+percentual quando o capital é zero, porque dividir por zero não dá) para 169,2%, com o
+resultado inalterado.
+
 ### O que fica
 
-Este é o quarto episódio seguido em que o sistema estava aritmeticamente certo e mesmo assim
+Este é o quinto episódio seguido em que o sistema estava aritmeticamente certo e mesmo assim
 enganava. Antes foi o airdrop que não somava numa tela e somava na outra, depois o lucro de
-trade que sumiu do saldo, depois o saldo negativo exibido com naturalidade. Agora, uma lista
-respondendo pergunta diferente da que o próprio título fazia.
+trade que sumiu do saldo, depois o saldo negativo exibido com naturalidade, depois uma lista
+respondendo pergunta diferente da que o próprio título fazia. Agora, um total que zerava
+porque o corte de uma parte foi aplicado ao todo.
 
 O padrão: **estar certo não é suficiente quando o número sozinho não diz se dá para confiar
 nele.** Somar direito é o piso. O que faltava era o sistema conhecer os próprios limites e
@@ -2583,7 +2613,7 @@ avisar quando os cruzasse.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 276, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
+| Testes | 282, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

@@ -45,6 +45,11 @@ export const changelog: Versao[] = [
       {
         tipo: "correcao",
         texto:
+          "O cartão \"Capital depositado\" da visão geral podia exibir $0 mesmo com dinheiro comprometido em vários projetos. Bastava um projeto de onde você sacou bem mais do que depositou para o excesso dele apagar o capital dos outros. O cartão agora bate com a soma da tabela, e o ROI volta a aparecer.",
+      },
+      {
+        tipo: "correcao",
+        texto:
           "A lista \"Onde está o capital\" mostrava quanto foi depositado em cada projeto, e não quanto está lá agora. Um projeto onde entraram $202 e restam $20 aparecia com $202. Agora mostra o saldo atual, e projeto já encerrado sai da lista.",
       },
       {

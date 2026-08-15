@@ -1135,6 +1135,29 @@ não dinheiro), ganho e perda que se anulam sem depósito (não há o que corrig
 sozinha (não é tipo de caixa). Na base real o diagnóstico apontou 11 de 28 projetos, e
 nenhum dos 17 restantes.
 
+## 14.9-E. O corte em zero vale por posição, não sobre o total
+
+`capitalDepositado` nunca é negativo: sacar mais do que se pôs num projeto quer dizer que
+ali não sobrou capital próprio, e o ganho aparece no resultado. A regra é boa e estava sendo
+aplicada no lugar errado.
+
+O painel calculava `max(0, total depositado − total retirado)`. Um projeto onde entraram
+US$ 40 e saíram US$ 7.380 carrega um excesso de US$ 7.340, e esse excesso, jogado no total,
+apagava o capital comprometido em **todos os outros projetos**. O cartão exibia US$ 0 de
+capital depositado enquanto a tabela logo abaixo somava US$ 3.486, com o mesmo dado.
+
+A diferença é entre `max(0, Σ)` e `Σ max(0, …)`, e a segunda é a certa: sacar demais do
+projeto A não devolve o dinheiro que está parado no projeto B.
+
+**A posição é o par projeto×conta**, e não o projeto: é ali que existe "dinheiro meu parado".
+Um projeto com duas contas tem duas posições, e o excesso de uma não desconta a outra.
+`capitalDepositadoPorPosicao` agrupa por par, corta cada um em zero e só então soma. Vale
+para o painel, a lista de projetos, a lista de contas e a distribuição por projeto.
+
+O ROI muda junto, por usar esse número como base. Na base real ele passou de "sem base"
+(o painel omitia o percentual, já que dividir por zero não dá) para 169,2%, com o resultado
+inalterado em US$ 5.897,97.
+
 ## 14.9-D. "Onde está o capital" fala do presente
 
 A lista de distribuição por projeto exibia depósitos menos retiradas. O título pergunta onde

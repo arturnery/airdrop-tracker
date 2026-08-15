@@ -194,6 +194,14 @@ export function efeitoDoTipo(type: string): string {
  * Nunca negativo. Retirar mais do que se depositou significa que o lucro já foi
  * sacado e nada mais é capital próprio parado ali: isso é zero depositado, e o
  * ganho aparece no resultado, que é onde ele pertence.
+ *
+ * **O corte em zero vale por posição, nunca sobre um total já somado.** É a
+ * diferença entre `max(0, Σ)` e `Σ max(0, …)`, e ela não é sutil: um projeto
+ * onde entraram US$ 40 e saíram US$ 7.380 tem excesso de US$ 7.340, e esse
+ * excesso, aplicado ao total geral, apagava o capital que estava comprometido em
+ * todos os outros projetos. O painel exibia US$ 0 de capital depositado enquanto
+ * a tabela logo abaixo somava US$ 3.486. Use `capitalDepositadoPorPosicao` para
+ * qualquer recorte que junte mais de uma posição.
  */
 export function capitalDepositado(params: {
   aportado: Cents;
@@ -201,6 +209,35 @@ export function capitalDepositado(params: {
 }): Cents {
   const liquido = params.aportado - Math.abs(params.retirado);
   return cents(Math.max(0, liquido));
+}
+
+/**
+ * Capital depositado de um conjunto de posições, cortando cada uma em zero.
+ *
+ * A posição é o par projeto×conta: é ali que existe "dinheiro meu parado", e é
+ * ali que sacar mais do que se pôs significa que não sobrou capital próprio. Um
+ * total só pode ser a soma dessas partes, senão o excesso de uma vira desconto
+ * na outra, o que não acontece na vida real: sacar demais do projeto A não
+ * devolve o dinheiro que está no projeto B.
+ */
+export function capitalDepositadoPorPosicao(movements: MovementRow[]): Cents {
+  const porPar = new Map<PairKey, { aportado: number; retirado: number }>();
+
+  for (const mov of movements) {
+    if (mov.type !== "deposit" && mov.type !== "withdrawal") continue;
+    const chave = pairKey(mov.projectId, mov.accountId);
+    const atual = porPar.get(chave) ?? { aportado: 0, retirado: 0 };
+    const valor = fromDbNumeric(mov.amountUsd);
+    if (mov.type === "deposit") atual.aportado += valor;
+    else atual.retirado += valor;
+    porPar.set(chave, atual);
+  }
+
+  let total = 0;
+  for (const posicao of porPar.values()) {
+    total += Math.max(0, posicao.aportado - Math.abs(posicao.retirado));
+  }
+  return cents(total);
 }
 
 /**
@@ -398,7 +435,10 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
     taxas,
   });
 
-  const depositado = capitalDepositado({ aportado, retirado });
+  /* Por posição, e não sobre os totais já somados: ver
+     `capitalDepositadoPorPosicao`. Com o corte aplicado ao total, um projeto de
+     onde se sacou muito mais do que entrou zerava o painel inteiro. */
+  const depositado = capitalDepositadoPorPosicao(movements);
 
   return {
     aportado,
