@@ -1,4 +1,5 @@
 import type { Dataset } from "./dataset";
+import { diagnosticarProjeto } from "./consistencia";
 import { daysBetween, somarDias, urgencyOf } from "./dates";
 import {
   exposureForPair,
@@ -290,6 +291,10 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         ).length,
         ultimaAtividade: ultimaAtividade(ds, (r) => r.projectId === projeto.id),
         tgePrevisto: projeto.expectedTgeDate,
+        alerta: diagnosticarProjeto({
+          exposicao,
+          lancamentos: doProjetoMov,
+        }),
       } satisfies ProjectSummary;
     })
     .sort((a, b) => b.prioridade - a.prioridade || b.aportado - a.aportado);
@@ -463,6 +468,11 @@ export function selectProjectBySlug(
     status: projeto.status,
     categoria: projeto.category,
     chain: projeto.chain,
+    // O mesmo diagnóstico da lista: a aba do projeto é onde se vem corrigir.
+    alerta: diagnosticarProjeto({
+      exposicao: financeiro.exposicao,
+      lancamentos: movimentos,
+    }),
     prioridade: projeto.priority,
     aportado: financeiro.aportado,
     capitalDepositado: financeiro.capitalDepositado,

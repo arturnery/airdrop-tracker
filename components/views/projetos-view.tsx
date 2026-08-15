@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { useDados } from "@/components/data-provider";
+import { AvisoSaldo } from "@/components/aviso-saldo";
 import { FiltroChips } from "@/components/filtro-chips";
 import {
   BotaoLixeira,
@@ -92,6 +93,10 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         <CategoryBadge category={projeto.categoria} />
         <PriorityMeter value={projeto.prioridade} />
       </div>
+
+      {projeto.alerta ? (
+        <AvisoSaldo alerta={projeto.alerta} className="mt-4" />
+      ) : null}
 
       <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
         <div>

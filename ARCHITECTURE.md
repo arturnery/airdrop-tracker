@@ -1101,6 +1101,40 @@ desvio para cima e para baixo.
 `fee_gas` continua sendo a exceção legítima: ele sai do bolso, não da posição, e por isso
 desconta do resultado sem nunca ter entrado no saldo.
 
+## 14.9-C. Aviso de saldo que a realidade não permite
+
+O sistema soma o que foi lançado e mostra o resultado, sem opinar. Isso é certo como regra
+geral e tem um custo: **um número impossível sai na tela com a mesma cara de um número
+correto.**
+
+O caso que motivou: um projeto exibia saldo de −US$ 640, porque a perda no trade foi lançada
+e o depósito que a bancou não. A conta estava certa e o número não podia existir; nada na
+tela dizia isso, e a suspeita recaiu sobre o cálculo.
+
+[`lib/consistencia.ts`](lib/consistencia.ts) detecta dois casos, em ordem de gravidade:
+
+| caso | condição | o que costuma faltar |
+|---|---|---|
+| `saldo_negativo` | exposição < 0 | o depósito que bancou as perdas |
+| `sem_origem` | nenhum depósito, há movimento de caixa que não é depósito, e saldo ≠ 0 | o depósito, ou o registro na aba de airdrop |
+
+Quatro decisões dentro disso:
+
+- **A mensagem sugere, não acusa.** O que se detecta é falta de lançamento, e quem sabe o
+  que aconteceu é quem lançou. "Em geral falta o depósito" e não "você errou".
+- **É derivado, nunca guardado.** O aviso some sozinho quando o lançamento aparecer, sem
+  ninguém marcar nada como resolvido.
+- **Âmbar, não vermelho.** Vermelho diria "você perdeu dinheiro", que é justamente o que não
+  aconteceu: há um lançamento faltando. Segue §14.8.
+- **Aparece antes do número, não depois.** Na aba do projeto e na visão geral o aviso vem
+  acima dos indicadores, porque quem lê o total primeiro já tirou a conclusão errada.
+
+O que **não** dispara importa tanto quanto o que dispara, e nove testes fixam os casos
+limítrofes: projeto zerado por retirada (encerramento normal), só volume operado (atividade,
+não dinheiro), ganho e perda que se anulam sem depósito (não há o que corrigir), taxa de gas
+sozinha (não é tipo de caixa). Na base real o diagnóstico apontou 11 de 28 projetos, e
+nenhum dos 17 restantes.
+
 ## 14.10. A meta é dona do próprio progresso
 
 Até aqui o progresso de uma meta era derivado: `volume_usd` somava todo o

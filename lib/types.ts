@@ -1,3 +1,4 @@
+import type { AlertaProjeto } from "./consistencia";
 import type { Cents } from "./money";
 import type { Points } from "./points";
 
@@ -104,6 +105,8 @@ export type ProjectSummary = {
   tarefasAtrasadas: number;
   ultimaAtividade: IsoDate | null;
   tgePrevisto: IsoDate | null;
+  /** Aviso de saldo impossível, quando houver. Ver lib/consistencia. */
+  alerta: AlertaProjeto | null;
 };
 
 export type ProjectLinks = {

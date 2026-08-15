@@ -43,6 +43,11 @@ export const changelog: Versao[] = [
     data: "2026-08-14",
     mudancas: [
       {
+        tipo: "novidade",
+        texto:
+          "Projeto com saldo impossível agora avisa em vez de exibir o número calado. É o caso de saldo negativo, ou de dinheiro que aparece sem nenhum depósito registrado: quase sempre falta lançar o depósito. O aviso some sozinho quando o lançamento entrar.",
+      },
+      {
         tipo: "correcao",
         texto:
           "Por algumas horas do dia 14, o lucro de trade deixou de contar no saldo dos projetos, e o saldo exibido ficou menor do que o real. Já voltou ao normal: lucro soma ao saldo e prejuízo desconta, como sempre foi.",

@@ -10,6 +10,7 @@ import { useDados } from "@/components/data-provider";
 import { NovoLancamento, RegistrarPontos } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { MarcaSaldo, ResumoDeAvisos } from "@/components/aviso-saldo";
 import { StatCard } from "@/components/stat-card";
 import {
   nomeRiscado,
@@ -54,6 +55,13 @@ export function DashboardView() {
           </>
         }
       />
+
+      {/*
+        Antes dos indicadores: um total que embute saldo impossível engana mais
+        do que informa, e quem olha o número grande primeiro precisa saber disso
+        antes de tirar conclusão dele.
+      */}
+      <ResumoDeAvisos projetos={projetos} />
 
       {/* Ordem: quanto entrou, onde está, o que sobrou, o que fazer. */}
       <section
@@ -247,6 +255,7 @@ export function DashboardView() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Money value={projeto.exposicao} tone="muted" />
+                      {projeto.alerta ? <MarcaSaldo alerta={projeto.alerta} /> : null}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Money value={projeto.resultado} tone="auto" signed />

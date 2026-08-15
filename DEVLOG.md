@@ -2472,6 +2472,79 @@ resolveu aqui.
 
 ---
 
+## Marco 40: O número impossível que saía calado
+
+O relato foi *"a tabela do capital na visão geral está discrepante da exposição, o que está
+errado"*. A resposta exigiu separar três coisas que pareciam uma só.
+
+### Primeiro, o que não estava errado
+
+Conferi cartão contra soma da tabela, nas três colunas: Depositado $3.419, Exposição $8.754,
+Resultado $5.897,97, diferença zero em todas. Nenhum erro de agregação.
+
+E as duas colunas diferirem é o desenho: uma é quanto entrou, a outra é quanto está lá agora,
+e a distância entre elas é o resultado. Se batessem, o sistema não teria o que dizer.
+
+Valia checar uma armadilha que eu suspeitava: `capitalDepositado` corta em zero por projeto,
+então um projeto com retiradas maiores que depósitos apareceria como 0 na linha e negativo no
+total. Medi: nenhum projeto está nessa situação, o corte não escondia nada. Suspeita
+descartada por medição, não por leitura.
+
+### O que estava errado
+
+Olhando projeto a projeto, **11 dos 28 tinham movimento de dinheiro sem nenhum depósito
+registrado**, e três exibiam saldo negativo:
+
+```
+BackPack   −640,00    0 depósitos, 2 lançamentos de trade
+Theo        −67,00    0 depósitos
+xStocks     −40,00    0 depósitos
+```
+
+No BackPack, a perda de US$ 640 no trade foi lançada e o depósito que a bancou não. O sistema
+então afirmava que existiam −US$ 640 parados lá. Os outros oito são o espelho: Infrared $200,
+OneFootball $192, Monade $134, e assim por diante, todos com saldo saído do nada porque só o
+ganho foi registrado.
+
+**A causa é falta de lançamento, e o dado é dele para preencher.** O que o sistema fez de
+errado foi outra coisa: exibiu −US$ 640 como saldo sem dizer nada. Um número impossível saía
+com a mesma cara de um número correto, e a suspeita recaiu sobre a conta, que estava certa.
+
+### O aviso
+
+`lib/consistencia.ts` detecta saldo negativo e dinheiro sem origem. É puro e testável, e a
+parte que deu trabalho não foi detectar: foi **não** detectar.
+
+Os nove testes de falso positivo valem mais que os três de detecção, porque um aviso que
+aparece onde não devia treina a pessoa a ignorá-lo, e aí ele deixa de funcionar no dia em que
+estiver certo. Projeto zerado por retirada é encerramento normal. Só volume operado é
+atividade, não dinheiro. Ganho e perda que se anulam sem depósito não têm o que corrigir na
+tela: o saldo já está onde deveria. Taxa de gas sozinha não é tipo de caixa.
+
+Rodado contra a base real: 11 apontados, 17 limpos, exatamente os que a análise manual tinha
+encontrado.
+
+### Duas escolhas de forma
+
+**Âmbar, não vermelho.** Vermelho diria "você perdeu dinheiro", que é justamente o que não
+aconteceu. O que há é um lançamento faltando, e âmbar é a cor de "olhe isto".
+
+**Antes do número, não depois.** Na visão geral o resumo fica acima dos indicadores, e na aba
+do projeto acima dos cartões. Aviso depois do total chega tarde: quem leu o número já tirou a
+conclusão no caminho.
+
+### O que fica
+
+Este é o terceiro episódio seguido em que o sistema estava aritmeticamente certo e mesmo assim
+enganava. Antes foi o airdrop que não somava numa tela e somava na outra, depois o lucro de
+trade que sumiu do saldo. Aqui, um saldo negativo exibido com naturalidade.
+
+O padrão: **estar certo não é suficiente quando o número sozinho não diz se dá para confiar
+nele.** Somar direito é o piso. O que faltava era o sistema conhecer os próprios limites e
+avisar quando os cruzasse.
+
+---
+
 ## Estado atual
 
 | | |
@@ -2482,7 +2555,7 @@ resolveu aqui.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 258, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco e independência entre metas |
+| Testes | 273, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

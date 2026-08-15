@@ -18,6 +18,7 @@ import {
   EditarTarefa,
   EditarVinculo,
 } from "@/components/forms/editar";
+import { AvisoSaldo } from "@/components/aviso-saldo";
 import { Button } from "@/components/ui/button";
 import {
   LancarProgressoMeta,
@@ -154,6 +155,14 @@ export function ProjetoView({ slug }: { slug: string }) {
       />
 
       {/*
+        O aviso vem antes dos indicadores, e não depois: quem lê o número
+        primeiro e o aviso depois já tirou a conclusão errada no caminho.
+      */}
+      {projeto.alerta ? (
+        <AvisoSaldo alerta={projeto.alerta} className="mb-6" />
+      ) : null}
+
+      {/*
         Cinco colunas quando há volume operado, quatro quando não há. O volume
         não é dinheiro movimentado (não entra em saldo nem em resultado), então
         antes ele não tinha onde aparecer dentro do projeto: ficava só como uma
@@ -181,7 +190,7 @@ export function ProjetoView({ slug }: { slug: string }) {
           label="Exposição"
           accent="idle"
           value={<Money value={projeto.exposicao} />}
-          hint="soma dos lançamentos"
+          hint={projeto.alerta ? projeto.alerta.resumo : "soma dos lançamentos"}
         />
         <StatCard
           label="Resultado"
