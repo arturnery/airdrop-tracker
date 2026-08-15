@@ -2533,11 +2533,39 @@ aconteceu. O que há é um lançamento faltando, e âmbar é a cor de "olhe isto
 do projeto acima dos cartões. Aviso depois do total chega tarde: quem leu o número já tirou a
 conclusão no caminho.
 
+### A pergunta que o título fazia e a lista não respondia
+
+No dia seguinte veio o print, e com ele a parte que eu tinha deixado passar: a lista **Onde
+está o capital** mostrava Solstice com US$ 1.410... não, com US$ 202, quando ali havia US$ 20.
+
+Fui procurar o defeito e ele estava escrito, com justificativa, no topo do componente:
+
+> Usa o mesmo número dos cartões (depósitos menos retiradas) e não o total já depositado:
+> exibir bases diferentes na mesma tela faz o leitor desconfiar de ambas.
+
+O raciocínio é bom e escolheu a base errada. O cuidado era não misturar bases; o cartão
+vizinho se chama "Exposição atual", e é dele que uma lista sobre **onde o dinheiro está**
+tem de falar. Depósitos menos retiradas responde outra pergunta: quanto entrou.
+
+Na base real a diferença era grosseira. Lighter exibia US$ 40 tendo US$ 7.420. Hylo exibia
+US$ 1.410 tendo US$ 100, porque US$ 1.300 de desvalorização foram lançados. Solstice, US$ 202
+tendo US$ 20.
+
+Junto veio a decisão de quem sai da lista: exposição zero é projeto encerrado, que não
+pertence a uma pergunta sobre onde há dinheiro, e exposição negativa não tem barra que a
+represente. O negativo já tem dono, que é o aviso de consistência do dia anterior.
+
+O teste de navegador que fixa isso não confere um valor, confere **coerência entre duas
+partes da mesma tela**: cada barra tem de bater com a coluna Exposição da tabela logo abaixo.
+É a mesma forma de teste que travou o defeito do airdrop, e pelo mesmo motivo: quando o
+sistema mostra o mesmo número em dois lugares, o que quebra é a concordância entre eles.
+
 ### O que fica
 
-Este é o terceiro episódio seguido em que o sistema estava aritmeticamente certo e mesmo assim
+Este é o quarto episódio seguido em que o sistema estava aritmeticamente certo e mesmo assim
 enganava. Antes foi o airdrop que não somava numa tela e somava na outra, depois o lucro de
-trade que sumiu do saldo. Aqui, um saldo negativo exibido com naturalidade.
+trade que sumiu do saldo, depois o saldo negativo exibido com naturalidade. Agora, uma lista
+respondendo pergunta diferente da que o próprio título fazia.
 
 O padrão: **estar certo não é suficiente quando o número sozinho não diz se dá para confiar
 nele.** Somar direito é o piso. O que faltava era o sistema conhecer os próprios limites e
@@ -2555,7 +2583,7 @@ avisar quando os cruzasse.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 273, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
+| Testes | 276, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

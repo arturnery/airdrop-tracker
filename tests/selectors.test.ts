@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { datasetInicial, HOJE } from "@/db/queries/fixtures";
 import { novoId, slugify, uniqueSlug } from "@/lib/dataset";
-import { toDbNumeric } from "@/lib/money";
+import { cents, toDbNumeric } from "@/lib/money";
+import * as M from "@/lib/mutations";
 import {
   selectAccounts,
   selectCapitalPorProjeto,
@@ -297,5 +298,62 @@ describe("selectVolumeDoProjeto: período coberto", () => {
     const futuro = selectVolumeDoProjeto(ds, perp.id, "2027-01-01");
     expect(futuro.total).toBe(volume.total);
     expect(futuro.recente).toBe(0);
+  });
+});
+
+/**
+ * "Onde está o capital" é pergunta sobre o presente.
+ *
+ * A lista exibia depósitos menos retiradas, então um projeto onde entraram $202
+ * e restam $20 aparecia com $202: dez vezes mais dinheiro parado do que havia.
+ */
+describe("selectCapitalPorProjeto", () => {
+  const projeto = (ds: ReturnType<typeof datasetInicial>, slug: string) =>
+    selectCapitalPorProjeto(ds).find((p) => p.slug === slug);
+
+  it("ordena pelo que está no projeto, não pelo que foi depositado", () => {
+    const lista = selectCapitalPorProjeto(datasetInicial());
+    const exposicoes = lista.map((p) => p.exposicao);
+    expect([...exposicoes].sort((a, b) => b - a)).toEqual(exposicoes);
+  });
+
+  it("deixa de fora projeto encerrado, com tudo sacado", () => {
+    let ds = datasetInicial();
+    const alvo = ds.projects.find((p) => p.slug === "meridian")!;
+    const par = ds.projectAccounts.find((p) => p.projectId === alvo.id)!;
+
+    // Saca tudo o que houver, zerando a exposição.
+    const saldo = selectCapitalPorProjeto(ds).find((p) => p.slug === "meridian")!.exposicao;
+    ds = M.criarLancamento(ds, {
+      projectId: alvo.id,
+      accountId: par.accountId,
+      occurredAt: HOJE,
+      type: "withdrawal",
+      amount: cents(-saldo),
+      tokenSymbol: null,
+      tokenAmount: null,
+      description: null,
+    });
+
+    expect(projeto(ds, "meridian")).toBeUndefined();
+  });
+
+  it("deixa de fora exposição negativa, que é lançamento faltando", () => {
+    let ds = datasetInicial();
+    const alvo = ds.projects.find((p) => p.slug === "nebula")!;
+    const par = ds.projectAccounts.find((p) => p.projectId === alvo.id)!;
+
+    ds = M.criarLancamento(ds, {
+      projectId: alvo.id,
+      accountId: par.accountId,
+      occurredAt: HOJE,
+      type: "trade_pnl",
+      amount: cents(-99999900),
+      tokenSymbol: null,
+      tokenAmount: null,
+      description: null,
+    });
+
+    expect(projeto(ds, "nebula")).toBeUndefined();
   });
 });

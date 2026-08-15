@@ -233,8 +233,14 @@ export function selectCapitalPorProjeto(ds: Dataset): CapitalPorProjeto[] {
       }),
       exposicao: exposicoes.get(projeto.id) ?? ZERO,
     }))
-    .filter((p) => p.capitalDepositado > 0 || p.exposicao > 0)
-    .sort((a, b) => b.capitalDepositado - a.capitalDepositado);
+    /*
+     * Só o que tem dinheiro agora. Projeto já encerrado (depositado e sacado)
+     * não pertence a uma lista sobre onde o capital está, e exposição negativa
+     * não tem barra que a represente: é lançamento faltando, e disso cuida o
+     * aviso de consistência.
+     */
+    .filter((p) => p.exposicao > 0)
+    .sort((a, b) => b.exposicao - a.exposicao);
 }
 
 // ------------------------------------------------------------------ projetos

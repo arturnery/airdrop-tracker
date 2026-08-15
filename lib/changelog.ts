@@ -43,6 +43,11 @@ export const changelog: Versao[] = [
     data: "2026-08-14",
     mudancas: [
       {
+        tipo: "correcao",
+        texto:
+          "A lista \"Onde está o capital\" mostrava quanto foi depositado em cada projeto, e não quanto está lá agora. Um projeto onde entraram $202 e restam $20 aparecia com $202. Agora mostra o saldo atual, e projeto já encerrado sai da lista.",
+      },
+      {
         tipo: "novidade",
         texto:
           "Projeto com saldo impossível agora avisa em vez de exibir o número calado. É o caso de saldo negativo, ou de dinheiro que aparece sem nenhum depósito registrado: quase sempre falta lançar o depósito. O aviso some sozinho quando o lançamento entrar.",

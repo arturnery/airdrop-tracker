@@ -75,8 +75,9 @@ export type DashboardSummary = FinancialSummary & {
 export type CapitalPorProjeto = {
   slug: string;
   nome: string;
-  /** Depósitos menos retiradas: o mesmo número dos cartões. */
+  /** Depósitos menos retiradas. Mantido para quem quiser comparar com o atual. */
   capitalDepositado: Cents;
+  /** O que está no projeto agora: é este que a lista exibe. */
   exposicao: Cents;
 };
 

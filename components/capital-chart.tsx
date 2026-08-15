@@ -4,11 +4,22 @@ import { Money } from "@/components/money";
 import type { CapitalPorProjeto } from "@/lib/types";
 
 /**
- * Distribuição do capital depositado por projeto.
+ * Onde o dinheiro está agora, projeto a projeto.
  *
- * Usa o mesmo número dos cartões (depósitos menos retiradas) e não o total já
- * depositado: exibir bases diferentes na mesma tela faz o leitor desconfiar de
- * ambas, sem saber qual está certa.
+ * Mostra a **exposição**, não o capital depositado, e a distinção é a razão de
+ * a seção existir. "Onde está o capital" é uma pergunta sobre o presente: um
+ * projeto onde entraram US$ 202 e restam US$ 20 tem US$ 20 ali, e exibir os 202
+ * dizia que havia dez vezes mais dinheiro parado do que há.
+ *
+ * A versão anterior exibia depósitos menos retiradas, com a justificativa de
+ * usar o mesmo número dos cartões. O raciocínio protegia contra bases
+ * diferentes na mesma tela e escolheu a base errada: o cartão ao lado se chama
+ * "Exposição atual" e é dele que esta lista tem de falar.
+ *
+ * Projeto com exposição zero ou negativa fica de fora. Zero não ocupa espaço
+ * numa lista sobre onde há dinheiro, e negativo não tem barra que o represente:
+ * quando aparece, é lançamento faltando, e quem cuida disso é o aviso de
+ * consistência (ver `lib/consistencia`).
  *
  * Série única → cor única: a identidade de cada barra vem do rótulo, não da
  * cor. Pintar cada projeto de um tom diferente seria decoração e gastaria a
@@ -22,23 +33,23 @@ export function CapitalPorProjetoChart({ data }: { data: CapitalPorProjeto[] }) 
   if (data.length === 0) {
     return (
       <div className="border-border rounded-lg border border-dashed px-6 py-10 text-center">
-        <p className="text-sm font-medium">Nenhum aporte registrado.</p>
+        <p className="text-sm font-medium">Nenhum dinheiro parado em projeto.</p>
         <p className="text-muted-foreground mt-1 text-sm">
-          O capital por projeto aparece aqui depois do primeiro depósito.
+          A distribuição aparece aqui assim que houver saldo em algum projeto.
         </p>
       </div>
     );
   }
 
-  const total = data.reduce((acc, item) => acc + item.capitalDepositado, 0);
-  const maior = Math.max(...data.map((item) => item.capitalDepositado));
+  const total = data.reduce((acc, item) => acc + item.exposicao, 0);
+  const maior = Math.max(...data.map((item) => item.exposicao));
 
   return (
     <div className="border-border rounded-lg border p-5">
       <ol className="space-y-4">
         {data.map((item) => {
-          const proporcao = maior > 0 ? (item.capitalDepositado / maior) * 100 : 0;
-          const fatia = total > 0 ? Math.round((item.capitalDepositado / total) * 100) : 0;
+          const proporcao = maior > 0 ? (item.exposicao / maior) * 100 : 0;
+          const fatia = total > 0 ? Math.round((item.exposicao / total) * 100) : 0;
 
           return (
             <li key={item.slug}>
@@ -50,7 +61,7 @@ export function CapitalPorProjetoChart({ data }: { data: CapitalPorProjeto[] }) 
                   {item.nome}
                 </Link>
                 <span className="flex shrink-0 items-baseline gap-2 text-sm">
-                  <Money value={item.capitalDepositado} />
+                  <Money value={item.exposicao} />
                   <span className="text-muted-foreground text-xs tabular">
                     {fatia}%
                   </span>
@@ -72,8 +83,8 @@ export function CapitalPorProjetoChart({ data }: { data: CapitalPorProjeto[] }) 
       </ol>
 
       <p className="text-muted-foreground border-border mt-5 border-t pt-4 text-xs">
-        Total depositado{" "}
-        <Money value={total as CapitalPorProjeto["capitalDepositado"]} className="text-foreground" />{" "}
+        Exposição total{" "}
+        <Money value={total as CapitalPorProjeto["exposicao"]} className="text-foreground" />{" "}
         em {data.length} projetos.
       </p>
     </div>

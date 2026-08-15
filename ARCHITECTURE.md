@@ -1135,6 +1135,26 @@ não dinheiro), ganho e perda que se anulam sem depósito (não há o que corrig
 sozinha (não é tipo de caixa). Na base real o diagnóstico apontou 11 de 28 projetos, e
 nenhum dos 17 restantes.
 
+## 14.9-D. "Onde está o capital" fala do presente
+
+A lista de distribuição por projeto exibia depósitos menos retiradas. O título pergunta onde
+o dinheiro **está**, e a resposta vinha de quanto dinheiro **entrou**: um projeto onde
+entraram US$ 202 e restam US$ 20 aparecia com US$ 202, dez vezes mais do que havia. Noutro,
+US$ 1.410 no lugar de US$ 100.
+
+O comentário original justificava a escolha: usar o mesmo número dos cartões, porque bases
+diferentes na mesma tela fazem duvidar das duas. O raciocínio é bom e escolheu a base errada,
+porque o cartão vizinho se chama "Exposição atual" e é dele que a lista tem de falar.
+
+Agora exibe, ordena e soma por exposição, e o rodapé diz "Exposição total". Ficam de fora os
+projetos com exposição zero ou negativa: projeto encerrado não pertence a uma lista sobre onde
+há dinheiro, e negativo não tem barra que o represente. Quando aparece um negativo, é
+lançamento faltando, e disso cuida §14.9-C.
+
+Efeito na base real: Lighter passou de US$ 40 exibidos para US$ 7.420, Hylo de US$ 1.410 para
+US$ 100, Solstice de US$ 202 para US$ 20. A soma da lista passou a bater com o cartão de
+exposição, que é a checagem que o navegador faz nos testes.
+
 ## 14.10. A meta é dona do próprio progresso
 
 Até aqui o progresso de uma meta era derivado: `volume_usd` somava todo o
