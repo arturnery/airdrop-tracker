@@ -1137,6 +1137,45 @@ não dinheiro), ganho e perda que se anulam sem depósito (não há o que corrig
 sozinha (não é tipo de caixa). Na base real o diagnóstico apontou 11 de 28 projetos, e
 nenhum dos 17 restantes.
 
+## 14.8-A. O card de projeto tem um número principal
+
+Os três valores do card (depositado, exposição, resultado) respondem perguntas diferentes e
+estavam com o mesmo peso, lado a lado numa linha de três. Os dois primeiros dizem quanto
+entrou e quanto está lá; o terceiro diz **se valeu a pena**, que é o motivo de alguém abrir
+a lista. Peso igual para perguntas de importância diferente obriga a ler as três para achar
+a que interessa.
+
+O resultado virou bloco próprio, com moldura tintada pelo sinal e seta de direção.
+Depositado e exposição descem para uma linha de duas colunas.
+
+**O bloco não é o maior destaque do card, e isso foi corrigido depois de errar.** A primeira
+versão pôs o número em corpo 24 e ele passou a ser lido antes do nome do projeto, o que
+inverte a ordem em que a informação é procurada: numa lista, a primeira pergunta é "qual
+projeto é este". O nome subiu para corpo 18 semibold e o número recuou para o corpo do texto.
+A saliência do resultado passou a vir da serif, da cor e da moldura, que bastam para achá-lo
+sem disputar a leitura.
+
+**O sinal aparece de três formas ao mesmo tempo:** cor, seta e o número com sinal explícito.
+Cor sozinha não serve como indicador, e a seta some para quem não distingue verde de
+vermelho. Verde e vermelho aqui são significado, não estilo, que é o uso reservado a eles em
+§14.8; o azul da marca fica no avatar e no realce de foco.
+
+Três decisões menores, cada uma com um motivo:
+
+- **A inicial no lugar de logo.** O sistema não guarda imagem de projeto, e uma letra basta
+  para o olho reencontrar a mesma linha ao rolar dezenas de cards. Tinta da marca, e não cor
+  sorteada por projeto: cor aqui seria decoração.
+- **Projeto sem movimento não mostra "$0,00" em destaque.** O zero num painel sugere apuração
+  feita com resultado nulo, quando o que houve foi ausência de movimento. A moldura fica, com
+  "sem movimento" dentro.
+- **O rodapé é empurrado para a base** (`mt-auto`). A grade iguala a altura dos cards da mesma
+  fileira, e sem isso o rodapé do card mais curto boiava no meio.
+
+O redesenho encontrou um defeito anterior: o realce de foco usava `brand/60`, que dá 2,33:1
+sobre o card, abaixo dos 3:1 exigidos de um indicador de foco. Passou a usar `--ring` em
+opacidade cheia, com 6,33:1. O realce de mouse continua em `brand/40`, e pode: ali o ponteiro
+já diz onde se está, e a exigência não se aplica.
+
 ## 14.8-B. Busca por nome na lista de projetos
 
 Filtra ao digitar, sem botão de confirmar: com o resultado mudando a cada letra, o botão só

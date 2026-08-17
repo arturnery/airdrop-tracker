@@ -2633,6 +2633,66 @@ que digitou para achar o engano, e "nenhum resultado" sozinho esconde justamente
 
 ---
 
+## Marco 42: O card de projeto ganha um número principal
+
+Veio um print de referência: o resultado promovido a painel, avatar com a inicial, métricas
+secundárias abaixo. A estrutura foi adotada; três coisas mudaram no caminho.
+
+**O roxo do print não entrou.** Ele está na lista de cores a evitar das minhas preferências
+de design, e está fora da paleta LVL. O avatar usa a tinta da marca, e a identidade de cada
+card vem da letra, não da cor: cor por projeto seria decoração, e verde e vermelho estão
+reservados a ganho e perda (§14.8).
+
+**O sinal ganhou três formas ao mesmo tempo:** cor, seta e o número com sinal explícito. Cor
+sozinha não é indicador, e a seta desaparece para quem não distingue verde de vermelho.
+
+**Projeto sem movimento não mostra "$0,00" no painel de destaque.** Zero ali sugere apuração
+feita e resultado nulo, quando o que houve foi ausência de movimento. A moldura continua, com
+"sem movimento" dentro, para os cards da mesma fileira não ficarem de alturas diferentes.
+
+### O destaque no lugar errado
+
+A primeira versão pôs o resultado em corpo 24, e ele passou a ser lido antes do nome do
+projeto. O retorno foi direto: *"o destaque ficou muito grande no resultado, queria que o
+maior destaque seja nos nomes"*.
+
+Está certo, e o erro é de ordem de leitura, não de tamanho. Numa **lista**, a primeira
+pergunta é "qual projeto é este", e a resposta é o nome; o resultado responde a segunda. Na
+aba do projeto, onde a identidade já está resolvida pelo título da página, o número pode ser
+o maior, e é.
+
+O nome subiu para corpo 18 semibold e o número desceu para o corpo do texto. O resultado não
+ficou escondido: serif, cor e moldura continuam apontando para ele, e as três juntas dão
+saliência sem disputar a leitura com o nome. **Peso visual não é a única forma de destacar.**
+
+### O que o print da própria tela mostrou
+
+Depois de montar, tirei print da lista renderizada em vez de conferir só o código. Apareceu
+um defeito que não estava no plano: nos cards mais curtos o rodapé boiava no meio, com vazio
+embaixo. A grade iguala a altura dos cards da fileira, e o conteúdo não enchia. `mt-auto`
+resolveu.
+
+Vale o método: ler o componente não mostraria isso, porque o defeito só existe na relação
+entre dois cards vizinhos de alturas diferentes.
+
+### O defeito anterior que o redesenho encontrou
+
+A verificação de contraste, feita sobre o CSS compilado, reprovou o realce de foco do card:
+`brand/60` dá 2,33:1 sobre o card, e a norma pede 3:1 para indicador de foco. Não era desta
+mudança, estava lá antes.
+
+Passou a usar `--ring` em opacidade cheia: 6,33:1 no escuro, 7,94:1 no claro. O realce de
+mouse continua em `brand/40` e não precisa passar: ali o ponteiro já diz onde se está, e a
+exigência de contraste não se aplica a ele. **A distinção entre os dois estados deixou de ser
+só estética e passou a ter motivo escrito.**
+
+Uma nota sobre o teste de acessibilidade: o primeiro que escrevi reprovou o indicador de foco
+por medir o `outline` do próprio link, que é `none` de propósito, porque o indicador está na
+borda do card via `focus-within`. Testar o elemento errado dá o mesmo tipo de falso resultado
+que testar o formato errado.
+
+---
+
 ## Estado atual
 
 | | |

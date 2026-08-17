@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus, Search } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { AvisoSaldo } from "@/components/aviso-saldo";
@@ -49,6 +49,91 @@ const categorias: { valor: ProjectCategory; rotulo: string }[] = [
   { valor: "perps", rotulo: "Perps" },
 ];
 
+/**
+ * Resultado do projeto, promovido a bloco próprio.
+ *
+ * Antes ele era a terceira coluna de uma linha de três, com o mesmo peso de
+ * "depositado" e "exposição". Os três respondem perguntas diferentes: os dois
+ * primeiros dizem quanto entrou e quanto está lá, e o terceiro diz **se valeu a
+ * pena**. Ter um bloco próprio resolve isso.
+ *
+ * O que ele **não** é: o maior destaque do card. Numa lista, a primeira
+ * pergunta é "qual projeto é este", e a resposta é o nome. Uma primeira versão
+ * pôs o resultado em corpo 24 e ele passou a ser lido antes do nome, o que
+ * inverte a ordem em que a informação é procurada. O número recuou para o corpo
+ * do texto, e a saliência dele agora vem da serif, da cor e da moldura, que
+ * bastam para achá-lo sem disputar a leitura.
+ *
+ * O sinal aparece de três formas ao mesmo tempo: cor, seta e o próprio número
+ * com sinal. Cor sozinha não serve como indicador, e a seta some para quem não
+ * distingue verde de vermelho.
+ *
+ * Verde e vermelho aqui são significado, não estilo: é exatamente o uso que
+ * §14.8 reserva a eles. O azul da marca fica no avatar e no realce de foco.
+ */
+function PainelResultado({ projeto }: { projeto: ProjectSummary }) {
+  const positivo = projeto.resultado > 0;
+  const negativo = projeto.resultado < 0;
+
+  /*
+   * Projeto sem dinheiro nenhum não mostra "$0,00" num painel de destaque:
+   * o zero ali sugere apuração feita e resultado nulo, quando o que houve foi
+   * ausência de movimento. A moldura continua, para os cards não ficarem de
+   * alturas diferentes na mesma fileira.
+   */
+  const semMovimento =
+    projeto.aportado === 0 && projeto.exposicao === 0 && projeto.resultado === 0;
+
+  const Seta = positivo ? ArrowUpRight : negativo ? ArrowDownRight : Minus;
+
+  return (
+    <div
+      className={cn(
+        "mt-4 flex items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5",
+        positivo && "border-positive/30 bg-positive/10",
+        negativo && "border-negative/30 bg-negative/10",
+        !positivo && !negativo && "border-border bg-secondary/40",
+      )}
+    >
+      <div className="min-w-0">
+        <p className="text-muted-foreground text-[0.6875rem] font-medium tracking-wider uppercase">
+          Resultado
+        </p>
+        {semMovimento ? (
+          <p className="text-muted-foreground mt-1 text-sm">sem movimento</p>
+        ) : (
+          <p className="mt-1 flex items-baseline gap-2">
+            {/* Serif e tamanho grande, como nos cartões de indicador: número é
+                o que o olho procura primeiro, e a troca de família o destaca
+                sem precisar de mais cor. */}
+            <Money
+              value={projeto.resultado}
+              tone="auto"
+              signed
+              className="font-numeric text-base leading-none font-semibold"
+            />
+            <Percent value={projeto.roi} className="text-xs" />
+          </p>
+        )}
+      </div>
+
+      {semMovimento ? null : (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex size-8 shrink-0 items-center justify-center rounded-md border",
+            positivo && "border-positive/30 text-positive",
+            negativo && "border-negative/30 text-negative",
+            !positivo && !negativo && "border-border text-muted-foreground",
+          )}
+        >
+          <Seta className="size-3.5" />
+        </span>
+      )}
+    </div>
+  );
+}
+
 function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
   const { dataset, hoje, acoes } = useDados();
 
@@ -58,29 +143,58 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
      * único link real (bom para teclado e leitor de tela), mas seu ::after
      * cobre o card todo. Envolver o card no <Link> aninharia os links internos.
      */
-    <article className="group bg-card border-border hover:border-brand/40 focus-within:border-brand/60 relative rounded-lg border p-5 transition-colors">
+    /*
+     * O realce de foco usa `--ring` em opacidade cheia, e o de mouse usa a
+     * marca a 40%. A diferença não é estética: indicador de foco tem exigência
+     * de contraste (3:1) e o realce de mouse não, porque ali o ponteiro já diz
+     * onde se está. `brand/60` dava 2,33:1 sobre o card e reprovava; o anel dá
+     * 6,33:1. Medido no CSS compilado, que é o que o navegador recebe.
+     */
+    <article className="group bg-card border-border hover:border-brand/40 focus-within:border-ring relative flex h-full flex-col rounded-lg border p-6 transition-colors">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-base font-medium">
-            <Link
-              href={`/projetos/${projeto.slug}`}
-              className={cn(
-                "after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none",
-                nomeRiscado(projeto.status),
-              )}
-            >
-              {projeto.nome}
-            </Link>
-          </h3>
-          <p className="text-muted-foreground mt-0.5 text-xs">
-            {projeto.chain ?? "rede não informada"}
-            {" · "}
-            {projeto.contas} {projeto.contas === 1 ? "conta" : "contas"}
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          {/*
+            Inicial em vez de logo: o sistema não guarda imagem de projeto, e
+            uma letra já basta para o olho reencontrar a mesma linha ao rolar
+            uma lista de dezenas. Tinta da marca, não cor sorteada por projeto:
+            cor aqui seria decoração, e verde e vermelho estão reservados a
+            ganho e perda (§14.8).
+          */}
+          <span
+            aria-hidden="true"
+            className="bg-brand/15 text-brand-legivel flex size-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold"
+          >
+            {projeto.nome.trim().charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold tracking-tight">
+              <Link
+                href={`/projetos/${projeto.slug}`}
+                className={cn(
+                  "after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none",
+                  nomeRiscado(projeto.status),
+                )}
+              >
+                {projeto.nome}
+              </Link>
+            </h3>
+            <p className="text-muted-foreground mt-0.5 truncate text-xs">
+              {projeto.chain ?? "rede não informada"}
+              {" · "}
+              {projeto.contas} {projeto.contas === 1 ? "conta" : "contas"}
+            </p>
+          </div>
         </div>
-        {/* z-10 tira os botões de baixo do stretched link do card, senão o
-            clique abriria o projeto em vez de editar. */}
-        <div className="relative z-10 flex shrink-0 items-center gap-1">
+        {/*
+          z-10 tira os botões de baixo do stretched link do card, senão o
+          clique abriria o projeto em vez de editar.
+
+          A moldura é aplicada aqui, e não dentro dos botões, porque eles são
+          compartilhados com tabelas e listas onde a borda viraria ruído. Neste
+          card ela equilibra o avatar do outro lado e faz os dois ícones
+          parecerem alvos de clique, e não decoração do canto.
+        */}
+        <div className="relative z-10 flex shrink-0 items-center gap-1.5 [&_button]:border [&_button]:border-border/70">
           <EditarProjeto projectId={projeto.id} />
           <ConfirmarExclusao
             titulo="Excluir projeto"
@@ -101,7 +215,9 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         <AvisoSaldo alerta={projeto.alerta} className="mt-4" />
       ) : null}
 
-      <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
+      <PainelResultado projeto={projeto} />
+
+      <dl className="mt-4 mb-4 grid grid-cols-2 gap-3 text-sm">
         <div>
           <dt className="text-muted-foreground text-xs">Depositado</dt>
           <dd className="mt-0.5">
@@ -114,13 +230,6 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
             <Money value={projeto.exposicao} tone="muted" />
           </dd>
         </div>
-        <div>
-          <dt className="text-muted-foreground text-xs">Resultado</dt>
-          <dd className="mt-0.5 flex items-baseline gap-1.5">
-            <Money value={projeto.resultado} tone="auto" signed />
-            <Percent value={projeto.roi} className="text-xs" />
-          </dd>
-        </div>
 
         {/*
           Aparece sempre que houver volume, e não só em perps.
@@ -130,7 +239,7 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
           é o que de fato indica se a informação interessa àquele projeto.
         */}
         {projeto.volumeOperado > 0 ? (
-          <div className="col-span-3 border-t border-border pt-3">
+          <div className="col-span-2 border-t border-border pt-3">
             <dt className="text-muted-foreground text-xs">Volume operado</dt>
             <dd className="mt-0.5">
               <Money value={projeto.volumeOperado} tone="muted" />
@@ -139,7 +248,13 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         ) : null}
       </dl>
 
-      <div className="border-border mt-4 flex items-center justify-between gap-3 border-t pt-3 text-xs">
+      {/*
+        `mt-auto` empurra o rodapé para a base. Sem isso, num card mais curto
+        que o vizinho da mesma fileira, "sem pendências" e a data ficavam
+        boiando no meio, com espaço vazio embaixo: a grade iguala a altura dos
+        cards, e só o conteúdo é que não enchia.
+      */}
+      <div className="border-border mt-auto flex items-center justify-between gap-3 border-t pt-3 text-xs">
         {projeto.tarefasAtrasadas > 0 ? (
           <span className="text-negative font-medium">
             {projeto.tarefasAtrasadas} atrasada

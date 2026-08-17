@@ -43,6 +43,11 @@ export const changelog: Versao[] = [
     data: "2026-08-17",
     mudancas: [
       {
+        tipo: "melhoria",
+        texto:
+          "Os cards da aba de projetos foram redesenhados. O nome do projeto ficou maior, porque é por ele que se procura numa lista, e ganhou a inicial ao lado para achar a mesma linha mais rápido ao rolar. O resultado passou a ter bloco próprio, com seta de direção; depositado e exposição ficam logo abaixo.",
+      },
+      {
         tipo: "novidade",
         texto:
           "A aba de projetos ganhou busca por nome. Filtra enquanto você digita, ignora acento e maiúscula, e funciona junto com os filtros de status, categoria e prioridade.",
