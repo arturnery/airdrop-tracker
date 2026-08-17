@@ -2633,7 +2633,7 @@ que digitou para achar o engano, e "nenhum resultado" sozinho esconde justamente
 
 ---
 
-## Marco 42: O card de projeto ganha um número principal
+## Marco 42: O card de projeto ganha um número principal, e o painel perde a tabela
 
 Veio um print de referência: o resultado promovido a painel, avatar com a inicial, métricas
 secundárias abaixo. A estrutura foi adotada; três coisas mudaram no caminho.
@@ -2674,6 +2674,24 @@ resolveu.
 
 Vale o método: ler o componente não mostraria isso, porque o defeito só existe na relação
 entre dois cards vizinhos de alturas diferentes.
+
+### A tabela de projetos saiu da visão geral
+
+Fechado o redesenho, veio a observação de que a lista de projetos no painel não fazia mais
+sentido. Faz sentido remover, e o motivo é o mesmo que vale para número repetido em duas
+telas: **duas apresentações do mesmo dado obrigam a manter as duas em dia, e a pior envelhece
+primeiro.** A tabela do painel não recebeu a busca, nem os filtros, nem o agrupamento por
+status, nem o redesenho dos cards. Ficou sendo a versão pobre de uma tela que melhorou.
+
+O que sobrou no painel responde melhor às perguntas que ele deve responder: os quatro
+indicadores dão o consolidado, "Onde está o capital" mostra a distribuição por projeto
+ordenada por quanto há em cada um, e o aviso de saldo impossível já nomeia quem precisa de
+atenção, com link.
+
+Uma coisa foi preservada de propósito: o convite ao primeiro projeto, agora exibido só quando
+não existe nenhum. Ele morava dentro da tabela removida, e era a única porta de entrada para
+quem chega com a conta vazia. Sem ele, o painel novo seria uma sequência de estados vazios
+sem dizer o que fazer.
 
 ### O defeito anterior que o redesenho encontrou
 

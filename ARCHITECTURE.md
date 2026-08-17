@@ -1137,6 +1137,25 @@ não dinheiro), ganho e perda que se anulam sem depósito (não há o que corrig
 sozinha (não é tipo de caixa). Na base real o diagnóstico apontou 11 de 28 projetos, e
 nenhum dos 17 restantes.
 
+## 14.7-B. A visão geral deixou de repetir a lista de projetos
+
+O painel tinha uma tabela com todos os projetos: nome, status, depositado, exposição,
+resultado e contas. Ela saiu.
+
+O motivo é duplicação. A aba Projetos mostra o mesmo dado melhor, com busca por nome
+(§14.8-B), filtro por status, categoria e prioridade, e o agrupamento por status que a tabela
+não reproduzia. **Duas apresentações do mesmo dado obrigam a manter as duas em dia, e a pior
+envelhece primeiro:** a tabela do painel não acompanhou nenhuma das melhorias da lista.
+
+O que o painel perde é menos do que parece. "Onde está o capital" continua ali e responde a
+pergunta por projeto que a tabela respondia, com a vantagem de ordenar por quanto há em cada
+um. Os quatro cartões de indicador dão o consolidado, e o aviso de saldo impossível
+(§14.9-C) já nomeia os projetos que precisam de atenção, com link direto.
+
+Ficou o convite ao primeiro projeto, exibido só quando não há nenhum. Ele era a única porta
+de entrada para quem chega com a conta vazia: sem ele, o painel novo seria uma sequência de
+estados vazios sem dizer o que fazer.
+
 ## 14.8-A. O card de projeto tem um número principal
 
 Os três valores do card (depositado, exposição, resultado) respondem perguntas diferentes e

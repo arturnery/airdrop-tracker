@@ -10,15 +10,10 @@ import { useDados } from "@/components/data-provider";
 import { NovoLancamento, RegistrarPontos } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
-import { MarcaSaldo, ResumoDeAvisos } from "@/components/aviso-saldo";
+import { ResumoDeAvisos } from "@/components/aviso-saldo";
 import { StatCard } from "@/components/stat-card";
-import {
-  nomeRiscado,
-  ProjectStatusBadge,
-  UrgencyBadge,
-} from "@/components/status-badge";
+import { UrgencyBadge } from "@/components/status-badge";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
-import { cn } from "@/lib/utils";
 import {
   selectAtividade,
   selectCapitalPorProjeto,
@@ -195,81 +190,35 @@ export function DashboardView() {
         </section>
       </div>
 
-      <section aria-labelledby="titulo-projetos" className="mt-10">
-        <div className="mb-4 flex items-baseline justify-between gap-4">
-          <h2 id="titulo-projetos" className="text-lg font-medium">
-            Projetos
-          </h2>
-          <Link
-            href="/projetos"
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex items-center gap-1 rounded-sm text-sm focus-visible:ring-2 focus-visible:outline-none"
-          >
-            Ver todos
-            <ArrowRight className="size-3.5" aria-hidden="true" />
-          </Link>
-        </div>
+      {/*
+        A lista de projetos saiu daqui.
+        
+        Ela repetia, em tabela, o que a aba Projetos mostra melhor: lá os cards
+        têm busca, filtro por status, categoria e prioridade, e o agrupamento
+        que a visão geral não tinha como reproduzir. Duas apresentações do mesmo
+        dado obrigam a manter as duas em dia, e a pior envelhece primeiro.
 
-        {projetos.length === 0 ? (
+        O convite para o primeiro projeto ficou, porque era a única porta de
+        entrada para quem chega com a conta vazia: sem ele, o painel novo seria
+        uma sequência de estados vazios sem dizer o que fazer.
+      */}
+      {projetos.length === 0 ? (
+        <section aria-label="Primeiro projeto" className="mt-10">
           <EmptyState
             title="Nenhum projeto cadastrado"
-            description="Cadastre um projeto para começar a acompanhar capital e tarefas."
+            description="Cadastre o primeiro airdrop que você está farmando para começar a acompanhar capital e tarefas."
+            action={
+              <Link
+                href="/projetos"
+                className="border-border hover:border-brand/50 focus-visible:ring-ring inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              >
+                Ir para Projetos
+                <ArrowRight className="size-3.5" aria-hidden="true" />
+              </Link>
+            }
           />
-        ) : (
-          <div className="border-border overflow-x-auto rounded-lg border">
-            <table className="w-full min-w-160 text-sm">
-              <caption className="sr-only">Resumo financeiro de cada projeto</caption>
-              <thead>
-                <tr className="border-border text-muted-foreground border-b text-left text-xs">
-                  <th scope="col" className="px-4 py-2.5 font-medium">Projeto</th>
-                  <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
-                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Depositado</th>
-                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Exposição</th>
-                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Resultado</th>
-                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Contas</th>
-                </tr>
-              </thead>
-              <tbody className="divide-border divide-y">
-                {projetos.map((projeto) => (
-                  <tr key={projeto.id} className="hover:bg-accent/40 transition-colors">
-                    <th scope="row" className="px-4 py-3 text-left font-normal">
-                      <Link
-                        href={`/projetos/${projeto.slug}`}
-                        className={cn(
-                          "focus-visible:ring-ring rounded-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none",
-                          nomeRiscado(projeto.status),
-                        )}
-                      >
-                        {projeto.nome}
-                      </Link>
-                      {projeto.chain ? (
-                        <span className="text-muted-foreground ml-2 text-xs">
-                          {projeto.chain}
-                        </span>
-                      ) : null}
-                    </th>
-                    <td className="px-4 py-3">
-                      <ProjectStatusBadge status={projeto.status} />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Money value={projeto.capitalDepositado} />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Money value={projeto.exposicao} tone="muted" />
-                      {projeto.alerta ? <MarcaSaldo alerta={projeto.alerta} /> : null}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Money value={projeto.resultado} tone="auto" signed />
-                    </td>
-                    <td className="text-muted-foreground tabular px-4 py-3 text-right">
-                      {projeto.contas}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+        </section>
+      ) : null}
 
       {/* ------------------------------------------------------------- pontos */}
       {programas.length > 0 ? (

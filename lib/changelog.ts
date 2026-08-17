@@ -45,6 +45,11 @@ export const changelog: Versao[] = [
       {
         tipo: "melhoria",
         texto:
+          "A tabela de projetos saiu da visão geral. Ela repetia em tabela o que a aba Projetos mostra melhor, agora com busca e filtros. \"Onde está o capital\" continua no painel e já mostra a distribuição por projeto.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
           "Os cards da aba de projetos foram redesenhados. O nome do projeto ficou maior, porque é por ele que se procura numa lista, e ganhou a inicial ao lado para achar a mesma linha mais rápido ao rolar. O resultado passou a ter bloco próprio, com seta de direção; depositado e exposição ficam logo abaixo.",
       },
       {
