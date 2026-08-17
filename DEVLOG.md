@@ -33,14 +33,19 @@ Antes de propor solução, o diagnóstico do que estava errado no modelo atual:
 
 ### Escolha de stack
 
-O critério não foi apenas técnico. O CV já listava Next.js sem nenhum projeto que
-comprovasse, e o projeto anterior (landing page com captação de leads) usava
-`Vite + Express + tRPC`. Repetir a mesma stack não adicionaria nada ao portfólio.
+O produto pedia renderização no servidor: as telas são cálculo pesado sobre muitos
+lançamentos, e mandar o dataset inteiro para o navegador calcular seria trabalho a mais
+com resultado pior. Isso já apontava para Next.js com App Router.
+
+Pesou também um critério meu, e vale declará-lo em vez de fingir que a decisão foi
+puramente técnica: meu conhecimento de Next.js era teórico, e este era o projeto certo
+para aplicá-lo a fundo. O anterior para o mesmo cliente (landing page com captação de
+leads) usava `Vite + Express + tRPC`, que resolve outro tipo de problema.
 
 **Decisão:** Next.js 16 (App Router) + Drizzle + Neon + Zod + Tailwind/shadcn + Vitest.
-Mantém 80% do que já era dominado: só a camada de servidor muda, de `Express + tRPC`
-para `Server Components + Server Actions`. Risco de execução baixo, skill nova
-comprovada.
+Mantém 80% da stack que já domino: só a camada de servidor muda, de `Express + tRPC` para
+`Server Components + Server Actions`. Risco de execução baixo, e a camada trocada é
+exatamente a que o produto mais usa.
 
 **Descartado:** manter tRPC dentro do Next. tRPC resolve type-safety entre cliente e
 servidor separados; no App Router, Server Actions já são type-safe por construção. As
@@ -2351,7 +2356,7 @@ testes passaram a montar o erro como a aplicação o recebe.
 
 ### O que só o navegador achou
 
-Depois desse susto, escrevi um roteiro de navegador de verdade para os cinco
+Daí veio um roteiro de navegador de verdade para os cinco
 itens: abre o diálogo, confere onde o cursor caiu, muda o modo do formulário,
 envia, e lê a tela depois.
 
@@ -2381,9 +2386,10 @@ afirmação, e não a ausência dela.
 
 ## Marco 39: A funcionalidade que só existia na documentação
 
-Uma ida e volta em menos de um dia, e o erro foi meu do começo ao fim.
+Uma ida e volta em menos de um dia. A correção é de três linhas; o que vale registrar é
+como a premissa errada entrou sem ninguém notar.
 
-### O pedido, e o que eu inferi por conta própria
+### O pedido, e a premissa que entrou sem verificação
 
 O pedido foi curto: *"os resultados de trade viram exposicao, nao quero isso, entra apenas
 no resultado"*. Tirei `trade_pnl` do saldo, ajustei o resultado para receber a parcela por
@@ -2394,12 +2400,13 @@ E escrevi no comentário do código, com todas as letras, a justificativa:
 > o saldo real é conferido na própria corretora e lançado à parte, então somar o resultado
 > do trade fazia a conta contar o mesmo ganho duas vezes
 
-**Ninguém me disse isso.** Eu inferi. E o "lançado à parte" não existe neste sistema: nunca
-houve tabela de saldo conferido. A exposição sempre saiu, e só, da soma dos lançamentos.
+Essa frase não veio do pedido: veio de uma inferência. E o "lançado à parte" não existe
+neste sistema: nunca houve tabela de saldo conferido, a exposição sempre saiu da soma dos
+lançamentos e de mais nada.
 
-De onde veio a inferência: `balance_snapshots` está no `ARCHITECTURE.md` desde o Marco 0,
-numa tabela de "fonte de cada métrica". Foi desenhada e nunca implementada. Um ano depois,
-a documentação do plano foi lida como documentação do sistema.
+A origem da inferência é rastreável: `balance_snapshots` está no `ARCHITECTURE.md` desde o
+Marco 0, numa tabela de "fonte de cada métrica". Foi desenhada e nunca implementada. Tempos
+depois, a documentação do plano foi lida como documentação do sistema.
 
 ### O que aconteceu com os números
 
@@ -2428,30 +2435,30 @@ for lançada.
 Além de reverter, a legenda do campo passou a dizer a regra na hora do lançamento. Reverter
 desfaz o estrago; a frase é o que impede a dúvida de nascer de novo.
 
-### E aí eu errei a descrição da regra que acabara de restaurar
+### A descrição saiu errada, e o código estava certo
 
-Escrevi que a escolha era boa por manter *"uma única forma de tirar dinheiro da exposição, a
-retirada"*, e a primeira legenda dizia *"fica no saldo; ao tirar esse dinheiro da
-plataforma, lance uma retirada"*.
+A primeira redação da regra restaurada dizia *"a única forma de tirar dinheiro da exposição
+é lançar uma retirada"*, e a legenda saiu no mesmo tom: *"fica no saldo; ao tirar esse
+dinheiro da plataforma, lance uma retirada"*.
 
 A correção veio na hora, e é elementar: **se lucro aumenta o saldo, prejuízo tem de
 diminuir.** O dinheiro perdido operando não está mais na plataforma. A retirada é para o
 dinheiro que sai inteiro, não para o que foi perdido.
 
-Fui conferir o código antes de responder, e ele já estava certo: depósito de 100 mais lucro
-de 40 dá 140, mais prejuízo de 40 dá 60. `direcaoDoTipo` devolve `ambos` para `trade_pnl`
-justamente para não forçar sinal, ao contrário de depósito e retirada. **Só a minha
-descrição estava errada.**
+Conferido no código antes de mexer: ele já estava certo. Depósito de 100 mais lucro de 40 dá
+140; mais prejuízo de 40 dá 60. `direcaoDoTipo` devolve `ambos` para `trade_pnl` justamente
+para não forçar sinal, ao contrário de depósito e retirada. **Só a descrição estava errada.**
 
-O que fica: eu tinha acabado de errar por inferir comportamento em vez de verificar, e no
-parágrafo seguinte inferi de novo, agora sobre um código que eu mesmo tinha revertido cinco
-minutos antes. Descrever é uma afirmação sobre o sistema como qualquer outra, e paga a mesma
-conferência.
+A regra que fica é a mesma da seção anterior, aplicada a um caso que parece isento:
+**descrever é afirmar.** Um resumo, um comentário ou um texto de legenda são afirmações
+sobre o sistema e pagam a mesma conferência que a decisão de mudá-lo. Vale ainda mais para a
+legenda, que é o que se lê na hora de decidir o que lançar.
 
 A simetria virou quatro testes, incluindo o desvio para cima ser igual ao desvio para baixo.
 Um deles quase passou sem valer nada: a primeira versão comparava `NaN` com `NaN`, o que o
-`toBe` aceita, porque eu tinha esquecido de pegar o `.value` do objeto de exposição. Foi
-salvo pelos outros dois asserts do mesmo bloco, que exigiam o número exato.
+`toBe` aceita, por faltar o `.value` do objeto de exposição. Foi salvo pelos outros asserts
+do mesmo bloco, que exigiam o número exato: **é a razão de um teste ter mais de uma
+âncora.**
 
 ### O que fica
 
@@ -2582,8 +2589,8 @@ A unidade certa é o par projeto×conta, e não o projeto: é ali que existe "di
 parado". Um projeto com duas contas tem duas posições, e foi justamente isso que o primeiro
 teste que escrevi errou. Eu afirmava que o painel cairia o capital do **projeto** sacado;
 caiu o da **posição**, porque o Vertex das fixtures tem mais de uma conta. O código estava
-certo e a asserção não. Terceira vez na semana que descrevo errado um comportamento que
-acabei de escrever.
+certo e a asserção não, o que é a mesma lição de novo: a descrição de um comportamento se
+confere como qualquer outra afirmação sobre o sistema.
 
 O ROI muda junto, por usar esse número como base: passou de "sem base" (o painel omite o
 percentual quando o capital é zero, porque dividir por zero não dá) para 169,2%, com o

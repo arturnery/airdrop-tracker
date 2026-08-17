@@ -53,7 +53,7 @@ projeto). Tarefa e histórico são conceitos distintos e precisam de tabelas dis
 
 | Camada | Escolha | Versão instalada | Por quê |
 |---|---|---|---|
-| Framework | **Next.js** (App Router) | 16.2.12 | Preenche o Next.js listado no CV sem projeto que comprove. Server Components eliminam a camada de API para leitura. |
+| Framework | **Next.js** (App Router) | 16.2.12 | Server Components eliminam a camada de API para leitura, que é o que este produto mais faz. Conhecimento até aqui teórico, aplicado a fundo neste projeto. |
 | Linguagem | **TypeScript** (strict) | 5.x | Já dominado. |
 | Banco | **PostgreSQL / Neon** (serverless) | driver 1.1 | Já dominado no LVL. Free tier, escala pra comunidade. |
 | ORM | **Drizzle** | 0.45 | Já dominado. Type-safe, SQL explícito: bom pra agregações. |
@@ -75,11 +75,13 @@ Notas de versão relevantes para a implementação:
 
 **O que muda em relação ao LVL:** só a camada de servidor. Sai `Express + tRPC + Vite`,
 entra `Server Components + Server Actions`. Drizzle, Neon, Zod, Tailwind, shadcn, Vitest e
-Vercel permanecem: o risco de execução é baixo e o ganho de skill novo é alto.
+Vercel permanecem: o risco de execução é baixo, e a única camada trocada é justamente a que
+este projeto exercita do começo ao fim.
 
 **Por que não manter tRPC:** tRPC resolve type-safety entre cliente e servidor separados.
 No App Router, Server Components e Server Actions já são type-safe por construção: as duas
-camadas se sobreporiam. tRPC já está comprovado no LVL, então nada se perde no CV.
+camadas se sobreporiam, e manter as duas seria pagar complexidade por uma garantia que já
+existe.
 
 ---
 

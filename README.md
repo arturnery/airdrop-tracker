@@ -540,9 +540,10 @@ Sete testes agora fixam esse comportamento.
 **Escolha de tecnologia com critério declarado.** Next.js atendia ao que o projeto pedia:
 renderização no servidor para telas com muito cálculo, Server Actions em vez de uma API
 separada para um time de uma pessoa, e deploy simples na Vercel. Entre as opções que
-resolviam isso igualmente bem, o desempate foi meu: era a que eu tinha no currículo sem
-nenhum projeto que comprovasse. Registro isso porque decisão técnica raramente tem um único
-critério, e fingir que tem é o que produz justificativa inventada depois do fato.
+resolviam isso igualmente bem, o desempate foi meu: meu conhecimento de App Router e Server
+Components era teórico, e este era o projeto certo para aplicá-lo a fundo. Registro isso
+porque decisão técnica raramente tem um único critério, e fingir que tem é o que produz
+justificativa inventada depois do fato.
 
 ## Documentação
 
