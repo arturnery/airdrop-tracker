@@ -2603,6 +2603,29 @@ avisar quando os cruzasse.
 
 ---
 
+## Marco 41: Busca na lista de projetos
+
+Pedido simples, e com três decisões que valem registro.
+
+**Filtra ao digitar.** O pedido falava em "um botão para pesquisar", e um botão aqui só
+somaria um passo: a lista é local, o resultado muda a cada letra, e não há requisição a
+economizar. O botão que ficou é o de limpar, que aparece só quando há o que limpar.
+
+**Reusa o padrão que já existia.** A tela de membros já tinha busca, com `Input` e rótulo
+oculto. Inventar um segundo jeito de buscar no mesmo produto custa mais do que parece: duas
+aparências, dois comportamentos, e a próxima pessoa escolhendo qual copiar.
+
+**A normalização precisou ser função nova, e por pouco não foi.** `slugify` já removia acento
+e caixa, e reusá-la era tentador. Ela também troca espaço por hífen, porque produz
+identificador de URL: com ela, procurar "prisma dex" não acharia "Prisma DEX". `normalizar`
+tira só o que atrapalha a comparação e deixa o espaço do meio. O teste que fixa isso compara
+as duas lado a lado, para a tentação não voltar.
+
+O vazio da busca repete o termo procurado. Quem digitou um nome quase certo precisa reler o
+que digitou para achar o engano, e "nenhum resultado" sozinho esconde justamente isso.
+
+---
+
 ## Estado atual
 
 | | |
@@ -2613,7 +2636,7 @@ avisar quando os cruzasse.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 282, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
+| Testes | 288, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

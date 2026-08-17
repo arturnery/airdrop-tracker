@@ -77,3 +77,22 @@ export function uniqueSlug(nome: string, existentes: string[]): string {
 export function novoId(prefixo: string): string {
   return `${prefixo}-${Math.random().toString(36).slice(2, 10)}`;
 }
+
+/**
+ * Texto pronto para comparação de busca: sem acento, sem caixa, sem sobra.
+ *
+ * Separado de `slugify` porque as duas normalizam para fins diferentes.
+ * `slugify` produz um identificador de URL e por isso troca espaço por hífen e
+ * descarta tudo que não é letra ou número; usá-la na busca faria "Prisma DEX"
+ * virar "prisma-dex", e aí digitar "prisma dex" não acharia nada.
+ *
+ * Aqui só se remove o que atrapalha a comparação. Digitar o acento certo para
+ * achar o que já está na tela é exatamente o atrito que uma busca deve tirar.
+ */
+export function normalizar(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}

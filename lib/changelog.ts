@@ -39,6 +39,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.5",
+    data: "2026-08-17",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "A aba de projetos ganhou busca por nome. Filtra enquanto você digita, ignora acento e maiúscula, e funciona junto com os filtros de status, categoria e prioridade.",
+      },
+    ],
+  },
+  {
     versao: "1.4",
     data: "2026-08-14",
     mudancas: [

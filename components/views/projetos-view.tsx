@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Search } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { AvisoSaldo } from "@/components/aviso-saldo";
@@ -21,7 +22,9 @@ import {
   ProjectStatusBadge,
 } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { formatDateShort, relativeLabel } from "@/lib/dates";
+import { normalizar } from "@/lib/dataset";
 import { cn } from "@/lib/utils";
 import {
   contarDependenciasProjeto,
@@ -168,14 +171,23 @@ export function ProjetosView() {
   const [categoria, setCategoria] = useState<ProjectCategory | null>(null);
   const [prioridade, setPrioridade] = useState<string | null>(null);
   const [status, setStatus] = useState<ProjectStatus | null>(null);
+  const [busca, setBusca] = useState("");
 
   const todos = selectProjects(dataset, hoje);
+
+  /*
+   * Busca sem acento e sem caixa: "solstice" acha "Solstïce", e "unit" acha
+   * "Unit". Digitar o acento certo para achar o que se está olhando na tela é
+   * exatamente o atrito que uma busca deveria remover.
+   */
+  const termo = normalizar(busca);
 
   const filtrados = todos.filter(
     (p) =>
       (categoria === null || p.categoria === categoria) &&
       (prioridade === null || String(p.prioridade) === prioridade) &&
-      (status === null || p.status === status),
+      (status === null || p.status === status) &&
+      (termo === "" || normalizar(p.nome).includes(termo)),
   );
 
   // Contagens vêm do conjunto completo: um filtro que zera a própria contagem
@@ -197,7 +209,8 @@ export function ProjetosView() {
     }))
     .filter((grupo) => grupo.projetos.length > 0);
 
-  const temFiltro = categoria !== null || prioridade !== null || status !== null;
+  const temFiltro =
+    categoria !== null || prioridade !== null || status !== null || termo !== "";
 
   return (
     <>
@@ -209,6 +222,42 @@ export function ProjetosView() {
 
       {todos.length > 0 ? (
         <div className="border-border mb-8 flex flex-col gap-3 rounded-lg border p-4">
+          {/*
+            A busca vem antes dos chips porque é o caminho mais curto quando se
+            sabe o nome: os filtros servem para explorar, e a busca para ir
+            direto. Filtra ao digitar, sem botão de confirmar, porque com o
+            resultado mudando a cada letra o botão só adicionaria um passo.
+          */}
+          <div className="flex items-center gap-2">
+            <label htmlFor="busca-projeto" className="text-muted-foreground text-xs">
+              Buscar
+            </label>
+            <div className="relative max-w-xs flex-1">
+              <Search
+                className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+                aria-hidden="true"
+              />
+              <Input
+                id="busca-projeto"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+                placeholder="Nome do projeto"
+                className="h-8 pl-8 text-sm"
+                autoComplete="off"
+              />
+            </div>
+            {busca ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setBusca("")}
+              >
+                Limpar
+              </Button>
+            ) : null}
+          </div>
+
           {/*
             Primeiro da lista porque é o eixo em que a tela já se organiza: os
             grupos são os status. Filtrar por um deles não muda a estrutura,
@@ -276,6 +325,7 @@ export function ProjetosView() {
                   setCategoria(null);
                   setPrioridade(null);
                   setStatus(null);
+                  setBusca("");
                 }}
               >
                 Limpar filtros
@@ -291,9 +341,22 @@ export function ProjetosView() {
           description="Cadastre o primeiro airdrop que você está farmando para começar a acompanhar capital e tarefas."
         />
       ) : grupos.length === 0 ? (
+        /*
+         * O vazio diz o que foi procurado, e não só que não achou. Quem digitou
+         * um nome quase certo precisa ver o que digitou para perceber o engano,
+         * e o botão devolve a lista inteira sem obrigar a apagar campo a campo.
+         */
         <EmptyState
-          title="Nenhum projeto com esses filtros"
-          description="Ajuste a categoria ou a prioridade para ver outros projetos."
+          title={
+            termo
+              ? `Nenhum projeto com "${busca.trim()}"`
+              : "Nenhum projeto com esses filtros"
+          }
+          description={
+            termo
+              ? "Confira a escrita, ou limpe os filtros para ver todos de novo."
+              : "Ajuste o status, a categoria ou a prioridade para ver outros projetos."
+          }
           action={
             <Button
               variant="outline"
@@ -301,6 +364,8 @@ export function ProjetosView() {
               onClick={() => {
                 setCategoria(null);
                 setPrioridade(null);
+                setStatus(null);
+                setBusca("");
               }}
             >
               Limpar filtros

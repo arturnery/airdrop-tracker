@@ -1135,6 +1135,22 @@ não dinheiro), ganho e perda que se anulam sem depósito (não há o que corrig
 sozinha (não é tipo de caixa). Na base real o diagnóstico apontou 11 de 28 projetos, e
 nenhum dos 17 restantes.
 
+## 14.8-B. Busca por nome na lista de projetos
+
+Filtra ao digitar, sem botão de confirmar: com o resultado mudando a cada letra, o botão só
+acrescentaria um passo. Fica acima dos chips porque responde a outra necessidade: os filtros
+servem para explorar, a busca para ir direto quando já se sabe o nome.
+
+`normalizar` (em `lib/dataset`) tira acento, caixa e espaço das pontas. Existe separada de
+`slugify`, e a distinção é o que faz a busca funcionar: `slugify` produz identificador de URL
+e troca espaço por hífen, então procurar "prisma dex" não acharia "Prisma DEX". Aqui só se
+remove o que atrapalha a comparação; o espaço do meio fica.
+
+O vazio da busca diz **o que foi procurado**, e não apenas que não achou: quem digitou um
+nome quase certo precisa reler o que digitou para ver o engano. O botão de limpar zera busca
+e chips de uma vez, porque sair de um vazio apagando campo a campo é o pior momento para
+exigir precisão.
+
 ## 14.9-E. O corte em zero vale por posição, não sobre o total
 
 `capitalDepositado` nunca é negativo: sacar mais do que se pôs num projeto quer dizer que
