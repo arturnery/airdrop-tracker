@@ -2711,6 +2711,74 @@ que testar o formato errado.
 
 ---
 
+## Marco 43: A base do ROI que zerava quando dava certo
+
+O relato começou como pedido de interface, e o problema estava no modelo: *"não vejo sentido
+em deixar o capital depositado... na Lighter, pelo fato de eu ter tirado mais que depositei,
+o depósito fica 0, assim não vai fazer sentido nunca"*.
+
+Ele estava certo, e a medição mostrou o tamanho. **Nove projetos exibiam "depositado
+$0,00", e eram exatamente os nove que deram lucro:**
+
+```
+Huma Finance  aportou  $10   sacou    $50   →  base $0   (lucro $40)
+Infrared      aportou $100   sacou   $300   →  base $0   (lucro $200)
+Lighter       aportou $220   sacou $7.506   →  base $0   (lucro $7.406)
+```
+
+A causa é que **`retirada` mistura devolver o principal com sacar o lucro.** Subtrair todos
+os saques dos depósitos trata lucro sacado como principal voltando, então a métrica some
+quando o projeto paga. Uma medida que desaparece no sucesso está medindo a coisa errada.
+
+### A primeira proposta estava furada, e ele viu
+
+Ofereci como base a soma dos depósitos, e o retorno derrubou a ideia:
+
+> imagina, coloquei $100 e tirei $100, ai depois de 1 min já voltei com os mesmos $100, aí
+> fica $200 depositado porém é o mesmo capital
+
+Exato. Uma base infla com reciclagem, a outra zera com o lucro sacado. Nenhuma das duas
+serve, e as duas pareciam as únicas opções.
+
+### O que resolve
+
+`capitalNoPico`: **o máximo do dinheiro próprio que esteve empregado ao mesmo tempo.**
+Percorre depósitos e saques em ordem cronológica, mantém o saldo de cada posição com piso em
+zero, soma as posições a cada passo e guarda o maior total.
+
+| situação | soma | pico |
+|---|---|---|
+| pôs 100, sacou, recolocou os mesmos 100 | 200 | **100** |
+| pôs 220, sacou 7.506 de lucro | 220 | **220** |
+| pôs 100 no A, tirou, pôs 100 no B | 200 | **100** |
+
+Resolve os dois casos, incluindo o dele entre projetos diferentes, que é o mais difícil de
+enxergar.
+
+### Duas armadilhas no caminho
+
+**A primeira versão do cálculo estava errada, e eu peguei antes de propor.** Eu aplicava o
+piso em zero no total geral, e um saque de lucro grande (os 7.506 do Lighter) zerava a base
+da carteira inteira mesmo com dinheiro parado em outros projetos. O piso é **por posição**, e
+só depois se soma: é literalmente o item 34 do catálogo, cometido de novo três dias depois de
+registrá-lo. A diferença é que desta vez a conta foi conferida antes de virar proposta.
+
+**Pico não soma entre recortes.** O pico da carteira não é a soma dos picos por projeto,
+porque acontecem em momentos diferentes; a soma é só o limite superior. Isso colide com a
+regra que vinha valendo, de que cartão e tabela têm de bater. A saída não foi forçar a
+igualdade, foi **não pôr os dois lado a lado**: a tela de contas passou a totalizar por
+exposição, que é retrato do agora e soma sem ressalva, e o painel exibe o pico sem tabela ao
+lado. Um teste registra a relação verdadeira: o pico da carteira nunca passa da soma.
+
+### O que ficou
+
+`MovementRow` passou a exigir `occurredAt`. O pico depende da ordem em que as coisas
+aconteceram, e um lançamento sem data não tem lugar nessa ordem. As duas funções da métrica
+antiga foram removidas, com os testes delas: métrica substituída não fica no código esperando
+alguém chamar por engano.
+
+---
+
 ## Estado atual
 
 | | |
@@ -2721,7 +2789,7 @@ que testar o formato errado.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 288, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
+| Testes | 291, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

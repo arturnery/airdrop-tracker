@@ -4,7 +4,7 @@ import { daysBetween, somarDias, urgencyOf } from "./dates";
 import {
   exposureForPair,
   netFlowByPair,
-  capitalDepositadoPorPosicao,
+  capitalNoPico,
   pairKey,
   priceMap,
   resultadoLiquido,
@@ -221,7 +221,7 @@ export function selectCapitalPorProjeto(ds: Dataset): CapitalPorProjeto[] {
     .map((projeto) => ({
       slug: projeto.slug,
       nome: projeto.name,
-      capitalDepositado: capitalDepositadoPorPosicao(
+      capitalNoPico: capitalNoPico(
         ds.transactions.filter((t) => t.projectId === projeto.id),
       ),
       exposicao: exposicoes.get(projeto.id) ?? ZERO,
@@ -264,9 +264,7 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         airdrops: airdropsDe(ds, (c) => c.projectId === projeto.id),
         taxas: sumOfType(doProjetoMov, "fee_gas"),
       });
-      // Por posição: um projeto com duas contas tem duas, e sacar demais numa
-      // não pode descontar o capital que está parado na outra.
-      const depositado = capitalDepositadoPorPosicao(doProjetoMov);
+      const pico = capitalNoPico(doProjetoMov);
 
       return {
         id: projeto.id,
@@ -277,11 +275,11 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         chain: projeto.chain,
         prioridade: projeto.priority,
         aportado,
-        capitalDepositado: depositado,
+        capitalNoPico: pico,
         volumeOperado: sumOfType(doProjetoMov, "volume_traded"),
         exposicao,
         resultado,
-        roi: percentOf(resultado, depositado),
+        roi: percentOf(resultado, pico),
         contas: ds.projectAccounts.filter((p) => p.projectId === projeto.id).length,
         tarefasPendentes: doProjeto.length,
         tarefasAtrasadas: doProjeto.filter(
@@ -473,7 +471,7 @@ export function selectProjectBySlug(
     }),
     prioridade: projeto.priority,
     aportado: financeiro.aportado,
-    capitalDepositado: financeiro.capitalDepositado,
+    capitalNoPico: financeiro.capitalNoPico,
     volumeOperado: sumOfType(movimentos, "volume_traded"),
     exposicao: financeiro.exposicao,
     resultado: financeiro.resultado,
@@ -588,7 +586,7 @@ export function selectAccounts(ds: Dataset): AccountSummary[] {
         ativa: conta.isActive,
         projetos: ds.projectAccounts.filter((p) => p.accountId === conta.id).length,
         aportado,
-        capitalDepositado: capitalDepositadoPorPosicao(daConta),
+        capitalNoPico: capitalNoPico(daConta),
         exposicao,
         resultado: resultadoLiquido({
           exposicao,

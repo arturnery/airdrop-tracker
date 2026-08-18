@@ -16,6 +16,9 @@ import type { FinancialSummary } from "./types";
 export type MovementRow = {
   projectId: string;
   accountId: string;
+  /** Obrigatória: o capital no pico depende da ordem em que as coisas
+      aconteceram, e um lançamento sem data não tem lugar nessa ordem. */
+  occurredAt: string;
   type: string;
   amountUsd: string;
   tokenSymbol?: string | null;
@@ -175,70 +178,45 @@ export function efeitoDoTipo(type: string): string {
 // ----------------------------------------------------------- resultado
 
 /**
- * Capital que ainda é dinheiro próprio dentro da posição: depósitos menos
- * retiradas.
+ * Maior valor do próprio bolso que esteve comprometido ao mesmo tempo.
  *
- * Cuidado com o nome: **não** é o total já depositado na história do projeto.
- * Esse outro número existe e se chama `aportado`, usado só como base do ROI. O
- * que a tela mostra é este, o que está depositado **agora**.
+ * É a base do ROI, e existe porque as duas alternativas óbvias falham:
  *
- * Substituiu o total depositado histórico, que continuava exibindo "$500"
- * mesmo depois de a pessoa ter sacado tudo e não ter mais nada no projeto.
- * Em farming de airdrop o capital é de giro, não é consumido: entra, trabalha e
- * volta. O que interessa é quanto ainda está lá.
+ * - **Soma dos depósitos** infla com reciclagem. Pôr US$ 100, sacar, e recolocar
+ *   os mesmos US$ 100 conta US$ 200, quando nunca houve mais de US$ 100 empregado.
+ *   Vale entre projetos também: tirar de um para pôr no outro contaria duas vezes.
+ * - **Depósitos menos saques** zera justamente onde deu certo. Sacar é sacar
+ *   principal **e** lucro juntos, então quem pôs US$ 220 e tirou US$ 7.506 fica
+ *   com base zero, e o ROI desaparece no projeto que mais rendeu.
  *
- * A diferença entre este número e a exposição ganha significado próprio: é o
- * ganho ou a perda acumulados na posição. Empregar 14 e ter 8 de exposição diz,
- * sozinho, que 6 se perderam.
+ * O pico não tem nenhum dos dois problemas: ele responde "qual foi o máximo do
+ * meu dinheiro que esteve em risco de uma vez", que é a base honesta para
+ * comparar com o que se ganhou.
  *
- * Nunca negativo. Retirar mais do que se depositou significa que o lucro já foi
- * sacado e nada mais é capital próprio parado ali: isso é zero depositado, e o
- * ganho aparece no resultado, que é onde ele pertence.
- *
- * **O corte em zero vale por posição, nunca sobre um total já somado.** É a
- * diferença entre `max(0, Σ)` e `Σ max(0, …)`, e ela não é sutil: um projeto
- * onde entraram US$ 40 e saíram US$ 7.380 tem excesso de US$ 7.340, e esse
- * excesso, aplicado ao total geral, apagava o capital que estava comprometido em
- * todos os outros projetos. O painel exibia US$ 0 de capital depositado enquanto
- * a tabela logo abaixo somava US$ 3.486. Use `capitalDepositadoPorPosicao` para
- * qualquer recorte que junte mais de uma posição.
+ * O piso em zero é **por posição**, e só então se soma (§14.9-E): sacar o lucro
+ * de um projeto não pode virar crédito que apaga o capital parado noutro.
  */
-export function capitalDepositado(params: {
-  aportado: Cents;
-  retirado: Cents;
-}): Cents {
-  const liquido = params.aportado - Math.abs(params.retirado);
-  return cents(Math.max(0, liquido));
-}
+export function capitalNoPico(movements: MovementRow[]): Cents {
+  const ordenados = movements
+    .filter((m) => m.type === "deposit" || m.type === "withdrawal")
+    .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
 
-/**
- * Capital depositado de um conjunto de posições, cortando cada uma em zero.
- *
- * A posição é o par projeto×conta: é ali que existe "dinheiro meu parado", e é
- * ali que sacar mais do que se pôs significa que não sobrou capital próprio. Um
- * total só pode ser a soma dessas partes, senão o excesso de uma vira desconto
- * na outra, o que não acontece na vida real: sacar demais do projeto A não
- * devolve o dinheiro que está no projeto B.
- */
-export function capitalDepositadoPorPosicao(movements: MovementRow[]): Cents {
-  const porPar = new Map<PairKey, { aportado: number; retirado: number }>();
+  const porPosicao = new Map<PairKey, number>();
+  let maior = 0;
 
-  for (const mov of movements) {
-    if (mov.type !== "deposit" && mov.type !== "withdrawal") continue;
+  for (const mov of ordenados) {
     const chave = pairKey(mov.projectId, mov.accountId);
-    const atual = porPar.get(chave) ?? { aportado: 0, retirado: 0 };
-    const valor = fromDbNumeric(mov.amountUsd);
-    if (mov.type === "deposit") atual.aportado += valor;
-    else atual.retirado += valor;
-    porPar.set(chave, atual);
+    const atual = (porPosicao.get(chave) ?? 0) + fromDbNumeric(mov.amountUsd);
+    porPosicao.set(chave, Math.max(0, atual));
+
+    let soma = 0;
+    for (const valor of porPosicao.values()) soma += valor;
+    if (soma > maior) maior = soma;
   }
 
-  let total = 0;
-  for (const posicao of porPar.values()) {
-    total += Math.max(0, posicao.aportado - Math.abs(posicao.retirado));
-  }
-  return cents(total);
+  return cents(maior);
 }
+
 
 /**
  * Resultado de um recorte qualquer: geral, projeto, conta ou par.
@@ -435,14 +413,11 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
     taxas,
   });
 
-  /* Por posição, e não sobre os totais já somados: ver
-     `capitalDepositadoPorPosicao`. Com o corte aplicado ao total, um projeto de
-     onde se sacou muito mais do que entrou zerava o painel inteiro. */
-  const depositado = capitalDepositadoPorPosicao(movements);
+  const pico = capitalNoPico(movements);
 
   return {
     aportado,
-    capitalDepositado: depositado,
+    capitalNoPico: pico,
     retirado,
     taxas,
     pnlTrades,
@@ -459,7 +434,7 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
      * Fica nulo quando não há nada depositado, e a tela mostra só o resultado
      * em dólar: sem capital parado não existe retorno sobre capital.
      */
-    roi: percentOf(resultado, depositado),
+    roi: percentOf(resultado, pico),
     tokensSemCotacao: [...semCotacao],
   };
 }

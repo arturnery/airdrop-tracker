@@ -43,6 +43,11 @@ export const changelog: Versao[] = [
     data: "2026-08-17",
     mudancas: [
       {
+        tipo: "correcao",
+        texto:
+          "O \"capital depositado\" saiu das telas. Ele descontava os saques do que foi depositado, e como sacar leva principal e lucro juntos, zerava justamente nos projetos que deram certo: nove dos seus apareciam com $0. O ROI passou a ser calculado sobre o capital no pico, que é o máximo do seu dinheiro empregado ao mesmo tempo. Reciclar os mesmos $100 não conta $200, e sacar tudo não apaga mais o percentual.",
+      },
+      {
         tipo: "melhoria",
         texto:
           "A tabela de projetos saiu da visão geral. Ela repetia em tabela o que a aba Projetos mostra melhor, agora com busca e filtros. \"Onde está o capital\" continua no painel e já mostra a distribuição por projeto.",

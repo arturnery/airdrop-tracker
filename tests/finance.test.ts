@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   aplicarSinalDoTipo,
-  capitalDepositado,
   exposureForPair,
   isCashType,
   resultadoLiquido,
@@ -17,15 +16,22 @@ import {
 } from "@/lib/finance";
 import { cents, toDbNumeric } from "@/lib/money";
 
+/**
+ * A data é opcional aqui e default fixo: a maioria dos testes deste arquivo
+ * não depende de ordem cronológica. Quem depende (capital no pico) informa a
+ * data de propósito, e é justamente esse o ponto do teste.
+ */
 const mov = (
   projectId: string,
   accountId: string,
   type: string,
   amountUsd: string,
   token?: { symbol: string; amount: string },
+  occurredAt = "2026-07-01",
 ): MovementRow => ({
   projectId,
   accountId,
+  occurredAt,
   type,
   amountUsd,
   tokenSymbol: token?.symbol ?? null,
@@ -368,48 +374,7 @@ describe("resultadoLiquido", () => {
   });
 });
 
-describe("capitalDepositado", () => {
-  /*
-   * O caso que motivou a mudança: depositar 500, usar o protocolo por um mês e
-   * sacar tudo. O total depositado seguiria exibindo 500 para sempre, como se
-   * ainda houvesse dinheiro parado ali.
-   */
-  it("sacar tudo zera o capital depositado", () => {
-    expect(
-      capitalDepositado({ aportado: cents(50000), retirado: cents(-50000) }),
-    ).toBe(0);
-  });
-
-  it("posição aberta mostra o que ainda é dinheiro próprio", () => {
-    expect(
-      capitalDepositado({ aportado: cents(4000), retirado: cents(-2600) }),
-    ).toBe(1400);
-  });
-
-  it("sem retirada, é o próprio depositado", () => {
-    expect(capitalDepositado({ aportado: cents(2000), retirado: cents(0) })).toBe(
-      2000,
-    );
-  });
-
-  /*
-   * Sacar mais do que se depositou significa lucro já realizado. Isso é zero
-   * capital próprio parado, não capital negativo: o ganho pertence ao resultado.
-   */
-  it("retirar mais do que depositou não vira capital negativo", () => {
-    expect(
-      capitalDepositado({ aportado: cents(10000), retirado: cents(-15000) }),
-    ).toBe(0);
-  });
-
-  it("o sinal gravado na retirada não altera o resultado", () => {
-    expect(
-      capitalDepositado({ aportado: cents(4000), retirado: cents(2600) }),
-    ).toBe(capitalDepositado({ aportado: cents(4000), retirado: cents(-2600) }));
-  });
-});
-
-describe("ROI sobre o capital depositado", () => {
+describe("ROI sobre o capital no pico", () => {
   const resumo = (movs: MovementRow[]) =>
     summarizeFinancials({
       movements: movs,
@@ -417,54 +382,77 @@ describe("ROI sobre o capital depositado", () => {
       pairs: [{ projectId: "p1", accountId: "c1" }],
     });
 
-  it("posição aberta: percentual sobre o que ainda está lá", () => {
+  const em = (dia: string) => dia;
+
+  it("posição aberta: percentual sobre o que foi empregado", () => {
     // Depositou 100, rendeu 20 e não sacou nada.
     const r = resumo([
       mov("p1", "c1", "deposit", "100.00"),
       mov("p1", "c1", "yield", "20.00"),
     ]);
-    expect(r.capitalDepositado).toBe(10000);
+    expect(r.capitalNoPico).toBe(10000);
     expect(r.resultado).toBe(2000);
     expect(r.roi).toBe(20);
   });
 
   /*
-   * O caso que motivou a mudança: sacar tudo e esperar o airdrop. Não há
-   * capital parado, então não existe retorno sobre capital, e a tela mostra
-   * apenas o resultado em dólar.
+   * O caso que motivou trocar a base do ROI.
+   *
+   * A base anterior era "depósitos menos saques, com piso em zero", e sacar é
+   * sacar principal **e** lucro juntos. Quem pôs 50, ganhou 10 e sacou os 60
+   * ficava com base zero e **sem ROI nenhum**, justamente onde deu certo. Com o
+   * pico, a base continua sendo os 50 que estiveram empregados.
    */
-  it("sacou tudo: sem percentual, mas com resultado", () => {
-    const r = resumo([
-      mov("p1", "c1", "deposit", "50.00"),
-      mov("p1", "c1", "withdrawal", "-30.00"),
-      mov("p1", "c1", "withdrawal", "-20.00"),
-    ]);
-    expect(r.capitalDepositado).toBe(0);
-    expect(r.resultado).toBe(0);
-    expect(r.roi).toBeNull();
-  });
-
-  /*
-   * Depositar 50, render 10 e sacar os 60 é lucro de 10 com a posição zerada.
-   * Se o percentual saísse do líquido negativo (50 - 60 = -10), daria -100%:
-   * exatamente o oposto do que aconteceu. Por isso o capital nunca é negativo
-   * e o ROI não existe aqui.
-   */
-  it("sacar mais do que depositou não vira ROI negativo", () => {
+  it("sacar tudo, com lucro, não apaga mais o percentual", () => {
     const r = resumo([
       mov("p1", "c1", "deposit", "50.00"),
       mov("p1", "c1", "yield", "10.00"),
       mov("p1", "c1", "withdrawal", "-60.00"),
     ]);
     expect(r.resultado).toBe(1000);
-    expect(r.capitalDepositado).toBe(0);
-    expect(r.roi).toBeNull();
+    expect(r.capitalNoPico).toBe(5000);
+    expect(r.roi).toBe(20);
   });
 
   /*
-   * O mesmo saque sem o rendimento lançado. O razão só sabe o que foi
-   * registrado: sem o lançamento de onde vieram os 10 a mais, não há ganho a
-   * reconhecer, e a exposição fica negativa denunciando a inconsistência.
+   * A outra armadilha, e a que motivou o pico em vez da simples soma dos
+   * depósitos: reciclar o mesmo dinheiro contaria duas vezes.
+   */
+  it("recolocar o mesmo dinheiro não dobra a base", () => {
+    const r = resumo([
+      mov("p1", "c1", "deposit", "100.00", undefined, em("2026-07-01")),
+      mov("p1", "c1", "withdrawal", "-100.00", undefined, em("2026-07-02")),
+      mov("p1", "c1", "deposit", "100.00", undefined, em("2026-07-03")),
+    ]);
+    // A soma dos depósitos daria 200, e nunca houve mais de 100 empregado.
+    expect(r.capitalNoPico).toBe(10000);
+  });
+
+  it("dois depósitos que convivem somam no pico", () => {
+    const r = resumo([
+      mov("p1", "c1", "deposit", "100.00", undefined, em("2026-07-01")),
+      mov("p1", "c1", "deposit", "100.00", undefined, em("2026-07-02")),
+    ]);
+    // Aqui os 200 estiveram empregados ao mesmo tempo: o pico é 200.
+    expect(r.capitalNoPico).toBe(20000);
+  });
+
+  it("aporte pequeno com ganho grande dá percentual alto, e é verdade", () => {
+    // O caso real: 220 empregados devolveram 7.406 de lucro.
+    const r = resumo([
+      mov("p1", "c1", "deposit", "220.00", undefined, em("2026-07-01")),
+      mov("p1", "c1", "trade_pnl", "7406.00", undefined, em("2026-07-02")),
+      mov("p1", "c1", "withdrawal", "-7626.00", undefined, em("2026-07-03")),
+    ]);
+    expect(r.capitalNoPico).toBe(22000);
+    expect(r.resultado).toBe(740600);
+    expect(r.roi).toBe(3366.4);
+  });
+
+  /*
+   * O saque sem o ganho lançado. O razão só sabe o que foi registrado: sem o
+   * lançamento de onde vieram os 10 a mais, não há ganho a reconhecer, e a
+   * exposição fica negativa denunciando a inconsistência.
    */
   it("saque maior que o razão sem ganho lançado não inventa lucro", () => {
     const r = resumo([
@@ -476,15 +464,20 @@ describe("ROI sobre o capital depositado", () => {
   });
 
   it("perda com posição ainda aberta dá percentual negativo", () => {
-    // Depositou 50, retirou 40, perdeu 10 em trade: sobra 0 de exposição.
     const r = resumo([
-      mov("p1", "c1", "deposit", "50.00"),
-      mov("p1", "c1", "withdrawal", "-40.00"),
-      mov("p1", "c1", "trade_pnl", "-10.00"),
+      mov("p1", "c1", "deposit", "50.00", undefined, em("2026-07-01")),
+      mov("p1", "c1", "withdrawal", "-40.00", undefined, em("2026-07-02")),
+      mov("p1", "c1", "trade_pnl", "-10.00", undefined, em("2026-07-03")),
     ]);
-    expect(r.capitalDepositado).toBe(1000);
+    expect(r.capitalNoPico).toBe(5000);
     expect(r.resultado).toBe(-1000);
-    expect(r.roi).toBe(-100);
+    expect(r.roi).toBe(-20);
+  });
+
+  it("sem depósito nenhum não há base, e o ROI não existe", () => {
+    const r = resumo([mov("p1", "c1", "trade_pnl", "40.00")]);
+    expect(r.capitalNoPico).toBe(0);
+    expect(r.roi).toBeNull();
   });
 });
 

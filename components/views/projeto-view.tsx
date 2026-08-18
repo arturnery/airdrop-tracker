@@ -177,16 +177,6 @@ export function ProjetoView({ slug }: { slug: string }) {
         )}
       >
         <StatCard
-          label="Capital depositado"
-          accent="primary"
-          value={<Money value={projeto.capitalDepositado} />}
-          hint={
-            projeto.capitalDepositado === 0 && projeto.aportado > 0
-              ? "tudo retirado"
-              : "depósitos menos retiradas"
-          }
-        />
-        <StatCard
           label="Exposição"
           accent="idle"
           value={<Money value={projeto.exposicao} />}
@@ -198,19 +188,16 @@ export function ProjetoView({ slug }: { slug: string }) {
           value={<Money value={projeto.resultado} tone="auto" signed />}
           hint={
             /*
-             * Sem capital depositado não há percentual: o valor em dólar acima
-             * já diz se foi ganho ou perda, e inventar um ROI ali seria pior
-             * que omiti-lo.
+             * A base do ROI é o capital no pico: o máximo do dinheiro próprio
+             * que esteve empregado de uma vez. Dizê-la junto do percentual
+             * evita a pergunta "por cima de quanto?", e é o número que explica
+             * um ROI alto num projeto de aporte pequeno.
              */
-            projeto.roi === null ? (
-              projeto.aportado > 0 ? (
-                "posição encerrada"
-              ) : null
-            ) : (
+            projeto.roi === null ? null : (
               <span className="inline-flex items-center gap-1.5">
                 ROI <Percent value={projeto.roi} />
                 <span className="text-muted-foreground">
-                  sobre <Money value={projeto.capitalDepositado} />
+                  sobre <Money value={projeto.capitalNoPico} /> no pico
                 </span>
               </span>
             )

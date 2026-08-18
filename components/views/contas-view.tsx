@@ -22,9 +22,15 @@ export function ContasView() {
   const { dataset, hoje, acoes } = useDados();
   const contas = selectAccounts(dataset);
 
-  const totalDepositado = cents(
-    contas.reduce((acc, c) => acc + c.capitalDepositado, 0),
-  );
+  /*
+   * O total é a exposição, e não o capital no pico.
+   *
+   * Pico de contas diferentes não soma: o de uma foi em março e o da outra em
+   * agosto, e a carteira nunca teve os dois ao mesmo tempo. Exibir a soma daria
+   * um número que não existiu nunca, e exibir o pico real da carteira daria um
+   * total que não bate com nenhuma linha da tabela. A exposição é retrato do
+   * agora, soma sem ressalva e é o que a tabela abaixo mostra.
+   */
   const totalExposicao = cents(contas.reduce((acc, c) => acc + c.exposicao, 0));
   const contaMaisExposta = contas.reduce<(typeof contas)[number] | undefined>(
     (maior, atual) => (atual.exposicao > (maior?.exposicao ?? 0) ? atual : maior),
@@ -62,15 +68,10 @@ export function ContasView() {
               hint={`${contas.filter((c) => c.ativa).length} ativas`}
             />
             <StatCard
-              label="Capital distribuído"
+              label="Exposição total"
               accent="primary"
-              value={<Money value={totalDepositado} />}
-              hint={
-                <>
-                  exposição atual{" "}
-                  <Money value={totalExposicao} className="text-foreground" />
-                </>
-              }
+              value={<Money value={totalExposicao} />}
+              hint="soma do que está em cada conta agora"
             />
             <StatCard
               label="Conta mais exposta"
@@ -100,7 +101,6 @@ export function ContasView() {
                 <tr className="border-border text-muted-foreground border-b text-left text-xs">
                   <th scope="col" className="px-4 py-2.5 font-medium">Conta</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Projetos</th>
-                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Depositado</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Exposição</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Resultado</th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Pendências</th>
@@ -130,10 +130,7 @@ export function ContasView() {
                       {conta.projetos}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Money value={conta.capitalDepositado} />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Money value={conta.exposicao} tone="muted" />
+                      <Money value={conta.exposicao} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Money value={conta.resultado} tone="auto" signed />

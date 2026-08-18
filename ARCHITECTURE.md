@@ -1211,6 +1211,38 @@ nome quase certo precisa reler o que digitou para ver o engano. O botão de limp
 e chips de uma vez, porque sair de um vazio apagando campo a campo é o pior momento para
 exigir precisão.
 
+## 14.9-F. A base do ROI é o capital no pico
+
+"Capital depositado" era `max(0, depósitos − saques)`, e saiu das telas. O motivo é que ele
+zerava justamente onde as coisas davam certo: **sacar é sacar principal e lucro juntos**,
+então quem pôs US$ 220 e tirou US$ 7.506 ficava com base zero, sem ROI, no projeto que mais
+rendeu. Na base real, nove projetos exibiam US$ 0,00, e eram os nove que pagaram.
+
+A alternativa óbvia, somar os depósitos, tem o defeito oposto: infla com reciclagem. Pôr
+US$ 100, sacar, e recolocar os mesmos US$ 100 conta US$ 200, quando nunca houve mais de
+US$ 100 empregado. Vale entre projetos também.
+
+`capitalNoPico` responde outra pergunta, e é a certa para servir de base: **qual foi o
+máximo do meu dinheiro que esteve em risco de uma vez.** Percorre depósitos e saques em
+ordem cronológica, mantém o saldo de cada posição com piso em zero (§14.9-E), soma as
+posições a cada passo e guarda o maior total.
+
+| situação | soma dos depósitos | pico | qual está certo |
+|---|---|---|---|
+| pôs 100, sacou, recolocou 100 | 200 | 100 | pico |
+| pôs 220, sacou 7.506 de lucro | 220 | 220 | os dois |
+| pôs 100 e 300 ao mesmo tempo | 400 | 400 | os dois |
+| pôs 100 no A, tirou, pôs 100 no B | 200 | 100 | pico |
+
+Duas consequências que a interface precisou respeitar:
+
+- **`MovementRow` passou a exigir `occurredAt`.** O pico depende da ordem em que as coisas
+  aconteceram, e lançamento sem data não tem lugar nessa ordem.
+- **Pico não soma entre recortes.** O pico da carteira não é a soma dos picos por projeto,
+  porque eles acontecem em momentos diferentes; a soma é apenas o limite superior. Por isso a
+  tela de contas passou a totalizar por **exposição**, que é retrato do agora e soma sem
+  ressalva, e o painel exibe o pico da carteira sem tabela ao lado convidando a somar.
+
 ## 14.9-E. O corte em zero vale por posição, não sobre o total
 
 `capitalDepositado` nunca é negativo: sacar mais do que se pôs num projeto quer dizer que

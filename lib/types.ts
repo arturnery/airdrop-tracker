@@ -50,7 +50,8 @@ export type FinancialSummary = {
   /** Total já depositado na história. Base do ROI, não vai para a tela. */
   aportado: Cents;
   /** O que está depositado agora: depósitos menos retiradas. Vai para a tela. */
-  capitalDepositado: Cents;
+  /** Máximo do capital próprio empregado ao mesmo tempo: base do ROI. */
+  capitalNoPico: Cents;
   retirado: Cents;
   taxas: Cents;
   pnlTrades: Cents;
@@ -76,7 +77,8 @@ export type CapitalPorProjeto = {
   slug: string;
   nome: string;
   /** Depósitos menos retiradas. Mantido para quem quiser comparar com o atual. */
-  capitalDepositado: Cents;
+  /** Máximo do capital próprio empregado ao mesmo tempo: base do ROI. */
+  capitalNoPico: Cents;
   /** O que está no projeto agora: é este que a lista exibe. */
   exposicao: Cents;
 };
@@ -92,7 +94,8 @@ export type ProjectSummary = {
   chain: string | null;
   prioridade: number;
   aportado: Cents;
-  capitalDepositado: Cents;
+  /** Máximo do capital próprio empregado ao mesmo tempo: base do ROI. */
+  capitalNoPico: Cents;
   /**
    * Soma dos lançamentos de volume operado. Fica fora do caixa (é atividade,
    * não dinheiro movimentado), e por isso vive num campo próprio.
@@ -239,7 +242,8 @@ export type AccountSummary = {
   ativa: boolean;
   projetos: number;
   aportado: Cents;
-  capitalDepositado: Cents;
+  /** Máximo do capital próprio empregado ao mesmo tempo: base do ROI. */
+  capitalNoPico: Cents;
   exposicao: Cents;
   resultado: Cents;
   tarefasPendentes: number;
