@@ -39,9 +39,7 @@ pelo mesmo login. Cadastros novos entram numa fila de aprovação manual.
 
 ## Demonstração
 
-`[ADICIONAR AQUI: screenshot da visão geral]`
-
-`[ADICIONAR AQUI: GIF do fluxo de lançamento ou da aba do projeto]`
+<img width="1816" height="890" alt="Captura de tela de 2026-08-17 22-15-38" src="https://github.com/user-attachments/assets/7dbf0f6e-ee34-484d-a16d-3fc8dbc20f4c" />
 
 ## Como funciona, na prática
 
