@@ -41,6 +41,15 @@ pelo mesmo login. Cadastros novos entram numa fila de aprovação manual.
 
 <img width="1816" height="890" alt="Captura de tela de 2026-08-17 22-15-38" src="https://github.com/user-attachments/assets/7dbf0f6e-ee34-484d-a16d-3fc8dbc20f4c" />
 
+<img width="1902" height="985" alt="Captura de tela de 2026-08-17 22-29-36" src="https://github.com/user-attachments/assets/f33f357f-04af-496f-a45a-01da08d446c1" />
+
+<img width="1902" height="985" alt="Captura de tela de 2026-08-17 22-30-30" src="https://github.com/user-attachments/assets/bdcd10b2-ab2f-4620-928e-d936cbed4119" />
+
+<img width="1917" height="992" alt="Captura de tela de 2026-08-17 22-30-43" src="https://github.com/user-attachments/assets/96717cae-de16-4892-b0c5-0e3a383eb3a8" />
+
+<img width="1917" height="992" alt="Captura de tela de 2026-08-17 22-30-52" src="https://github.com/user-attachments/assets/a3c113ea-7fc9-4182-977c-678a47985abd" />
+
+
 ## Como funciona, na prática
 
 O caminho de quem usa, do primeiro acesso ao dia a dia. Este é o fluxo **funcional**: a
