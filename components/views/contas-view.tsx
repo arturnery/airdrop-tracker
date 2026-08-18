@@ -8,6 +8,7 @@ import { NovaConta, VincularConta } from "@/components/forms/dialogs";
 import { EditarConta } from "@/components/forms/editar";
 import { Money } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { explicacoes } from "@/components/ajuda";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
@@ -70,6 +71,7 @@ export function ContasView() {
             <StatCard
               label="Exposição total"
               accent="primary"
+              ajuda={explicacoes.exposicao}
               value={<Money value={totalExposicao} />}
               hint="soma do que está em cada conta agora"
             />

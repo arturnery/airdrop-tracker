@@ -1211,9 +1211,33 @@ nome quase certo precisa reler o que digitou para ver o engano. O botão de limp
 e chips de uma vez, porque sair de um vazio apagando campo a campo é o pior momento para
 exigir precisão.
 
+## 14.7-C. Interrogação ao lado do número
+
+Três números do sistema respondem perguntas parecidas e são fáceis de confundir: quanto foi
+empregado, quanto está lá agora e quanto sobrou. Cada um deles já gerou dúvida legítima, e a
+resposta morava só na documentação, que ninguém abre no meio de uma conferência.
+
+`components/ajuda.tsx` põe uma interrogação ao lado do rótulo, com a conta em uma frase.
+Três decisões dentro disso:
+
+- **O gatilho é um `<button>`, não um ícone solto.** Radix abre no passar do mouse e também
+  no foco por teclado, então quem navega com Tab recebe a mesma explicação. Um `<span>` com
+  `title` funcionaria só no mouse, e parte dos leitores de tela não lê o `title` do navegador.
+- **O rótulo do botão nomeia o número**, não diz "ajuda": quem ouve "Como Resultado é
+  calculado" sabe o que vai receber antes de abrir.
+- **Os textos ficam num só lugar**, e não espalhados pelas telas. O mesmo número aparece no
+  painel, na lista e na aba do projeto; explicação divergente entre telas é pior que
+  explicação nenhuma, porque sugere que os números também divergem.
+
+A interrogação também resolveu um impasse de nomenclatura. O rótulo "Capital depositado"
+continua, porque é como se fala do número, e a conta por trás dele é o capital no pico
+(§14.9-F). Sem a explicação, o nome familiar seria impreciso; com ela, o nome familiar fica e
+a precisão está a um passe de mouse.
+
 ## 14.9-F. A base do ROI é o capital no pico
 
-"Capital depositado" era `max(0, depósitos − saques)`, e saiu das telas. O motivo é que ele
+"Capital depositado" era `max(0, depósitos − saques)`. O rótulo continua nas telas, porque
+é como se fala do número; o que mudou foi a conta por trás dele. O motivo é que ele
 zerava justamente onde as coisas davam certo: **sacar é sacar principal e lucro juntos**,
 então quem pôs US$ 220 e tirou US$ 7.506 ficava com base zero, sem ROI, no projeto que mais
 rendeu. Na base real, nove projetos exibiam US$ 0,00, e eram os nove que pagaram.

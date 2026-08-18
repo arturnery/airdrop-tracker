@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, Minus, Search } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
+import { Ajuda, explicacoes } from "@/components/ajuda";
 import { AvisoSaldo } from "@/components/aviso-saldo";
 import { FiltroChips } from "@/components/filtro-chips";
 import {
@@ -96,8 +97,9 @@ function PainelResultado({ projeto }: { projeto: ProjectSummary }) {
       )}
     >
       <div className="min-w-0">
-        <p className="text-muted-foreground text-[0.6875rem] font-medium tracking-wider uppercase">
+        <p className="text-muted-foreground flex items-center gap-1.5 text-[0.6875rem] font-medium tracking-wider uppercase">
           Resultado
+          <Ajuda sobre="resultado">{explicacoes.resultado}</Ajuda>
         </p>
         {semMovimento ? (
           <p className="text-muted-foreground mt-1 text-sm">sem movimento</p>
@@ -219,13 +221,19 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
 
       <dl className="mt-4 mb-4 grid grid-cols-2 gap-3 text-sm">
         <div>
-          <dt className="text-muted-foreground text-xs">Exposição</dt>
+          <dt className="text-muted-foreground flex items-center gap-1 text-xs">
+            Exposição
+            <Ajuda sobre="exposição">{explicacoes.exposicao}</Ajuda>
+          </dt>
           <dd className="mt-0.5">
             <Money value={projeto.exposicao} />
           </dd>
         </div>
         <div>
-          <dt className="text-muted-foreground text-xs">Capital no pico</dt>
+          <dt className="text-muted-foreground flex items-center gap-1 text-xs">
+            Capital depositado
+            <Ajuda sobre="capital depositado">{explicacoes.capital}</Ajuda>
+          </dt>
           <dd className="mt-0.5">
             <Money value={projeto.capitalNoPico} tone="muted" />
           </dd>
@@ -240,7 +248,10 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         */}
         {projeto.volumeOperado > 0 ? (
           <div className="col-span-2 border-t border-border pt-3">
-            <dt className="text-muted-foreground text-xs">Volume operado</dt>
+            <dt className="text-muted-foreground flex items-center gap-1 text-xs">
+              Volume operado
+              <Ajuda sobre="volume operado">{explicacoes.volume}</Ajuda>
+            </dt>
             <dd className="mt-0.5">
               <Money value={projeto.volumeOperado} tone="muted" />
             </dd>

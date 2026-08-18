@@ -18,6 +18,7 @@ import {
   EditarTarefa,
   EditarVinculo,
 } from "@/components/forms/editar";
+import { explicacoes } from "@/components/ajuda";
 import { AvisoSaldo } from "@/components/aviso-saldo";
 import { Button } from "@/components/ui/button";
 import {
@@ -177,27 +178,35 @@ export function ProjetoView({ slug }: { slug: string }) {
         )}
       >
         <StatCard
+          label="Capital depositado"
+          accent="primary"
+          ajuda={explicacoes.capital}
+          value={<Money value={projeto.capitalNoPico} />}
+          hint="máximo empregado ao mesmo tempo"
+        />
+        <StatCard
           label="Exposição"
           accent="idle"
+          ajuda={explicacoes.exposicao}
           value={<Money value={projeto.exposicao} />}
-          hint={projeto.alerta ? projeto.alerta.resumo : "soma dos lançamentos"}
+          hint={projeto.alerta ? projeto.alerta.resumo : "o que está lá agora"}
         />
         <StatCard
           label="Resultado"
           accent={projeto.resultado >= 0 ? "positive" : "negative"}
+          ajuda={explicacoes.resultado}
           value={<Money value={projeto.resultado} tone="auto" signed />}
           hint={
             /*
-             * A base do ROI é o capital no pico: o máximo do dinheiro próprio
-             * que esteve empregado de uma vez. Dizê-la junto do percentual
-             * evita a pergunta "por cima de quanto?", e é o número que explica
-             * um ROI alto num projeto de aporte pequeno.
+             * A base aparece junto do percentual: evita a pergunta "por cima de
+             * quanto?", e é o número que explica um ROI alto num projeto de
+             * aporte pequeno. A conta exata fica na interrogação do cartão.
              */
             projeto.roi === null ? null : (
               <span className="inline-flex items-center gap-1.5">
                 ROI <Percent value={projeto.roi} />
                 <span className="text-muted-foreground">
-                  sobre <Money value={projeto.capitalNoPico} /> no pico
+                  sobre <Money value={projeto.capitalNoPico} /> depositado
                 </span>
               </span>
             )
@@ -206,6 +215,7 @@ export function ProjetoView({ slug }: { slug: string }) {
         {projeto.volumeOperado > 0 ? (
           <StatCard
             label="Volume operado"
+          ajuda={explicacoes.volume}
             accent="idle"
             value={<Money value={projeto.volumeOperado} />}
             hint="atividade, não dinheiro movimentado"

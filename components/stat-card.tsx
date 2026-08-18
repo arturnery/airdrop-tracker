@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Ajuda } from "@/components/ajuda";
 import { cn } from "@/lib/utils";
 
 type Accent = "primary" | "positive" | "negative" | "caution" | "idle";
@@ -22,12 +23,15 @@ export function StatCard({
   value,
   hint,
   accent = "idle",
+  ajuda,
   className,
 }: {
   label: string;
   value: ReactNode;
   hint?: ReactNode;
   accent?: Accent;
+  /** Conteúdo da interrogação ao lado do rótulo. Ver `components/ajuda`. */
+  ajuda?: ReactNode;
   className?: string;
 }) {
   return (
@@ -38,8 +42,9 @@ export function StatCard({
         className,
       )}
     >
-      <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+      <h3 className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wider uppercase">
         {label}
+        {ajuda ? <Ajuda sobre={label}>{ajuda}</Ajuda> : null}
       </h3>
       <p className="font-numeric mt-3 text-3xl leading-none font-semibold">
         {value}

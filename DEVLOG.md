@@ -2770,6 +2770,33 @@ igualdade, foi **não pôr os dois lado a lado**: a tela de contas passou a tota
 exposição, que é retrato do agora e soma sem ressalva, e o painel exibe o pico sem tabela ao
 lado. Um teste registra a relação verdadeira: o pico da carteira nunca passa da soma.
 
+### O nome de volta, e a interrogação que o justifica
+
+"Capital no pico" era preciso e ninguém fala assim. O retorno foi para manter "capital
+depositado", que é como o número é chamado, e junto veio a ideia que resolve o impasse:
+**uma interrogação ao lado de cada número, dizendo a conta em uma frase.**
+
+Sem a explicação, o nome familiar seria impreciso, e o nome preciso seria estranho. Com ela,
+fica o nome familiar e a precisão a um passe de mouse. Ganharam interrogação capital
+depositado, exposição, resultado e volume operado, que são justamente os quatro que já
+geraram dúvida.
+
+Três decisões na implementação:
+
+- **O gatilho é um `<button>`.** Radix abre no mouse e também no foco por teclado, então quem
+  navega com Tab recebe a mesma explicação. Um `<span>` com `title` funcionaria só no mouse,
+  e parte dos leitores de tela não lê o `title` do navegador.
+- **O rótulo do botão nomeia o número** ("Como Resultado é calculado"), em vez de dizer
+  "ajuda": quem ouve sabe o que vai receber antes de abrir.
+- **Os textos moram num arquivo só.** O mesmo número aparece em três telas, e explicação
+  divergente entre elas seria pior que nenhuma, porque sugeriria que os números divergem.
+
+Uma nota sobre a verificação: o teste de navegador acusou que a dica não fechava ao tirar o
+mouse. Investiguei antes de mexer, e era artefato do teste: `mouse.move` sem passos salta
+direto e não dispara os eventos de saída que o Radix escuta. Com movimento em passos, como um
+mouse de verdade, fecha. **Reprovação de teste não é prova de defeito**, e o custo de
+verificar antes é sempre menor que o de "consertar" o que estava certo.
+
 ### O que ficou
 
 `MovementRow` passou a exigir `occurredAt`. O pico depende da ordem em que as coisas

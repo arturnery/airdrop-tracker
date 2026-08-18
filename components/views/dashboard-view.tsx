@@ -11,6 +11,7 @@ import { NovoLancamento, RegistrarPontos } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { ResumoDeAvisos } from "@/components/aviso-saldo";
+import { explicacoes } from "@/components/ajuda";
 import { StatCard } from "@/components/stat-card";
 import { UrgencyBadge } from "@/components/status-badge";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
@@ -64,14 +65,16 @@ export function DashboardView() {
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
         <StatCard
-          label="Capital no pico"
+          label="Capital depositado"
           accent="primary"
+          ajuda={explicacoes.capital}
           value={<Money value={resumo.capitalNoPico} />}
           hint={`${resumo.projetosAtivos} projetos ativos · ${resumo.contasAtivas} contas`}
         />
         <StatCard
           label="Exposição atual"
           accent="idle"
+          ajuda={explicacoes.exposicao}
           value={<Money value={resumo.exposicao} />}
           hint={
             semCotacao.length > 0
@@ -82,6 +85,7 @@ export function DashboardView() {
         <StatCard
           label="Resultado"
           accent={resumo.resultado >= 0 ? "positive" : "negative"}
+          ajuda={explicacoes.resultado}
           value={<Money value={resumo.resultado} tone="auto" signed />}
           hint={
             resumo.roi === null ? (

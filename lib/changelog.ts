@@ -45,7 +45,12 @@ export const changelog: Versao[] = [
       {
         tipo: "correcao",
         texto:
-          "O \"capital depositado\" saiu das telas. Ele descontava os saques do que foi depositado, e como sacar leva principal e lucro juntos, zerava justamente nos projetos que deram certo: nove dos seus apareciam com $0. O ROI passou a ser calculado sobre o capital no pico, que é o máximo do seu dinheiro empregado ao mesmo tempo. Reciclar os mesmos $100 não conta $200, e sacar tudo não apaga mais o percentual.",
+          "O \"capital depositado\" mudou de conta. Ele descontava os saques do que foi depositado, e como sacar leva principal e lucro juntos, zerava justamente nos projetos que deram certo: nove dos seus apareciam com $0. Agora ele é o máximo do seu dinheiro empregado ao mesmo tempo: reciclar os mesmos $100 não conta $200, e sacar tudo não apaga mais o percentual do ROI.",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Capital depositado, exposição, resultado e volume ganharam uma interrogação ao lado. Passe o mouse (ou chegue nela pelo teclado) e aparece, em uma frase, como aquele número é calculado.",
       },
       {
         tipo: "melhoria",
