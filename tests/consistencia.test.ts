@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { diagnosticarProjeto } from "@/lib/consistencia";
+import {
+  diagnosticarProjeto,
+  faltaRegistrarRecebimento,
+} from "@/lib/consistencia";
 import { cents } from "@/lib/money";
 
 const l = (type: string, amountUsd: string) => ({ type, amountUsd });
@@ -72,5 +75,36 @@ describe("o que NÃO pode virar alarme falso", () => {
     expect(
       diag(742000, [l("deposit", "40.00"), l("trade_pnl", "7380.00")]),
     ).toBeNull();
+  });
+});
+
+/**
+ * "Distribuído" e nenhum recebimento são duas declarações da mesma pessoa
+ * discordando. É a mesma natureza do aviso de saldo, e por isso não precisa de
+ * heurística: a alternativa descartada era procurar palavras como "venda" ou
+ * "token" na descrição dos lançamentos, que achava 1 caso em 30 e dependia de
+ * como a frase tinha sido escrita.
+ */
+describe("distribuído sem recebimento registrado", () => {
+  const falta = (status: string, recebimentos: number) =>
+    faltaRegistrarRecebimento({ status, recebimentos });
+
+  it("aponta projeto distribuído e sem recebimento", () => {
+    expect(falta("distribuido", 0)).toBe(true);
+  });
+
+  it("cala quando o recebimento existe", () => {
+    expect(falta("distribuido", 1)).toBe(false);
+  });
+
+  it("cala em projeto que ainda não distribuiu", () => {
+    for (const status of ["ativo", "pesquisando", "pausado", "descartado"]) {
+      expect(falta(status, 0)).toBe(false);
+    }
+  });
+
+  it("cala em TGE anunciado, porque anunciado não é recebido", () => {
+    // O token foi anunciado e ainda não caiu: não há o que registrar.
+    expect(falta("tge_anunciado", 0)).toBe(false);
   });
 });

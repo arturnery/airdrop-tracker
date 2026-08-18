@@ -89,3 +89,27 @@ export function saldoDeCaixa(lancamentos: LancamentoMinimo[]): number {
     .filter((l) => isCashType(l.type))
     .reduce<number>((acc, l) => acc + fromDbNumeric(l.amountUsd), 0);
 }
+
+/**
+ * Projeto que se declara distribuído e não tem recebimento registrado.
+ *
+ * É a mesma natureza do alerta acima: **duas declarações da própria pessoa
+ * discordando.** Uma diz "o airdrop deste projeto já saiu", a outra é a ausência
+ * de qualquer recebimento cadastrado. Não há adivinhação de texto no meio, que
+ * foi a alternativa descartada: procurar palavras como "venda" ou "token" na
+ * descrição dos lançamentos achava 1 caso em 30 e dependia de como a frase foi
+ * escrita naquele dia.
+ *
+ * **Não é erro de conta.** Quem lançou o valor como resultado de trade tem o
+ * resultado correto; o que falta é o registro de token, quantidade e preço, e a
+ * resposta para "quanto recebi de airdrop no total". Por isso o aviso vive só na
+ * aba de airdrop do projeto, onde se age sobre ele, e não na lista nem no
+ * painel: ali ele competiria com o alerta de saldo impossível, que significa
+ * erro de verdade.
+ */
+export function faltaRegistrarRecebimento(params: {
+  status: string;
+  recebimentos: number;
+}): boolean {
+  return params.status === "distribuido" && params.recebimentos === 0;
+}

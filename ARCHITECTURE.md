@@ -1211,6 +1211,31 @@ nome quase certo precisa reler o que digitou para ver o engano. O botão de limp
 e chips de uma vez, porque sair de um vazio apagando campo a campo é o pior momento para
 exigir precisão.
 
+## 14.9-G. Distribuído sem recebimento registrado
+
+Oito projetos estavam marcados como **Distribuído** e não tinham nenhum recebimento
+cadastrado. São duas declarações da mesma pessoa discordando, que é a mesma natureza do
+aviso de saldo impossível (§14.9-C), e por isso não precisa de heurística.
+
+A alternativa considerada e descartada era procurar palavras como "venda" ou "token" na
+descrição dos lançamentos de trade. Medida na base real, ela achava **1 caso em 30** e
+dependia de como a frase tinha sido escrita naquele dia. Aviso que erra treina a pessoa a
+ignorá-lo, e aí falha no dia em que estiver certo.
+
+**Não é erro de conta**, e a diferença decide onde ele aparece. Quem lançou o valor como
+resultado de trade tem o resultado correto; o que falta é o registro de token, quantidade e
+preço, e a resposta para "quanto recebi de airdrop no total". Um aviso âmbar na lista, com
+oito de vinte e oito projetos marcados de uma vez, competiria com o alerta que significa erro
+de verdade.
+
+A forma escolhida não é banner nenhum: é o **estado vazio da aba de airdrop dizendo a coisa
+certa**. Ele dizia "O airdrop ainda não caiu" mesmo num projeto marcado como distribuído,
+contradizendo o próprio status do projeto na mesma tela. Agora, quando o status diz que caiu
+e não há recebimento, o texto explica o que se ganha registrando, com o botão logo acima.
+
+Corrigir a contradição saiu mais barato que empilhar aviso, e some sozinho quando o
+recebimento entrar.
+
 ## 14.7-C. Interrogação ao lado do número
 
 Três números do sistema respondem perguntas parecidas e são fáceis de confundir: quanto foi

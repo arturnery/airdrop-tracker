@@ -19,6 +19,7 @@ import {
   EditarVinculo,
 } from "@/components/forms/editar";
 import { explicacoes } from "@/components/ajuda";
+import { faltaRegistrarRecebimento } from "@/lib/consistencia";
 import { AvisoSaldo } from "@/components/aviso-saldo";
 import { Button } from "@/components/ui/button";
 import {
@@ -992,10 +993,32 @@ export function ProjetoView({ slug }: { slug: string }) {
           </div>
 
           {projeto.recebimentos.length === 0 ? (
-            <EmptyState
-              title="O airdrop ainda não caiu"
-              description="Quando o token for distribuído, registre aqui quanto cada conta recebeu e a que preço. É o que fecha o cálculo de ROI real do projeto."
-            />
+            /*
+             * O texto muda conforme o status do próprio projeto.
+             *
+             * "O airdrop ainda não caiu" contradizia um projeto marcado como
+             * Distribuído, e a contradição estava na tela sem ninguém notar: as
+             * duas informações são declarações da mesma pessoa, e discordavam.
+             *
+             * A versão para o projeto distribuído diz o que se ganha ao
+             * registrar, e não que algo está errado: quem lançou o valor como
+             * resultado de trade tem o resultado certo, e o que falta é o
+             * histórico de token, quantidade e preço.
+             */
+            faltaRegistrarRecebimento({
+              status: projeto.status,
+              recebimentos: projeto.recebimentos.length,
+            }) ? (
+              <EmptyState
+                title="Este projeto está como distribuído, e não há recebimento aqui"
+                description="Se o airdrop já caiu, registre quanto cada conta recebeu: fica o histórico de token, quantidade e preço, e o valor entra no ROI real do projeto. Se você lançou o valor como resultado de trade, o resultado já está certo, o que falta é este registro."
+              />
+            ) : (
+              <EmptyState
+                title="O airdrop ainda não caiu"
+                description="Quando o token for distribuído, registre aqui quanto cada conta recebeu e a que preço. É o que fecha o cálculo de ROI real do projeto."
+              />
+            )
           ) : (
             <div className="border-border overflow-x-auto rounded-lg border">
               <table className="w-full min-w-160 text-sm">

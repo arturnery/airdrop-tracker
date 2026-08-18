@@ -48,6 +48,11 @@ export const changelog: Versao[] = [
           "O \"capital depositado\" mudou de conta. Ele descontava os saques do que foi depositado, e como sacar leva principal e lucro juntos, zerava justamente nos projetos que deram certo: nove dos seus apareciam com $0. Agora ele é o máximo do seu dinheiro empregado ao mesmo tempo: reciclar os mesmos $100 não conta $200, e sacar tudo não apaga mais o percentual do ROI.",
       },
       {
+        tipo: "melhoria",
+        texto:
+          "Na aba Airdrop de um projeto marcado como Distribuído, o texto deixou de dizer \"o airdrop ainda não caiu\", que contradizia o próprio status. Agora ele lembra de registrar o recebimento, que é o que guarda token, quantidade e preço.",
+      },
+      {
         tipo: "novidade",
         texto:
           "Capital depositado, exposição, resultado e volume ganharam uma interrogação ao lado. Passe o mouse (ou chegue nela pelo teclado) e aparece, em uma frase, como aquele número é calculado.",

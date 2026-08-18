@@ -2806,6 +2806,47 @@ alguém chamar por engano.
 
 ---
 
+## Marco 44: O aviso que não virou aviso
+
+Depois de fechar os onze avisos de saldo, veio a pergunta: dá para avisar quando um airdrop
+foi lançado como resultado de trade em vez de registrado na aba própria? E, junto, *"será que
+compensa ou não"*.
+
+Medi as duas formas de detectar antes de responder, e elas deram resultados opostos.
+
+**Pela descrição do lançamento: não compensa.** Procurando "venda", "token", "airdrop" nas
+descrições, apareceu **1 caso em 30** lançamentos de trade. Depende de como a frase foi
+escrita naquele dia, e aviso que erra treina a pessoa a ignorá-lo, falhando no dia em que
+estiver certo. É a lição dos nove testes de falso positivo do aviso de saldo.
+
+**Pelo status do projeto: compensa, e é forte.** Oito projetos marcados como **Distribuído**
+sem nenhum recebimento cadastrado. Zero heurística: são duas declarações da própria pessoa
+discordando, exatamente como o aviso de saldo.
+
+### A parte que mudou a solução
+
+Fui implementar o banner e, ao abrir a aba, o defeito já estava lá: o estado vazio dizia
+*"O airdrop ainda não caiu"* **num projeto marcado como distribuído**. A contradição estava
+na tela havia tempo, entre duas informações da mesma pessoa, e ninguém tinha notado porque
+só aparece na combinação.
+
+Então não virou aviso nenhum. Virou o estado vazio dizendo a coisa certa, com o botão de
+registrar logo acima. Corrigir a contradição saiu mais barato que empilhar um banner, e não
+gasta atenção: some sozinho quando o recebimento entrar.
+
+**Vale como padrão:** antes de adicionar um aviso, olhar se a tela já não está dizendo algo
+errado no mesmo lugar. Muitas vezes o aviso que se ia criar é a correção de um texto que já
+existe.
+
+### Por que não foi para a lista nem para o painel
+
+Porque não é erro de conta. Quem lançou o valor como resultado de trade tem o resultado
+certo; o que falta é o histórico de token, quantidade e preço. Oito de vinte e oito projetos
+marcados de âmbar de uma vez competiriam com o alerta de saldo impossível, que significa erro
+de verdade, e a competição rebaixa os dois.
+
+---
+
 ## Estado atual
 
 | | |
@@ -2816,7 +2857,7 @@ alguém chamar por engano.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 291, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
+| Testes | 295, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
