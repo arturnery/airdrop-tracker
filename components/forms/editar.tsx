@@ -77,9 +77,34 @@ function DialogoEdicao({
   aoEnviar: (dados: FormData) => Promise<Erros | null> | Erros | null;
   rotuloGatilho: string;
 }) {
+  const { salvando } = useDados();
   const [aberto, setAberto] = useState(false);
   const [problemas, setProblemas] = useState<Erros>({});
   const [enviando, setEnviando] = useState(false);
+
+  /*
+   * Gravou, e agora espera a tela receber o dado antes de fechar.
+   *
+   * Fechar assim que o banco responde deixava um vão: o diálogo sumia e a
+   * tabela continuava com o valor antigo por um instante, o bastante para
+   * parecer que a alteração se perdeu. Agora o botão continua dizendo
+   * "Salvando…" até o dado estar na tela, e quando o diálogo fecha o que
+   * aparece atrás já é o resultado.
+   */
+  const [aguardandoTela, setAguardandoTela] = useState(false);
+
+  /*
+   * Ajuste durante a renderização, e não num efeito: é o padrão que o React
+   * documenta para reagir a uma mudança de valor, e evita o render a mais que
+   * um efeito custaria. O `if` só é verdadeiro no render em que a transição
+   * termina, então não há laço.
+   */
+  if (aguardandoTela && !salvando) {
+    setAguardandoTela(false);
+    setAberto(false);
+  }
+
+  const ocupado = enviando || aguardandoTela;
 
   return (
     <Dialog
@@ -117,7 +142,7 @@ function DialogoEdicao({
                 return;
               }
               setProblemas({});
-              setAberto(false);
+              setAguardandoTela(true);
             } finally {
               setEnviando(false);
             }
@@ -139,13 +164,13 @@ function DialogoEdicao({
             <Button
               type="button"
               variant="ghost"
-              disabled={enviando}
+              disabled={ocupado}
               onClick={() => setAberto(false)}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={enviando}>
-              {enviando ? (
+            <Button type="submit" disabled={ocupado}>
+              {ocupado ? (
                 <>
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                   Salvando…

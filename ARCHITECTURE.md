@@ -1236,6 +1236,25 @@ e não há recebimento, o texto explica o que se ganha registrando, com o botão
 Corrigir a contradição saiu mais barato que empilhar aviso, e some sozinho quando o
 recebimento entrar.
 
+## 14.7-D. O formulário espera a tela, não só o banco
+
+`envolver`, no provider, chama a Server Action e dispara `router.refresh()` dentro de uma
+transição. `router.refresh()` não devolve promessa, então a função voltava assim que o banco
+respondia, e o formulário fechava ali. A tela só recebia o dado depois.
+
+Nesse vão, o diálogo saía da frente e a tabela atrás continuava com o valor antigo. Quem
+salvava via a alteração sumir junto com o formulário, e a conclusão natural é que não
+gravou. Em produção o vão dura cerca de um segundo e meio; numa conexão pior, mais.
+
+Os formulários agora esperam `salvando`, que é o pendente da transição já exposto pelo
+contexto. O botão diz "Salvando…" até o dado chegar, e **quando o diálogo fecha, o que
+aparece atrás já é o resultado**. A garantia deixou de ser "o banco aceitou" e passou a ser
+"a tela mostra".
+
+O fechamento é ajustado durante a renderização, e não num efeito: é o padrão que o React
+documenta para reagir a uma mudança de valor, e evita o render a mais que o efeito custaria.
+A condição só é verdadeira no render em que a transição termina, então não há laço.
+
 ## 14.7-C. Interrogação ao lado do número
 
 Três números do sistema respondem perguntas parecidas e são fáceis de confundir: quanto foi

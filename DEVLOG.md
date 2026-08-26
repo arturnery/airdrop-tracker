@@ -2847,6 +2847,48 @@ de verdade, e a competição rebaixa os dois.
 
 ---
 
+## Marco 45: "Salvei e nada aconteceu"
+
+O relato foi que editar um lançamento não salvava, obrigando a apagar e relançar. Levei três
+diagnósticos para chegar ao certo, e os dois primeiros foram erro de medição meu.
+
+**Primeiro erro: concluí que nada atualizava.** Testei no servidor de desenvolvimento,
+esperando 3,5 segundos. Lá a ação leva mais de 5, porque compila no meio. Medi em produção
+depois: 1,4 segundo. O que eu tinha "descoberto" era a lentidão do meu ambiente.
+
+Cheguei a mudar `ROTAS_DADOS` para incluir o padrão da rota dinâmica, convencido de que
+`revalidatePath` não alcançava `/projetos/[slug]`. A documentação do Next de fato exige o
+padrão para segmentos dinâmicos, então a mudança não é errada; só não era a causa, e a
+produção já funcionava sem ela.
+
+**Segundo erro: concluí que "a data não salva".** Testei campo a campo, e a data parecia
+voltar ao valor antigo. Estava lendo **outra linha**: a tabela ordena por data, então ao
+mudar a data a linha muda de lugar, e o "primeiro botão de editar" passa a ser de outro
+lançamento. Refazendo o teste com a linha identificada por uma marca única, a data salvava.
+
+**O que era, de verdade.** Perguntei o que ele tinha visto, e a resposta foi "salvei e nada
+ocorreu". Isso apontou para o lugar certo: `envolver` dispara `router.refresh()` e **retorna
+sem esperar**, então o formulário fechava assim que o banco respondia e a tabela só mudava
+depois. Entre os dois momentos, o diálogo sai da frente e a tela atrás está igual.
+
+A gravação sempre esteve correta. O defeito era de retorno: nenhum sinal de que estava
+salvando, e o formulário saindo da frente antes de a tela mudar.
+
+### O que fica
+
+**Medir no ambiente errado é o mesmo que não medir.** O servidor de desenvolvimento compila
+sob demanda, e qualquer conclusão de tempo tirada dali não vale para produção.
+
+**Identificar a linha antes de comparar.** Num teste sobre lista ordenada, mexer no campo da
+ordenação move a linha; "o primeiro item" depois da mudança não é o mesmo de antes. O teste
+que valeu foi o que marcou a linha com um texto único e a procurou por ele.
+
+**Perguntar o que a pessoa viu vale mais do que reproduzir por conta própria.** Duas
+tentativas minhas produziram diagnósticos errados. A frase "salvei e nada ocorreu" apontou o
+lugar certo em um minuto, porque descreve o sintoma sem teorizar sobre a causa.
+
+---
+
 ## Estado atual
 
 | | |

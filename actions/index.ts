@@ -346,7 +346,7 @@ export async function definirCotacao(entrada: unknown): Promise<ResultadoAcao> {
         target: [schema.tokenPrices.userId, schema.tokenPrices.symbol],
         set: { priceUsd: toDbNumeric(dados.priceUsd), updatedAt: dados.updatedAt },
       });
-  }, [...ROTAS_DADOS, "/cotacoes"]);
+  }, ROTAS_DADOS);
 }
 
 export async function excluirCotacao(symbol: string): Promise<ResultadoAcao> {
@@ -360,7 +360,7 @@ export async function excluirCotacao(symbol: string): Promise<ResultadoAcao> {
           eq(schema.tokenPrices.symbol, dados.symbol.toUpperCase()),
         ),
       );
-  }, [...ROTAS_DADOS, "/cotacoes"]);
+  }, ROTAS_DADOS);
 }
 
 // -------------------------------------------------------------------- pontos
@@ -452,7 +452,7 @@ export async function criarTarefa(entrada: unknown): Promise<ResultadoAcao> {
         })),
       )
       .onConflictDoNothing();
-  }, [...ROTAS_DADOS, "/tarefas"]);
+  }, ROTAS_DADOS);
 }
 
 export async function atualizarTarefa(
@@ -518,7 +518,7 @@ export async function atualizarTarefa(
           );
       }
     }
-  }, [...ROTAS_DADOS, "/tarefas"]);
+  }, ROTAS_DADOS);
 }
 
 export async function excluirTarefa(id: string): Promise<ResultadoAcao> {
@@ -526,7 +526,7 @@ export async function excluirTarefa(id: string): Promise<ResultadoAcao> {
     await db
       .delete(schema.tasks)
       .where(and(eq(schema.tasks.id, dados.id), eq(schema.tasks.userId, userId)));
-  }, [...ROTAS_DADOS, "/tarefas"]);
+  }, ROTAS_DADOS);
 }
 
 export async function alternarOcorrencia(id: string): Promise<ResultadoAcao> {
@@ -553,7 +553,7 @@ export async function alternarOcorrencia(id: string): Promise<ResultadoAcao> {
       .update(schema.taskOccurrences)
       .set({ completedAt: ocorrencia.completedAt ? null : sql`now()` })
       .where(eq(schema.taskOccurrences.id, dados.id));
-  }, [...ROTAS_DADOS, "/tarefas"]);
+  }, ROTAS_DADOS);
 }
 
 // --------------------------------------------------------------------- metas
@@ -740,7 +740,7 @@ export async function revisarMembro(entrada: unknown): Promise<ResultadoAcao> {
       })
       // Nunca sobre um admin: evita rebaixar a si mesmo por engano.
       .where(and(eq(schema.users.id, dados.id), ne(schema.users.role, "admin")));
-  }, ["/membros"]);
+  }, [{ caminho: "/membros", tipo: "page" }]);
 }
 
 /** Devolve para a fila: serve tanto para revogar acesso quanto reconsiderar. */
@@ -751,7 +751,7 @@ export async function reabrirMembro(id: string): Promise<ResultadoAcao> {
       .update(schema.users)
       .set({ status: "pendente", reviewedAt: null, reviewNote: null })
       .where(and(eq(schema.users.id, dados.id), ne(schema.users.role, "admin")));
-  }, ["/membros"]);
+  }, [{ caminho: "/membros", tipo: "page" }]);
 }
 
 /**

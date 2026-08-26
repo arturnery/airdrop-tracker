@@ -144,6 +144,18 @@ export function DataProvider({
     [router],
   );
 
+  /*
+   * `router.refresh()` não devolve promessa, então quem chamou a ação não tem
+   * como esperar o dado novo chegar: a função acima volta assim que o banco
+   * responde, e a tela só muda depois. Era o suficiente para o formulário
+   * fechar antes da atualização, e quem salvava via o diálogo sumir com a
+   * tabela ainda igual. Parecia que nada tinha acontecido.
+   *
+   * `salvando` é o pendente da transição, e é por ele que os formulários
+   * esperam antes de fechar. Não é detalhe de estilo: é a diferença entre
+   * "fechou e não mudou nada" e "fechou já mostrando o que mudou".
+   */
+
   /**
    * Alternar tarefa não passa por `envolver`: precisa pintar o check antes de
    * chamar o servidor, e `aplicarOtimista` só vale dentro de uma transição.

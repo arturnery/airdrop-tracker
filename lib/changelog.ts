@@ -39,6 +39,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.6",
+    data: "2026-08-26",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "Ao salvar um lançamento, o formulário fechava antes de a tela receber o dado novo. No intervalo, a tabela ainda mostrava o valor antigo, e parecia que a alteração tinha se perdido. Agora o botão avisa que está salvando e o formulário só fecha quando a mudança já está na tela.",
+      },
+    ],
+  },
+  {
     versao: "1.5",
     data: "2026-08-17",
     mudancas: [

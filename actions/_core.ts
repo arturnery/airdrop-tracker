@@ -52,7 +52,9 @@ export async function executar<S extends z.ZodType>(
   schema: S,
   entrada: unknown,
   operacao: (dados: z.output<S>, userId: string) => Promise<void>,
-  rotas: string[] = ["/"],
+  rotas: { caminho: string; tipo: "page" | "layout" }[] = [
+    { caminho: "/", tipo: "layout" },
+  ],
 ): Promise<ResultadoAcao> {
   const analisado = schema.safeParse(entrada);
   if (!analisado.success) {
@@ -77,7 +79,7 @@ export async function executar<S extends z.ZodType>(
     return falha(traduzido.campo, traduzido.mensagem);
   }
 
-  for (const rota of rotas) revalidatePath(rota, "layout");
+  for (const rota of rotas) revalidatePath(rota.caminho, rota.tipo);
   return sucesso();
 }
 
@@ -101,5 +103,26 @@ async function precisaTrocarSenha(userId: string): Promise<boolean> {
   return usuario?.marca ?? false;
 }
 
-/** Rotas que dependem dos dados financeiros: revalidadas em quase toda ação. */
-export const ROTAS_DADOS = ["/", "/projetos", "/contas", "/historico"];
+/**
+ * Rotas que dependem dos dados financeiros, revalidadas em quase toda ação.
+ *
+ * O Dataset é carregado no layout raiz e desce para todas as telas, então
+ * qualquer escrita invalida qualquer uma delas. A lista existe porque
+ * `revalidatePath` precisa de caminhos, e é escrita à mão: **quem criar tela
+ * nova precisa vir aqui**, senão ela salva no banco e não atualiza sozinha.
+ *
+ * `/projetos/[slug]` é o padrão da rota, não um endereço. Revalidar `/projetos`
+ * não alcança as páginas abaixo dela quando o segmento é dinâmico: é preciso
+ * passar o padrão com o tipo, e o tipo é obrigatório nesse caso. Foi
+ * exatamente essa linha que faltava, e o efeito era editar um lançamento na aba
+ * do projeto, gravar no banco, e a tela não mudar.
+ */
+export const ROTAS_DADOS: { caminho: string; tipo: "page" | "layout" }[] = [
+  { caminho: "/", tipo: "layout" },
+  { caminho: "/projetos", tipo: "page" },
+  { caminho: "/projetos/[slug]", tipo: "page" },
+  { caminho: "/contas", tipo: "page" },
+  { caminho: "/historico", tipo: "page" },
+  { caminho: "/tarefas", tipo: "page" },
+  { caminho: "/cotacoes", tipo: "page" },
+];

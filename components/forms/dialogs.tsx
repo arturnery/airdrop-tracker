@@ -64,9 +64,30 @@ function Formulario({
   aoEnviar: (dados: FormData) => Promise<Erros | null> | Erros | null;
   rotuloEnvio?: string;
 }) {
+  const { salvando } = useDados();
   const [aberto, setAberto] = useState(false);
   const [problemas, setProblemas] = useState<Erros>({});
   const [enviando, setEnviando] = useState(false);
+
+  /*
+   * Gravou, e agora espera a tela receber o dado antes de fechar. Ver o mesmo
+   * trecho em `forms/editar`: fechar assim que o banco responde deixava um vão
+   * em que o diálogo sumia e a lista ainda estava sem o registro novo.
+   */
+  const [aguardandoTela, setAguardandoTela] = useState(false);
+
+  /*
+   * Ajuste durante a renderização, e não num efeito: é o padrão que o React
+   * documenta para reagir a uma mudança de valor, e evita o render a mais que
+   * um efeito custaria. O `if` só é verdadeiro no render em que a transição
+   * termina, então não há laço.
+   */
+  if (aguardandoTela && !salvando) {
+    setAguardandoTela(false);
+    setAberto(false);
+  }
+
+  const ocupado = enviando || aguardandoTela;
 
   return (
     <Dialog
@@ -96,7 +117,7 @@ function Formulario({
                 return;
               }
               setProblemas({});
-              setAberto(false);
+              setAguardandoTela(true);
             } finally {
               setEnviando(false);
             }
@@ -119,13 +140,13 @@ function Formulario({
             <Button
               type="button"
               variant="ghost"
-              disabled={enviando}
+              disabled={ocupado}
               onClick={() => setAberto(false)}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={enviando}>
-              {enviando ? (
+            <Button type="submit" disabled={ocupado}>
+              {ocupado ? (
                 <>
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                   Salvando…
