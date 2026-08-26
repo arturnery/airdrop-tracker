@@ -4,6 +4,7 @@ import type {
   RawGoal,
   RawGoalEntry,
   RawPointsSnapshot,
+  RawVolumeSnapshot,
   RawTokenPrice,
   RawProject,
   RawProjectAccount,
@@ -37,6 +38,7 @@ export type Dataset = {
   goalEntries: RawGoalEntry[];
   tokenPrices: RawTokenPrice[];
   pointsSnapshots: RawPointsSnapshot[];
+  volumeSnapshots: RawVolumeSnapshot[];
   airdropClaims: RawAirdropClaim[];
 };
 
@@ -51,6 +53,7 @@ export const emptyDataset = (): Dataset => ({
   goalEntries: [],
   tokenPrices: [],
   pointsSnapshots: [],
+  volumeSnapshots: [],
   airdropClaims: [],
 });
 

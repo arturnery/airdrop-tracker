@@ -1,6 +1,6 @@
 import type { Dataset } from "./dataset";
 import { diagnosticarProjeto } from "./consistencia";
-import { daysBetween, somarDias, urgencyOf } from "./dates";
+import { daysBetween, urgencyOf } from "./dates";
 import {
   exposureForPair,
   netFlowByPair,
@@ -161,56 +161,110 @@ export function selectDashboardSummary(ds: Dataset, hoje: string): DashboardSumm
  * `recente` cobre trinta dias porque é o horizonte em que "andou ou parou"
  * ainda é acionável: dá tempo de retomar antes de um encerramento de temporada.
  */
+/** Soma da última medição de cada conta do projeto. */
+function volumeAcumulado(ds: Dataset, projectId: string): Cents {
+  return ds.projectAccounts
+    .filter((p) => p.projectId === projectId)
+    .reduce<Cents>((acc, par) => {
+      const ultima = volumeDoPar(ds, projectId, par.accountId).at(-1);
+      return addCents(acc, ultima ? fromDbNumeric(ultima.volumeUsd) : ZERO);
+    }, ZERO);
+}
+
+/** Medições de um par, da mais antiga para a mais recente. */
+function volumeDoPar(ds: Dataset, projectId: string, accountId: string) {
+  return ds.volumeSnapshots
+    .filter((v) => v.projectId === projectId && v.accountId === accountId)
+    .sort((a, b) => a.takenAt.localeCompare(b.takenAt));
+}
+
+/**
+ * Volume acumulado do projeto, a partir das medições.
+ *
+ * Antes o volume era somado de lançamentos incrementais, e isso pedia à pessoa
+ * uma conta que a plataforma já fazia: quanto rodei desde a última vez. Um
+ * incremento esquecido sumia do total sem deixar rastro, e não havia como
+ * conferir contra a tela da corretora.
+ *
+ * Agora vale o mesmo princípio dos pontos: registra-se o acumulado, e o ganho
+ * do período sai da diferença entre duas medições.
+ */
 export function selectVolumeDoProjeto(
   ds: Dataset,
   projectId: string,
-  hoje: string,
 ): VolumeProjeto {
-  const lancamentos = ds.transactions
-    .filter((t) => t.projectId === projectId && t.type === "volume_traded")
-    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+  const pares = ds.projectAccounts.filter((p) => p.projectId === projectId);
 
-  const trintaDiasAtras = somarDias(hoje, -30);
+  const contas = pares
+    .map((par) => {
+      const medicoes = volumeDoPar(ds, projectId, par.accountId);
+      const atual = medicoes.at(-1);
+      const anterior = medicoes.at(-2);
 
-  const porConta = new Map<string, { total: Cents; qtd: number; ultimo: string }>();
-  for (const l of lancamentos) {
-    const atual = porConta.get(l.accountId) ?? {
-      total: ZERO,
-      qtd: 0,
-      ultimo: l.occurredAt,
-    };
-    porConta.set(l.accountId, {
-      total: addCents(atual.total, fromDbNumeric(l.amountUsd)),
-      qtd: atual.qtd + 1,
-      // A lista vem decrescente, então o primeiro visto é o mais recente.
-      ultimo: atual.qtd === 0 ? l.occurredAt : atual.ultimo,
+      return {
+        contaId: par.accountId,
+        label: labelDaConta(ds, par.accountId),
+        total: atual ? fromDbNumeric(atual.volumeUsd) : null,
+        variacao:
+          atual && anterior
+            ? subtractCents(
+                fromDbNumeric(atual.volumeUsd),
+                fromDbNumeric(anterior.volumeUsd),
+              )
+            : null,
+        atualizadoEm: atual?.takenAt ?? null,
+        desdeEm: anterior?.takenAt ?? null,
+        nota: atual?.note ?? null,
+      };
+    })
+    .sort((a, b) => (b.total ?? 0) - (a.total ?? 0));
+
+  const total = contas.reduce<Cents>(
+    (acc, c) => addCents(acc, c.total ?? ZERO),
+    ZERO,
+  );
+
+  /* Só entra na variação quem tem duas medições: contar a estreia de uma conta
+     como "ganho do período" inventaria crescimento que não houve. */
+  const comHistorico = contas.filter((c) => c.variacao !== null);
+  const variacao =
+    comHistorico.length > 0
+      ? comHistorico.reduce<Cents>((acc, c) => addCents(acc, c.variacao ?? ZERO), ZERO)
+      : null;
+
+  const datas = contas
+    .map((c) => c.atualizadoEm)
+    .filter((d): d is string => d !== null)
+    .sort();
+
+  const historico = ds.volumeSnapshots
+    .filter((v) => v.projectId === projectId)
+    .sort((a, b) => b.takenAt.localeCompare(a.takenAt))
+    .map((v) => {
+      const medicoes = volumeDoPar(ds, projectId, v.accountId);
+      const posicao = medicoes.findIndex((m) => m.id === v.id);
+      const anterior = posicao > 0 ? medicoes[posicao - 1] : undefined;
+
+      return {
+        id: v.id,
+        data: v.takenAt,
+        contaId: v.accountId,
+        contaLabel: labelDaConta(ds, v.accountId),
+        total: fromDbNumeric(v.volumeUsd),
+        variacao: anterior
+          ? subtractCents(fromDbNumeric(v.volumeUsd), fromDbNumeric(anterior.volumeUsd))
+          : null,
+        nota: v.note,
+      };
     });
-  }
 
   return {
-    total: sumOfType(lancamentos, "volume_traded"),
-    recente: sumOfType(
-      lancamentos.filter((l) => l.occurredAt >= trintaDiasAtras),
-      "volume_traded",
-    ),
-    // A lista vem decrescente: o último item é o lançamento mais antigo.
-    desde: lancamentos.at(-1)?.occurredAt ?? null,
-    contas: [...porConta.entries()]
-      .map(([contaId, dados]) => ({
-        contaId,
-        label: labelDaConta(ds, contaId),
-        total: dados.total,
-        lancamentos: dados.qtd,
-        ultimo: dados.ultimo,
-      }))
-      .sort((a, b) => b.total - a.total),
-    historico: lancamentos.map((l) => ({
-      id: l.id,
-      data: l.occurredAt,
-      contaLabel: labelDaConta(ds, l.accountId),
-      valor: fromDbNumeric(l.amountUsd),
-      descricao: l.description,
-    })),
+    total,
+    totalAnterior: variacao !== null ? subtractCents(total, variacao) : null,
+    variacao,
+    atualizadoEm: datas.at(-1) ?? null,
+    contas,
+    historico,
   };
 }
 
@@ -276,7 +330,7 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
         prioridade: projeto.priority,
         aportado,
         capitalNoPico: pico,
-        volumeOperado: sumOfType(doProjetoMov, "volume_traded"),
+        volumeOperado: volumeAcumulado(ds, projeto.id),
         exposicao,
         resultado,
         roi: percentOf(resultado, pico),
@@ -472,7 +526,7 @@ export function selectProjectBySlug(
     prioridade: projeto.priority,
     aportado: financeiro.aportado,
     capitalNoPico: financeiro.capitalNoPico,
-    volumeOperado: sumOfType(movimentos, "volume_traded"),
+    volumeOperado: volumeAcumulado(ds, projeto.id),
     exposicao: financeiro.exposicao,
     resultado: financeiro.resultado,
     roi: financeiro.roi,

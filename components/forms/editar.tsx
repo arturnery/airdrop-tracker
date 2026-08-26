@@ -28,6 +28,7 @@ import {
   contaSchema,
   metaSchema,
 } from "@/lib/validators";
+import { TIPOS_LANCAMENTO } from "@/lib/finance";
 import { fromDbNumeric, toDbNumeric } from "@/lib/money";
 
 /**
@@ -456,15 +457,7 @@ export function EditarLancamento({ transactionId }: { transactionId: string }) {
               name="type"
               defaultValue={lancamento.type}
               erro={e.type}
-              opcoes={[
-                { valor: "deposit", rotulo: "Depósito" },
-                { valor: "withdrawal", rotulo: "Retirada" },
-                { valor: "yield", rotulo: "Rendimento" },
-                { valor: "trade_pnl", rotulo: "Resultado de trade" },
-                { valor: "fee_gas", rotulo: "Taxa / gas" },
-                { valor: "volume_traded", rotulo: "Volume operado" },
-                { valor: "other", rotulo: "Outro" },
-              ]}
+              opcoes={[...TIPOS_LANCAMENTO]}
             />
             <CampoData
               label="Data"

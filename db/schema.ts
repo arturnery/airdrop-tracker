@@ -442,6 +442,48 @@ export const goalEntries = pgTable("goal_entries", {
   note: text("note"),
 });
 
+/**
+ * Medição de volume operado acumulado.
+ *
+ * Mesma natureza dos pontos, e pelo mesmo motivo: a plataforma mostra um
+ * **acumulado**, não um extrato. Quem lançava incrementos precisava calcular de
+ * cabeça quanto tinha rodado desde a última vez, e um lançamento esquecido
+ * sumia do total sem deixar rastro. Aqui se registra o número que está na tela
+ * da corretora, e o ganho do período sai da diferença entre duas medições.
+ *
+ * É foto, e não fluxo: por isso tabela separada de `transactions`, que é a
+ * distinção que sustenta o modelo inteiro (§2).
+ *
+ * Volume continua fora do saldo e do resultado. Ele mede atividade para
+ * critério de elegibilidade, e somá-lo ao dinheiro inflaria o capital.
+ */
+export const volumeSnapshots = pgTable(
+  "volume_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").notNull(),
+    accountId: uuid("account_id").notNull(),
+    takenAt: date("taken_at").notNull(),
+    volumeUsd: numeric("volume_usd", { precision: 18, scale: 2 }).notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.projectId, t.accountId],
+      foreignColumns: [projectAccounts.projectId, projectAccounts.accountId],
+      name: "volume_project_account_fk",
+    }).onDelete("cascade"),
+    // Uma medição por par por dia: reinformar corrige em vez de duplicar.
+    unique("volume_pair_day_unq").on(t.projectId, t.accountId, t.takenAt),
+  ],
+);
+
 // --------------------------------------------------------------- recebimentos
 
 export const airdropClaims = pgTable(

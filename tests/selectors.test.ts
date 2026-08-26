@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { datasetInicial, HOJE } from "@/db/queries/fixtures";
 import { novoId, slugify, uniqueSlug } from "@/lib/dataset";
+import { rotuloDoTipo } from "@/lib/finance";
 import { cents, toDbNumeric } from "@/lib/money";
 import * as M from "@/lib/mutations";
 import {
@@ -229,77 +230,63 @@ describe("helpers de dataset", () => {
 
 describe("selectVolumeDoProjeto", () => {
   const perp = ds.projects.find((p) => p.slug === "vertex-perp")!;
-  const volume = selectVolumeDoProjeto(ds, perp.id, HOJE);
+  const volume = selectVolumeDoProjeto(ds, perp.id);
 
-  it("soma apenas lançamentos de volume", () => {
-    const somaDireta = ds.transactions
-      .filter((t) => t.projectId === perp.id && t.type === "volume_traded")
-      .reduce((acc, t) => acc + Number(t.amountUsd) * 100, 0);
-    expect(volume.total).toBe(Math.round(somaDireta));
+  it("o total é a última medição de cada conta, não a soma de todas", () => {
+    // As fixtures têm duas medições do mesmo par: 1250 e depois 3450. Somar as
+    // duas daria 4700, e o volume acumulado é 3450.
+    expect(toDbNumeric(volume.total)).toBe("3450.00");
   });
 
-  /*
-   * A garantia que importa: volume não é dinheiro. Se um depósito vazasse para
-   * cá, o número viraria uma mistura sem significado.
-   */
-  it("não inclui depósitos nem rendimentos", () => {
-    const tipos = new Set(
-      ds.transactions
-        .filter((t) => t.projectId === perp.id)
-        .map((t) => t.type),
-    );
-    expect(tipos.has("deposit")).toBe(true);
-    expect(volume.historico.length).toBeLessThan(
-      ds.transactions.filter((t) => t.projectId === perp.id).length,
-    );
+  it("a variação é a diferença para a medição anterior", () => {
+    expect(toDbNumeric(volume.variacao!)).toBe("2200.00");
+    expect(toDbNumeric(volume.totalAnterior!)).toBe("1250.00");
   });
 
   it("o total por conta soma o total do projeto", () => {
-    const soma = volume.contas.reduce((acc, c) => acc + c.total, 0);
+    const soma = volume.contas.reduce((acc, c) => acc + (c.total ?? 0), 0);
     expect(soma).toBe(volume.total);
   });
 
-  it("lista do mais recente para o mais antigo", () => {
-    const datas = volume.historico.map((l) => l.data);
+  it("conta sem medição aparece com total nulo, e não zera o projeto", () => {
+    const semMedicao = volume.contas.filter((c) => c.total === null);
+    expect(semMedicao.length).toBeGreaterThan(0);
+    expect(volume.total).toBeGreaterThan(0);
+  });
+
+  it("o histórico vai do mais recente para o mais antigo", () => {
+    const datas = volume.historico.map((m) => m.data);
     expect([...datas].sort().reverse()).toEqual(datas);
   });
 
-  it("projeto sem volume devolve estrutura vazia, não quebra", () => {
-    const semVolume = ds.projects.find((p) => p.slug !== "vertex-perp")!;
-    const v = selectVolumeDoProjeto(ds, semVolume.id, HOJE);
-    expect(v.total).toBeGreaterThanOrEqual(0);
-    expect(Array.isArray(v.contas)).toBe(true);
+  it("a primeira medição de uma conta não tem variação", () => {
+    const primeira = volume.historico.at(-1)!;
+    expect(primeira.variacao).toBeNull();
   });
-});
 
-describe("selectVolumeDoProjeto: período coberto", () => {
-  const perp = ds.projects.find((p) => p.slug === "vertex-perp")!;
-  const volume = selectVolumeDoProjeto(ds, perp.id, HOJE);
-
-  it("desde é o lançamento mais antigo, não o mais recente", () => {
-    const datas = ds.transactions
-      .filter((t) => t.projectId === perp.id && t.type === "volume_traded")
-      .map((t) => t.occurredAt)
-      .sort();
-    expect(volume.desde).toBe(datas[0]);
+  it("projeto sem medição nenhuma devolve estrutura vazia, não quebra", () => {
+    const semVolume = ds.projects.find((p) => p.slug === "nebula")!;
+    const v = selectVolumeDoProjeto(ds, semVolume.id);
+    expect(v.total).toBe(0);
+    expect(v.variacao).toBeNull();
+    expect(v.atualizadoEm).toBeNull();
+    expect(Array.isArray(v.contas)).toBe(true);
   });
 
   /*
-   * Quando todo o volume é recente, os dois números coincidem. A tela usa essa
-   * igualdade para não repetir o mesmo valor duas vezes, o que parecia erro.
+   * A garantia que sobreviveu à mudança de modelo: volume não é dinheiro.
+   * Antes ela protegia contra um depósito vazar para a soma; agora a separação
+   * é estrutural, porque medição de volume vive em tabela própria.
    */
-  it("recente iguala o total quando não há volume antigo", () => {
-    const recentes = selectVolumeDoProjeto(ds, perp.id, volume.desde!);
-    expect(recentes.recente).toBe(recentes.total);
-  });
-
-  it("recente exclui o que ficou fora da janela de 30 dias", () => {
-    // Um "hoje" bem no futuro joga todos os lançamentos para fora da janela.
-    const futuro = selectVolumeDoProjeto(ds, perp.id, "2027-01-01");
-    expect(futuro.total).toBe(volume.total);
-    expect(futuro.recente).toBe(0);
+  it("nenhum lançamento de dinheiro entra no volume", () => {
+    expect(ds.transactions.some((t) => t.projectId === perp.id)).toBe(true);
+    expect(volume.historico.every((m) => m.total >= 0)).toBe(true);
+    expect(volume.historico.length).toBe(
+      ds.volumeSnapshots.filter((v) => v.projectId === perp.id).length,
+    );
   });
 });
+
 
 /**
  * "Onde está o capital" é pergunta sobre o presente.
@@ -355,5 +342,58 @@ describe("selectCapitalPorProjeto", () => {
     });
 
     expect(projeto(ds, "nebula")).toBeUndefined();
+  });
+});
+
+/**
+ * O que a mudança de modelo do volume tinha de preservar.
+ *
+ * Volume passou de incremento para medição de acumulado. O total do projeto
+ * mudou de origem, e não pode mudar de significado: continua sendo quanto se
+ * operou, continua fora do saldo e do resultado.
+ */
+describe("volume como medição, e não como lançamento", () => {
+  const perp = ds.projects.find((p) => p.slug === "vertex-perp")!;
+
+  it("o volume do projeto vem das medições, não dos lançamentos", () => {
+    const resumo = selectProjects(ds, HOJE).find((p) => p.slug === "vertex-perp")!;
+    const daAba = selectVolumeDoProjeto(ds, perp.id);
+    expect(resumo.volumeOperado).toBe(daAba.total);
+  });
+
+  it("volume continua fora do saldo e do resultado", () => {
+    const antes = selectProjectBySlug(ds, "vertex-perp", HOJE)!;
+
+    // Uma medição gigante não pode mexer em exposição nem em resultado.
+    const comVolume = {
+      ...ds,
+      volumeSnapshots: [
+        ...ds.volumeSnapshots,
+        {
+          id: "vol-teste",
+          projectId: perp.id,
+          accountId: ds.projectAccounts.find((p) => p.projectId === perp.id)!.accountId,
+          takenAt: "2026-07-28",
+          volumeUsd: "999999.00",
+          note: null,
+        },
+      ],
+    };
+    const depois = selectProjectBySlug(comVolume, "vertex-perp", HOJE)!;
+
+    expect(depois.exposicao).toBe(antes.exposicao);
+    expect(depois.resultado).toBe(antes.resultado);
+    expect(depois.volumeOperado).toBeGreaterThan(antes.volumeOperado);
+  });
+
+  it("o rótulo do tipo antigo continua existindo, para nomear registro velho", () => {
+    /*
+     * Que `volume_traded` saiu do formulário quem garante é o compilador: o
+     * tipo de `TIPOS_LANCAMENTO` não contém mais esse valor, e uma comparação
+     * com ele nem passa no typecheck. O que precisa de teste é o outro lado:
+     * o rótulo sobreviveu para nomear um lançamento antigo que apareça.
+     */
+    expect(rotuloDoTipo("volume_traded")).toBe("Volume operado");
+    expect(rotuloDoTipo("deposit")).toBe("Depósito");
   });
 });

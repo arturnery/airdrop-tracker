@@ -130,7 +130,7 @@ export function aplicarSinalDoTipo(type: string, valor: Cents): Cents {
  * escolhido pelo botão da seção, e a legenda do histórico. Com a lista dentro
  * do formulário, "Volume operado" virava "volume_traded" nos outros dois.
  */
-export const TIPOS_LANCAMENTO = [
+const TODOS_OS_TIPOS = [
   { valor: "deposit", rotulo: "Depósito" },
   { valor: "withdrawal", rotulo: "Retirada" },
   { valor: "yield", rotulo: "Rendimento" },
@@ -140,8 +140,21 @@ export const TIPOS_LANCAMENTO = [
   { valor: "other", rotulo: "Outro" },
 ] as const;
 
+/**
+ * Os tipos oferecidos no formulário. `volume_traded` ficou de fora.
+ *
+ * Volume deixou de ser lançamento e virou medição de acumulado, em tabela
+ * própria: pedir o incremento obrigava a pessoa a subtrair de cabeça um número
+ * que a plataforma já mostra pronto. O tipo continua na lista completa acima
+ * porque `rotuloDoTipo` precisa saber nomear registros antigos, e um enum de
+ * banco não some só porque a interface parou de oferecê-lo.
+ */
+export const TIPOS_LANCAMENTO = TODOS_OS_TIPOS.filter(
+  (t) => t.valor !== "volume_traded",
+);
+
 export function rotuloDoTipo(type: string): string | null {
-  return TIPOS_LANCAMENTO.find((t) => t.valor === type)?.rotulo ?? null;
+  return TODOS_OS_TIPOS.find((t) => t.valor === type)?.rotulo ?? null;
 }
 
 /**

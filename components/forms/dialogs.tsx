@@ -8,6 +8,7 @@ import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
 import { CampoData } from "@/components/forms/campo-data";
 import { CampoValor } from "@/components/forms/campo-valor";
 import { useDados } from "@/components/data-provider";
+import { cents, formatUsd, fromDbNumeric, parseUserInput } from "@/lib/money";
 import {
   direcaoDoTipo,
   efeitoDoTipo,
@@ -32,6 +33,7 @@ import {
   metaSchema,
   pontosSchema,
   progressoMetaSchema,
+  volumeSchema,
   projetoSchema,
   recebimentoSchema,
   cotacaoSchema,
@@ -1139,6 +1141,138 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
             obrigatorio
             defaultValue={hoje}
             erro={e.receivedAt}
+          />
+        </>
+      )}
+    </Formulario>
+  );
+}
+
+/**
+ * Medição de volume acumulado.
+ *
+ * O campo pede o **total** que a plataforma mostra, não o quanto rodou desde a
+ * última vez. É a mesma escolha dos pontos, e pelo mesmo motivo: a corretora
+ * exibe um acumulado, e pedir o incremento obrigaria a pessoa a fazer de cabeça
+ * uma subtração que o sistema faz sozinho, com o agravante de que um incremento
+ * esquecido some do total sem deixar rastro.
+ *
+ * A dica embaixo do campo mostra quanto isso representa desde a última medição,
+ * antes de salvar: é onde se percebe um total digitado errado, porque um salto
+ * absurdo aparece ali na hora.
+ */
+export function RegistrarVolume({ projectId }: { projectId?: string }) {
+  const { dataset, acoes, hoje } = useDados();
+  const { projetos } = useOpcoes();
+  const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
+  const contas = useContasDoProjeto(projetoSel);
+  const [contaSel, setContaSel] = useState("");
+  const [valor, setValor] = useState("");
+
+  const alvo = contaSel || contas[0]?.valor || "";
+  const anterior = dataset.volumeSnapshots
+    .filter((v) => v.projectId === projetoSel && v.accountId === alvo)
+    .sort((a, b) => a.takenAt.localeCompare(b.takenAt))
+    .at(-1);
+
+  const digitado = parseUserInput(valor);
+  const diferenca =
+    anterior && digitado.ok
+      ? digitado.value - fromDbNumeric(anterior.volumeUsd)
+      : null;
+
+  return (
+    <Formulario
+      titulo="Registrar volume acumulado"
+      descricao="O total que a plataforma mostra hoje. A diferença para a medição anterior é calculada aqui."
+      gatilho={<BotaoNovo>Registrar volume</BotaoNovo>}
+      aoEnviar={(dados) => {
+        const bruto = {
+          projectId: texto(dados, "projectId"),
+          accountId: texto(dados, "accountId"),
+          takenAt: texto(dados, "takenAt"),
+          volume: texto(dados, "volume"),
+          note: texto(dados, "note"),
+        };
+        const resultado = volumeSchema.safeParse(bruto);
+        if (!resultado.success) return erros(resultado);
+        return acoes.registrarVolume(bruto);
+      }}
+    >
+      {({ erros: e }) => (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoSelecao
+              label="Projeto"
+              name="projectId"
+              obrigatorio
+              defaultValue={projectId}
+              erro={e.projectId}
+              opcoes={projetos}
+              onChange={(evento) => setProjetoSel(evento.target.value)}
+            />
+            <CampoSelecao
+              label="Conta"
+              name="accountId"
+              obrigatorio
+              erro={e.accountId}
+              opcoes={contas}
+              onChange={(evento) => setContaSel(evento.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoValor
+              label="Volume acumulado"
+              name="volume"
+              obrigatorio
+              autoFocus={Boolean(projectId)}
+              valor={valor}
+              aoMudar={setValor}
+              erro={e.volume}
+              ajuda={
+                anterior
+                  ? `A última medição desta conta marcava ${formatUsd(fromDbNumeric(anterior.volumeUsd))}.`
+                  : "Primeira medição desta conta: não há base de comparação ainda."
+              }
+              placeholder="125000.00"
+            />
+            <CampoData
+              label="Data"
+              name="takenAt"
+              obrigatorio
+              defaultValue={hoje}
+              erro={e.takenAt}
+            />
+          </div>
+
+          {diferenca !== null ? (
+            <p
+              className="border-border bg-secondary/40 rounded-md border px-3 py-2 text-xs"
+              aria-live="polite"
+            >
+              {diferenca >= 0 ? (
+                <>
+                  Rodou{" "}
+                  <strong className="text-positive">
+                    {formatUsd(cents(diferenca))}
+                  </strong>{" "}
+                  desde a medição anterior.
+                </>
+              ) : (
+                <span className="text-caution">
+                  Esse total é menor que o da medição anterior. Volume acumulado
+                  não diminui: confira se digitou o total, e não o do período.
+                </span>
+              )}
+            </p>
+          ) : null}
+
+          <CampoTexto
+            label="Nota"
+            name="note"
+            erro={e.note}
+            placeholder="Semana de volume alto no perp"
           />
         </>
       )}

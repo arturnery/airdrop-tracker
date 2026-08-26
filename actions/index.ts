@@ -22,6 +22,7 @@ import {
   tarefaSchema,
   valorDoRecebimento,
   vinculoSchema,
+  volumeSchema,
 } from "@/lib/validators";
 
 import { revalidatePath } from "next/cache";
@@ -364,6 +365,52 @@ export async function excluirCotacao(symbol: string): Promise<ResultadoAcao> {
 }
 
 // -------------------------------------------------------------------- pontos
+
+/**
+ * Medição de volume acumulado.
+ *
+ * Espelha `registrarPontos`, inclusive no `onConflictDoUpdate`: reinformar a
+ * medição do mesmo dia corrige, em vez de criar uma segunda que produziria
+ * variação falsa entre elas.
+ */
+export async function registrarVolume(entrada: unknown): Promise<ResultadoAcao> {
+  return executar(volumeSchema, entrada, async (dados, userId) => {
+    await exigirDono(dados.projectId, dados.accountId, userId);
+    await garantirVinculo(dados.projectId, dados.accountId, dados.takenAt);
+
+    await db
+      .insert(schema.volumeSnapshots)
+      .values({
+        userId,
+        projectId: dados.projectId,
+        accountId: dados.accountId,
+        takenAt: dados.takenAt,
+        volumeUsd: toDbNumeric(dados.volume),
+        note: dados.note,
+      })
+      .onConflictDoUpdate({
+        target: [
+          schema.volumeSnapshots.projectId,
+          schema.volumeSnapshots.accountId,
+          schema.volumeSnapshots.takenAt,
+        ],
+        set: { volumeUsd: toDbNumeric(dados.volume), note: dados.note },
+      });
+  }, ROTAS_DADOS);
+}
+
+export async function excluirVolume(id: string): Promise<ResultadoAcao> {
+  return executar(idSchema, { id }, async (dados, userId) => {
+    await db
+      .delete(schema.volumeSnapshots)
+      .where(
+        and(
+          eq(schema.volumeSnapshots.id, dados.id),
+          eq(schema.volumeSnapshots.userId, userId),
+        ),
+      );
+  }, ROTAS_DADOS);
+}
 
 export async function registrarPontos(entrada: unknown): Promise<ResultadoAcao> {
   return executar(pontosSchema, entrada, async (dados, userId) => {

@@ -18,12 +18,13 @@ import {
   EditarTarefa,
   EditarVinculo,
 } from "@/components/forms/editar";
-import { explicacoes } from "@/components/ajuda";
+import { Ajuda, explicacoes } from "@/components/ajuda";
 import { faltaRegistrarRecebimento } from "@/lib/consistencia";
 import { AvisoSaldo } from "@/components/aviso-saldo";
 import { Button } from "@/components/ui/button";
 import {
   LancarProgressoMeta,
+  RegistrarVolume,
   NovaMeta,
   NovaTarefa,
   NovoLancamento,
@@ -104,7 +105,7 @@ export function ProjetoView({ slug }: { slug: string }) {
 
   const tarefas = selectTasksByProject(dataset, projeto.id, hoje);
   const programa = selectProgramaDePontos(dataset, projeto.id);
-  const volume = selectVolumeDoProjeto(dataset, projeto.id, hoje);
+  const volume = selectVolumeDoProjeto(dataset, projeto.id);
   const historicoPontos = programa
     ? selectHistoricoDePontos(dataset, projeto.id)
     : [];
@@ -862,130 +863,156 @@ export function ProjetoView({ slug }: { slug: string }) {
           )}
         </TabsContent>
 
-        {volume.total > 0 ? (
-          <TabsContent value="volume" className="mt-6">
-            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-muted-foreground text-xs tracking-wider uppercase">
-                  Total operado
-                </p>
-                <p className="font-numeric mt-1 text-4xl leading-none font-semibold">
-                  {formatUsd(volume.total)}
-                </p>
-                {/*
-                  A linha só compara com os últimos 30 dias quando isso
-                  distingue algo. Enquanto todo o volume for recente, os dois
-                  números são iguais e repeti-los parece erro de cálculo: aí ela
-                  informa o período coberto, que é o dado que ainda falta.
-                */}
-                <p className="text-muted-foreground mt-2 text-xs">
-                  {volume.recente === volume.total ? (
-                    volume.desde ? (
-                      <>
-                        todo o volume desde{" "}
-                        <span className="text-foreground">
-                          {formatDateBr(volume.desde)}
-                        </span>
-                      </>
-                    ) : null
-                  ) : volume.recente > 0 ? (
-                    <>
-                      <span className="text-foreground tabular font-medium">
-                        {formatUsd(volume.recente)}
+        <TabsContent value="volume" className="mt-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-muted-foreground max-w-xl text-sm">
+              Registre o <strong className="text-foreground">total acumulado</strong>{" "}
+              que a plataforma mostra, não o quanto rodou desde a última vez: a
+              diferença o sistema calcula.
+            </p>
+            <RegistrarVolume projectId={projeto.id} />
+          </div>
+
+          {volume.atualizadoEm === null ? (
+            <EmptyState
+              title="Nenhuma medição de volume"
+              description="Anote o volume acumulado que a plataforma mostra. Na próxima medição, o sistema mostra quanto rodou no período."
+            />
+          ) : (
+            <>
+              <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <p className="text-muted-foreground flex items-center gap-1.5 text-xs tracking-wider uppercase">
+                    Volume acumulado
+                    <Ajuda sobre="volume acumulado">{explicacoes.volume}</Ajuda>
+                  </p>
+                  <p className="font-numeric mt-1 text-4xl leading-none font-semibold">
+                    {formatUsd(volume.total)}
+                  </p>
+                  {/* A variação é o número que a pessoa quer: quanto rodou desde
+                      a medição anterior. O acumulado sozinho não diz isso. */}
+                  {volume.variacao !== null ? (
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      <span className="text-positive tabular font-medium">
+                        +{formatUsd(volume.variacao)}
                       </span>{" "}
-                      nos últimos 30 dias, de um total desde{" "}
-                      {volume.desde ? formatDateBr(volume.desde) : "o início"}
-                    </>
+                      desde a medição anterior
+                      {volume.totalAnterior !== null
+                        ? `, que marcava ${formatUsd(volume.totalAnterior)}`
+                        : ""}
+                    </p>
                   ) : (
-                    <>
-                      parado há mais de 30 dias, com atividade desde{" "}
-                      {volume.desde ? formatDateBr(volume.desde) : "o início"}
-                    </>
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      primeira medição: sem base de comparação
+                    </p>
                   )}
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  medido em {formatDateBr(volume.atualizadoEm)}
                 </p>
               </div>
-              <NovoLancamento
-                projectId={projeto.id}
-                tipo="volume_traded"
-                rotulo="Registrar volume"
-              />
-            </div>
 
-            {/*
-              Volume não é dinheiro movimentado: é quanto se negociou. Fica fora
-              do capital e do resultado de propósito, e ganha espaço próprio
-              porque em projeto que qualifica por atividade é o número que se
-              acompanha ao longo do tempo.
-            */}
-            <p className="text-muted-foreground mb-6 text-sm">
-              Volume mede atividade, não dinheiro movimentado: não entra no
-              capital nem no resultado.
-            </p>
-
-            <h3 className="mb-3 text-sm font-medium">Por conta</h3>
-            <div className="border-border overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-160 text-sm">
-                <caption className="sr-only">
-                  Volume operado por conta neste projeto
-                </caption>
-                <thead>
-                  <tr className="border-border text-muted-foreground border-b text-left text-xs">
-                    <th scope="col" className="px-4 py-2.5 font-medium">Conta</th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Volume</th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Lançamentos</th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Último</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-border divide-y">
-                  {volume.contas.map((conta) => (
-                    <tr
-                      key={conta.contaId}
-                      className="hover:bg-accent/40 transition-colors"
-                    >
-                      <th scope="row" className="px-4 py-3 text-left font-medium">
-                        {conta.label}
-                      </th>
-                      <td className="tabular px-4 py-3 text-right">
-                        {formatUsd(conta.total)}
-                      </td>
-                      <td className="tabular text-muted-foreground px-4 py-3 text-right">
-                        {conta.lancamentos}
-                      </td>
-                      <td className="text-muted-foreground px-4 py-3 text-right text-xs">
-                        {conta.ultimo ? formatDateBr(conta.ultimo) : "-"}
-                      </td>
+              <h3 className="mb-3 text-sm font-medium">Por conta</h3>
+              <div className="border-border mb-8 overflow-x-auto rounded-lg border">
+                <table className="w-full min-w-160 text-sm">
+                  <caption className="sr-only">
+                    Volume acumulado por conta neste projeto
+                  </caption>
+                  <thead>
+                    <tr className="border-border text-muted-foreground border-b text-left text-xs">
+                      <th scope="col" className="px-4 py-2.5 font-medium">Conta</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">Acumulado</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">Desde a anterior</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">Medido em</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-border divide-y">
+                    {volume.contas.map((conta) => (
+                      <tr key={conta.contaId} className="hover:bg-accent/40 transition-colors">
+                        <th scope="row" className="px-4 py-3 text-left font-medium">
+                          {conta.label}
+                        </th>
+                        <td className="tabular px-4 py-3 text-right">
+                          {conta.total === null ? (
+                            <span className="text-muted-foreground">sem medição</span>
+                          ) : (
+                            formatUsd(conta.total)
+                          )}
+                        </td>
+                        <td className="tabular px-4 py-3 text-right">
+                          {conta.variacao === null ? (
+                            <span className="text-muted-foreground">-</span>
+                          ) : (
+                            <span className="text-positive">
+                              +{formatUsd(conta.variacao)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="text-muted-foreground px-4 py-3 text-right text-xs">
+                          {conta.atualizadoEm ? formatDateBr(conta.atualizadoEm) : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-            <h3 className="mt-8 mb-3 text-sm font-medium">Lançamentos</h3>
-            <ul className="border-border divide-border divide-y rounded-lg border">
-              {volume.historico.map((linha) => (
-                <li
-                  key={linha.id}
-                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm"
-                >
-                  <span className="text-muted-foreground tabular text-xs">
-                    {formatDateBr(linha.data)}
-                  </span>
-                  <span className="min-w-40 flex-1">
-                    {linha.contaLabel}
-                    {linha.descricao ? (
-                      <span className="text-muted-foreground ml-2 text-xs">
-                        {linha.descricao}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="tabular font-medium">
-                    {formatUsd(linha.valor)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </TabsContent>
-        ) : null}
+              <h3 className="mb-3 text-sm font-medium">Medições</h3>
+              <div className="border-border overflow-x-auto rounded-lg border">
+                <table className="w-full min-w-160 text-sm">
+                  <caption className="sr-only">Histórico de medições de volume</caption>
+                  <thead>
+                    <tr className="border-border text-muted-foreground border-b text-left text-xs">
+                      <th scope="col" className="px-4 py-2.5 font-medium">Data</th>
+                      <th scope="col" className="px-4 py-2.5 font-medium">Conta</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">Acumulado</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">No período</th>
+                      <th scope="col" className="px-4 py-2.5 font-medium">Nota</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                        <span className="sr-only">Ações</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-border divide-y">
+                    {volume.historico.map((medicao) => (
+                      <tr key={medicao.id}>
+                        <th scope="row" className="tabular px-4 py-3 text-left font-normal">
+                          {formatDateBr(medicao.data)}
+                        </th>
+                        <td className="px-4 py-3">{medicao.contaLabel}</td>
+                        <td className="tabular px-4 py-3 text-right">
+                          {formatUsd(medicao.total)}
+                        </td>
+                        <td className="tabular px-4 py-3 text-right">
+                          {medicao.variacao === null ? (
+                            <span className="text-muted-foreground">primeira</span>
+                          ) : (
+                            <span className="text-positive">
+                              +{formatUsd(medicao.variacao)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="text-muted-foreground px-4 py-3 text-xs">
+                          {medicao.nota}
+                        </td>
+                        <td className="px-2 py-2">
+                          <div className="flex items-center justify-end">
+                            <ConfirmarExclusao
+                              titulo="Excluir medição"
+                              alvo={`${formatUsd(medicao.total)} em ${formatDateBr(medicao.data)}`}
+                              aoConfirmar={() => acoes.excluirVolume(medicao.id)}
+                              gatilho={<BotaoLixeira rotulo="Excluir medição de volume" />}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </TabsContent>
 
         <TabsContent value="airdrop" className="mt-6">
           <div className="mb-4">

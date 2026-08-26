@@ -43,6 +43,11 @@ export const changelog: Versao[] = [
     data: "2026-08-26",
     mudancas: [
       {
+        tipo: "novidade",
+        texto:
+          "O volume agora funciona como os pontos: você registra o total acumulado que a plataforma mostra, e o sistema calcula quanto rodou desde a medição anterior. Antes era preciso lançar o incremento, fazendo a subtração de cabeça. Seus lançamentos antigos foram convertidos em medições, e o total de cada projeto continua o mesmo.",
+      },
+      {
         tipo: "correcao",
         texto:
           "Ao salvar um lançamento, o formulário fechava antes de a tela receber o dado novo. No intervalo, a tabela ainda mostrava o valor antigo, e parecia que a alteração tinha se perdido. Agora o botão avisa que está salvando e o formulário só fecha quando a mudança já está na tela.",

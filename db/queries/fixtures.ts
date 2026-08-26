@@ -482,9 +482,20 @@ export function datasetInicial() {
     goalEntries: [...rawGoalEntries],
     tokenPrices: [...rawTokenPrices],
     pointsSnapshots: [...rawPointsSnapshots],
+    volumeSnapshots: [...rawVolumeSnapshots],
     airdropClaims: [...rawAirdropClaims],
   };
 }
+
+export type RawVolumeSnapshot = {
+  id: string;
+  projectId: string;
+  accountId: string;
+  takenAt: string;
+  /** `numeric` como string, igual aos demais valores. */
+  volumeUsd: string;
+  note: string | null;
+};
 
 export type RawPointsSnapshot = {
   id: string;
@@ -503,6 +514,16 @@ export type RawPointsSnapshot = {
  *
  * Dados de exemplo.
  */
+/**
+ * Medições de volume acumulado. Duas datas para o mesmo par exercitam o cálculo
+ * da variação, que é o número que a tela mostra.
+ */
+export const rawVolumeSnapshots: RawVolumeSnapshot[] = [
+  { id: "vol-01", projectId: "prj-vertex", accountId: "acc-chrome", takenAt: "2026-07-20", volumeUsd: "1250.00", note: null },
+  { id: "vol-02", projectId: "prj-vertex", accountId: "acc-chrome", takenAt: "2026-07-27", volumeUsd: "3450.00", note: "semana de volume alto" },
+  { id: "vol-03", projectId: "prj-prisma", accountId: "acc-chrome", takenAt: "2026-07-26", volumeUsd: "1200.00", note: null },
+];
+
 export const rawPointsSnapshots: RawPointsSnapshot[] = [
   // Vertex Perp: quatro contas, duas medições
   { id: "pts-01", projectId: "prj-vertex", accountId: "acc-brave", takenAt: "2026-07-20", points: "8400.0000", note: null },

@@ -196,6 +196,24 @@ export const pontosSchema = z.object({
   note: textoOpcional,
 });
 
+/**
+ * Medição de volume acumulado: o número que a plataforma mostra, não o ganho.
+ *
+ * Usa `valorUsd` como o resto do dinheiro, mas o volume é sempre positivo:
+ * acumulado não anda para trás. Um negativo aqui seria erro de digitação, e
+ * aceitar em silêncio produziria variação negativa numa métrica que só cresce.
+ */
+export const volumeSchema = z.object({
+  projectId: z.string().min(1, "Escolha o projeto."),
+  accountId: z.string().min(1, "Escolha a conta."),
+  takenAt: dataIso,
+  volume: valorUsd.refine(
+    (v) => v >= 0,
+    "O volume acumulado não diminui: informe o total que a plataforma mostra.",
+  ),
+  note: textoOpcional,
+});
+
 export const tarefaSchema = z.object({
   projectId: z.string().min(1, "Escolha o projeto."),
   accountId: z.string().nullable(),

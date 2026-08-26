@@ -323,26 +323,41 @@ export type PointsProgramRow = {
  * é quanto se negociou, não quanto se ganhou. Somá-lo ao capital inflaria a
  * posição, e ignorá-lo esconde o esforço que qualifica para muitos airdrops.
  */
+/**
+ * Volume operado, medido como acumulado.
+ *
+ * Espelha `PointsProgramRow`, e pelo mesmo motivo: a plataforma mostra um total
+ * que só cresce, não um extrato. O que se registra é a foto, e o ganho do
+ * período sai da diferença entre duas fotos.
+ */
 export type VolumeProjeto = {
+  /** Soma da última medição de cada conta: o volume acumulado hoje. */
   total: Cents;
-  /** Volume dos últimos 30 dias, para saber se a atividade continua. */
-  recente: Cents;
-  /** Data do primeiro lançamento: o período que o total cobre. */
-  desde: IsoDate | null;
+  /** Total na medição anterior, para comparar. */
+  totalAnterior: Cents | null;
+  /** Quanto rodou desde a medição anterior. Nulo na primeira de todas. */
+  variacao: Cents | null;
+  atualizadoEm: IsoDate | null;
   contas: {
     contaId: string;
     label: string;
-    total: Cents;
-    lancamentos: number;
-    ultimo: IsoDate | null;
+    /** Nulo quando a conta nunca teve medição. */
+    total: Cents | null;
+    variacao: Cents | null;
+    atualizadoEm: IsoDate | null;
+    desdeEm: IsoDate | null;
+    nota: string | null;
   }[];
-  /** Cada lançamento de volume, do mais recente para o mais antigo. */
+  /** Cada medição, da mais recente para a mais antiga. */
   historico: {
     id: string;
     data: IsoDate;
+    contaId: string;
     contaLabel: string;
-    valor: Cents;
-    descricao: string | null;
+    total: Cents;
+    /** Diferença para a medição anterior daquela conta. */
+    variacao: Cents | null;
+    nota: string | null;
   }[];
 };
 

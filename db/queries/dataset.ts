@@ -44,6 +44,7 @@ export async function carregarDataset(
     lancamentos,
     cotacoes,
     pontos,
+    volume,
     tarefas,
     metas,
     recebimentos,
@@ -72,6 +73,11 @@ export async function carregarDataset(
       .from(schema.pointsSnapshots)
       .where(eq(schema.pointsSnapshots.userId, userId))
       .orderBy(asc(schema.pointsSnapshots.takenAt)),
+    db
+      .select()
+      .from(schema.volumeSnapshots)
+      .where(eq(schema.volumeSnapshots.userId, userId))
+      .orderBy(asc(schema.volumeSnapshots.takenAt)),
     db
       .select()
       .from(schema.tasks)
@@ -169,6 +175,14 @@ export async function carregarDataset(
       takenAt: p.takenAt,
       points: p.points,
       note: p.note,
+    })),
+    volumeSnapshots: volume.map((v) => ({
+      id: v.id,
+      projectId: v.projectId,
+      accountId: v.accountId,
+      takenAt: v.takenAt,
+      volumeUsd: v.volumeUsd,
+      note: v.note,
     })),
     tasks: tarefas.map((t) => ({
       id: t.id,

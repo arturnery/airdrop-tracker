@@ -2889,6 +2889,62 @@ lugar certo em um minuto, porque descreve o sintoma sem teorizar sobre a causa.
 
 ---
 
+## Marco 46: Volume vira medição, como os pontos
+
+O pedido foi direto: lançar só o total de volume e o sistema mostrar a diferença para o
+registro anterior. É reconhecer que volume tem a mesma natureza dos pontos, e a natureza
+estava modelada errada desde o começo.
+
+**Volume era fluxo e é foto.** A corretora mostra um acumulado que só cresce, e o sistema
+pedia o incremento. Isso obriga a pessoa a subtrair de cabeça um número que a plataforma já
+entrega pronto, e tem um modo de falhar que não avisa: um incremento esquecido some do total
+sem deixar rastro, e não existe como conferir contra a tela de onde o dado veio.
+
+A distinção fluxo × foto é a fundadora do projeto: foi o erro da planilha, onde depósito e
+saldo dividiam a mesma coluna e o somatório saía errado. `points_snapshots` já aplicava isso
+para pontos. Volume ficou de fora por três anos de decisão, e o pedido apenas apontou o que
+já estava inconsistente.
+
+### A conversão dos dados
+
+`volume_snapshots` espelha `points_snapshots`, e os 30 lançamentos existentes viraram 24
+medições em 21 pares. A conversão soma o acumulado por par em ordem de data, então o total de
+cada projeto continua idêntico.
+
+Dois detalhes que o script precisou tratar:
+
+- **Mais de um lançamento no mesmo dia** vira uma medição só, com o acumulado do fim do dia.
+  A tabela aceita uma por par por dia, e o acumulado da noite é o que a plataforma teria
+  mostrado. Foi o que reduziu 30 para 24.
+- **Os lançamentos convertidos são apagados.** Manter os dois gravaria o mesmo fato em duas
+  tabelas, e quem lesse depois não saberia qual vale.
+
+O script confere **depois** de gravar, e não só antes: o acumulado final de cada par tem de
+bater com a soma dos incrementos que existiam. Migração que não se confere é migração cujo
+erro ninguém vai notar.
+
+### O formulário mostra a conta antes de salvar
+
+O campo pede o total, e embaixo aparece quanto isso representa desde a medição anterior. É
+onde um total digitado errado se revela, porque um salto absurdo salta à vista ali, e não
+depois de gravado.
+
+Total menor que o anterior é **avisado, não recusado**. Acumulado não diminui, e o caso quase
+sempre é ter digitado o valor do período no lugar do total. Recusar, porém, impediria
+corrigir uma medição anterior que estava errada, e o aviso já resolve o caso comum sem fechar
+a porta do caso legítimo.
+
+### Uma nota sobre os testes
+
+Três asserções minhas falharam durante a verificação, e as três estavam erradas, não o
+código: eu esperava variação onde a conta tinha uma única medição, esperava um número que
+mudara com a migração, e escrevi um teste que o compilador já garantia. O último virou
+comentário: que `volume_traded` saiu do formulário quem prova é o tipo, e uma comparação com
+ele nem passa no typecheck. **Teste que duplica o que o compilador garante não protege de
+nada e custa manutenção.**
+
+---
+
 ## Estado atual
 
 | | |
@@ -2899,7 +2955,7 @@ lugar certo em um minuto, porque descreve o sintoma sem teorizar sobre a causa.
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 295, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
+| Testes | 298, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
 | Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |

@@ -58,6 +58,8 @@ type Acoes = {
   excluirCotacao: Acao<[string]>;
 
   registrarPontos: Acao<[unknown]>;
+  registrarVolume: Acao<[unknown]>;
+  excluirVolume: Acao<[string]>;
   excluirPontos: Acao<[string]>;
 
   criarTarefa: Acao<[unknown]>;
@@ -195,6 +197,8 @@ export function DataProvider({
       excluirCotacao: envolver(A.excluirCotacao),
 
       registrarPontos: envolver(A.registrarPontos),
+      registrarVolume: envolver(A.registrarVolume),
+      excluirVolume: envolver(A.excluirVolume),
       excluirPontos: envolver(A.excluirPontos),
 
       criarTarefa: envolver(A.criarTarefa),

@@ -1236,6 +1236,40 @@ e não há recebimento, o texto explica o que se ganha registrando, com o botão
 Corrigir a contradição saiu mais barato que empilhar aviso, e some sozinho quando o
 recebimento entrar.
 
+## 14.4-B. Volume virou medição de acumulado
+
+Volume era lançamento incremental: cada entrada dizia quanto tinha rodado desde a última
+vez, e o total do projeto era a soma. Isso pedia à pessoa uma conta que a plataforma já faz,
+e tinha um modo de falhar silencioso: um incremento esquecido some do total sem deixar
+rastro, e não há como conferir contra a tela da corretora.
+
+Agora vale o mesmo princípio dos pontos (§4.4): a plataforma mostra um **acumulado**, então o
+que se registra é a foto, e o ganho do período sai da diferença entre duas fotos. É foto e
+não fluxo, então tabela separada de `transactions`, que é a distinção fundadora do modelo
+(§2).
+
+`volume_snapshots` espelha `points_snapshots`, inclusive na chave única por par e por dia:
+reinformar a medição do mesmo dia corrige em vez de criar uma segunda, que produziria
+variação falsa entre as duas.
+
+Três consequências:
+
+- **`volume_traded` saiu do formulário de lançamento**, e continua na lista de rótulos. Um
+  enum de banco não some porque a interface parou de oferecê-lo, e um registro antigo ainda
+  precisa de nome. Que ele saiu do formulário quem garante é o compilador: o tipo de
+  `TIPOS_LANCAMENTO` não contém mais o valor.
+- **O formulário mostra a diferença antes de salvar.** É onde um total digitado errado
+  aparece, porque um salto absurdo salta à vista ali, e não depois de gravado.
+- **Total menor que o anterior é avisado, não recusado.** Acumulado não diminui, e o caso
+  quase sempre é ter digitado o valor do período no lugar do total; mas recusar impediria
+  corrigir uma medição anterior errada.
+
+Os lançamentos existentes foram convertidos em medições acumuladas por
+[`scripts/migrar-volume-para-medicoes.ts`](scripts/migrar-volume-para-medicoes.ts), que
+confere depois de gravar que o acumulado de cada par bate com a soma dos incrementos. Em
+produção: 30 lançamentos viraram 24 medições em 21 pares, com o total de cada projeto
+inalterado.
+
 ## 14.7-D. O formulário espera a tela, não só o banco
 
 `envolver`, no provider, chama a Server Action e dispara `router.refresh()` dentro de uma
