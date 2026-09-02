@@ -1,3 +1,4 @@
+import { dataDeHoje } from "./dates";
 import type { Dataset } from "./dataset";
 
 /**
@@ -86,20 +87,57 @@ export class DatasetStore {
 
 /**
  * Data de hoje como store externo: o relógio também é externo ao React.
- * O valor é calculado uma vez e fica estável durante a sessão.
+ *
+ * **O dia precisa virar com a tela aberta.** A primeira versão calculava a
+ * data uma vez e a guardava "durante a sessão", e a sessão de quem usa isto
+ * todo dia dura mais que um dia: a aba fica aberta, meia-noite passa, e o
+ * formulário continua oferecendo ontem. Oito lançamentos de um mesmo dia
+ * foram gravados com a data anterior desse jeito, e nada na tela sugeria o
+ * motivo, porque a data aparecia preenchida e plausível.
+ *
+ * Por isso `getSnapshot` calcula na hora, e `subscribe` avisa o React quando o
+ * dia muda, para uma tela parada se corrigir sozinha em vez de esperar o
+ * próximo clique.
+ *
+ * A conferência é por intervalo, e não por um `setTimeout` até a meia-noite:
+ * navegador em segundo plano estrangula temporizadores longos e aparelho que
+ * dorme não os executa, então o alarme da meia-noite chegaria tarde ou nunca.
+ * Um minuto de intervalo custa nada e erra por no máximo um minuto; `focus` e
+ * `visibilitychange` cobrem quem volta para a aba depois de horas.
  */
+const INTERVALO_MS = 60_000;
+
 export function criarRelogio(dataInicial: string) {
-  let cache: string | null = null;
+  const ouvintes = new Set<() => void>();
+  let ultimoDia = dataInicial;
+
+  const conferir = () => {
+    const agora = dataDeHoje();
+    if (agora === ultimoDia) return;
+    ultimoDia = agora;
+    for (const avisar of ouvintes) avisar();
+  };
+
   return {
-    subscribe: () => () => {},
-    getSnapshot: (): string => {
-      if (cache) return cache;
-      const agora = new Date();
-      const mes = String(agora.getMonth() + 1).padStart(2, "0");
-      const dia = String(agora.getDate()).padStart(2, "0");
-      cache = `${agora.getFullYear()}-${mes}-${dia}`;
-      return cache;
+    subscribe: (aoMudar: () => void) => {
+      ouvintes.add(aoMudar);
+      const timer = window.setInterval(conferir, INTERVALO_MS);
+      window.addEventListener("visibilitychange", conferir);
+      window.addEventListener("focus", conferir);
+
+      return () => {
+        ouvintes.delete(aoMudar);
+        window.clearInterval(timer);
+        window.removeEventListener("visibilitychange", conferir);
+        window.removeEventListener("focus", conferir);
+      };
     },
+    /*
+     * Calcula sempre. Devolver uma string nova a cada chamada é seguro porque
+     * o React compara por valor, e duas strings iguais são a mesma coisa para
+     * `Object.is`: não há render extra enquanto o dia não muda.
+     */
+    getSnapshot: (): string => dataDeHoje(),
     getServerSnapshot: (): string => dataInicial,
   };
 }

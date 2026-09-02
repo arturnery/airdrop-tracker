@@ -3,7 +3,7 @@ import { Crimson_Text, Geist, Geist_Mono } from "next/font/google";
 
 import { DataProvider } from "@/components/data-provider";
 import { carregarDataset } from "@/db/queries/dataset";
-import { hojeNoServidor } from "@/lib/dates";
+import { dataDeHoje } from "@/lib/dates";
 import { emptyDataset } from "@/lib/dataset";
 import { sessaoAtual } from "@/lib/auth";
 import "./globals.css";
@@ -58,7 +58,7 @@ export default async function RootLayout({
    * é feita, então não há o que vazar.
    */
   const sessao = await sessaoAtual();
-  const hoje = hojeNoServidor();
+  const hoje = dataDeHoje();
   const dataset = sessao
     ? await carregarDataset(sessao.id, hoje)
     : emptyDataset();

@@ -39,6 +39,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.7",
+    data: "2026-09-02",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "A data que os formulários ofereciam ficava parada no dia em que a tela tinha sido aberta. Com a aba aberta de um dia para o outro, tudo o que você lançasse saía com a data de ontem, e o campo aparecia preenchido e plausível. Agora o dia vira sozinho na tela, sem precisar recarregar.",
+      },
+    ],
+  },
+  {
     versao: "1.6",
     data: "2026-08-26",
     mudancas: [

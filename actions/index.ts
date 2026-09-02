@@ -8,7 +8,7 @@ import * as schema from "@/db/schema";
 import { uniqueSlug } from "@/lib/dataset";
 import { toDbNumeric } from "@/lib/money";
 import { toDbPoints } from "@/lib/points";
-import { hojeNoServidor } from "@/lib/dates";
+import { dataDeHoje } from "@/lib/dates";
 import { contasAlvoDaTarefa } from "@/lib/tarefas";
 import {
   contaSchema,
@@ -553,7 +553,7 @@ export async function atualizarTarefa(
             ),
           );
       } else {
-        const hoje = hojeNoServidor();
+        const hoje = dataDeHoje();
         await db
           .delete(schema.taskOccurrences)
           .where(

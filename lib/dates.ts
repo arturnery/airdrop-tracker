@@ -28,27 +28,45 @@ export function urgencyOf(dueDate: IsoDate, today: IsoDate): TaskUrgency {
   return "proxima";
 }
 
-/** "2026-07-28" -> "28/07/2026" */
 /**
- * Data de hoje no fuso de quem usa, no formato `aaaa-mm-dd`.
+ * Fuso do projeto, e não o do aparelho.
  *
- * Roda no servidor a cada requisição, porque todas as rotas são dinâmicas.
- * A versão anterior usava uma constante das fixtures, com a justificativa de
- * que `new Date()` congelaria a data no momento do build: isso valia quando
- * havia páginas pré-renderizadas, e deixou de valer.
+ * O servidor precisa de um fuso fixo, senão o dia depende de onde a Vercel
+ * executou. Escolhido São Paulo, e não UTC, porque as três horas de diferença
+ * mudam o dia: às 22h de Brasília o UTC já virou, e uma tarefa de "hoje"
+ * apareceria como de amanhã.
  *
- * O fuso é fixo em São Paulo em vez de UTC porque a diferença de três horas
- * muda o dia: às 22h de Brasília o UTC já virou, e uma tarefa marcada para
- * "hoje" apareceria como sendo de amanhã.
+ * O navegador usa o **mesmo** fuso, e não o do sistema, para que "hoje"
+ * signifique a mesma coisa nos dois lados. Com fusos diferentes, a tela
+ * renderizada no servidor e o formulário preenchido no navegador poderiam
+ * discordar sobre que dia é, o que é pior do que qualquer um dos dois estar
+ * "errado" para quem viaja.
  */
-export function hojeNoServidor(): IsoDate {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+const FUSO = "America/Sao_Paulo";
+
+/*
+ * Construído uma vez: montar um `Intl.DateTimeFormat` é a parte cara, e esta
+ * função é chamada a cada render do provider no navegador.
+ */
+const formatadorDeDia = new Intl.DateTimeFormat("en-CA", {
+  timeZone: FUSO,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * Que dia é hoje, em `aaaa-mm-dd`.
+ *
+ * Serve ao servidor a cada requisição e ao navegador enquanto a tela está
+ * aberta. É a mesma função nos dois porque é a mesma pergunta: duas
+ * implementações acabariam divergindo justamente na virada do dia, que é o
+ * único momento em que a resposta importa.
+ */
+export function dataDeHoje(momento: Date = new Date()): IsoDate {
+  return formatadorDeDia.format(momento);
 }
+
 
 const DIA_MS = 86_400_000;
 
@@ -77,6 +95,7 @@ export function somarDias(iso: IsoDate, dias: number): IsoDate {
   return dataParaIso(new Date(isoParaData(iso).getTime() + dias * DIA_MS));
 }
 
+/** "2026-07-28" -> "28/07/2026" */
 export function formatDateBr(date: IsoDate): string {
   const [year, month, day] = date.split("-");
   return `${day}/${month}/${year}`;
