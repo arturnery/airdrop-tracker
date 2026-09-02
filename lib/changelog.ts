@@ -47,6 +47,21 @@ export const changelog: Versao[] = [
         texto:
           "A data que os formulários ofereciam ficava parada no dia em que a tela tinha sido aberta. Com a aba aberta de um dia para o outro, tudo o que você lançasse saía com a data de ontem, e o campo aparecia preenchido e plausível. Agora o dia vira sozinho na tela, sem precisar recarregar.",
       },
+      {
+        tipo: "novidade",
+        texto:
+          "Medição de volume, medição de pontos, progresso de meta e recebimento de airdrop ganharam botão de editar. Antes só dava para apagar e lançar de novo, o que em volume e pontos mudava o ganho do período seguinte: apagar a medição do meio faz a próxima passar a ser comparada com outra.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No recebimento de airdrop dá para trocar entre \"quantidade e preço\" e \"só o total em dólar\" ao editar. Quem lançou o total e depois descobriu a quantidade exata completa o registro sem refazê-lo, e o valor em dólar é recalculado.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "A quantidade de token deixou de aparecer com dezoito zeros depois da vírgula. 3078 em vez de 3078,000000000000000000.",
+      },
     ],
   },
   {

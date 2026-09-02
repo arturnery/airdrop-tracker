@@ -14,9 +14,13 @@ import {
 import {
   EditarLancamento,
   EditarMeta,
+  EditarPontos,
+  EditarProgressoMeta,
   EditarProjeto,
+  EditarRecebimento,
   EditarTarefa,
   EditarVinculo,
+  EditarVolume,
 } from "@/components/forms/editar";
 import { Ajuda, explicacoes } from "@/components/ajuda";
 import { faltaRegistrarRecebimento } from "@/lib/consistencia";
@@ -47,7 +51,7 @@ import {
 } from "@/components/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
-import { formatUsd } from "@/lib/money";
+import { formatUsd, semZerosDeSobra } from "@/lib/money";
 import {
   contarDependenciasVinculo,
   descreverImpacto,
@@ -731,6 +735,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                         </td>
                         <td className="px-2 py-2">
                           <div className="flex items-center justify-end">
+                            <EditarPontos snapshotId={registro.id} />
                             <ConfirmarExclusao
                               titulo="Excluir medição"
                               alvo={`${formatPoints(registro.total)} ${programa.rotulo} de ${registro.contaLabel} em ${formatDateBr(registro.data)}`}
@@ -841,6 +846,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                               <span className="text-muted-foreground min-w-0 flex-1 truncate">
                                 {entrada.nota}
                               </span>
+                              <EditarProgressoMeta entryId={entrada.id} />
                               <ConfirmarExclusao
                                 titulo="Excluir lançamento"
                                 alvo={`${formatUsd(entrada.valor)} em ${meta.titulo}`}
@@ -997,6 +1003,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                         </td>
                         <td className="px-2 py-2">
                           <div className="flex items-center justify-end">
+                            <EditarVolume snapshotId={medicao.id} />
                             <ConfirmarExclusao
                               titulo="Excluir medição"
                               alvo={`${formatUsd(medicao.total)} em ${formatDateBr(medicao.data)}`}
@@ -1076,7 +1083,9 @@ export function ProjetoView({ slug }: { slug: string }) {
                         {/* Traço, e não zero: o valor foi lançado direto em
                             dólar, então a quantidade não é desconhecida por
                             engano, ela simplesmente não faz parte do registro. */}
-                        {claim.quantidade ?? (
+                        {claim.quantidade ? (
+                          semZerosDeSobra(claim.quantidade)
+                        ) : (
                           <span className="text-muted-foreground" title="Lançado direto em dólar">
                             &ndash;
                           </span>
@@ -1087,6 +1096,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                       </td>
                       <td className="px-2 py-2">
                         <div className="flex items-center justify-end">
+                          <EditarRecebimento claimId={claim.id} />
                           <ConfirmarExclusao
                             titulo="Excluir recebimento"
                             alvo={

@@ -400,6 +400,51 @@ export function excluirProgressoMeta(ds: Dataset, id: string): Dataset {
   return { ...ds, goalEntries: ds.goalEntries.filter((e) => e.id !== id) };
 }
 
+/**
+ * Correção de um recebimento já registrado.
+ *
+ * O valor em dólar é **recalculado**, e não preservado: ele é derivado de
+ * quantidade × preço, e manter o valor antigo depois de corrigir a quantidade
+ * guardaria uma multiplicação que não fecha. É a mesma `valorDoRecebimento` do
+ * registro, para os dois caminhos não divergirem.
+ *
+ * Trocar de modo limpa o que o outro modo não afirma. Quem lançou o total em
+ * dólar e depois informou quantidade e preço não pode ficar com o total antigo
+ * ao lado dos números novos, e quem faz o caminho inverso não pode deixar para
+ * trás uma quantidade que já não se sustenta.
+ */
+export function atualizarRecebimento(
+  ds: Dataset,
+  id: string,
+  dados: {
+    accountId: string;
+    receivedAt: string;
+    tokenSymbol: string;
+    modo?: "token" | "total";
+    tokenAmount?: string;
+    priceUsd?: string;
+    valueUsd?: string;
+  },
+): Dataset {
+  const porToken = (dados.modo ?? "token") === "token";
+  return {
+    ...ds,
+    airdropClaims: ds.airdropClaims.map((c) =>
+      c.id === id
+        ? {
+            ...c,
+            accountId: dados.accountId,
+            receivedAt: dados.receivedAt,
+            tokenSymbol: dados.tokenSymbol.toUpperCase(),
+            tokenAmount: porToken ? (dados.tokenAmount ?? null) : null,
+            priceUsd: porToken ? (dados.priceUsd ?? null) : null,
+            valueUsd: valorDoRecebimento(dados),
+          }
+        : c,
+    ),
+  };
+}
+
 export function excluirRecebimento(ds: Dataset, id: string): Dataset {
   return { ...ds, airdropClaims: ds.airdropClaims.filter((c) => c.id !== id) };
 }

@@ -22,14 +22,24 @@ import {
 import {
   erros,
   lancamentoSchema,
+  metaSchema,
+  pontosSchema,
+  progressoMetaSchema,
   projetoSchema,
+  recebimentoSchema,
   tarefaSchema,
   vinculoSchema,
   contaSchema,
-  metaSchema,
+  volumeSchema,
 } from "@/lib/validators";
 import { TIPOS_LANCAMENTO } from "@/lib/finance";
-import { fromDbNumeric, toDbNumeric } from "@/lib/money";
+import {
+  formatUsd,
+  fromDbNumeric,
+  semZerosDeSobra,
+  toDbNumeric,
+} from "@/lib/money";
+import { fromDbPoints, toDbPoints } from "@/lib/points";
 
 /**
  * Contas oferecidas para um projeto: as vinculadas a ele, ou todas enquanto não
@@ -741,6 +751,386 @@ export function EditarMeta({ goalId }: { goalId: string }) {
             defaultValue={meta.accountId ?? ""}
             erro={e.accountId}
             opcoes={contas}
+          />
+        </>
+      )}
+    </DialogoEdicao>
+  );
+}
+
+// -------------------------------------------------------- medição de volume
+
+/**
+ * Correção de uma medição de volume já registrada.
+ *
+ * Antes só havia apagar e lançar de novo, e numa série de acumulado isso não é
+ * equivalente: apagar a medição do meio faz o ganho da seguinte passar a ser
+ * medido contra a que veio antes dela, e um número que ninguém mexeu muda de
+ * valor. Corrigir no lugar mantém a série.
+ *
+ * O campo mostra a mesma comparação do registro, com uma diferença que importa:
+ * a medição anterior é a anterior **a esta**, e não a última da conta. Editar a
+ * primeira de três precisa se comparar com o que vinha antes dela.
+ */
+export function EditarVolume({ snapshotId }: { snapshotId: string }) {
+  const { dataset, acoes } = useDados();
+  const medicao = dataset.volumeSnapshots.find((v) => v.id === snapshotId);
+  const [valor, setValor] = useState(
+    medicao ? toDbNumeric(fromDbNumeric(medicao.volumeUsd)) : "",
+  );
+  if (!medicao) return null;
+
+  const anterior = dataset.volumeSnapshots
+    .filter(
+      (v) =>
+        v.projectId === medicao.projectId &&
+        v.accountId === medicao.accountId &&
+        v.takenAt < medicao.takenAt,
+    )
+    .sort((a, b) => a.takenAt.localeCompare(b.takenAt))
+    .at(-1);
+
+  return (
+    <DialogoEdicao
+      titulo="Editar medição de volume"
+      descricao="O total acumulado que a plataforma mostrava nessa data."
+      rotuloGatilho="Editar medição de volume"
+      aoEnviar={(dados) => {
+        const bruto = {
+          projectId: medicao.projectId,
+          accountId: texto(dados, "accountId"),
+          takenAt: texto(dados, "takenAt"),
+          volume: texto(dados, "volume"),
+          note: texto(dados, "note"),
+        };
+        const resultado = volumeSchema.safeParse(bruto);
+        if (!resultado.success) return erros(resultado);
+        return acoes.atualizarVolume(snapshotId, bruto);
+      }}
+    >
+      {({ erros: e }) => (
+        <>
+          <CampoSelecao
+            label="Conta"
+            name="accountId"
+            obrigatorio
+            defaultValue={medicao.accountId}
+            erro={e.accountId}
+            opcoes={contasDoProjeto(dataset, medicao.projectId)}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoValor
+              label="Volume acumulado"
+              name="volume"
+              obrigatorio
+              valor={valor}
+              aoMudar={setValor}
+              erro={e.volume}
+              ajuda={
+                anterior
+                  ? `A medição anterior desta conta marcava ${formatUsd(fromDbNumeric(anterior.volumeUsd))}.`
+                  : "É a primeira medição desta conta: não há base de comparação."
+              }
+            />
+            <CampoData
+              label="Data"
+              name="takenAt"
+              obrigatorio
+              defaultValue={medicao.takenAt}
+              erro={e.takenAt}
+            />
+          </div>
+          <CampoTexto
+            label="Nota"
+            name="note"
+            defaultValue={medicao.note ?? ""}
+            erro={e.note}
+          />
+        </>
+      )}
+    </DialogoEdicao>
+  );
+}
+
+// -------------------------------------------------------- medição de pontos
+
+/** Correção de uma medição de pontos. Mesma natureza da de volume. */
+export function EditarPontos({ snapshotId }: { snapshotId: string }) {
+  const { dataset, acoes } = useDados();
+  const medicao = dataset.pointsSnapshots.find((p) => p.id === snapshotId);
+  /*
+   * `21.400` e não `21400.0000`: a coluna guarda quatro casas para o caso raro
+   * de pontos fracionários, e mostrar os zeros obrigaria a apagá-los antes de
+   * digitar o número novo.
+   */
+  const [pontos, setPontos] = useState(
+    medicao ? semZerosDeSobra(toDbPoints(fromDbPoints(medicao.points))) : "",
+  );
+  if (!medicao) return null;
+
+  return (
+    <DialogoEdicao
+      titulo="Editar medição de pontos"
+      descricao="O total acumulado que o programa mostrava nessa data."
+      rotuloGatilho="Editar medição de pontos"
+      aoEnviar={(dados) => {
+        const bruto = {
+          projectId: medicao.projectId,
+          accountId: texto(dados, "accountId"),
+          takenAt: texto(dados, "takenAt"),
+          points: texto(dados, "points"),
+          note: texto(dados, "note"),
+        };
+        const resultado = pontosSchema.safeParse(bruto);
+        if (!resultado.success) return erros(resultado);
+        return acoes.atualizarPontos(snapshotId, bruto);
+      }}
+    >
+      {({ erros: e }) => (
+        <>
+          <CampoSelecao
+            label="Conta"
+            name="accountId"
+            obrigatorio
+            defaultValue={medicao.accountId}
+            erro={e.accountId}
+            opcoes={contasDoProjeto(dataset, medicao.projectId)}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoValor
+              label="Total acumulado"
+              name="points"
+              obrigatorio
+              valor={pontos}
+              aoMudar={setPontos}
+              erro={e.points}
+              ajuda="O número que a plataforma exibe, não o ganho."
+              formato="pontos"
+            />
+            <CampoData
+              label="Data"
+              name="takenAt"
+              obrigatorio
+              defaultValue={medicao.takenAt}
+              erro={e.takenAt}
+            />
+          </div>
+          <CampoTexto
+            label="Observação"
+            name="note"
+            defaultValue={medicao.note ?? ""}
+            erro={e.note}
+          />
+        </>
+      )}
+    </DialogoEdicao>
+  );
+}
+
+// ------------------------------------------------------- progresso de meta
+
+/**
+ * Correção de um progresso lançado numa meta.
+ *
+ * A meta não muda: mover o progresso para outra meta mexeria em duas barras ao
+ * mesmo tempo, e quem quer isso apaga aqui e lança lá, onde as duas mudanças
+ * ficam visíveis.
+ */
+export function EditarProgressoMeta({ entryId }: { entryId: string }) {
+  const { dataset, acoes } = useDados();
+  const entrada = dataset.goalEntries.find((e) => e.id === entryId);
+  const [valor, setValor] = useState(
+    entrada ? toDbNumeric(fromDbNumeric(entrada.value)) : "",
+  );
+  if (!entrada) return null;
+
+  const meta = dataset.goals.find((g) => g.id === entrada.goalId);
+
+  return (
+    <DialogoEdicao
+      titulo="Editar lançamento da meta"
+      descricao={meta ? `Progresso registrado em "${meta.title}".` : undefined}
+      rotuloGatilho="Editar lançamento da meta"
+      aoEnviar={(dados) => {
+        const bruto = {
+          goalId: entrada.goalId,
+          occurredAt: texto(dados, "occurredAt"),
+          value: texto(dados, "value"),
+          note: texto(dados, "note"),
+        };
+        const resultado = progressoMetaSchema.safeParse(bruto);
+        if (!resultado.success) return erros(resultado);
+        return acoes.atualizarProgressoMeta(entryId, bruto);
+      }}
+    >
+      {({ erros: e }) => (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CampoValor
+              label="Quanto somar"
+              name="value"
+              obrigatorio
+              valor={valor}
+              aoMudar={setValor}
+              erro={e.value}
+              ajuda="Use o sinal de menos para corrigir um lançamento a mais."
+            />
+            <CampoData
+              label="Data"
+              name="occurredAt"
+              obrigatorio
+              defaultValue={entrada.occurredAt}
+              erro={e.occurredAt}
+            />
+          </div>
+          <CampoTexto
+            label="Nota"
+            name="note"
+            defaultValue={entrada.note ?? ""}
+            erro={e.note}
+          />
+        </>
+      )}
+    </DialogoEdicao>
+  );
+}
+
+// --------------------------------------------------------------- recebimento
+
+/**
+ * Correção de um airdrop recebido.
+ *
+ * Começa no modo em que foi registrado: quem informou quantidade e preço vê os
+ * dois campos, quem informou só o total vê o total. Trocar de modo é permitido,
+ * e é metade do motivo desta tela existir: quem lançou "deu uns $75" e depois
+ * descobriu a quantidade exata completava o registro apagando e refazendo.
+ *
+ * O valor em dólar não é campo quando o modo é token: ele sai da multiplicação,
+ * na mesma função que o registro usa.
+ */
+export function EditarRecebimento({ claimId }: { claimId: string }) {
+  const { dataset, acoes } = useDados();
+  const claim = dataset.airdropClaims.find((c) => c.id === claimId);
+  /*
+   * Quantidade nula é a marca de "lançado direto em dólar": foi assim que o
+   * registro decidiu não afirmar uma quantidade que ninguém informou.
+   */
+  const [modo, setModo] = useState<"token" | "total">(
+    claim?.tokenAmount ? "token" : "total",
+  );
+  // A coluna tem dezoito casas decimais: sem a limpeza, corrigir a quantidade
+  // começaria por apagar dezoito zeros.
+  const [quantidade, setQuantidade] = useState(
+    semZerosDeSobra(claim?.tokenAmount ?? ""),
+  );
+  const [precoToken, setPrecoToken] = useState(
+    semZerosDeSobra(claim?.priceUsd ?? ""),
+  );
+  const [total, setTotal] = useState(
+    claim ? toDbNumeric(fromDbNumeric(claim.valueUsd)) : "",
+  );
+  if (!claim) return null;
+
+  return (
+    <DialogoEdicao
+      titulo="Editar recebimento"
+      rotuloGatilho="Editar recebimento"
+      aoEnviar={(dados) => {
+        const bruto = {
+          projectId: claim.projectId,
+          accountId: texto(dados, "accountId"),
+          receivedAt: texto(dados, "receivedAt"),
+          tokenSymbol: texto(dados, "tokenSymbol"),
+          modo,
+          tokenAmount: texto(dados, "tokenAmount"),
+          priceUsd: texto(dados, "priceUsd"),
+          valueUsd: texto(dados, "valueUsd"),
+        };
+        const resultado = recebimentoSchema.safeParse(bruto);
+        if (!resultado.success) return erros(resultado);
+        return acoes.atualizarRecebimento(claimId, bruto);
+      }}
+    >
+      {({ erros: e }) => (
+        <>
+          <CampoSelecao
+            label="Conta"
+            name="accountId"
+            obrigatorio
+            defaultValue={claim.accountId}
+            erro={e.accountId}
+            opcoes={contasDoProjeto(dataset, claim.projectId)}
+          />
+          <CampoSelecao
+            label="Como informar"
+            name="modo"
+            value={modo}
+            onChange={(evento) =>
+              setModo(evento.target.value === "total" ? "total" : "token")
+            }
+            ajuda={
+              modo === "token"
+                ? "O valor em dólar sai da quantidade vezes o preço."
+                : "Use quando o token já foi vendido ou você só tem o total."
+            }
+            opcoes={[
+              { valor: "token", rotulo: "Quantidade e preço do token" },
+              { valor: "total", rotulo: "Só o total em dólar" },
+            ]}
+          />
+
+          {modo === "token" ? (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <CampoTexto
+                label="Token"
+                name="tokenSymbol"
+                obrigatorio
+                defaultValue={claim.tokenSymbol}
+                erro={e.tokenSymbol}
+              />
+              <CampoValor
+                label="Quantidade"
+                name="tokenAmount"
+                obrigatorio
+                valor={quantidade}
+                aoMudar={setQuantidade}
+                erro={e.tokenAmount}
+                formato="quantidade"
+              />
+              <CampoValor
+                label="Preço (USD)"
+                name="priceUsd"
+                obrigatorio
+                valor={precoToken}
+                aoMudar={setPrecoToken}
+                erro={e.priceUsd}
+              />
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <CampoTexto
+                label="Token"
+                name="tokenSymbol"
+                obrigatorio
+                defaultValue={claim.tokenSymbol}
+                erro={e.tokenSymbol}
+              />
+              <CampoValor
+                label="Total recebido (USD)"
+                name="valueUsd"
+                obrigatorio
+                valor={total}
+                aoMudar={setTotal}
+                erro={e.valueUsd}
+              />
+            </div>
+          )}
+          <CampoData
+            label="Data"
+            name="receivedAt"
+            obrigatorio
+            defaultValue={claim.receivedAt}
+            erro={e.receivedAt}
           />
         </>
       )}

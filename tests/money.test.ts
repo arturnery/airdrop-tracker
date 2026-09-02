@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  MoneyError,
+  ZERO,
   addCents,
   cents,
   formatUsd,
   formatUsdCompact,
   fromDbNumeric,
-  MoneyError,
   parseUserInput,
   percentOf,
+  semZerosDeSobra,
   sumDbNumeric,
   toDbNumeric,
-  ZERO,
 } from "@/lib/money";
 
 describe("fromDbNumeric", () => {
@@ -168,5 +169,33 @@ describe("percentOf", () => {
 describe("guarda de tipo", () => {
   it("recusa centavos fracionados", () => {
     expect(() => cents(10.5)).toThrow(MoneyError);
+  });
+});
+
+/**
+ * `numeric(36, 18)` devolve `3078.000000000000000000`, e era assim que a
+ * quantidade de token aparecia: um número certo com cara de erro.
+ */
+describe("zeros que o Postgres acrescenta", () => {
+  it("some com a fração inteira de zeros", () => {
+    expect(semZerosDeSobra("3078.000000000000000000")).toBe("3078");
+    expect(semZerosDeSobra("1250.00")).toBe("1250");
+  });
+
+  it("preserva as casas que dizem alguma coisa", () => {
+    expect(semZerosDeSobra("0.18290000")).toBe("0.1829");
+    expect(semZerosDeSobra("12.50")).toBe("12.5");
+  });
+
+  it("não encosta na parte inteira", () => {
+    // O perigo do atalho: `replace(/0+$/)` transformaria 1200 em 12.
+    expect(semZerosDeSobra("1200")).toBe("1200");
+    expect(semZerosDeSobra("100")).toBe("100");
+    expect(semZerosDeSobra("0")).toBe("0");
+  });
+
+  it("aguenta valor negativo e zero com casas", () => {
+    expect(semZerosDeSobra("-45.500")).toBe("-45.5");
+    expect(semZerosDeSobra("0.0000")).toBe("0");
   });
 });

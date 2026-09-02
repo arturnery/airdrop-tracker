@@ -2945,6 +2945,121 @@ nada e custa manutenção.**
 
 ---
 
+## Marco 47: A data parada, e os lançamentos que não podiam ser corrigidos
+
+Três pedidos numa mensagem só, e o terceiro trouxe o defeito mais grave: "ao fazer alguns
+lançamentos hoje, saiu com a data errada, no caso com a data de ontem".
+
+### A conta que confirmou o sintoma antes de qualquer palpite
+
+A primeira coisa foi perguntar ao banco, e não ao código. Uma consulta procurando registros
+gravados exatamente um dia depois da data que declaram achou oito, todos do mesmo dia:
+
+```
+volume     evento 2026-09-01  gravado 2026-09-02 17:04
+transacao  evento 2026-09-01  gravado 2026-09-02 16:37
+pontos     evento 2026-09-01  gravado 2026-09-02 16:36
+...
+```
+
+Oito lançamentos numa tarde, todos com a data anterior, e nenhum outro caso em toda a base.
+Isso já descartava fuso do servidor (que erraria sempre) e erro de digitação (que não erra
+oito vezes seguidas na mesma direção).
+
+### A causa: "durante a sessão" durava mais que um dia
+
+`criarRelogio`, em `lib/local-store.ts`, calculava a data **uma vez** e a guardava. O
+comentário dizia, com todas as letras, que o valor "fica estável durante a sessão", e a
+intenção era boa: evitar recalcular a cada render.
+
+O que ninguém pesou é quanto dura a sessão de quem usa isto todo dia. O provider vive no
+layout raiz, sobrevive a toda navegação e a todo `router.refresh()`, e só é remontado num
+recarregamento de página inteira. A aba fica aberta, a meia-noite passa, e o formulário
+continua oferecendo ontem, **preenchido e plausível**. Nada na tela sugere conferir.
+
+Duas mudanças:
+
+- `getSnapshot` calcula na hora. Devolver uma string nova a cada chamada é seguro: o React
+  compara por valor, e duas strings iguais são a mesma coisa para `Object.is`.
+- `subscribe` avisa o React quando o dia muda, para uma tela parada se corrigir sozinha.
+
+A conferência é por intervalo de um minuto, e **não** por um `setTimeout` até a meia-noite.
+Navegador em segundo plano estrangula temporizadores longos e aparelho que dorme não os
+executa: o alarme da meia-noite chegaria tarde ou nunca. `focus` e `visibilitychange` cobrem
+quem volta para a aba depois de horas.
+
+O fuso do navegador passou a ser o mesmo do servidor, São Paulo, em `dataDeHoje`. Antes eram
+duas contas: o servidor formatava em São Paulo e o navegador usava o fuso do aparelho. Elas
+coincidem no caso comum e divergem justamente na virada do dia, que é o único momento em que
+a resposta importa.
+
+### O teste mede a virada, e não o valor
+
+Um relógio que acerta a data de hoje e nunca mais muda passaria em qualquer teste que só
+olhasse uma leitura. Por isso os sete testes de `tests/relogio.test.ts` medem a mudança:
+avisa na virada, avisa uma vez só, confere ao voltar para a aba, e desfaz o que criou ao
+cancelar a inscrição.
+
+Uma asserção minha falhou por culpa do teste, não do código: o relógio de mentira começava
+às 23h59, e `advanceTimersByTime` também move o relógio, então os próprios minutos que o
+teste adiantava viravam o dia. Passou a começar às 16h, que é a hora em que os oito
+lançamentos aconteceram.
+
+### Editar o que só dava para apagar
+
+Volume, pontos, progresso de meta e recebimento só tinham criar e excluir. Em volume e
+pontos isso não é um detalhe de conveniência: **apagar a medição do meio de uma série muda o
+ganho do período seguinte**, que passa a ser medido contra a medição anterior a ela. Um
+número que ninguém tocou muda de valor. Corrigir no lugar mantém a série.
+
+As quatro ações seguem as regras que já valiam: `userId` da sessão, `UPDATE` filtrado por
+dono, e o progresso de meta chegando ao dono por `goals`, porque `goal_entries` não tem
+`user_id`.
+
+O que a conta pode mudar e o projeto não: trocar a conta corrige o engano mais comum, e
+trocar o projeto moveria dois totais de uma vez.
+
+**A armadilha do UPDATE.** No recebimento, `undefined` num campo do `set()` do Drizzle
+significa "não altere esta coluna", enquanto num `insert()` significa "use o padrão". Copiar
+a linha do registro para a edição deixaria a quantidade antiga viva ao lado do total novo,
+depois de trocar de modo. O `?? null` é explícito por isso, com comentário, e o teste em
+`mutations` cobre as duas direções da troca.
+
+### O backup que não cobria uma tabela
+
+`npm run backup -- --producao` roda antes de qualquer mudança que afete dados, e desta vez o
+relatório dele denunciou outra coisa: `volume_snapshots` não estava na lista. A tabela foi
+criada no Marco 46 e nunca entrou em `scripts/_tabelas.ts`. O backup rodava, dizia quantas
+linhas salvara, e as 26 medições de volume não estavam em nenhuma delas.
+
+**Backup incompleto é pior que backup nenhum**, porque quem o rodou acha que está protegido.
+
+O conserto óbvio é uma linha. O conserto que importa é `tests/backup-cobre-o-schema.test.ts`,
+que compara a lista com as tabelas declaradas no schema e quebra quando falta uma. Um
+comentário no arquivo da lista não teria evitado: quem cria tabela nova mexe em
+`db/schema.ts` e não tem motivo para abrir os scripts. É a mesma lição do primeiro item do
+catálogo de erros, prevenção que depende de alguém ler não existe.
+
+`login_attempts` fica de fora de propósito, e o motivo está escrito em `FORA_DO_BACKUP`:
+restaurá-la reimporia um bloqueio de login já vencido, que é o contrário do que se quer num
+dia de desastre. A lista de exclusões existe para o teste distinguir ausência decidida de
+esquecimento.
+
+Antes de dar o teste por bom, reinstalei o defeito: tirei `volume_snapshots` da lista e
+conferi que ele quebrava. Teste de guarda que nunca foi visto falhando é teste de fé.
+
+### Dezoito zeros
+
+`numeric(36, 18)` devolve `3078.000000000000000000`, e era assim que a quantidade de token
+aparecia na tabela de recebimentos: um número certo com cara de erro. No campo de edição
+ficaria pior, porque corrigir começaria por apagar dezoito zeros.
+
+`semZerosDeSobra` corta só o que está à direita da vírgula. O atalho perigoso seria
+`replace(/0+$/, "")`, que transformaria 1200 em 12: tem teste para isso.
+
+
+---
+
 ## Estado atual
 
 | | |
@@ -2954,10 +3069,10 @@ nada e custa manutenção.**
 | Administração | Fila de aprovação, membros com acesso e histórico de recusas |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
-| CRUD | Completo no banco, com edição e exclusão em cascata |
-| Testes | 298, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas e detecção de saldo impossível |
+| CRUD | Completo no banco: todo tipo de lançamento pode ser editado, e a exclusão desce em cascata |
+| Testes | 317, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas, detecção de saldo impossível, virada do dia no relógio da tela e cobertura do backup sobre o schema |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
-| Backend | Postgres no Neon, 14 tabelas, escrita por Server Actions |
+| Backend | Postgres no Neon, 18 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
 | Segurança | Auditada antes da divulgação: limite de tentativas, cabeçalhos e sem oráculo de e-mail cadastrado no login |
 | Senha | Recuperação por fila de administração, com troca obrigatória no primeiro acesso |
@@ -2966,8 +3081,6 @@ nada e custa manutenção.**
 
 ### Pendências conhecidas
 
-- Recebimento e medição de pontos só podem ser criados e excluídos, não editados. Metas já
-  são editáveis.
 - Categorias das fixtures são um palpite e precisam de conferência.
 - Sem alternância entre tema claro e escuro: o tema claro está escrito e funcional, falta
   o controle.

@@ -58,9 +58,12 @@ type Acoes = {
   excluirCotacao: Acao<[string]>;
 
   registrarPontos: Acao<[unknown]>;
-  registrarVolume: Acao<[unknown]>;
-  excluirVolume: Acao<[string]>;
+  atualizarPontos: Acao<[string, unknown]>;
   excluirPontos: Acao<[string]>;
+
+  registrarVolume: Acao<[unknown]>;
+  atualizarVolume: Acao<[string, unknown]>;
+  excluirVolume: Acao<[string]>;
 
   criarTarefa: Acao<[unknown]>;
   atualizarTarefa: Acao<[string, unknown]>;
@@ -71,9 +74,11 @@ type Acoes = {
   atualizarMeta: Acao<[string, unknown]>;
   excluirMeta: Acao<[string]>;
   lancarProgressoMeta: Acao<[unknown]>;
+  atualizarProgressoMeta: Acao<[string, unknown]>;
   excluirProgressoMeta: Acao<[string]>;
 
   registrarRecebimento: Acao<[unknown]>;
+  atualizarRecebimento: Acao<[string, unknown]>;
   excluirRecebimento: Acao<[string]>;
 };
 
@@ -197,9 +202,12 @@ export function DataProvider({
       excluirCotacao: envolver(A.excluirCotacao),
 
       registrarPontos: envolver(A.registrarPontos),
-      registrarVolume: envolver(A.registrarVolume),
-      excluirVolume: envolver(A.excluirVolume),
+      atualizarPontos: envolver(A.atualizarPontos),
       excluirPontos: envolver(A.excluirPontos),
+
+      registrarVolume: envolver(A.registrarVolume),
+      atualizarVolume: envolver(A.atualizarVolume),
+      excluirVolume: envolver(A.excluirVolume),
 
       criarTarefa: envolver(A.criarTarefa),
       atualizarTarefa: envolver(A.atualizarTarefa),
@@ -210,9 +218,11 @@ export function DataProvider({
       atualizarMeta: envolver(A.atualizarMeta),
       excluirMeta: envolver(A.excluirMeta),
       lancarProgressoMeta: envolver(A.lancarProgressoMeta),
+      atualizarProgressoMeta: envolver(A.atualizarProgressoMeta),
       excluirProgressoMeta: envolver(A.excluirProgressoMeta),
 
       registrarRecebimento: envolver(A.registrarRecebimento),
+      atualizarRecebimento: envolver(A.atualizarRecebimento),
       excluirRecebimento: envolver(A.excluirRecebimento),
     }),
     [envolver, alternarTarefa],

@@ -111,6 +111,100 @@ describe("criação", () => {
   });
 });
 
+/**
+ * Editar um recebimento não é trocar campos: o valor em dólar é derivado, e os
+ * dois modos de informar afirmam coisas diferentes. Guardar o total antigo ao
+ * lado de uma quantidade nova deixaria no banco uma multiplicação que não
+ * fecha, e é exatamente isso que um `map` ingênuo sobre os campos faria.
+ */
+describe("correção de recebimento", () => {
+  const comRecebimento = () =>
+    M.registrarRecebimento(base(), {
+      projectId: "prj-vertex",
+      accountId: "acc-brave",
+      receivedAt: HOJE,
+      tokenSymbol: "vtx",
+      tokenAmount: "1250",
+      priceUsd: "0.42",
+    });
+
+  const idDoPrimeiro = (ds: ReturnType<typeof base>) => ds.airdropClaims[0]!.id;
+
+  it("recalcula o valor quando a quantidade muda", () => {
+    const ds = comRecebimento();
+    const corrigido = M.atualizarRecebimento(ds, idDoPrimeiro(ds), {
+      accountId: "acc-brave",
+      receivedAt: HOJE,
+      tokenSymbol: "VTX",
+      modo: "token",
+      tokenAmount: "2500",
+      priceUsd: "0.42",
+    });
+
+    expect(corrigido.airdropClaims[0]!.valueUsd).toBe("1050.00");
+  });
+
+  it("apaga quantidade e preço ao passar para o total em dólar", () => {
+    const ds = comRecebimento();
+    const corrigido = M.atualizarRecebimento(ds, idDoPrimeiro(ds), {
+      accountId: "acc-brave",
+      receivedAt: HOJE,
+      tokenSymbol: "VTX",
+      modo: "total",
+      valueUsd: "600",
+    });
+    const claim = corrigido.airdropClaims[0]!;
+
+    expect(claim.valueUsd).toBe("600.00");
+    expect(claim.tokenAmount, "quantidade que já não se sustenta").toBeNull();
+    expect(claim.priceUsd).toBeNull();
+  });
+
+  it("passa a afirmar quantidade e preço ao voltar para o modo token", () => {
+    const ds = M.registrarRecebimento(base(), {
+      projectId: "prj-vertex",
+      accountId: "acc-brave",
+      receivedAt: HOJE,
+      tokenSymbol: "VTX",
+      modo: "total",
+      valueUsd: "75",
+    });
+    const corrigido = M.atualizarRecebimento(ds, idDoPrimeiro(ds), {
+      accountId: "acc-brave",
+      receivedAt: HOJE,
+      tokenSymbol: "VTX",
+      modo: "token",
+      tokenAmount: "300",
+      priceUsd: "0.25",
+    });
+    const claim = corrigido.airdropClaims[0]!;
+
+    expect(claim.tokenAmount).toBe("300");
+    expect(claim.valueUsd, "o total antigo não sobrevive").toBe("75.00");
+  });
+
+  it("não encosta nos outros recebimentos", () => {
+    const ds = M.registrarRecebimento(comRecebimento(), {
+      projectId: "prj-nebula",
+      accountId: "acc-brave",
+      receivedAt: HOJE,
+      tokenSymbol: "NEB",
+      tokenAmount: "10",
+      priceUsd: "1",
+    });
+    const outro = ds.airdropClaims[1]!;
+    const corrigido = M.atualizarRecebimento(ds, idDoPrimeiro(ds), {
+      accountId: "acc-brave",
+      receivedAt: HOJE,
+      tokenSymbol: "VTX",
+      modo: "total",
+      valueUsd: "1",
+    });
+
+    expect(corrigido.airdropClaims[1]).toEqual(outro);
+  });
+});
+
 describe("exclusão em cascata", () => {
   it("apagar projeto leva junto tudo que dependia dele", () => {
     const ds = M.excluirProjeto(base(), "prj-vertex");

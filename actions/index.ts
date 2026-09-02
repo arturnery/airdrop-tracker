@@ -399,6 +399,42 @@ export async function registrarVolume(entrada: unknown): Promise<ResultadoAcao> 
   }, ROTAS_DADOS);
 }
 
+/**
+ * Correção de uma medição já registrada.
+ *
+ * Existe porque a alternativa era apagar e lançar de novo, e numa série de
+ * acumulado isso é pior do que parece: apagar a medição do meio muda o ganho
+ * do período seguinte, que passa a ser medido contra a medição anterior a ela.
+ * Corrigir no lugar mantém a série inteira.
+ *
+ * A conta pode mudar (medir na conta errada é fácil), a data também. O projeto
+ * não: mover a medição de projeto mudaria dois totais de uma vez.
+ */
+export async function atualizarVolume(
+  id: string,
+  entrada: unknown,
+): Promise<ResultadoAcao> {
+  return executar(volumeSchema, entrada, async (dados, userId) => {
+    await exigirDono(dados.projectId, dados.accountId, userId);
+    await garantirVinculo(dados.projectId, dados.accountId, dados.takenAt);
+
+    await db
+      .update(schema.volumeSnapshots)
+      .set({
+        accountId: dados.accountId,
+        takenAt: dados.takenAt,
+        volumeUsd: toDbNumeric(dados.volume),
+        note: dados.note,
+      })
+      .where(
+        and(
+          eq(schema.volumeSnapshots.id, id),
+          eq(schema.volumeSnapshots.userId, userId),
+        ),
+      );
+  }, ROTAS_DADOS);
+}
+
 export async function excluirVolume(id: string): Promise<ResultadoAcao> {
   return executar(idSchema, { id }, async (dados, userId) => {
     await db
@@ -436,6 +472,32 @@ export async function registrarPontos(entrada: unknown): Promise<ResultadoAcao> 
         ],
         set: { points: toDbPoints(dados.points), note: dados.note },
       });
+  }, ROTAS_DADOS);
+}
+
+/** Correção de uma medição de pontos. Mesmas regras do volume. */
+export async function atualizarPontos(
+  id: string,
+  entrada: unknown,
+): Promise<ResultadoAcao> {
+  return executar(pontosSchema, entrada, async (dados, userId) => {
+    await exigirDono(dados.projectId, dados.accountId, userId);
+    await garantirVinculo(dados.projectId, dados.accountId, dados.takenAt);
+
+    await db
+      .update(schema.pointsSnapshots)
+      .set({
+        accountId: dados.accountId,
+        takenAt: dados.takenAt,
+        points: toDbPoints(dados.points),
+        note: dados.note,
+      })
+      .where(
+        and(
+          eq(schema.pointsSnapshots.id, id),
+          eq(schema.pointsSnapshots.userId, userId),
+        ),
+      );
   }, ROTAS_DADOS);
 }
 
@@ -680,6 +742,43 @@ export async function lancarProgressoMeta(
   }, ROTAS_DADOS);
 }
 
+/**
+ * Correção de um progresso lançado.
+ *
+ * O UPDATE passa por `goals` para chegar ao dono, pelo mesmo motivo do DELETE
+ * logo abaixo: `goal_entries` não tem `user_id`, e filtrar só pelo id do
+ * lançamento deixaria qualquer uuid conhecido editável por qualquer pessoa.
+ *
+ * A meta não muda. Mover progresso de uma meta para outra alteraria duas
+ * barras ao mesmo tempo, e quem quer isso apaga aqui e lança lá, onde as duas
+ * mudanças ficam visíveis.
+ */
+export async function atualizarProgressoMeta(
+  id: string,
+  entrada: unknown,
+): Promise<ResultadoAcao> {
+  return executar(progressoMetaSchema, entrada, async (dados, userId) => {
+    const metasDoDono = db
+      .select({ id: schema.goals.id })
+      .from(schema.goals)
+      .where(eq(schema.goals.userId, userId));
+
+    await db
+      .update(schema.goalEntries)
+      .set({
+        occurredAt: dados.occurredAt,
+        value: toDbNumeric(dados.value),
+        note: dados.note,
+      })
+      .where(
+        and(
+          eq(schema.goalEntries.id, id),
+          inArray(schema.goalEntries.goalId, metasDoDono),
+        ),
+      );
+  }, ROTAS_DADOS);
+}
+
 export async function excluirProgressoMeta(id: string): Promise<ResultadoAcao> {
   return executar(idSchema, { id }, async (dados, userId) => {
     /*
@@ -727,6 +826,53 @@ export async function registrarRecebimento(
       // Congelado no registro: o preço muda depois, o histórico não.
       valueUsd: valorDoRecebimento(dados),
     });
+  }, ROTAS_DADOS);
+}
+
+/**
+ * Correção de um recebimento.
+ *
+ * O valor em dólar é recalculado, e não preservado: ele é derivado de
+ * quantidade × preço, e manter o antigo depois de corrigir a quantidade
+ * guardaria uma multiplicação que não fecha. `valorDoRecebimento` é a mesma
+ * função do registro, para os dois caminhos não divergirem.
+ *
+ * Trocar de modo é permitido, e é metade do motivo desta ação existir: quem
+ * lançou o total em dólar e depois descobriu a quantidade exata completava o
+ * registro apagando e refazendo.
+ */
+export async function atualizarRecebimento(
+  id: string,
+  entrada: unknown,
+): Promise<ResultadoAcao> {
+  return executar(recebimentoSchema, entrada, async (dados, userId) => {
+    await exigirDono(dados.projectId, dados.accountId, userId);
+    await garantirVinculo(dados.projectId, dados.accountId, dados.receivedAt);
+
+    const porToken = dados.modo === "token";
+
+    await db
+      .update(schema.airdropClaims)
+      .set({
+        accountId: dados.accountId,
+        receivedAt: dados.receivedAt,
+        tokenSymbol: dados.tokenSymbol.toUpperCase(),
+        /*
+         * `?? null` explícito, e não `undefined`: num UPDATE do Drizzle, campo
+         * indefinido é campo que **não entra no SET**, então o valor antigo
+         * sobreviveria à troca de modo. No INSERT os dois dariam no mesmo, e é
+         * essa diferença silenciosa que faz o copiar-e-colar dali errar aqui.
+         */
+        tokenAmount: porToken ? (dados.tokenAmount ?? null) : null,
+        priceUsd: porToken ? (dados.priceUsd ?? null) : null,
+        valueUsd: valorDoRecebimento(dados),
+      })
+      .where(
+        and(
+          eq(schema.airdropClaims.id, id),
+          eq(schema.airdropClaims.userId, userId),
+        ),
+      );
   }, ROTAS_DADOS);
 }
 

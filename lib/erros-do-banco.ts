@@ -54,8 +54,19 @@ const PorConstraint: Record<string, ErroTraduzido> = {
   points_pair_day_unq: {
     campo: "takenAt",
     mensagem:
-      "Já existe uma medição dessa conta neste dia. Apague a anterior, ou registre " +
-      "em outra data.",
+      "Já existe uma medição de pontos dessa conta neste dia. Edite a que existe, " +
+      "ou escolha outra data.",
+  },
+  /*
+   * Só aparece ao **editar**: ao registrar, a ação usa `ON CONFLICT DO UPDATE`
+   * e o mesmo dia corrige em vez de recusar. Mudar a data de uma medição para
+   * um dia já medido é o caminho que sobra até aqui.
+   */
+  volume_pair_day_unq: {
+    campo: "takenAt",
+    mensagem:
+      "Já existe uma medição de volume dessa conta neste dia. Edite a que existe, " +
+      "ou escolha outra data.",
   },
   occurrences_task_account_date_unq: {
     campo: "geral",

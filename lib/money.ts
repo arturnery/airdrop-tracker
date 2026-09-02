@@ -93,6 +93,25 @@ export type ParseResult =
  * agrupamento exato de 3 em 3, então "1,23,456" é recusado em vez de aceito
  * torto.
  */
+/**
+ * Tira os zeros que o Postgres acrescenta, sem tocar no número.
+ *
+ * Coluna `numeric(36, 18)` devolve `3078.000000000000000000`, e era assim que a
+ * quantidade de token aparecia na tabela de recebimentos: um número certo com
+ * cara de erro. Num campo de formulário fica pior, porque quem vai corrigir
+ * precisa apagar dezoito zeros antes de digitar.
+ *
+ * Só remove zeros **à direita da vírgula**, e a parte inteira nunca é tocada:
+ * `1250.00` vira `1250`, `0.18290000` vira `0.1829`, e `1200` continua `1200`.
+ *
+ * Vive aqui e não em cada tela porque serve às três grandezas do domínio:
+ * dinheiro, pontos e quantidade de token saem todas de colunas `numeric`.
+ */
+export function semZerosDeSobra(decimal: string): string {
+  if (!decimal.includes(".")) return decimal;
+  return decimal.replace(/\.?0+$/, "");
+}
+
 export function parseUserInput(raw: string): ParseResult {
   const trimmed = raw.trim();
   if (trimmed === "") return { ok: false, error: "Informe um valor." };
