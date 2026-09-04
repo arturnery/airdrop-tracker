@@ -171,11 +171,10 @@ export function SugestoesDoCatalogo() {
     <section aria-labelledby="sugestoes-catalogo" className="mb-10">
       <div className="mb-4">
         <h2 id="sugestoes-catalogo" className="text-base font-medium">
-          Sugeridos pela comunidade
+          Farms atuais
         </h2>
         <p className="text-muted-foreground mt-0.5 text-sm">
-          Projetos que já estão sendo farmados. Adicionar copia os dados para o seu
-          portfólio: editar ou apagar depois não muda o que aparece aqui.
+          Projetos que já estão sendo farmados.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

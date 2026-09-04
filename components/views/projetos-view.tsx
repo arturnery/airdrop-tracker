@@ -467,7 +467,7 @@ export function ProjetosView() {
       {todos.length === 0 ? (
         <EmptyState
           title="Nenhum projeto cadastrado"
-          description="Adicione um projeto sugerido acima, ou cadastre o que você está farmando para começar a acompanhar capital e tarefas."
+          description="Adicione um dos farms atuais acima, ou cadastre o que você está farmando para começar a acompanhar capital e tarefas."
         />
       ) : grupos.length === 0 ? (
         /*
