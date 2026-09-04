@@ -21,6 +21,7 @@ import { readFileSync } from "node:fs";
 import { neon } from "@neondatabase/serverless";
 
 import { anunciar, resolverAmbiente } from "./_ambiente";
+import { prepararLinha, type Pendencia } from "./_restaurar-logica";
 import { TABELAS } from "./_tabelas";
 
 const ambiente = resolverAmbiente();
@@ -34,6 +35,27 @@ type Arquivo = {
   ambiente: string;
   contemSenhas: boolean;
   tabelas: Record<string, Record<string, unknown>[]>;
+};
+
+/**
+ * Colunas que apontam para uma tabela que só existe **depois**, na ordem de
+ * `TABELAS`, do que a própria.
+ *
+ * `projects` vem antes de `catalog_projects` porque uma entrada do catálogo
+ * pende de um projeto de origem (`catalog_projects.source_project_id`), e
+ * essa é a direção comum. Mas um projeto **adotado** aponta de volta para o
+ * catálogo (`projects.adopted_from_id`), e nenhuma ordem resolve os dois
+ * sentidos ao mesmo tempo: inserir `projects` primeiro deixa essa coluna sem
+ * a linha que ela referencia.
+ *
+ * A coluna listada aqui entra `null` na inserção normal e é corrigida numa
+ * segunda passada, depois que toda tabela já foi carregada. Sem isso, o
+ * primeiro backup com um projeto adotado teria falhado ao restaurar, e é
+ * exatamente o tipo de defeito que só aparece no dia em que já se precisa
+ * dele: por isso o teste `tests/restaurar-referencia-adiantada.test.ts`.
+ */
+const ADIAR: Record<string, string> = {
+  projects: "adopted_from_id",
 };
 
 async function main() {
@@ -71,13 +93,18 @@ async function main() {
   }
 
   let inseridas = 0;
+  const pendentes: Pendencia[] = [];
+
   for (const tabela of TABELAS) {
     const dados = arquivo.tabelas[tabela] ?? [];
     if (dados.length === 0) continue;
 
     for (const linha of dados) {
-      const colunas = Object.keys(linha);
-      const valores = colunas.map((c) => linha[c]);
+      const { linhaPronta, pendencia } = prepararLinha(tabela, linha, ADIAR[tabela]);
+      if (pendencia) pendentes.push(pendencia);
+
+      const colunas = Object.keys(linhaPronta);
+      const valores = colunas.map((c) => linhaPronta[c]);
       const marcadores = colunas.map((_, i) => `$${i + 1}`).join(", ");
 
       await sql.query(
@@ -88,6 +115,18 @@ async function main() {
 
     inseridas += dados.length;
     console.log(`  ${tabela}: ${dados.length}`);
+  }
+
+  // Segunda passada: agora toda tabela existe, então a referência adiantada
+  // já tem o que apontar.
+  for (const p of pendentes) {
+    await sql.query(`update ${p.tabela} set "${p.coluna}" = $1 where id = $2`, [
+      p.valor,
+      p.id,
+    ]);
+  }
+  if (pendentes.length > 0) {
+    console.log(`  (${pendentes.length} referência(s) adiantada(s) corrigida(s) na 2ª passada)`);
   }
 
   console.log(`\n${inseridas} linhas restauradas.`);
