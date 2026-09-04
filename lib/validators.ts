@@ -64,6 +64,26 @@ export const projetoSchema = z.object({
 });
 export type ProjetoInput = z.input<typeof projetoSchema>;
 
+/**
+ * Publica ou atualiza a entrada de um projeto no catálogo da comunidade
+ * (ARCHITECTURE §13). O projeto vem pelo id da rota, não pelo formulário: só
+ * o resumo é digitado, os demais campos são copiados do próprio projeto no
+ * servidor.
+ */
+export const destaqueSchema = z.object({
+  summary: z
+    .string()
+    .trim()
+    .max(280, "Máximo de 280 caracteres.")
+    .transform((v) => (v === "" ? null : v))
+    .nullable(),
+});
+
+/** Adoção de uma entrada do catálogo: só o id de qual entrada. */
+export const adocaoSchema = z.object({
+  catalogId: z.uuid("Entrada inválida."),
+});
+
 export const contaSchema = z.object({
   label: z.string().trim().min(1, "Dê um nome à conta.").max(60),
   walletAddress: textoOpcional,

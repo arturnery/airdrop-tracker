@@ -808,7 +808,14 @@ de manter o ambiente extra.
 
 ---
 
-## 13. Catálogo de projetos da comunidade (modelado, não implementado)
+## 13. Catálogo de projetos da comunidade
+
+**Implementado no Marco 48 (DEVLOG), com um desvio do plano abaixo:** a curadoria não
+tem tela própria. Quem administra publica direto do projeto que já tem, com um botão
+"Destacar para a comunidade" que copia os campos ali mesmo, em vez de cadastrar a
+entrada do catálogo do zero numa tela separada. O resto do desenho, cópia em vez de
+vínculo, autorização por papel, entrada independente do projeto de origem, ficou como
+descrito a seguir.
 
 ### 13.1. O problema
 

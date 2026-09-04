@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -11,8 +11,10 @@ import { toDbPoints } from "@/lib/points";
 import { dataDeHoje } from "@/lib/dates";
 import { contasAlvoDaTarefa } from "@/lib/tarefas";
 import {
+  adocaoSchema,
   contaSchema,
   cotacaoSchema,
+  destaqueSchema,
   lancamentoSchema,
   metaSchema,
   pontosSchema,
@@ -112,6 +114,180 @@ export async function excluirProjeto(id: string): Promise<ResultadoAcao> {
       .where(
         and(eq(schema.projects.id, dados.id), eq(schema.projects.userId, userId)),
       );
+  }, ROTAS_DADOS);
+}
+
+// ------------------------------------------------------- catálogo da comunidade
+
+/**
+ * Publica ou atualiza a entrada de um projeto no catálogo (ARCHITECTURE §13).
+ *
+ * Só quem administra publica: a curadoria é o produto, e a guarda de papel
+ * (`exigirAdministrador`) é a real, não o botão escondido na tela. O projeto
+ * também precisa ser do próprio administrador: a leitura que copia os campos
+ * filtra por `userId` além do id, do jeito que toda leitura sensível deste
+ * sistema filtra.
+ *
+ * O nome da função serve para os dois casos, criar e atualizar, porque a
+ * pessoa não escolhe entre eles: se já existe uma entrada para este projeto
+ * (achada por `sourceProjectId`), os campos são recopiados por cima dela; se
+ * não, nasce uma nova. `publishedAt` sempre vira `now()`, então republicar
+ * uma entrada removida também é este mesmo caminho.
+ */
+export async function destacarProjeto(
+  projectId: string,
+  entrada: unknown,
+): Promise<ResultadoAcao> {
+  return executar(destaqueSchema, entrada, async (dados, userId) => {
+    await exigirAdministrador(userId);
+
+    const [projeto] = await db
+      .select()
+      .from(schema.projects)
+      .where(
+        and(eq(schema.projects.id, projectId), eq(schema.projects.userId, userId)),
+      )
+      .limit(1);
+
+    if (!projeto) {
+      throw new Error("Projeto inexistente ou de outro usuário.");
+    }
+
+    const campos = {
+      name: projeto.name,
+      category: projeto.category,
+      pointsLabel: projeto.pointsLabel,
+      chain: projeto.chain,
+      websiteUrl: projeto.websiteUrl,
+      discordUrl: projeto.discordUrl,
+      twitterUrl: projeto.twitterUrl,
+      docsUrl: projeto.docsUrl,
+      expectedTgeDate: projeto.expectedTgeDate,
+      summary: dados.summary,
+      publishedAt: sql`now()`,
+      updatedAt: sql`now()`,
+    };
+
+    const [existente] = await db
+      .select({ id: schema.catalogProjects.id })
+      .from(schema.catalogProjects)
+      .where(eq(schema.catalogProjects.sourceProjectId, projectId))
+      .limit(1);
+
+    if (existente) {
+      await db
+        .update(schema.catalogProjects)
+        .set(campos)
+        .where(eq(schema.catalogProjects.id, existente.id));
+      return;
+    }
+
+    /*
+     * O slug do catálogo é independente do slug do projeto: dois admins com
+     * um projeto de mesmo nome não podem colidir num campo que é único para
+     * o catálogo inteiro, e não por usuário como o slug de `projects`.
+     */
+    const existentes = await db
+      .select({ slug: schema.catalogProjects.slug })
+      .from(schema.catalogProjects);
+    const slug = uniqueSlug(
+      projeto.name,
+      existentes.map((e) => e.slug),
+    );
+
+    await db.insert(schema.catalogProjects).values({
+      slug,
+      ...campos,
+      createdBy: userId,
+      sourceProjectId: projectId,
+    });
+  }, ROTAS_DADOS);
+}
+
+/**
+ * Tira um projeto do catálogo, sem apagar a entrada nem quem já a adotou.
+ *
+ * `publishedAt: null` é o único estado de "fora do catálogo" (ver a nota em
+ * `db/schema.ts`). A linha continua existindo para uma republicação futura
+ * reaproveitar o mesmo id, em vez de duplicar.
+ */
+export async function removerDestaque(projectId: string): Promise<ResultadoAcao> {
+  return executar(idSchema, { id: projectId }, async (dados, userId) => {
+    await exigirAdministrador(userId);
+
+    const [projeto] = await db
+      .select({ id: schema.projects.id })
+      .from(schema.projects)
+      .where(
+        and(eq(schema.projects.id, dados.id), eq(schema.projects.userId, userId)),
+      )
+      .limit(1);
+
+    if (!projeto) {
+      throw new Error("Projeto inexistente ou de outro usuário.");
+    }
+
+    await db
+      .update(schema.catalogProjects)
+      .set({ publishedAt: null, updatedAt: sql`now()` })
+      .where(eq(schema.catalogProjects.sourceProjectId, dados.id));
+  }, ROTAS_DADOS);
+}
+
+/**
+ * Adota uma entrada do catálogo: copia os campos editoriais para um projeto
+ * novo, inteiramente de quem adotou.
+ *
+ * **Cópia, não vínculo** (§13.3): a partir daqui o projeto é indistinguível
+ * de um criado à mão. `adoptedFromId` fica gravado só para não oferecer a
+ * mesma entrada de novo e para o `unique(userId, adoptedFromId)` do banco
+ * impedir adotar duas vezes.
+ *
+ * Qualquer pessoa com sessão pode adotar: chegar até aqui já exige conta
+ * aprovada, porque o login recusa quem não está (`auth.ts`).
+ */
+export async function adotarDoCatalogo(entrada: unknown): Promise<ResultadoAcao> {
+  return executar(adocaoSchema, entrada, async (dados, userId) => {
+    const [item] = await db
+      .select()
+      .from(schema.catalogProjects)
+      .where(
+        and(
+          eq(schema.catalogProjects.id, dados.catalogId),
+          isNotNull(schema.catalogProjects.publishedAt),
+        ),
+      )
+      .limit(1);
+
+    if (!item) {
+      throw new Error(
+        "Esta entrada não existe mais, ou foi retirada do catálogo.",
+      );
+    }
+
+    const doUsuario = await db
+      .select({ slug: schema.projects.slug })
+      .from(schema.projects)
+      .where(eq(schema.projects.userId, userId));
+    const slug = uniqueSlug(
+      item.name,
+      doUsuario.map((p) => p.slug),
+    );
+
+    await db.insert(schema.projects).values({
+      userId,
+      slug,
+      name: item.name,
+      category: item.category,
+      pointsLabel: item.pointsLabel,
+      chain: item.chain,
+      websiteUrl: item.websiteUrl,
+      discordUrl: item.discordUrl,
+      twitterUrl: item.twitterUrl,
+      docsUrl: item.docsUrl,
+      expectedTgeDate: item.expectedTgeDate,
+      adoptedFromId: item.id,
+    });
   }, ROTAS_DADOS);
 }
 
@@ -909,7 +1085,7 @@ const revisaoSchema = z.object({
     .nullable(),
 });
 
-async function exigirAdministrador(userId: string) {
+export async function exigirAdministrador(userId: string) {
   const [usuario] = await db
     .select({ role: schema.users.role })
     .from(schema.users)

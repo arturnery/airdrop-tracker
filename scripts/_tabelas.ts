@@ -30,6 +30,7 @@ export const TABELAS = [
   "token_prices",
   "points_snapshots",
   "volume_snapshots",
+  "catalog_projects",
   "tasks",
   "task_occurrences",
   "goals",

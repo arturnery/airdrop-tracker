@@ -23,6 +23,7 @@ import {
   EditarVolume,
 } from "@/components/forms/editar";
 import { Ajuda, explicacoes } from "@/components/ajuda";
+import { DestacarProjeto } from "@/components/forms/catalogo";
 import { faltaRegistrarRecebimento } from "@/lib/consistencia";
 import { AvisoSaldo } from "@/components/aviso-saldo";
 import { Button } from "@/components/ui/button";
@@ -1199,6 +1200,10 @@ export function ProjetoView({ slug }: { slug: string }) {
                 </p>
               )}
             </div>
+          </div>
+
+          <div className="mt-6">
+            <DestacarProjeto projectId={projeto.id} nomeDoProjeto={projeto.nome} />
           </div>
         </TabsContent>
       </Tabs>

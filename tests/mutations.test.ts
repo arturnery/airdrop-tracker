@@ -117,6 +117,167 @@ describe("criação", () => {
  * lado de uma quantidade nova deixaria no banco uma multiplicação que não
  * fecha, e é exatamente isso que um `map` ingênuo sobre os campos faria.
  */
+/**
+ * Catálogo da comunidade (ARCHITECTURE §13): publicar copia campos editoriais
+ * do projeto para uma entrada independente, e adotar copia de volta para um
+ * projeto novo. Nenhuma leitura atravessa essa fronteira depois da cópia, e é
+ * essa independência que os testes abaixo verificam: mexer no projeto de
+ * origem depois de publicar não muda a entrada, e mexer na entrada depois de
+ * adotar não muda o projeto adotado.
+ */
+describe("catálogo da comunidade", () => {
+  it("publica com os campos editoriais do projeto, e sem os pessoais", () => {
+    const ds = M.destacarProjeto(base(), {
+      projectId: "prj-vertex",
+      userId: "usr-1",
+      summary: "resumo para a comunidade",
+    });
+    const entrada = ds.catalogProjects.find((c) => c.sourceProjectId === "prj-vertex")!;
+
+    expect(entrada.name).toBe("Vertex Perp");
+    expect(entrada.chain).toBe("Arbitrum");
+    expect(entrada.summary).toBe("resumo para a comunidade");
+    expect(entrada.createdBy).toBe("usr-1");
+    expect(entrada.publishedAt).not.toBeNull();
+  });
+
+  it("publicar de novo atualiza a mesma linha, não cria uma segunda", () => {
+    const primeira = M.destacarProjeto(base(), {
+      projectId: "prj-vertex",
+      userId: "usr-1",
+      summary: "resumo original",
+    });
+    const segunda = M.destacarProjeto(primeira, {
+      projectId: "prj-vertex",
+      userId: "usr-1",
+      summary: "resumo corrigido",
+    });
+
+    const doProjeto = segunda.catalogProjects.filter(
+      (c) => c.sourceProjectId === "prj-vertex",
+    );
+    expect(doProjeto).toHaveLength(1);
+    expect(doProjeto[0]!.summary).toBe("resumo corrigido");
+  });
+
+  it("dois projetos de nomes iguais recebem slugs de catálogo diferentes", () => {
+    const comHomonimo = M.criarProjeto(base(), {
+      name: "Vertex Perp",
+      status: "ativo",
+      category: "perps",
+      pointsLabel: null,
+      chain: null,
+      priority: 3,
+      websiteUrl: null,
+      discordUrl: null,
+      twitterUrl: null,
+      docsUrl: null,
+      expectedTgeDate: null,
+      notes: null,
+    });
+
+    const umPublicado = M.destacarProjeto(comHomonimo.dataset, {
+      projectId: "prj-vertex",
+      userId: "usr-1",
+      summary: null,
+    });
+    const doisPublicados = M.destacarProjeto(umPublicado, {
+      projectId: comHomonimo.id,
+      userId: "usr-2",
+      summary: null,
+    });
+
+    const slugs = doisPublicados.catalogProjects.map((c) => c.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("remover o destaque não apaga a entrada, só a despublica", () => {
+    const publicado = M.destacarProjeto(base(), {
+      projectId: "prj-vertex",
+      userId: "usr-1",
+      summary: "resumo",
+    });
+    const removido = M.removerDestaque(publicado, "prj-vertex");
+    const entrada = removido.catalogProjects.find(
+      (c) => c.sourceProjectId === "prj-vertex",
+    )!;
+
+    expect(entrada).toBeDefined();
+    expect(entrada.publishedAt).toBeNull();
+  });
+
+  it("adota copiando os campos, com adoptedFromId apontando para a entrada", () => {
+    const publicado = M.destacarProjeto(base(), {
+      projectId: "prj-vertex",
+      userId: "usr-1",
+      summary: "resumo",
+    });
+    const entrada = publicado.catalogProjects[0]!;
+
+    const resultado = M.adotarDoCatalogo(publicado, { catalogId: entrada.id });
+    expect(resultado).not.toBeNull();
+
+    const adotado = resultado!.dataset.projects.find((p) => p.id === resultado!.id)!;
+    expect(adotado.name).toBe("Vertex Perp");
+    expect(adotado.chain).toBe("Arbitrum");
+    expect(adotado.adoptedFromId).toBe(entrada.id);
+    // Pessoal, e não copiado da entrada: nasce limpo para quem adotou escrever.
+    expect(adotado.notes).toBeNull();
+  });
+
+  it("não adota uma entrada despublicada", () => {
+    const publicado = M.destacarProjeto(base(), {
+      projectId: "prj-vertex",
+      userId: "usr-1",
+      summary: "resumo",
+    });
+    const entrada = publicado.catalogProjects[0]!;
+    const removido = M.removerDestaque(publicado, "prj-vertex");
+
+    expect(M.adotarDoCatalogo(removido, { catalogId: entrada.id })).toBeNull();
+  });
+
+  it("editar o projeto de origem depois de publicar não muda a entrada", () => {
+    const publicado = M.destacarProjeto(base(), {
+      projectId: "prj-vertex",
+      userId: "usr-1",
+      summary: "resumo",
+    });
+    const editado = M.atualizarProjeto(publicado, "prj-vertex", {
+      name: "Vertex Perp v2",
+    });
+
+    const entrada = editado.catalogProjects.find(
+      (c) => c.sourceProjectId === "prj-vertex",
+    )!;
+    // A cópia é do instante da publicação. Sincronizar foi descartado, não
+    // adiado (§13.3): quem quer o nome novo no catálogo clica em publicar de novo.
+    expect(entrada.name).toBe("Vertex Perp");
+  });
+
+  it("editar a entrada adotada não muda o projeto de origem, nem o contrário", () => {
+    const publicado = M.destacarProjeto(base(), {
+      projectId: "prj-vertex",
+      userId: "usr-1",
+      summary: "resumo",
+    });
+    const entrada = publicado.catalogProjects[0]!;
+    const { dataset: comAdocao, id: idAdotado } = M.adotarDoCatalogo(publicado, {
+      catalogId: entrada.id,
+    })!;
+
+    const editado = M.atualizarProjeto(comAdocao, idAdotado, {
+      status: "pausado",
+      notes: "anotação pessoal de quem adotou",
+    });
+
+    const origem = editado.projects.find((p) => p.id === "prj-vertex")!;
+    expect(origem.status, "o projeto de origem não sente a edição do adotado").toBe(
+      "ativo",
+    );
+  });
+});
+
 describe("correção de recebimento", () => {
   const comRecebimento = () =>
     M.registrarRecebimento(base(), {

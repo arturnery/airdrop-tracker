@@ -39,6 +39,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.8",
+    data: "2026-09-04",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Catálogo de projetos da comunidade. Quem administra pode destacar um projeto que já farma, com um resumo curto, e ele passa a aparecer para todo mundo na tela de Projetos, com um botão de adicionar ao próprio portfólio. Adicionar copia os dados para um projeto seu: editar ou apagar depois não muda o que aparece no catálogo, e o catálogo mudar depois não muda o que você já adicionou.",
+      },
+    ],
+  },
+  {
     versao: "1.7",
     data: "2026-09-02",
     mudancas: [

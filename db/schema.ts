@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   date,
   foreignKey,
@@ -217,6 +218,17 @@ export const projects = pgTable(
     docsUrl: text("docs_url"),
     expectedTgeDate: date("expected_tge_date"),
     notes: text("notes"),
+    /**
+     * De qual entrada do catálogo da comunidade este projeto veio, quando veio
+     * de lá. `null` é o caso comum: a grande maioria continua cadastrada à
+     * mão. `ON DELETE SET NULL` porque apagar a entrada do catálogo não deve
+     * apagar o projeto de quem já adotou (§13.3 do ARCHITECTURE): o projeto
+     * adotado é da pessoa, indistinguível de um criado à mão.
+     */
+    adoptedFromId: uuid("adopted_from_id").references(
+      (): AnyPgColumn => catalogProjects.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -226,6 +238,70 @@ export const projects = pgTable(
     unique("projects_user_slug_unq").on(t.userId, t.slug),
     // Necessário para o upsert do importador de planilha (§7.1).
     unique("projects_user_name_unq").on(t.userId, t.name),
+    // Impede adotar a mesma entrada do catálogo duas vezes. NULL não conta
+    // como duplicata para o Postgres, então quem nunca adotou nada não é
+    // afetado por esta regra.
+    unique("projects_user_adopted_unq").on(t.userId, t.adoptedFromId),
+  ],
+);
+
+/**
+ * Catálogo de projetos da comunidade (ARCHITECTURE §13).
+ *
+ * Entrada **independente** da linha em `projects` que a originou: ao publicar,
+ * os campos editoriais são copiados para cá, e ao adotar, são copiados de cá
+ * para um projeto novo. Nenhuma leitura de tela atravessa essa fronteira, e é
+ * essa independência que elimina o risco de uma ação de quem administra
+ * alcançar dado financeiro de outra pessoa (§13.5): a tabela não tem status,
+ * aporte, tarefa nem anotação nenhuma, só o que é igual para todo mundo.
+ *
+ * `sourceProjectId` é o caminho de volta até o projeto de quem publicou, usado
+ * só para saber se um projeto já está destacado e para recopiar os campos
+ * quando a pessoa atualiza. `ON DELETE SET NULL`: apagar o projeto de origem
+ * não apaga a entrada já publicada, ela só perde a lupa para os dados
+ * originais e passa a valer pelo que já foi copiado.
+ *
+ * `publishedAt` nulo é o estado "fora do catálogo". Não existe um segundo
+ * estado de rascunho como o desenho original previa: aqui a entrada nasce
+ * junto do clique em "Destacar", então rascunho e publicado seriam o mesmo
+ * instante.
+ */
+export const catalogProjects = pgTable(
+  "catalog_projects",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    category: projectCategoryEnum("category"),
+    pointsLabel: text("points_label"),
+    chain: text("chain"),
+    websiteUrl: text("website_url"),
+    discordUrl: text("discord_url"),
+    twitterUrl: text("twitter_url"),
+    docsUrl: text("docs_url"),
+    expectedTgeDate: date("expected_tge_date"),
+    /** Texto para a comunidade, escrito por quem publica. Distinto de `notes`,
+     *  que é pessoal e nunca sai da conta de quem escreveu. */
+    summary: text("summary"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    sourceProjectId: uuid("source_project_id").references(
+      (): AnyPgColumn => projects.id,
+      { onDelete: "set null" },
+    ),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // Um projeto só pode estar destacado uma vez. NULL (entrada sem projeto de
+    // origem) não conta como duplicata.
+    unique("catalog_source_project_unq").on(t.sourceProjectId),
   ],
 );
 

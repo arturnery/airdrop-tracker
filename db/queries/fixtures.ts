@@ -68,6 +68,8 @@ export type RawProject = {
   docsUrl: string | null;
   expectedTgeDate: string | null;
   notes: string | null;
+  /** De qual entrada do catálogo da comunidade este projeto veio; null = cadastrado à mão. */
+  adoptedFromId: string | null;
 };
 
 export const rawProjects: RawProject[] = [
@@ -86,6 +88,7 @@ export const rawProjects: RawProject[] = [
     docsUrl: null,
     expectedTgeDate: null,
     notes: "Conta de e-mail é a principal. Perfis de navegador entraram depois.",
+    adoptedFromId: null,
   },
   {
     id: "prj-solstice",
@@ -102,6 +105,7 @@ export const rawProjects: RawProject[] = [
     docsUrl: null,
     expectedTgeDate: null,
     notes: null,
+    adoptedFromId: null,
   },
   {
     id: "prj-vertex",
@@ -118,6 +122,7 @@ export const rawProjects: RawProject[] = [
     docsUrl: null,
     expectedTgeDate: "2026-10-01",
     notes: "Maior alocação e mais contas. Volume é o critério que importa aqui.",
+    adoptedFromId: null,
   },
   {
     id: "prj-prisma",
@@ -134,6 +139,7 @@ export const rawProjects: RawProject[] = [
     docsUrl: null,
     expectedTgeDate: null,
     notes: null,
+    adoptedFromId: null,
   },
   {
     id: "prj-nebula",
@@ -150,6 +156,7 @@ export const rawProjects: RawProject[] = [
     docsUrl: null,
     expectedTgeDate: null,
     notes: "Aporte mais alto até agora. Saldo ainda não conferido.",
+    adoptedFromId: null,
   },
 ];
 
@@ -484,6 +491,7 @@ export function datasetInicial() {
     pointsSnapshots: [...rawPointsSnapshots],
     volumeSnapshots: [...rawVolumeSnapshots],
     airdropClaims: [...rawAirdropClaims],
+    catalogProjects: [...rawCatalogProjects],
   };
 }
 
@@ -549,6 +557,35 @@ export const rawPointsSnapshots: RawPointsSnapshot[] = [
  *
  * Dados de demonstração.
  */
+/**
+ * Entrada do catálogo de projetos da comunidade (ARCHITECTURE §13).
+ *
+ * Cópia dos campos editoriais de um projeto no momento em que alguém decidiu
+ * destacá-lo, não uma janela para o projeto original: ver a nota em
+ * `db/schema.ts` sobre por que a independência importa.
+ */
+export type RawCatalogProject = {
+  id: string;
+  slug: string;
+  name: string;
+  category: "liquidez" | "interacoes" | "perps" | null;
+  pointsLabel: string | null;
+  chain: string | null;
+  websiteUrl: string | null;
+  discordUrl: string | null;
+  twitterUrl: string | null;
+  docsUrl: string | null;
+  expectedTgeDate: string | null;
+  summary: string | null;
+  createdBy: string;
+  sourceProjectId: string | null;
+  /** null = fora do catálogo. É o único estado de "despublicado" que existe. */
+  publishedAt: string | null;
+};
+
+/** Vazio de propósito: nasce assim que alguém publica pela tela. */
+export const rawCatalogProjects: RawCatalogProject[] = [];
+
 export type RawMember = {
   id: string;
   name: string;

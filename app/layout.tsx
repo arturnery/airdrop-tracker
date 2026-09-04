@@ -72,7 +72,11 @@ export default async function RootLayout({
         {/* A data do servidor já nasce correta; o provider ainda troca pela do
             navegador ao hidratar, que é o que vale para quem está em outro
             fuso. */}
-        <DataProvider initialDataset={dataset} initialToday={hoje}>
+        <DataProvider
+          initialDataset={dataset}
+          initialToday={hoje}
+          souAdmin={sessao?.papel === "admin"}
+        >
           {children}
         </DataProvider>
       </body>

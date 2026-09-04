@@ -6,6 +6,7 @@ import { ArrowDownRight, ArrowUpRight, Minus, Search } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { Ajuda, explicacoes } from "@/components/ajuda";
+import { SugestoesDoCatalogo } from "@/components/catalogo-sugestoes";
 import { AvisoSaldo } from "@/components/aviso-saldo";
 import { FiltroChips } from "@/components/filtro-chips";
 import {
@@ -346,6 +347,8 @@ export function ProjetosView() {
         actions={<NovoProjeto />}
       />
 
+      <SugestoesDoCatalogo />
+
       {todos.length > 0 ? (
         <div className="border-border mb-8 flex flex-col gap-3 rounded-lg border p-4">
           {/*
@@ -464,7 +467,7 @@ export function ProjetosView() {
       {todos.length === 0 ? (
         <EmptyState
           title="Nenhum projeto cadastrado"
-          description="Cadastre o primeiro airdrop que você está farmando para começar a acompanhar capital e tarefas."
+          description="Adicione um projeto sugerido acima, ou cadastre o que você está farmando para começar a acompanhar capital e tarefas."
         />
       ) : grupos.length === 0 ? (
         /*

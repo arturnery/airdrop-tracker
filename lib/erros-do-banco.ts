@@ -41,6 +41,10 @@ const PorConstraint: Record<string, ErroTraduzido> = {
     mensagem:
       "Você já tem um projeto com esse nome. Use outro, ou abra o que já existe.",
   },
+  projects_user_adopted_unq: {
+    campo: "geral",
+    mensagem: "Você já adicionou este projeto do catálogo ao seu portfólio.",
+  },
   projects_user_slug_unq: {
     campo: "name",
     mensagem: "Esse nome colide com o endereço de outro projeto seu. Tente uma variação.",

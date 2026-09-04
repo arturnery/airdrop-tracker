@@ -3060,19 +3060,100 @@ ficaria pior, porque corrigir começaria por apagar dezoito zeros.
 
 ---
 
+## Marco 48: Catálogo de projetos da comunidade
+
+O pedido veio de um amigo dev que viu a tabela de airdrops que o Artur mantém numa
+comunidade: "dava para aparecer isso para todo mundo?". A conversa girou em torno de
+uma pergunta que decidiu o desenho inteiro antes de qualquer linha de código: **quem
+publica lê a linha de quem farma, ou copia dela?**
+
+### Por que não ler direto
+
+A primeira tentação era simples: marcar um projeto como "global" e deixar a tela da
+comunidade consultar a própria linha de `projects`. Foi descartada olhando para o que
+essa tabela já guarda: `notes` (anotação pessoal), `priority`, `status`. Marcar
+"global" não filtra esses campos, só decide não mostrá-los agora, e "não mostrar
+agora" é exatamente o tipo de regra que quebra na primeira coluna nova. O projeto já
+tinha essa lição escrita, de um caso anterior: **campo escondido não é campo
+filtrado**. Valor que não pode ser visto não pode sair da consulta, porque acaba no
+HTML de qualquer forma.
+
+Isso já estava modelado em ARCHITECTURE §13, desde antes deste marco, como "cópia, não
+vínculo": publicar copia os campos editoriais (nome, categoria, rede, links, TGE
+previsto, resumo) para uma tabela própria do catálogo, independente da linha de
+origem. Nenhuma consulta da comunidade toca `projects`. Depois de copiado, editar o
+projeto original não muda o card, e editar o card não muda o projeto: sincronizar foi
+considerado e descartado, não adiado, porque manter as duas cópias iguais custaria uma
+segunda regra de negócio só para isso.
+
+### O botão em vez da tela de administração
+
+O plano original prendia a curadoria numa tela própria, onde quem administra
+cadastraria a entrada do catálogo do zero. Na conversa, saiu diferente: um botão no
+próprio projeto que já existe. "Destacar para a comunidade" copia os campos ali mesmo,
+sem digitar de novo o que já está cadastrado. Publicar de novo (ou depois de remover)
+usa a mesma linha, achada por `source_project_id`: evita duas entradas para o mesmo
+projeto e mantém o id estável para quem já adotou.
+
+### Quem vê o quê
+
+Ver o catálogo não precisa de nada além de sessão: chegar até aqui já exige conta
+aprovada, porque o login recusa quem não está. Publicar é só para quem administra, e a
+guarda que vale é a do servidor (`exigirAdministrador`), não o botão escondido na
+tela: esconder nunca é a proteção real (§9.4).
+
+Adotar copia os campos para um projeto novo, inteiramente de quem adotou. A partir
+daí ele é indistinguível de um criado à mão. `adopted_from_id` fica gravado só para
+duas coisas: não sugerir a mesma entrada de novo, e o `unique(user_id,
+adopted_from_id)` do banco impedir adotar duas vezes.
+
+Um efeito colateral do design que vale registrar: quem publica sempre vê o próprio
+card como colidindo por nome, porque o projeto de origem continua na conta dele com
+aquele nome. O botão de adicionar fica desabilitado com o aviso, o que é correto, só
+não é intuitivo à primeira vista.
+
+### A referência circular que o backup não resolvia sozinho
+
+`catalog_projects.source_project_id` aponta para `projects`, e `projects.
+adopted_from_id` aponta de volta para `catalog_projects`. Nenhuma ordem de inserção
+numa restauração resolve os dois sentidos ao mesmo tempo: qualquer ordem deixa uma
+linha referenciando outra que ainda não existe.
+
+A prova não foi de bancada: semeei um projeto adotado de verdade em desenvolvimento,
+fiz o backup, restaurei por cima do mesmo banco, e vi o restore falhar antes do
+conserto. O conserto é uma segunda passada, `scripts/_restaurar-logica.ts`: a coluna
+que aponta para a frente entra `null` na inserção normal e é corrigida depois que toda
+tabela já existe. Extraída num módulo sem efeito nenhum, pelo mesmo motivo de
+`_tabelas.ts`: importar `restaurar.ts` para testar a lógica executaria a
+restauração, porque ele chama `main()` no nível do módulo.
+
+Entra no catálogo de erros como item novo: referência circular entre duas tabelas
+quebra qualquer ordem única de restauração, e só aparece no dia em que o backup
+precisa ser usado de verdade.
+
+### O que fica
+
+`catalog_projects` é tabela nova, com `source_project_id` único (um projeto só pode
+estar destacado uma vez) e `published_at` nulo como único estado de "fora do
+catálogo": não existe um segundo estado de rascunho, porque aqui a entrada nasce
+junto do clique em publicar.
+
+
+---
+
 ## Estado atual
 
 | | |
 |---|---|
-| Telas | Visão geral, tarefas, projetos, aba do projeto, contas, cotações, histórico |
+| Telas | Visão geral, tarefas, projetos (com catálogo da comunidade), aba do projeto, contas, cotações, histórico |
 | Entrada | Login, cadastro, recuperação e espera por aprovação, com credencial verificada |
 | Administração | Fila de aprovação, membros com acesso e histórico de recusas |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
 | Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
 | CRUD | Completo no banco: todo tipo de lançamento pode ser editado, e a exclusão desce em cascata |
-| Testes | 317, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas, detecção de saldo impossível, virada do dia no relógio da tela e cobertura do backup sobre o schema |
+| Testes | 330, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas, detecção de saldo impossível, virada do dia no relógio da tela, cobertura do backup sobre o schema, catálogo da comunidade e restauração com referência circular |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
-| Backend | Postgres no Neon, 18 tabelas, escrita por Server Actions |
+| Backend | Postgres no Neon, 19 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
 | Segurança | Auditada antes da divulgação: limite de tentativas, cabeçalhos e sem oráculo de e-mail cadastrado no login |
 | Senha | Recuperação por fila de administração, com troca obrigatória no primeiro acesso |

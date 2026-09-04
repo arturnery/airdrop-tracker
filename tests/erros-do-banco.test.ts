@@ -40,6 +40,14 @@ describe("tradução do erro do banco", () => {
     expect(mensagem).toContain("já tem um projeto com esse nome");
   });
 
+  it("adotar a mesma entrada do catálogo duas vezes tem mensagem própria", () => {
+    const { campo, mensagem } = traduzirErroDeBanco(
+      recusa("23505", "projects_user_adopted_unq"),
+    );
+    expect(campo).toBe("geral");
+    expect(mensagem).toContain("já adicionou este projeto");
+  });
+
   it("nome de conta repetido aponta para o campo da conta", () => {
     expect(traduzirErroDeBanco(recusa("23505", "accounts_user_label_unq")).campo).toBe(
       "label",

@@ -1,6 +1,7 @@
 import type {
   RawAccount,
   RawAirdropClaim,
+  RawCatalogProject,
   RawGoal,
   RawGoalEntry,
   RawPointsSnapshot,
@@ -40,6 +41,8 @@ export type Dataset = {
   pointsSnapshots: RawPointsSnapshot[];
   volumeSnapshots: RawVolumeSnapshot[];
   airdropClaims: RawAirdropClaim[];
+  /** Global, não filtrada por usuário: publicada é visível para todo mundo. */
+  catalogProjects: RawCatalogProject[];
 };
 
 export const emptyDataset = (): Dataset => ({
@@ -55,6 +58,7 @@ export const emptyDataset = (): Dataset => ({
   pointsSnapshots: [],
   volumeSnapshots: [],
   airdropClaims: [],
+  catalogProjects: [],
 });
 
 /** Slug a partir do nome: "Vertex Perp" -> "vertex-perp". */

@@ -80,6 +80,10 @@ type Acoes = {
   registrarRecebimento: Acao<[unknown]>;
   atualizarRecebimento: Acao<[string, unknown]>;
   excluirRecebimento: Acao<[string]>;
+
+  destacarProjeto: Acao<[string, unknown]>;
+  removerDestaque: Acao<[string]>;
+  adotarDoCatalogo: Acao<[unknown]>;
 };
 
 type Contexto = {
@@ -87,6 +91,12 @@ type Contexto = {
   hoje: string;
   /** true enquanto uma escrita está em andamento. */
   salvando: boolean;
+  /**
+   * Só para decidir o que MOSTRAR na tela (o botão "Destacar para a
+   * comunidade"). A guarda que vale de verdade é `exigirAdministrador`, no
+   * servidor: esconder um botão nunca é a proteção real (ARCHITECTURE §9.4).
+   */
+  souAdmin: boolean;
   acoes: Acoes;
 };
 
@@ -95,10 +105,12 @@ const DataContext = createContext<Contexto | null>(null);
 export function DataProvider({
   initialDataset,
   initialToday,
+  souAdmin,
   children,
 }: {
   initialDataset: Dataset;
   initialToday: string;
+  souAdmin: boolean;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -224,13 +236,17 @@ export function DataProvider({
       registrarRecebimento: envolver(A.registrarRecebimento),
       atualizarRecebimento: envolver(A.atualizarRecebimento),
       excluirRecebimento: envolver(A.excluirRecebimento),
+
+      destacarProjeto: envolver(A.destacarProjeto),
+      removerDestaque: envolver(A.removerDestaque),
+      adotarDoCatalogo: envolver(A.adotarDoCatalogo),
     }),
     [envolver, alternarTarefa],
   );
 
   const valor = useMemo(
-    () => ({ dataset, hoje, salvando, acoes }),
-    [dataset, hoje, salvando, acoes],
+    () => ({ dataset, hoje, salvando, souAdmin, acoes }),
+    [dataset, hoje, salvando, souAdmin, acoes],
   );
 
   return <DataContext.Provider value={valor}>{children}</DataContext.Provider>;

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq, inArray, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -48,6 +48,7 @@ export async function carregarDataset(
     tarefas,
     metas,
     recebimentos,
+    catalogo,
   ] = await Promise.all([
     db
       .select()
@@ -87,6 +88,16 @@ export async function carregarDataset(
       .select()
       .from(schema.airdropClaims)
       .where(eq(schema.airdropClaims.userId, userId)),
+    /*
+     * Sem filtro de usuário: o catálogo é a mesma lista para todo mundo.
+     * `isNotNull(publishedAt)` é o único filtro, porque é a única marca de
+     * "fora do catálogo" que existe (ver a nota em `db/schema.ts`).
+     */
+    db
+      .select()
+      .from(schema.catalogProjects)
+      .where(isNotNull(schema.catalogProjects.publishedAt))
+      .orderBy(desc(schema.catalogProjects.publishedAt)),
   ]);
 
   // Pares e ocorrências não têm user_id próprio: pendem de projeto e tarefa,
@@ -143,6 +154,7 @@ export async function carregarDataset(
       docsUrl: p.docsUrl,
       expectedTgeDate: p.expectedTgeDate,
       notes: p.notes,
+      adoptedFromId: p.adoptedFromId,
     })),
     projectAccounts: pares.map((p) => ({
       projectId: p.projectId,
@@ -229,6 +241,23 @@ export async function carregarDataset(
       tokenAmount: String(Number(c.tokenAmount)),
       priceUsd: c.priceUsd,
       valueUsd: c.valueUsd,
+    })),
+    catalogProjects: catalogo.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      name: c.name,
+      category: c.category,
+      pointsLabel: c.pointsLabel,
+      chain: c.chain,
+      websiteUrl: c.websiteUrl,
+      discordUrl: c.discordUrl,
+      twitterUrl: c.twitterUrl,
+      docsUrl: c.docsUrl,
+      expectedTgeDate: c.expectedTgeDate,
+      summary: c.summary,
+      createdBy: c.createdBy,
+      sourceProjectId: c.sourceProjectId,
+      publishedAt: c.publishedAt ? c.publishedAt.toISOString() : null,
     })),
   };
 }

@@ -23,7 +23,7 @@ type Tarefa = Dataset["tasks"][number];
 
 export function criarProjeto(
   ds: Dataset,
-  dados: Omit<Projeto, "id" | "slug">,
+  dados: Omit<Projeto, "id" | "slug" | "adoptedFromId">,
 ): { dataset: Dataset; id: string } {
   const id = novoId("prj");
   const slug = uniqueSlug(
@@ -31,7 +31,13 @@ export function criarProjeto(
     ds.projects.map((p) => p.slug),
   );
   return {
-    dataset: { ...ds, projects: [...ds.projects, { ...dados, id, slug }] },
+    dataset: {
+      ...ds,
+      // Nasce sem origem: criação manual, por definição, não veio do
+      // catálogo. `adotarDoCatalogo`, mais abaixo, é o único outro lugar que
+      // grava este campo.
+      projects: [...ds.projects, { ...dados, id, slug, adoptedFromId: null }],
+    },
     id,
   };
 }
@@ -460,6 +466,149 @@ export function desvincularConta(
     ...ds,
     projectAccounts: ds.projectAccounts.filter((p) => !doPar(p)),
     transactions: ds.transactions.filter((t) => !doPar(t)),
+  };
+}
+
+// ------------------------------------------------------------- catálogo
+
+/**
+ * Publica ou atualiza a entrada de um projeto no catálogo da comunidade
+ * (ARCHITECTURE §13). Um projeto só tem uma entrada: se já existe (achada por
+ * `sourceProjectId`), os campos editoriais são recopiados por cima; se não,
+ * nasce uma nova.
+ *
+ * Reaparecer depois de despublicado usa a mesma linha, e não cria outra: é o
+ * que faz o `unique(sourceProjectId)` do banco valer, e o que preserva o id
+ * de quem já tiver adotado antes de a pessoa remover e publicar de novo.
+ *
+ * O slug do catálogo é **independente** do slug do projeto de origem: dois
+ * admins com um projeto de mesmo nome não podem colidir num campo que é único
+ * para o catálogo inteiro, e não por usuário como o slug de `projects`.
+ */
+export function destacarProjeto(
+  ds: Dataset,
+  dados: { projectId: string; userId: string; summary: string | null },
+): Dataset {
+  const projeto = ds.projects.find((p) => p.id === dados.projectId);
+  if (!projeto) return ds;
+
+  const existente = ds.catalogProjects.find(
+    (c) => c.sourceProjectId === dados.projectId,
+  );
+
+  const campos = {
+    name: projeto.name,
+    category: projeto.category,
+    pointsLabel: projeto.pointsLabel,
+    chain: projeto.chain,
+    websiteUrl: projeto.websiteUrl,
+    discordUrl: projeto.discordUrl,
+    twitterUrl: projeto.twitterUrl,
+    docsUrl: projeto.docsUrl,
+    expectedTgeDate: projeto.expectedTgeDate,
+    summary: dados.summary,
+  };
+
+  if (existente) {
+    return {
+      ...ds,
+      catalogProjects: ds.catalogProjects.map((c) =>
+        c.id === existente.id
+          ? { ...c, ...campos, publishedAt: new Date().toISOString() }
+          : c,
+      ),
+    };
+  }
+
+  const slug = uniqueSlug(
+    projeto.name,
+    ds.catalogProjects.map((c) => c.slug),
+  );
+
+  return {
+    ...ds,
+    catalogProjects: [
+      ...ds.catalogProjects,
+      {
+        id: novoId("cat"),
+        slug,
+        ...campos,
+        createdBy: dados.userId,
+        sourceProjectId: dados.projectId,
+        publishedAt: new Date().toISOString(),
+      },
+    ],
+  };
+}
+
+/**
+ * Tira um projeto do catálogo, sem apagar a entrada.
+ *
+ * `publishedAt: null` é o único estado de "fora do catálogo" que existe (ver
+ * a nota em `db/schema.ts`). Manter a linha, e não apagá-la, é o que faz uma
+ * republicação futura reaproveitar o mesmo id, em vez de criar uma segunda
+ * entrada para o mesmo projeto.
+ */
+export function removerDestaque(ds: Dataset, projectId: string): Dataset {
+  return {
+    ...ds,
+    catalogProjects: ds.catalogProjects.map((c) =>
+      c.sourceProjectId === projectId ? { ...c, publishedAt: null } : c,
+    ),
+  };
+}
+
+/**
+ * Adota uma entrada do catálogo: copia os campos editoriais para um projeto
+ * novo, inteiramente da pessoa que adotou.
+ *
+ * **Cópia, não vínculo** (ARCHITECTURE §13.3): a partir daqui o projeto é
+ * indistinguível de um criado à mão. Editar, pausar ou apagar não alcança o
+ * catálogo, e o catálogo mudar depois não alcança quem já adotou.
+ *
+ * `adoptedFromId` fica gravado só para duas coisas: não oferecer a mesma
+ * entrada de novo a quem já adotou, e o `unique(userId, adoptedFromId)` do
+ * banco impedir adotar duas vezes por engano.
+ *
+ * Devolve `null` quando a entrada não existe mais ou foi despublicada: pode
+ * acontecer se a pessoa demorou para clicar numa tela que ficou aberta.
+ */
+export function adotarDoCatalogo(
+  ds: Dataset,
+  dados: { catalogId: string },
+): { dataset: Dataset; id: string } | null {
+  const entrada = ds.catalogProjects.find(
+    (c) => c.id === dados.catalogId && c.publishedAt !== null,
+  );
+  if (!entrada) return null;
+
+  const id = novoId("prj");
+  const slug = uniqueSlug(
+    entrada.name,
+    ds.projects.map((p) => p.slug),
+  );
+
+  const projeto: Dataset["projects"][number] = {
+    id,
+    slug,
+    name: entrada.name,
+    status: "ativo",
+    category: entrada.category,
+    pointsLabel: entrada.pointsLabel,
+    chain: entrada.chain,
+    priority: 3,
+    websiteUrl: entrada.websiteUrl,
+    discordUrl: entrada.discordUrl,
+    twitterUrl: entrada.twitterUrl,
+    docsUrl: entrada.docsUrl,
+    expectedTgeDate: entrada.expectedTgeDate,
+    notes: null,
+    adoptedFromId: entrada.id,
+  };
+
+  return {
+    dataset: { ...ds, projects: [...ds.projects, projeto] },
+    id,
   };
 }
 
