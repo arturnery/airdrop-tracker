@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { CategoryBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { formatDateBr } from "@/lib/dates";
 import { normalizar } from "@/lib/dataset";
 import type { ProjectCategory } from "@/lib/types";
 
@@ -22,16 +21,18 @@ import type { ProjectCategory } from "@/lib/types";
  * projeto que a pessoa já tem à mão fica com o botão desabilitado e avisando:
  * o banco recusaria mesmo assim, mas dizer antes de clicar é melhor do que
  * deixar tomar erro.
+ *
+ * Mesmo formato do card de projeto (ícone, nome, categoria como selo, linha,
+ * ação embaixo): resumo, links e TGE saíram daqui para os dois cards lerem
+ * como a mesma família visual. Custo aceito, e não descoberto: sem o resumo,
+ * o card conta menos sobre o projeto antes do clique, e quem quiser saber
+ * mais decide pelo nome e pela categoria, não por uma frase de venda.
  */
 
 type Sugestao = {
   id: string;
   nome: string;
   categoria: ProjectCategory | null;
-  chain: string | null;
-  resumo: string | null;
-  tgePrevisto: string | null;
-  links: { rotulo: string; href: string }[];
   colideComNome: boolean;
 };
 
@@ -49,18 +50,7 @@ function useSugestoes(): Sugestao[] {
       id: c.id,
       nome: c.name,
       categoria: c.category,
-      chain: c.chain,
-      resumo: c.summary,
-      tgePrevisto: c.expectedTgeDate,
       colideComNome: nomesJaCadastrados.has(normalizar(c.name)),
-      links: (
-        [
-          c.websiteUrl && { rotulo: "Site", href: c.websiteUrl },
-          c.discordUrl && { rotulo: "Discord", href: c.discordUrl },
-          c.twitterUrl && { rotulo: "X", href: c.twitterUrl },
-          c.docsUrl && { rotulo: "Docs", href: c.docsUrl },
-        ] as const
-      ).filter((l): l is { rotulo: string; href: string } => Boolean(l)),
     }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 }
@@ -73,60 +63,24 @@ function CardSugestao({ sugestao }: { sugestao: Sugestao }) {
   const ocupado = enviando || salvando;
 
   return (
-    <article className="bg-card border-border flex h-full flex-col rounded-lg border p-5">
-      <div className="flex items-start gap-3">
+    <article className="bg-card border-border flex h-full flex-col rounded-lg border p-6">
+      <div className="flex items-center gap-3">
         <span
           aria-hidden="true"
-          className="bg-brand/15 text-brand-legivel flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold"
+          className="bg-brand/15 text-brand-legivel flex size-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold"
         >
           {sugestao.nome.trim().charAt(0).toUpperCase()}
         </span>
-        <div className="min-w-0">
-          <h3 className="truncate text-sm font-semibold tracking-tight">
-            {sugestao.nome}
-          </h3>
-          <p className="text-muted-foreground mt-0.5 truncate text-xs">
-            {sugestao.chain ?? "rede não informada"}
-          </p>
-        </div>
+        <h3 className="min-w-0 truncate text-lg font-semibold tracking-tight">
+          {sugestao.nome}
+        </h3>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <CategoryBadge category={sugestao.categoria} />
-        {sugestao.tgePrevisto ? (
-          <span className="text-muted-foreground text-xs">
-            TGE previsto {formatDateBr(sugestao.tgePrevisto)}
-          </span>
-        ) : null}
       </div>
 
-      {sugestao.resumo ? (
-        <p className="text-muted-foreground mt-3 flex-1 text-xs leading-relaxed">
-          {sugestao.resumo}
-        </p>
-      ) : (
-        <div className="flex-1" />
-      )}
-
-      {sugestao.links.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap gap-1.5">
-          {sugestao.links.map((link) => (
-            <li key={link.rotulo}>
-              <a
-                href={link.href}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="border-border hover:border-brand/50 focus-visible:ring-ring inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
-              >
-                {link.rotulo}
-                <ExternalLink className="size-2.5" aria-hidden="true" />
-              </a>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      <div className="mt-4">
+      <div className="border-border mt-4 flex flex-1 flex-col justify-end gap-1.5 border-t pt-3">
         <Button
           type="button"
           size="sm"
@@ -149,11 +103,11 @@ function CardSugestao({ sugestao }: { sugestao: Sugestao }) {
           Adicionar ao meu portfólio
         </Button>
         {sugestao.colideComNome ? (
-          <p className="text-muted-foreground mt-1.5 text-xs">
+          <p className="text-muted-foreground text-xs">
             Você já tem um projeto chamado &quot;{sugestao.nome}&quot;.
           </p>
         ) : erro ? (
-          <p role="alert" className="text-negative mt-1.5 text-xs">
+          <p role="alert" className="text-negative text-xs">
             {erro}
           </p>
         ) : null}

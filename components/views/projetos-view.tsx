@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, Minus, Search } from "lucide-react";
+import { Layers, Search } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
-import { Ajuda, explicacoes } from "@/components/ajuda";
 import { SugestoesDoCatalogo } from "@/components/catalogo-sugestoes";
 import { AvisoSaldo } from "@/components/aviso-saldo";
 import { FiltroChips } from "@/components/filtro-chips";
@@ -15,12 +14,11 @@ import {
 } from "@/components/forms/confirmar-exclusao";
 import { NovoProjeto } from "@/components/forms/dialogs";
 import { EditarProjeto } from "@/components/forms/editar";
-import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import {
   CategoryBadge,
+  categoryDescriptions,
   nomeRiscado,
-  PriorityMeter,
   ProjectStatusBadge,
 } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -35,14 +33,17 @@ import {
 } from "@/lib/selectors";
 import type { ProjectCategory, ProjectStatus, ProjectSummary } from "@/lib/types";
 
-/** Ordem de exibição dos status: o que exige ação primeiro, arquivo por último. */
-const ordemStatus: { chave: ProjectStatus; titulo: string; nota?: string }[] = [
-  { chave: "ativo", titulo: "Ativos", nota: "farmando agora" },
-  { chave: "tge_anunciado", titulo: "TGE anunciado", nota: "token a caminho" },
-  { chave: "pesquisando", titulo: "Pesquisando", nota: "avaliando se vale" },
-  { chave: "pausado", titulo: "Pausados" },
-  { chave: "distribuido", titulo: "Distribuídos", nota: "airdrop já recebido" },
-  { chave: "descartado", titulo: "Descartados" },
+/**
+ * Rótulos de status para o filtro. Só o texto: quem decide título de seção
+ * agora é `ordemCategoria`, este serve só para nomear os chips.
+ */
+const statusFiltro: { valor: ProjectStatus; rotulo: string }[] = [
+  { valor: "ativo", rotulo: "Ativos" },
+  { valor: "tge_anunciado", rotulo: "TGE anunciado" },
+  { valor: "pesquisando", rotulo: "Pesquisando" },
+  { valor: "pausado", rotulo: "Pausados" },
+  { valor: "distribuido", rotulo: "Distribuídos" },
+  { valor: "descartado", rotulo: "Descartados" },
 ];
 
 const categorias: { valor: ProjectCategory; rotulo: string }[] = [
@@ -52,91 +53,53 @@ const categorias: { valor: ProjectCategory; rotulo: string }[] = [
 ];
 
 /**
- * Resultado do projeto, promovido a bloco próprio.
+ * Ordem das seções da grade: categoria, não status.
  *
- * Antes ele era a terceira coluna de uma linha de três, com o mesmo peso de
- * "depositado" e "exposição". Os três respondem perguntas diferentes: os dois
- * primeiros dizem quanto entrou e quanto está lá, e o terceiro diz **se valeu a
- * pena**. Ter um bloco próprio resolve isso.
+ * A nota de cada seção reaproveita `categoryDescriptions`, a mesma frase que
+ * já explica a categoria no selo do card e no formulário: descrição
+ * divergente entre os dois lugares seria pior do que nenhuma.
  *
- * O que ele **não** é: o maior destaque do card. Numa lista, a primeira
- * pergunta é "qual projeto é este", e a resposta é o nome. Uma primeira versão
- * pôs o resultado em corpo 24 e ele passou a ser lido antes do nome, o que
- * inverte a ordem em que a informação é procurada. O número recuou para o corpo
- * do texto, e a saliência dele agora vem da serif, da cor e da moldura, que
- * bastam para achá-lo sem disputar a leitura.
- *
- * O sinal aparece de três formas ao mesmo tempo: cor, seta e o próprio número
- * com sinal. Cor sozinha não serve como indicador, e a seta some para quem não
- * distingue verde de vermelho.
- *
- * Verde e vermelho aqui são significado, não estilo: é exatamente o uso que
- * §14.8 reserva a eles. O azul da marca fica no avatar e no realce de foco.
+ * `null` sempre por último: um projeto sem categoria não é uma categoria
+ * própria, é a ausência de uma, e a seção existe só para ele não sumir da
+ * tela — sem ela, "sem categoria" simplesmente não apareceria em lugar
+ * nenhum, e pareceria que o projeto foi perdido.
  */
-function PainelResultado({ projeto }: { projeto: ProjectSummary }) {
-  const positivo = projeto.resultado > 0;
-  const negativo = projeto.resultado < 0;
+const ordemCategoria: { chave: ProjectCategory | null; titulo: string; nota?: string }[] =
+  [
+    { chave: "liquidez", titulo: "Liquidez", nota: categoryDescriptions.liquidez },
+    { chave: "interacoes", titulo: "Interações", nota: categoryDescriptions.interacoes },
+    { chave: "perps", titulo: "Perps", nota: categoryDescriptions.perps },
+    { chave: null, titulo: "Sem categoria" },
+  ];
 
-  /*
-   * Projeto sem dinheiro nenhum não mostra "$0,00" num painel de destaque:
-   * o zero ali sugere apuração feita e resultado nulo, quando o que houve foi
-   * ausência de movimento. A moldura continua, para os cards não ficarem de
-   * alturas diferentes na mesma fileira.
-   */
-  const semMovimento =
-    projeto.aportado === 0 && projeto.exposicao === 0 && projeto.resultado === 0;
-
-  const Seta = positivo ? ArrowUpRight : negativo ? ArrowDownRight : Minus;
-
+/**
+ * Prioridade como selo, no mesmo formato de categoria e status.
+ *
+ * Existia como medidor de barrinhas (`PriorityMeter`), que continua em uso na
+ * aba do projeto. Aqui vira selo porque os três filtros do card (categoria,
+ * status, prioridade) precisam ler como um conjunto: misturar barra com
+ * selo faria a prioridade parecer de outra natureza, quando é só mais um
+ * critério de filtro como os outros dois.
+ */
+function TagPrioridade({ value }: { value: number }) {
   return (
-    <div
-      className={cn(
-        "mt-4 flex items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5",
-        positivo && "border-positive/30 bg-positive/10",
-        negativo && "border-negative/30 bg-negative/10",
-        !positivo && !negativo && "border-border bg-secondary/40",
-      )}
-    >
-      <div className="min-w-0">
-        <p className="text-muted-foreground flex items-center gap-1.5 text-[0.6875rem] font-medium tracking-wider uppercase">
-          Resultado
-          <Ajuda sobre="resultado">{explicacoes.resultado}</Ajuda>
-        </p>
-        {semMovimento ? (
-          <p className="text-muted-foreground mt-1 text-sm">sem movimento</p>
-        ) : (
-          <p className="mt-1 flex items-baseline gap-2">
-            {/* Serif e tamanho grande, como nos cartões de indicador: número é
-                o que o olho procura primeiro, e a troca de família o destaca
-                sem precisar de mais cor. */}
-            <Money
-              value={projeto.resultado}
-              tone="auto"
-              signed
-              className="font-numeric text-base leading-none font-semibold"
-            />
-            <Percent value={projeto.roi} className="text-xs" />
-          </p>
-        )}
-      </div>
-
-      {semMovimento ? null : (
-        <span
-          aria-hidden="true"
-          className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-md border",
-            positivo && "border-positive/30 text-positive",
-            negativo && "border-negative/30 text-negative",
-            !positivo && !negativo && "border-border text-muted-foreground",
-          )}
-        >
-          <Seta className="size-3.5" />
-        </span>
-      )}
-    </div>
+    <span className="border-border text-muted-foreground inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium">
+      Prioridade {value}
+    </span>
   );
 }
 
+/**
+ * Card de projeto: identidade, os três filtros como selo, e o que precisa de
+ * ação.
+ *
+ * Deliberadamente sem números financeiros. Resultado, exposição e capital
+ * saíram daqui: a lista virou um painel de "o que farmar hoje e em que
+ * estado cada coisa está", e quem quer o valor em dólar abre o projeto — a
+ * aba dele continua com o painel de indicadores inteiro. Cabe registrar o
+ * custo aceito: comparar resultado entre projetos não dá mais para fazer só
+ * de olho na lista.
+ */
 function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
   const { dataset, hoje, acoes } = useDados();
 
@@ -169,24 +132,17 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
           >
             {projeto.nome.trim().charAt(0).toUpperCase()}
           </span>
-          <div className="min-w-0">
-            <h3 className="text-lg font-semibold tracking-tight">
-              <Link
-                href={`/projetos/${projeto.slug}`}
-                className={cn(
-                  "after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none",
-                  nomeRiscado(projeto.status),
-                )}
-              >
-                {projeto.nome}
-              </Link>
-            </h3>
-            <p className="text-muted-foreground mt-0.5 truncate text-xs">
-              {projeto.chain ?? "rede não informada"}
-              {" · "}
-              {projeto.contas} {projeto.contas === 1 ? "conta" : "contas"}
-            </p>
-          </div>
+          <h3 className="min-w-0 text-lg font-semibold tracking-tight">
+            <Link
+              href={`/projetos/${projeto.slug}`}
+              className={cn(
+                "after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none",
+                nomeRiscado(projeto.status),
+              )}
+            >
+              {projeto.nome}
+            </Link>
+          </h3>
         </div>
         {/*
           z-10 tira os botões de baixo do stretched link do card, senão o
@@ -209,85 +165,51 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         </div>
       </div>
 
+      {/*
+        Os três filtros da tela, no card, como selo: categoria, status e
+        prioridade. A categoria repete a da seção de propósito — nem todo
+        card vai ficar perto do título da seção depois de rolar a página, e
+        aqui o selo é barato, cabe numa linha com os outros dois.
+      */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <CategoryBadge category={projeto.categoria} />
-        <PriorityMeter value={projeto.prioridade} />
+        <ProjectStatusBadge status={projeto.status} />
+        <TagPrioridade value={projeto.prioridade} />
       </div>
 
       {projeto.alerta ? (
         <AvisoSaldo alerta={projeto.alerta} className="mt-4" />
       ) : null}
 
-      <PainelResultado projeto={projeto} />
-
-      <dl className="mt-4 mb-4 grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <dt className="text-muted-foreground flex items-center gap-1 text-xs">
-            Exposição
-            <Ajuda sobre="exposição">{explicacoes.exposicao}</Ajuda>
-          </dt>
-          <dd className="mt-0.5">
-            <Money value={projeto.exposicao} />
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground flex items-center gap-1 text-xs">
-            Capital depositado
-            <Ajuda sobre="capital depositado">{explicacoes.capital}</Ajuda>
-          </dt>
-          <dd className="mt-0.5">
-            <Money value={projeto.capitalNoPico} tone="muted" />
-          </dd>
-        </div>
-
-        {/*
-          Aparece sempre que houver volume, e não só em perps.
-          A regra por categoria escondia o número em projetos de interações que
-          também operam volume, como mercados de previsão: quem lançava ali não
-          via o valor em lugar nenhum. O critério passou a ser ter volume, que
-          é o que de fato indica se a informação interessa àquele projeto.
-        */}
-        {projeto.volumeOperado > 0 ? (
-          <div className="col-span-2 border-t border-border pt-3">
-            <dt className="text-muted-foreground flex items-center gap-1 text-xs">
-              Volume operado
-              <Ajuda sobre="volume operado">{explicacoes.volume}</Ajuda>
-            </dt>
-            <dd className="mt-0.5">
-              <Money value={projeto.volumeOperado} tone="muted" />
-            </dd>
-          </div>
-        ) : null}
-      </dl>
-
       {/*
         `mt-auto` empurra o rodapé para a base. Sem isso, num card mais curto
-        que o vizinho da mesma fileira, "sem pendências" e a data ficavam
-        boiando no meio, com espaço vazio embaixo: a grade iguala a altura dos
-        cards, e só o conteúdo é que não enchia.
+        que o vizinho da mesma fileira, o rodapé ficava boiando no meio, com
+        espaço vazio embaixo: a grade iguala a altura dos cards, e só o
+        conteúdo é que não enchia.
+
+        Duas metades sempre presentes (mesmo vazias), e não um `justify-between`
+        com um filho só: um card sem atrasada e sem data não deveria ver a
+        data pular para a esquerda por falta de par do outro lado.
       */}
-      <div className="border-border mt-auto flex items-center justify-between gap-3 border-t pt-3 text-xs">
-        {projeto.tarefasAtrasadas > 0 ? (
-          <span className="text-negative font-medium">
-            {projeto.tarefasAtrasadas} atrasada
-            {projeto.tarefasAtrasadas > 1 ? "s" : ""}
-          </span>
-        ) : projeto.tarefasPendentes > 0 ? (
-          <span className="text-muted-foreground">
-            {projeto.tarefasPendentes} pendente
-            {projeto.tarefasPendentes > 1 ? "s" : ""}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">sem pendências</span>
-        )}
-        {projeto.ultimaAtividade ? (
-          <span
-            className="text-muted-foreground"
-            title={`Última atividade ${relativeLabel(projeto.ultimaAtividade, hoje)}`}
-          >
-            {formatDateShort(projeto.ultimaAtividade)}
-          </span>
-        ) : null}
+      <div className="border-border mt-4 flex items-center justify-between gap-3 border-t pt-3 text-xs">
+        <div>
+          {projeto.tarefasAtrasadas > 0 ? (
+            <span className="bg-negative/15 text-negative inline-flex items-center rounded-full px-2.5 py-0.5 font-medium">
+              {projeto.tarefasAtrasadas} atrasada
+              {projeto.tarefasAtrasadas > 1 ? "s" : ""}
+            </span>
+          ) : null}
+        </div>
+        <div>
+          {projeto.ultimaAtividade ? (
+            <span
+              className="text-muted-foreground"
+              title={`Última atividade ${relativeLabel(projeto.ultimaAtividade, hoje)}`}
+            >
+              {formatDateShort(projeto.ultimaAtividade)}
+            </span>
+          ) : null}
+        </div>
       </div>
     </article>
   );
@@ -326,12 +248,12 @@ export function ProjetosView() {
   const contarStatus = (valor: ProjectStatus) =>
     todos.filter((p) => p.status === valor).length;
 
-  const grupos = ordemStatus
+  const grupos = ordemCategoria
     .map((secao) => ({
       ...secao,
       projetos: filtrados
-        .filter((p) => p.status === secao.chave)
-        // Dentro do status, prioridade manda; empate desempata por capital.
+        .filter((p) => p.categoria === secao.chave)
+        // Dentro da categoria, prioridade manda; empate desempata por capital.
         .sort((a, b) => b.prioridade - a.prioridade || b.aportado - a.aportado),
     }))
     .filter((grupo) => grupo.projetos.length > 0);
@@ -342,8 +264,9 @@ export function ProjetosView() {
   return (
     <>
       <PageHeader
+        icon={Layers}
         title="Projetos"
-        description="Agrupados por status; dentro de cada grupo, os de maior prioridade primeiro."
+        description="Agrupados por categoria; dentro de cada grupo, os de maior prioridade primeiro."
         actions={<NovoProjeto />}
       />
 
@@ -388,28 +311,10 @@ export function ProjetosView() {
           </div>
 
           {/*
-            Primeiro da lista porque é o eixo em que a tela já se organiza: os
-            grupos são os status. Filtrar por um deles não muda a estrutura,
-            reduz a página a uma seção só, que é o que se quer quando a lista
-            cresce e "Ativos" fica longe do topo.
+            Categoria primeiro da lista porque é o eixo em que a tela já se
+            organiza: os grupos são as categorias. Filtrar por uma delas não
+            muda a estrutura, reduz a página a uma seção só.
           */}
-          <FiltroChips
-            legenda="Status"
-            selecionado={status}
-            aoSelecionar={setStatus}
-            opcoes={[
-              { valor: null, rotulo: "Todos", contagem: todos.length },
-              ...ordemStatus
-                .map((secao) => ({
-                  valor: secao.chave,
-                  rotulo: secao.titulo,
-                  contagem: contarStatus(secao.chave),
-                }))
-                // Status sem projeto nenhum não vira chip: a lista tem seis, e
-                // oferecer os vazios enche a barra de opção que não leva a nada.
-                .filter((secao) => secao.contagem > 0),
-            ]}
-          />
           <FiltroChips
             legenda="Categoria"
             selecionado={categoria}
@@ -421,6 +326,23 @@ export function ProjetosView() {
                 rotulo: c.rotulo,
                 contagem: contarCategoria(c.valor),
               })),
+            ]}
+          />
+          <FiltroChips
+            legenda="Status"
+            selecionado={status}
+            aoSelecionar={setStatus}
+            opcoes={[
+              { valor: null, rotulo: "Todos", contagem: todos.length },
+              ...statusFiltro
+                .map((s) => ({
+                  valor: s.valor,
+                  rotulo: s.rotulo,
+                  contagem: contarStatus(s.valor),
+                }))
+                // Status sem projeto nenhum não vira chip: a lista tem seis, e
+                // oferecer os vazios enche a barra de opção que não leva a nada.
+                .filter((s) => s.contagem > 0),
             ]}
           />
           <FiltroChips
@@ -504,13 +426,16 @@ export function ProjetosView() {
       ) : (
         <div className="space-y-10">
           {grupos.map((grupo) => (
-            <section key={grupo.chave} aria-labelledby={`grupo-${grupo.chave}`}>
+            <section
+              key={grupo.chave ?? "sem-categoria"}
+              aria-labelledby={`grupo-${grupo.chave ?? "sem-categoria"}`}
+            >
               <div className="mb-4 flex items-baseline gap-3">
                 <h2
-                  id={`grupo-${grupo.chave}`}
+                  id={`grupo-${grupo.chave ?? "sem-categoria"}`}
                   className="flex items-center gap-2 text-base font-medium"
                 >
-                  <ProjectStatusBadge status={grupo.chave} />
+                  <CategoryBadge category={grupo.chave} />
                   <span className="text-muted-foreground tabular text-sm">
                     {grupo.projetos.length}
                   </span>
