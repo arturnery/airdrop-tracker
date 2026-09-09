@@ -32,10 +32,27 @@ import { versaoAtual } from "@/lib/changelog";
  */
 export function Suporte({
   className,
+  rotulo = "Suporte",
   rotuloOculto = false,
+  gatilho,
+  rotuloAcessivel,
 }: {
   className?: string;
+  /** Texto do botão que abre o diálogo. Padrão "Suporte", pela barra lateral. */
+  rotulo?: string;
   rotuloOculto?: boolean;
+  /**
+   * Substitui o conteúdo padrão (ícone + rótulo) por um layout próprio, para
+   * quando o gatilho é um cartão inteiro, e não um botão de menu. O botão
+   * continua sendo o mesmo elemento, só o que vai dentro dele muda.
+   */
+  gatilho?: React.ReactNode;
+  /**
+   * Nome curto para quem usa leitor de tela, quando `gatilho` é um bloco
+   * longo de texto: sem isso, o botão seria anunciado lendo o parágrafo
+   * inteiro como se fosse o nome dele.
+   */
+  rotuloAcessivel?: string;
 }) {
   const pathname = usePathname();
   const [aberto, setAberto] = useState(false);
@@ -57,13 +74,18 @@ export function Suporte({
       <DialogTrigger asChild>
         <button
           type="button"
+          aria-label={rotuloAcessivel}
           className={
             className ??
             "text-muted-foreground hover:text-foreground focus-visible:ring-ring flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
           }
         >
-          <LifeBuoy className="size-4 shrink-0" aria-hidden="true" />
-          <span className={rotuloOculto ? "sr-only" : "truncate"}>Suporte</span>
+          {gatilho ?? (
+            <>
+              <LifeBuoy className="size-4 shrink-0" aria-hidden="true" />
+              <span className={rotuloOculto ? "sr-only" : "truncate"}>{rotulo}</span>
+            </>
+          )}
         </button>
       </DialogTrigger>
 

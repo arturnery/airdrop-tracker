@@ -15,6 +15,16 @@ import type { IsoDate } from "./types";
  *
  * **Entra junto com a mudança, no mesmo commit.** Changelog desatualizado é
  * pior que nenhum: anuncia uma versão que não corresponde ao que está no ar.
+ *
+ * **Curadoria: `novidade` é o que sustenta esta tela.** Uma correção interna
+ * ou um ajuste que ninguém chegou a notar não vira entrada aqui, mesmo que
+ * tenha virado commit e linha no DEVLOG — a pessoa lendo `/novidades` está
+ * perguntando "o que ganhei", e um histórico cheio de `correcao` que ela
+ * nunca percebeu apaga o sinal em meio a ruído, além de sugerir uma ferramenta
+ * mais instável do que é. `correcao` só entra quando alguém relatou o defeito
+ * (pelo diálogo de suporte ou por fora): aí a entrada fecha o ciclo com quem
+ * sentiu o problema. `melhoria` é o meio-termo, para o que refina algo que já
+ * existia sem ser função nova nem conserto de relato.
  */
 
 export type TipoMudanca = "novidade" | "correcao" | "melhoria";
@@ -439,3 +449,21 @@ export const changelog: Versao[] = [
 
 /** Versão mais recente, para exibir junto ao link no rodapé. */
 export const versaoAtual = changelog[0]?.versao ?? "0.0";
+
+/**
+ * Quantas mudanças a pessoa ainda não viu, para o selo no rodapé.
+ *
+ * Conta itens (`mudancas`), não versões: uma versão que empacotou três
+ * mudanças deveria pesar três, não uma, no aviso. `versaoVista` nula conta
+ * como "nunca abriu `/novidades`", e tudo é não visto.
+ *
+ * Se a versão guardada não existe mais no changelog (o que só aconteceria
+ * apagando uma versão já publicada, algo que a regra de curadoria acima não
+ * prevê fazer), o retorno é como se nada tivesse sido visto: superestimar é
+ * seguro aqui, o pior caso é a pessoa abrir `/novidades` à toa.
+ */
+export function contarNovidadesNaoVistas(versaoVista: string | null): number {
+  const indice = changelog.findIndex((v) => v.versao === versaoVista);
+  const naoVistas = indice === -1 ? changelog : changelog.slice(0, indice);
+  return naoVistas.reduce((total, v) => total + v.mudancas.length, 0);
+}

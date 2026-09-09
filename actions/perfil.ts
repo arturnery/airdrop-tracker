@@ -7,6 +7,7 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { traduzirErroDeBanco } from "@/lib/erros-do-banco";
 import { getCurrentUserId } from "@/lib/auth";
+import { versaoAtual } from "@/lib/changelog";
 import { conferirSenha, gerarHash } from "@/lib/senha";
 import { erros, perfilSchema, trocaSenhaSchema } from "@/lib/validators";
 
@@ -121,4 +122,22 @@ export async function trocarSenha(entrada: unknown): Promise<ResultadoPerfil> {
     console.error("[senha]", erro);
     return { ok: false, erros: { geral: "Não foi possível trocar a senha." } };
   }
+}
+
+/**
+ * Marca a versão atual do changelog como vista.
+ *
+ * Chamada ao abrir `/novidades`, não a cada leitura de sessão: gravar a cada
+ * navegação custaria uma escrita onde só se precisa de uma leitura. Sem
+ * validação de entrada porque não recebe entrada nenhuma — a versão vem do
+ * próprio servidor, nunca do que o navegador manda, então não há como marcar
+ * como vista uma versão que ainda não existe.
+ */
+export async function marcarNovidadesVistas(): Promise<void> {
+  const userId = await getCurrentUserId();
+  await db
+    .update(schema.users)
+    .set({ novidadesVistasVersao: versaoAtual })
+    .where(eq(schema.users.id, userId));
+  revalidatePath("/", "layout");
 }

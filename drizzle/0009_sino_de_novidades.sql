@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "novidades_vistas_versao" text;

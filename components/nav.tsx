@@ -29,6 +29,27 @@ const itens = [
 ] as const;
 
 /**
+ * Um tom fixo por item, para a bolha atrás do ícone.
+ *
+ * Não é cor de estado (essa continua reservada a ganho/perda/atenção): é a
+ * mesma paleta categórica que os gráficos já usam, aqui emprestada como
+ * identidade visual de "qual lugar é este", para reencontrar o item pela
+ * mancha de cor, sem ler o texto. Fixo por rota, e não sorteado: o mesmo
+ * item precisa ter sempre a mesma cor entre uma sessão e outra.
+ */
+const tons: Record<string, string> = {
+  "/": "bg-chart-1/15 text-chart-1",
+  "/tarefas": "bg-chart-4/15 text-chart-4",
+  "/projetos": "bg-chart-3/15 text-chart-3",
+  "/contas": "bg-chart-2/15 text-chart-2",
+  "/cotacoes": "bg-chart-5/15 text-chart-5",
+  "/historico": "bg-brand/15 text-brand-legivel",
+  "/importar": "bg-chart-1/15 text-chart-1",
+  "/membros": "bg-chart-4/15 text-chart-4",
+  "/suporte": "bg-chart-3/15 text-chart-3",
+};
+
+/**
  * `ehAdmin` esconde o item de administração de quem não é: conforto visual,
  * não segurança. A rota se protege sozinha no servidor (§9.4).
  */
@@ -90,7 +111,15 @@ export function Nav({
                     : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
                 )}
               >
-                <Icon className="size-4 shrink-0" aria-hidden="true" />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "flex size-7 shrink-0 items-center justify-center rounded-md",
+                    tons[item.href] ?? "bg-secondary text-muted-foreground",
+                  )}
+                >
+                  <Icon className="size-4" />
+                </span>
                 {/* Recolhida, o rótulo sai da tela e permanece no DOM: leitor
                     de tela e busca da página continuam encontrando a palavra. */}
                 <span

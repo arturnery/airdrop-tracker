@@ -3,6 +3,7 @@ import { TrocaObrigatoria } from "@/components/views/troca-obrigatoria";
 import { carregarUsuario } from "@/db/queries/usuario";
 import { contarNaoLidos } from "@/actions/feedback";
 import { exigirSessao } from "@/lib/auth";
+import { contarNovidadesNaoVistas } from "@/lib/changelog";
 
 /**
  * Casca do aplicativo: navegação lateral e área de conteúdo.
@@ -36,6 +37,10 @@ export default async function AppLayout({
    */
   const naoLidos = sessao.papel === "admin" ? await contarNaoLidos() : 0;
 
+  const novidadesNaoVistas = contarNovidadesNaoVistas(
+    usuario?.novidadesVistasVersao ?? null,
+  );
+
   /*
    * Senha temporária trava o sistema na própria troca.
    *
@@ -60,6 +65,7 @@ export default async function AppLayout({
       nome={nomeExibido}
       ehAdmin={sessao.papel === "admin"}
       feedbackNaoLido={naoLidos}
+      novidadesNaoVistas={novidadesNaoVistas}
     >
       {children}
     </CascaApp>

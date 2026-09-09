@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { BarraSuperior } from "@/components/barra-superior";
 import { BotaoRecolher, useBarraRecolhida } from "@/components/barra-lateral";
 import { Nav } from "@/components/nav";
 import { RodapeLateral } from "@/components/rodape-lateral";
@@ -26,11 +27,13 @@ export function CascaApp({
   nome,
   ehAdmin,
   feedbackNaoLido,
+  novidadesNaoVistas,
   children,
 }: {
   nome: string;
   ehAdmin: boolean;
   feedbackNaoLido: number;
+  novidadesNaoVistas: number;
   children: ReactNode;
 }) {
   const recolhida = useBarraRecolhida();
@@ -53,23 +56,44 @@ export function CascaApp({
         <aside className="bg-sidebar border-border sticky top-0 z-40 border-b lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
           <div className="flex items-center justify-between gap-2 lg:block">
             <div className="min-w-0 shrink-0 px-3 py-4 lg:px-3">
-              <div className="flex items-center gap-2 px-2">
-                {/* A marca com o símbolo: o LVL identifica de quem é o produto,
-                    e o nome diz o que ele faz. Recolhida, o símbolo sozinho
-                    continua identificando. */}
+              <div
+                className={cn(
+                  "flex items-center gap-2 px-2 pb-4",
+                  // 68px não cabe ícone e botão de recolher lado a lado: sem
+                  // isso, o link do logo era espremido a largura zero pelo
+                  // `min-w-0 flex-1` (sumia da tela, mesmo existindo no DOM).
+                  // Empilhado, os dois cabem com folga.
+                  recolhida && "flex-col gap-3",
+                  // A linha só separa algo de algo: recolhida, só sobra o
+                  // símbolo, e uma borda sob um ícone sozinho seria ruído.
+                  !recolhida && "border-border border-b",
+                )}
+              >
+                {/* A marca com o símbolo: o ícone identifica de quem é o
+                    produto, e o nome por extenso diz a quem ele pertence.
+                    Recolhida, o símbolo sozinho continua identificando.
+
+                    Ícone e nome maiores, e a cor de repouso é a do texto
+                    normal, não a apagada: antes os dois pesavam menos que
+                    qualquer outro item da barra, e é a primeira coisa que
+                    deveria ser lida, não a última. O azul só aparece no
+                    hover, reservado ao gesto de clicar. */}
                 <Link
                   href="/"
-                  className="text-muted-foreground hover:text-foreground focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-2 rounded-sm text-xs font-medium tracking-tight transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                  className={cn(
+                    "text-foreground hover:text-brand-legivel focus-visible:ring-ring flex items-center gap-2.5 rounded-sm text-sm font-semibold tracking-tight transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                    recolhida ? "shrink-0" : "min-w-0 flex-1",
+                  )}
                 >
                   <Image
                     src="/android-chrome-192x192.png"
                     alt=""
-                    width={20}
-                    height={20}
-                    className="shrink-0 rounded"
+                    width={30}
+                    height={30}
+                    className="shrink-0 rounded-md"
                   />
                   <span className={cn("truncate", recolhida && "lg:hidden")}>
-                    LVL Airdrops
+                    Level Cripto
                   </span>
                 </Link>
                 <BotaoRecolher />
@@ -78,6 +102,9 @@ export function CascaApp({
               {/* O nome ganha o peso visual: é o dado da pessoa, e clicar nele
                   leva ao perfil. Some quando a barra recolhe, porque nome
                   truncado em 68px não identifica ninguém.
+
+                  Vem logo depois da linha, e não colado nela: separado da marca
+                  por hierarquia, é o dado de quem está usando, não do produto.
 
                   O realce do mouse é azul, e não a cor primária: verde aqui
                   diria "deu certo", que é o significado que ele carrega em todo
@@ -102,12 +129,15 @@ export function CascaApp({
           </div>
 
           <div className="mt-auto hidden lg:block">
-            <RodapeLateral recolhida={recolhida} />
+            <RodapeLateral recolhida={recolhida} novidadesNaoVistas={novidadesNaoVistas} />
           </div>
         </aside>
 
-        <main id="conteudo" className="px-6 py-8 lg:px-10 lg:py-10">
-          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        <main id="conteudo" className="flex min-h-screen flex-col">
+          <BarraSuperior />
+          <div className="px-6 py-8 lg:px-10 lg:py-10">
+            <div className="mx-auto w-full max-w-6xl">{children}</div>
+          </div>
         </main>
       </div>
     </>

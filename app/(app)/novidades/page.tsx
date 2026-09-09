@@ -1,3 +1,5 @@
+import { Sparkles } from "lucide-react";
+import { MarcarNovidadesVistas } from "@/components/marcar-novidades-vistas";
 import { PageHeader } from "@/components/page-header";
 import { changelog, rotulos } from "@/lib/changelog";
 import { formatDateBr } from "@/lib/dates";
@@ -18,7 +20,9 @@ const cores: Record<string, string> = {
 export default function NovidadesPage() {
   return (
     <>
+      <MarcarNovidadesVistas />
       <PageHeader
+        icon={Sparkles}
         title="Novidades"
         description="O que mudou a cada atualização, da mais recente para a mais antiga."
       />

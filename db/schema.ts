@@ -147,6 +147,15 @@ export const users = pgTable("users", {
    * junto do resto e escrito raramente.
    */
   ocorrenciasEm: timestamp("ocorrencias_em", { withTimezone: true }),
+  /**
+   * Última versão do changelog que a pessoa já viu, para o sino de novidades.
+   *
+   * Guarda a versão (`"1.8"`), não uma data: comparar com `versaoAtual` de
+   * `lib/changelog` é uma comparação de string, sem depender de quando cada
+   * uma foi publicada. Nulo enquanto a pessoa nunca abriu `/novidades`, e
+   * nesse estado qualquer versão já conta como não vista.
+   */
+  novidadesVistasVersao: text("novidades_vistas_versao"),
   /** Quando o acesso foi liberado ou recusado; nulo enquanto pendente. */
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   /** Por que foi recusado. Visível só para quem administra. */
