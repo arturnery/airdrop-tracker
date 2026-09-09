@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Crimson_Text, Geist, Geist_Mono } from "next/font/google";
+import { Crimson_Text, Geist_Mono, Inter } from "next/font/google";
 
 import { DataProvider } from "@/components/data-provider";
 import { carregarDataset } from "@/db/queries/dataset";
@@ -8,7 +8,7 @@ import { emptyDataset } from "@/lib/dataset";
 import { sessaoAtual } from "@/lib/auth";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 /** Serif reservada aos números grandes de indicador: ver StatCard. */
@@ -66,7 +66,7 @@ export default async function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} ${crimson.variable} h-full antialiased`}
+      className={`${inter.variable} ${geistMono.variable} ${crimson.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         {/* A data do servidor já nasce correta; o provider ainda troca pela do
