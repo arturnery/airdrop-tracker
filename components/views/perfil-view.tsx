@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserRound } from "lucide-react";
 
 import { atualizarPerfil, trocarSenha } from "@/actions/perfil";
 import { CampoTexto } from "@/components/forms/fields";
@@ -120,6 +120,7 @@ export function PerfilView({
   return (
     <>
       <PageHeader
+        icon={UserRound}
         title="Perfil"
         description="Seus dados de acesso. Só você enxerga esta página."
       />

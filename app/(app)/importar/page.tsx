@@ -1,4 +1,4 @@
-import { ArrowRight, FileSpreadsheet } from "lucide-react";
+import { ArrowRight, FileSpreadsheet, Upload } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 
@@ -23,6 +23,7 @@ export default function ImportarPage() {
   return (
     <>
       <PageHeader
+        icon={Upload}
         title="Importar planilha"
         description="Traz o histórico do Google Sheets sem redigitar nada."
       />

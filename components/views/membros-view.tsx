@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Clock, Copy, KeyRound, ShieldCheck, Undo2, X } from "lucide-react";
+import { Check, Clock, Copy, KeyRound, ShieldCheck, Undo2, UserCheck, X } from "lucide-react";
 
 import { reabrirMembro, redefinirSenhaDeMembro, revisarMembro } from "@/actions";
 import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
@@ -303,6 +303,7 @@ export function MembrosView({
       <DialogoSenha dados={senhaGerada} aoFechar={() => setSenhaGerada(null)} />
 
       <PageHeader
+        icon={UserCheck}
         title="Membros"
         description="Quem pediu acesso e quem já tem. Aprovações são manuais."
       />

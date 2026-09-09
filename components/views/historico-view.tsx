@@ -1,5 +1,6 @@
 "use client";
 
+import { History } from "lucide-react";
 import { useState } from "react";
 
 import { useDados } from "@/components/data-provider";
@@ -50,6 +51,7 @@ export function HistoricoView() {
   return (
     <>
       <PageHeader
+        icon={History}
         title="Histórico"
         description="Tudo que foi feito, do mais recente para o mais antigo."
       />

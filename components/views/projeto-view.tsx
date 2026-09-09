@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import Link from "next/link";
-import { ExternalLink, Unlink } from "lucide-react";
+import { ExternalLink, Layers, Unlink } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { FiltroChips } from "@/components/filtro-chips";
@@ -138,6 +138,7 @@ export function ProjetoView({ slug }: { slug: string }) {
       </nav>
 
       <PageHeader
+        icon={Layers}
         title={projeto.nome}
         titleClassName={nomeRiscado(projeto.status)}
         description={

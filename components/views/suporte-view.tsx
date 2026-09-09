@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Mail } from "lucide-react";
+import { Check, LifeBuoy, Mail } from "lucide-react";
 
 import { excluirFeedback, marcarFeedback } from "@/actions/feedback";
 import {
@@ -79,6 +79,7 @@ export function SuporteView({ relatos }: { relatos: FeedbackRow[] }) {
   return (
     <>
       <PageHeader
+        icon={LifeBuoy}
         title="Suporte"
         description="Relatos enviados pelo sistema. A resposta sai por e-mail."
       />

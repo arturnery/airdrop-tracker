@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, TriangleAlert } from "lucide-react";
+import { ArrowRight, LayoutDashboard, TriangleAlert } from "lucide-react";
 
 import { CapitalPorProjetoChart } from "@/components/capital-chart";
 import { ListaAtividade } from "@/components/historico";
@@ -42,6 +42,7 @@ export function DashboardView() {
   return (
     <>
       <PageHeader
+        icon={LayoutDashboard}
         title="Visão geral"
         description={`Posição consolidada em ${formatDateBr(hoje)}.`}
         actions={

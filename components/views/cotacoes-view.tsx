@@ -1,6 +1,6 @@
 "use client";
 
-import { TriangleAlert } from "lucide-react";
+import { CircleDollarSign, TriangleAlert } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import {
@@ -29,6 +29,7 @@ export function CotacoesView() {
   return (
     <>
       <PageHeader
+        icon={CircleDollarSign}
         title="Cotações"
         description="Preço dos tokens em que você tem posição. Atualize antes de olhar os números."
         actions={<DefinirCotacao />}

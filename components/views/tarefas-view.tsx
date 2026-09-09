@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Trash2, Undo2 } from "lucide-react";
+import { Check, ListChecks, Trash2, Undo2 } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
@@ -124,6 +124,7 @@ export function TarefasView() {
   return (
     <>
       <PageHeader
+        icon={ListChecks}
         title="Tarefas"
         description={
           totalUrgente === 0

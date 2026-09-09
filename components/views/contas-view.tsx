@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Trash2, Wallet } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
@@ -41,6 +41,7 @@ export function ContasView() {
   return (
     <>
       <PageHeader
+        icon={Wallet}
         title="Contas"
         description="Cada carteira ou perfil atravessando todos os projetos. É a visão que a planilha não conseguia dar."
         actions={
