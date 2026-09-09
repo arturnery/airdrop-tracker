@@ -115,7 +115,7 @@ export const rawProjects: RawProject[] = [
     category: "perps",
     pointsLabel: "Pontos",
     chain: "Arbitrum",
-    priority: 5,
+    priority: 3,
     websiteUrl: null,
     discordUrl: null,
     twitterUrl: null,
@@ -132,7 +132,7 @@ export const rawProjects: RawProject[] = [
     category: "perps",
     pointsLabel: "Pontos",
     chain: "zkSync Era",
-    priority: 3,
+    priority: 2,
     websiteUrl: null,
     discordUrl: null,
     twitterUrl: null,
@@ -149,7 +149,7 @@ export const rawProjects: RawProject[] = [
     category: "liquidez",
     pointsLabel: "XP",
     chain: null,
-    priority: 4,
+    priority: 3,
     websiteUrl: null,
     discordUrl: null,
     twitterUrl: null,
@@ -571,6 +571,7 @@ export type RawCatalogProject = {
   category: "liquidez" | "interacoes" | "perps" | null;
   pointsLabel: string | null;
   chain: string | null;
+  priority: number;
   websiteUrl: string | null;
   discordUrl: string | null;
   twitterUrl: string | null;

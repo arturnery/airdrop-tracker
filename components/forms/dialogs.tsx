@@ -260,13 +260,13 @@ export function NovoProjeto() {
             <CampoSelecao
               label="Prioridade"
               name="priority"
-              defaultValue="3"
+              defaultValue="2"
               erro={e.priority}
-              ajuda="1 = baixa, 5 = máxima"
-              opcoes={[1, 2, 3, 4, 5].map((n) => ({
-                valor: String(n),
-                rotulo: String(n),
-              }))}
+              opcoes={[
+                { valor: "1", rotulo: "1 · Baixa" },
+                { valor: "2", rotulo: "2 · Média" },
+                { valor: "3", rotulo: "3 · Alta" },
+              ]}
             />
           </div>
           <CampoTexto

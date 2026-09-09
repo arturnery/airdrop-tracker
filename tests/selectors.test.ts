@@ -53,8 +53,14 @@ describe("selectProjects", () => {
   const projetos = selectProjects(ds, HOJE);
 
   it("ordena por prioridade", () => {
-    expect(projetos[0]?.nome).toBe("Vertex Perp");
-    expect(projetos[0]?.prioridade).toBe(5);
+    /*
+     * Não fixa qual projeto vence: a remapeada de 1-5 para 1-3 empatou Vertex
+     * Perp e Nebula no topo (3, "alta"), e quem desempata por capital é
+     * `selectProjects`, não este teste. O que importa aqui é que o primeiro
+     * da lista tem a maior prioridade que existe no conjunto.
+     */
+    const maiorPrioridade = Math.max(...projetos.map((p) => p.prioridade));
+    expect(projetos[0]?.prioridade).toBe(maiorPrioridade);
   });
 
   it("calcula o resultado de cada projeto", () => {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
-import { CategoryBadge } from "@/components/status-badge";
+import { CategoryBadge, PriorityBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { normalizar } from "@/lib/dataset";
 import type { ProjectCategory } from "@/lib/types";
@@ -22,17 +22,24 @@ import type { ProjectCategory } from "@/lib/types";
  * o banco recusaria mesmo assim, mas dizer antes de clicar é melhor do que
  * deixar tomar erro.
  *
- * Mesmo formato do card de projeto (ícone, nome, categoria como selo, linha,
- * ação embaixo): resumo, links e TGE saíram daqui para os dois cards lerem
- * como a mesma família visual. Custo aceito, e não descoberto: sem o resumo,
- * o card conta menos sobre o projeto antes do clique, e quem quiser saber
- * mais decide pelo nome e pela categoria, não por uma frase de venda.
+ * Mesmo formato do card de projeto (ícone, nome, categoria e prioridade como
+ * selo, linha, ação embaixo): resumo, links e TGE saíram daqui para os dois
+ * cards lerem como a mesma família visual. Custo aceito, e não descoberto:
+ * sem o resumo, o card conta menos sobre o projeto antes do clique, e quem
+ * quiser saber mais decide pelo nome, pela categoria e pela prioridade, não
+ * por uma frase de venda.
+ *
+ * A prioridade aqui é a de quem publicou, copiada no momento de destacar
+ * (ver a nota em `db/schema.ts` sobre esta ser a única exceção à divisão
+ * editorial/pessoal do catálogo). Quem adota recebe este valor como ponto
+ * de partida, livre para mudar depois sem afetar o catálogo.
  */
 
 type Sugestao = {
   id: string;
   nome: string;
   categoria: ProjectCategory | null;
+  prioridade: number;
   colideComNome: boolean;
 };
 
@@ -50,6 +57,7 @@ function useSugestoes(): Sugestao[] {
       id: c.id,
       nome: c.name,
       categoria: c.category,
+      prioridade: c.priority,
       colideComNome: nomesJaCadastrados.has(normalizar(c.name)),
     }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
@@ -78,6 +86,7 @@ function CardSugestao({ sugestao }: { sugestao: Sugestao }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <CategoryBadge category={sugestao.categoria} />
+        <PriorityBadge value={sugestao.prioridade} />
       </div>
 
       <div className="border-border mt-4 flex flex-1 flex-col justify-end gap-1.5 border-t pt-3">

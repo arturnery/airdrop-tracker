@@ -111,25 +111,42 @@ export function RecurrenceLabel({ recurrence }: { recurrence: Recurrence }) {
   );
 }
 
-/** Prioridade 1–5 como barras. O número acompanha para não depender da forma. */
-export function PriorityMeter({ value }: { value: number }) {
+/**
+ * Escala de 1 a 3: baixa, média, alta.
+ *
+ * Era um medidor de barrinhas (1 a 5, sem nome nos níveis). Virou selo com
+ * nome porque três níveis nomeados se leem de cabeça, e cinco barras iguais
+ * não diziam qual delas importava mais.
+ *
+ * A cor cresce com o nível de propósito: baixa não pede atenção (contorno
+ * apenas), média é neutra mas presente, e alta usa o âmbar de atenção do
+ * sistema, o mesmo de "isso precisa de olho" em outras telas. Não é a mesma
+ * cor de ganho/perda (verde/vermelho): prioridade não é resultado, é
+ * urgência, e âmbar já significa isso aqui.
+ */
+export const priorityLabels: Record<number, string> = {
+  1: "Baixa",
+  2: "Média",
+  3: "Alta",
+};
+
+const priorityStyles: Record<number, string> = {
+  1: "border-border text-muted-foreground",
+  2: "border-border bg-secondary text-foreground",
+  3: "border-caution/40 bg-caution/15 text-caution font-semibold",
+};
+
+export function PriorityBadge({ value }: { value: number }) {
+  const rotulo = priorityLabels[value] ?? String(value);
   return (
     <span
-      className="inline-flex items-center gap-1"
-      title={`Prioridade ${value} de 5`}
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+        priorityStyles[value] ?? priorityStyles[2],
+      )}
+      title={`Prioridade ${rotulo.toLowerCase()}`}
     >
-      <span className="flex gap-0.5" aria-hidden="true">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <span
-            key={n}
-            className={cn(
-              "h-3 w-1 rounded-full",
-              n <= value ? "bg-primary" : "bg-border",
-            )}
-          />
-        ))}
-      </span>
-      <span className="sr-only">Prioridade {value} de 5</span>
+      {rotulo}
     </span>
   );
 }

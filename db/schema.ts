@@ -220,7 +220,12 @@ export const projects = pgTable(
     /** Nome do programa de pontos ("Pontos", "XP"); nulo = não tem (§4.4). */
     pointsLabel: text("points_label"),
     chain: text("chain"),
-    priority: smallint("priority").notNull().default(3),
+    /**
+     * Escala de 1 a 3 (baixa, média, alta). Era 1 a 5; o padrão acompanhou a
+     * mudança, de 3 (meio da escala velha) para 2 (meio da nova), senão um
+     * projeto criado sem escolher prioridade nasceria "alta" por acidente.
+     */
+    priority: smallint("priority").notNull().default(2),
     websiteUrl: text("website_url"),
     discordUrl: text("discord_url"),
     twitterUrl: text("twitter_url"),
@@ -284,6 +289,16 @@ export const catalogProjects = pgTable(
     category: projectCategoryEnum("category"),
     pointsLabel: text("points_label"),
     chain: text("chain"),
+    /**
+     * Copiada do projeto de quem publicou, no momento de destacar. É a
+     * primeira exceção à divisão editorial/pessoal do §13.2: prioridade é
+     * pessoal por natureza (o quanto importa **para quem farma**), e mesmo
+     * assim entra aqui porque, com um administrador só, a prioridade de
+     * quem cura é o único sinal de "vale a pena" que existe para oferecer.
+     * Quem adota recebe esta prioridade como ponto de partida, e pode mudar
+     * o próprio valor depois sem afetar o do catálogo.
+     */
+    priority: smallint("priority").notNull().default(2),
     websiteUrl: text("website_url"),
     discordUrl: text("discord_url"),
     twitterUrl: text("twitter_url"),

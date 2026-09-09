@@ -45,7 +45,7 @@ import {
   CategoryBadge,
   categoryDescriptions,
   nomeRiscado,
-  PriorityMeter,
+  PriorityBadge,
   ProjectStatusBadge,
   RecurrenceLabel,
   UrgencyBadge,
@@ -155,7 +155,7 @@ export function ProjetoView({ slug }: { slug: string }) {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <CategoryBadge category={projeto.categoria} />
-            <PriorityMeter value={projeto.prioridade} />
+            <PriorityBadge value={projeto.prioridade} />
             <ProjectStatusBadge status={projeto.status} />
             <EditarProjeto projectId={projeto.id} />
             <NovoLancamento projectId={projeto.id} rotulo="Lançamento" />
@@ -1146,7 +1146,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Prioridade</dt>
-                  <dd><PriorityMeter value={projeto.prioridade} /></dd>
+                  <dd><PriorityBadge value={projeto.prioridade} /></dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">TGE previsto</dt>

@@ -19,6 +19,8 @@ import {
   CategoryBadge,
   categoryDescriptions,
   nomeRiscado,
+  PriorityBadge,
+  priorityLabels,
   ProjectStatusBadge,
 } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -71,23 +73,6 @@ const ordemCategoria: { chave: ProjectCategory | null; titulo: string; nota?: st
     { chave: "perps", titulo: "Perps", nota: categoryDescriptions.perps },
     { chave: null, titulo: "Sem categoria" },
   ];
-
-/**
- * Prioridade como selo, no mesmo formato de categoria e status.
- *
- * Existia como medidor de barrinhas (`PriorityMeter`), que continua em uso na
- * aba do projeto. Aqui vira selo porque os três filtros do card (categoria,
- * status, prioridade) precisam ler como um conjunto: misturar barra com
- * selo faria a prioridade parecer de outra natureza, quando é só mais um
- * critério de filtro como os outros dois.
- */
-function TagPrioridade({ value }: { value: number }) {
-  return (
-    <span className="border-border text-muted-foreground inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium">
-      Prioridade {value}
-    </span>
-  );
-}
 
 /**
  * Card de projeto: identidade, os três filtros como selo, e o que precisa de
@@ -174,7 +159,7 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <CategoryBadge category={projeto.categoria} />
         <ProjectStatusBadge status={projeto.status} />
-        <TagPrioridade value={projeto.prioridade} />
+        <PriorityBadge value={projeto.prioridade} />
       </div>
 
       {projeto.alerta ? (
@@ -219,7 +204,13 @@ export function ProjetosView() {
   const { dataset, hoje } = useDados();
   const [categoria, setCategoria] = useState<ProjectCategory | null>(null);
   const [prioridade, setPrioridade] = useState<string | null>(null);
-  const [status, setStatus] = useState<ProjectStatus | null>(null);
+  /*
+   * Começa em "ativo", não em "todos". A tela principal é para "o que estou
+   * farmando agora": pausado e distribuído só entram quando a pessoa pede,
+   * clicando no chip ou em "Todos". Categoria e prioridade filtram dentro
+   * disso, e não do total, pelo mesmo motivo.
+   */
+  const [status, setStatus] = useState<ProjectStatus | null>("ativo");
   const [busca, setBusca] = useState("");
 
   const todos = selectProjects(dataset, hoje);
@@ -351,10 +342,10 @@ export function ProjetosView() {
             aoSelecionar={setPrioridade}
             opcoes={[
               { valor: null, rotulo: "Todas" },
-              ...[5, 4, 3, 2, 1]
+              ...[3, 2, 1]
                 .map((n) => ({
                   valor: String(n),
-                  rotulo: String(n),
+                  rotulo: priorityLabels[n],
                   contagem: contarPrioridade(n),
                 }))
                 // Não oferece filtro que não devolveria nada. As categorias

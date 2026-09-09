@@ -249,6 +249,7 @@ export async function carregarDataset(
       category: c.category,
       pointsLabel: c.pointsLabel,
       chain: c.chain,
+      priority: c.priority,
       websiteUrl: c.websiteUrl,
       discordUrl: c.discordUrl,
       twitterUrl: c.twitterUrl,

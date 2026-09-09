@@ -501,6 +501,7 @@ export function destacarProjeto(
     category: projeto.category,
     pointsLabel: projeto.pointsLabel,
     chain: projeto.chain,
+    priority: projeto.priority,
     websiteUrl: projeto.websiteUrl,
     discordUrl: projeto.discordUrl,
     twitterUrl: projeto.twitterUrl,
@@ -596,7 +597,8 @@ export function adotarDoCatalogo(
     category: entrada.category,
     pointsLabel: entrada.pointsLabel,
     chain: entrada.chain,
-    priority: 3,
+    // Ponto de partida, não vínculo: passa a ser de quem adotou.
+    priority: entrada.priority,
     websiteUrl: entrada.websiteUrl,
     discordUrl: entrada.discordUrl,
     twitterUrl: entrada.twitterUrl,

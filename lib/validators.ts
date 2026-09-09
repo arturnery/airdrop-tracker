@@ -54,7 +54,7 @@ export const projetoSchema = z.object({
   category: z.enum(["liquidez", "interacoes", "perps"]),
   pointsLabel: textoOpcional,
   chain: textoOpcional,
-  priority: z.coerce.number().int().min(1).max(5),
+  priority: z.coerce.number().int().min(1).max(3),
   websiteUrl: urlOpcional,
   discordUrl: urlOpcional,
   twitterUrl: urlOpcional,

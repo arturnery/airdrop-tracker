@@ -280,10 +280,11 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
               name="priority"
               defaultValue={String(projeto.priority)}
               erro={e.priority}
-              opcoes={[1, 2, 3, 4, 5].map((n) => ({
-                valor: String(n),
-                rotulo: String(n),
-              }))}
+              opcoes={[
+                { valor: "1", rotulo: "1 · Baixa" },
+                { valor: "2", rotulo: "2 · Média" },
+                { valor: "3", rotulo: "3 · Alta" },
+              ]}
             />
           </div>
           <CampoTexto

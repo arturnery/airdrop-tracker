@@ -158,6 +158,7 @@ export async function destacarProjeto(
       category: projeto.category,
       pointsLabel: projeto.pointsLabel,
       chain: projeto.chain,
+      priority: projeto.priority,
       websiteUrl: projeto.websiteUrl,
       discordUrl: projeto.discordUrl,
       twitterUrl: projeto.twitterUrl,
@@ -281,6 +282,9 @@ export async function adotarDoCatalogo(entrada: unknown): Promise<ResultadoAcao>
       category: item.category,
       pointsLabel: item.pointsLabel,
       chain: item.chain,
+      // Ponto de partida, não vínculo: a partir daqui é o valor de quem
+      // adotou, e muda sem afetar o do catálogo.
+      priority: item.priority,
       websiteUrl: item.websiteUrl,
       discordUrl: item.discordUrl,
       twitterUrl: item.twitterUrl,
