@@ -2,19 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   aplicarSinalDoTipo,
-  exposureForPair,
   isCashType,
   resultadoLiquido,
   netFlowByPair,
   pairKey,
-  priceMap,
   summarizeFinancials,
   sumOfType,
   tokenPositionsByPair,
   type MovementRow,
-  type TokenPriceRow,
 } from "@/lib/finance";
-import { cents, toDbNumeric } from "@/lib/money";
+import { cents, toDbNumeric, ZERO } from "@/lib/money";
 
 /**
  * A data é opcional aqui e default fixo: a maioria dos testes deste arquivo
@@ -38,19 +35,8 @@ const mov = (
   tokenAmount: token?.amount ?? null,
 });
 
-const preco = (symbol: string, priceUsd: string): TokenPriceRow => ({
-  symbol,
-  priceUsd,
-});
-
 const KEY = pairKey("p1", "a1");
-const expor = (movs: MovementRow[], precos: TokenPriceRow[] = []) =>
-  exposureForPair(
-    KEY,
-    netFlowByPair(movs),
-    tokenPositionsByPair(movs),
-    priceMap(precos),
-  );
+const expor = (movs: MovementRow[]) => netFlowByPair(movs).get(KEY) ?? ZERO;
 
 describe("tipos de caixa", () => {
   it("volume operado e taxa ficam fora do saldo", () => {
@@ -71,7 +57,7 @@ describe("saldo como soma de lançamentos", () => {
       mov("p1", "a1", "yield", "1.00"),
       mov("p1", "a1", "trade_pnl", "-5.00"),
     ]);
-    expect(toDbNumeric(saldo.value)).toBe("96.00");
+    expect(toDbNumeric(saldo)).toBe("96.00");
   });
 
   it("desconta retirada", () => {
@@ -79,7 +65,7 @@ describe("saldo como soma de lançamentos", () => {
       mov("p1", "a1", "deposit", "100.00"),
       mov("p1", "a1", "withdrawal", "-30.00"),
     ]);
-    expect(toDbNumeric(saldo.value)).toBe("70.00");
+    expect(toDbNumeric(saldo)).toBe("70.00");
   });
 
   it("ignora volume operado", () => {
@@ -87,71 +73,19 @@ describe("saldo como soma de lançamentos", () => {
       mov("p1", "a1", "deposit", "20.00"),
       mov("p1", "a1", "volume_traded", "9999.00"),
     ]);
-    expect(toDbNumeric(saldo.value)).toBe("20.00");
+    expect(toDbNumeric(saldo)).toBe("20.00");
   });
 
   it("par sem lançamento nenhum vale zero", () => {
-    expect(toDbNumeric(expor([]).value)).toBe("0.00");
-  });
-});
-
-describe("posição em token", () => {
-  it("revaloriza pela cotação atual", () => {
-    // 1 SOL comprado a $180, valendo $195 hoje.
-    const saldo = expor(
-      [mov("p1", "a1", "deposit", "180.00", { symbol: "SOL", amount: "1" })],
-      [preco("SOL", "195.00")],
-    );
-    expect(toDbNumeric(saldo.value)).toBe("195.00");
-    expect(toDbNumeric(saldo.tokenValue)).toBe("195.00");
+    expect(toDbNumeric(expor([]))).toBe("0.00");
   });
 
-  it("mostra perda quando o token cai", () => {
-    const saldo = expor(
-      [mov("p1", "a1", "deposit", "180.00", { symbol: "SOL", amount: "1" })],
-      [preco("SOL", "150.00")],
-    );
-    expect(toDbNumeric(saldo.value)).toBe("150.00");
-  });
-
-  it("acumula quantidade de aportes sucessivos", () => {
-    const saldo = expor(
-      [
-        mov("p1", "a1", "deposit", "180.00", { symbol: "SOL", amount: "1" }),
-        mov("p1", "a1", "deposit", "100.00", { symbol: "SOL", amount: "0.5" }),
-      ],
-      [preco("SOL", "200.00")],
-    );
-    // 1,5 SOL × $200
-    expect(toDbNumeric(saldo.value)).toBe("300.00");
-  });
-
-  it("soma parte em dólar com parte em token", () => {
-    const saldo = expor(
-      [
-        mov("p1", "a1", "deposit", "50.00"),
-        mov("p1", "a1", "deposit", "180.00", { symbol: "SOL", amount: "1" }),
-      ],
-      [preco("SOL", "195.00")],
-    );
-    // 50 em dólar + 195 do SOL revalorizado
-    expect(toDbNumeric(saldo.value)).toBe("245.00");
-  });
-
-  it("sem cotação, mantém o valor aportado e reporta o símbolo", () => {
+  it("depósito em token entra pelo valor em dólar lançado, sem revalorização", () => {
+    // 1 SOL lançado por $180: sem cotação, o saldo é o que foi lançado.
     const saldo = expor([
       mov("p1", "a1", "deposit", "180.00", { symbol: "SOL", amount: "1" }),
     ]);
-    expect(toDbNumeric(saldo.value)).toBe("180.00");
-    expect(saldo.semCotacao).toEqual(["SOL"]);
-  });
-
-  it("normaliza o símbolo para maiúsculo", () => {
-    const saldo = expor(
-      [mov("p1", "a1", "deposit", "180.00", { symbol: "sol", amount: "1" })],
-      [preco("SOL", "195.00")],
-    );
-    expect(toDbNumeric(saldo.value)).toBe("195.00");
+    expect(toDbNumeric(saldo)).toBe("180.00");
   });
 
   it("separa posições de tokens diferentes", () => {
@@ -184,7 +118,6 @@ describe("summarizeFinancials", () => {
         mov("p1", "a1", "deposit", "100.00"),
         mov("p1", "a1", "yield", "5.00"),
       ],
-      prices: [],
       pairs: pares,
     });
     expect(toDbNumeric(resumo.aportado)).toBe("100.00");
@@ -204,7 +137,6 @@ describe("summarizeFinancials", () => {
         mov("p1", "a1", "deposit", "100.00"),
         mov("p1", "a1", "withdrawal", "-30.00"),
       ],
-      prices: [],
       pairs: pares,
     });
     expect(toDbNumeric(resumo.exposicao)).toBe("70.00");
@@ -217,7 +149,6 @@ describe("summarizeFinancials", () => {
         mov("p1", "a1", "deposit", "100.00"),
         mov("p1", "a1", "fee_gas", "-4.00"),
       ],
-      prices: [],
       pairs: pares,
     });
     // Gas sai do bolso, não da posição na plataforma.
@@ -225,34 +156,20 @@ describe("summarizeFinancials", () => {
     expect(toDbNumeric(resumo.resultado)).toBe("-4.00");
   });
 
-  it("valorização do token entra no resultado", () => {
+  it("depósito em token entra pelo valor em dólar lançado no resultado", () => {
     const resumo = summarizeFinancials({
       movements: [
         mov("p1", "a1", "deposit", "180.00", { symbol: "SOL", amount: "1" }),
       ],
-      prices: [preco("SOL", "195.00")],
       pairs: pares,
     });
-    expect(toDbNumeric(resumo.resultado)).toBe("15.00");
-    expect(resumo.roi).toBe(8.3);
-  });
-
-  it("reporta tokens sem cotação", () => {
-    const resumo = summarizeFinancials({
-      movements: [
-        mov("p1", "a1", "deposit", "180.00", { symbol: "SOL", amount: "1" }),
-        mov("p1", "a1", "deposit", "50.00", { symbol: "ARB", amount: "40" }),
-      ],
-      prices: [preco("SOL", "195.00")],
-      pairs: pares,
-    });
-    expect(resumo.tokensSemCotacao).toEqual(["ARB"]);
+    expect(toDbNumeric(resumo.exposicao)).toBe("180.00");
+    expect(toDbNumeric(resumo.resultado)).toBe("0.00");
   });
 
   it("soma airdrops recebidos", () => {
     const resumo = summarizeFinancials({
       movements: [mov("p1", "a1", "deposit", "20.00")],
-      prices: [],
       pairs: pares,
       airdropsUsd: ["150.00"],
     });
@@ -262,7 +179,6 @@ describe("summarizeFinancials", () => {
   it("devolve ROI nulo sem aporte em vez de Infinity", () => {
     const resumo = summarizeFinancials({
       movements: [],
-      prices: [],
       pairs: pares,
     });
     expect(resumo.roi).toBeNull();
@@ -378,7 +294,6 @@ describe("ROI sobre o capital no pico", () => {
   const resumo = (movs: MovementRow[]) =>
     summarizeFinancials({
       movements: movs,
-      prices: [],
       pairs: [{ projectId: "p1", accountId: "c1" }],
     });
 
@@ -496,7 +411,6 @@ describe("tipo Outro entra no caixa", () => {
         mov("p1", "c1", "deposit", "100.00"),
         mov("p1", "c1", "other", "-75.00"),
       ],
-      prices: [],
       pairs: [{ projectId: "p1", accountId: "c1" }],
     });
     expect(r.exposicao).toBe(2500);
@@ -510,7 +424,6 @@ describe("tipo Outro entra no caixa", () => {
         mov("p1", "c1", "deposit", "100.00"),
         mov("p1", "c1", "volume_traded", "5000.00"),
       ],
-      prices: [],
       pairs: [{ projectId: "p1", accountId: "c1" }],
     });
     expect(r.exposicao).toBe(10000);
@@ -527,8 +440,7 @@ describe("tipo Outro entra no caixa", () => {
  */
 describe("lucro e prejuízo de trade são simétricos no saldo", () => {
   const comTrade = (valor: string) =>
-    expor([mov("p1", "a1", "deposit", "100.00"), mov("p1", "a1", "trade_pnl", valor)])
-      .value;
+    expor([mov("p1", "a1", "deposit", "100.00"), mov("p1", "a1", "trade_pnl", valor)]);
 
   it("lucro soma ao saldo", () => {
     expect(toDbNumeric(comTrade("40.00"))).toBe("140.00");
@@ -539,7 +451,7 @@ describe("lucro e prejuízo de trade são simétricos no saldo", () => {
   });
 
   it("o desvio para cima e para baixo tem o mesmo tamanho", () => {
-    const semTrade = expor([mov("p1", "a1", "deposit", "100.00")]).value;
+    const semTrade = expor([mov("p1", "a1", "deposit", "100.00")]);
     const ganho = comTrade("40.00") - semTrade;
     const perda = semTrade - comTrade("-40.00");
     // O valor explícito impede o teste de passar com NaN dos dois lados.

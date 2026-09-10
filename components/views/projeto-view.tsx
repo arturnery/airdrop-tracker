@@ -271,61 +271,21 @@ export function ProjetoView({ slug }: { slug: string }) {
                   key={posicao.symbol}
                   className="bg-card border-border rounded-lg border p-4"
                 >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-sm font-medium">
-                      {posicao.quantidade} {posicao.symbol}
-                    </span>
-                    {posicao.precoUsd === null ? (
-                      <Link
-                        href="/cotacoes"
-                        className="text-caution text-xs underline underline-offset-4"
-                      >
-                        informar cotação
-                      </Link>
-                    ) : null}
-                  </div>
+                  <span className="text-sm font-medium">
+                    {posicao.quantidade} {posicao.symbol}
+                  </span>
 
                   <p className="font-numeric mt-2 text-2xl leading-none font-semibold">
-                    <Money value={posicao.valorAtualUsd} />
+                    <Money value={posicao.investidoUsd} />
                   </p>
 
-                  {/* Entrada vs. hoje lado a lado: é a comparação que responde
-                      "estou ganhando no preço do token?". */}
-                  <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <dt className="text-muted-foreground">Preço de entrada</dt>
-                      <dd className="mt-0.5">
-                        {posicao.precoMedioUsd === null ? (
-                          "-"
-                        ) : (
-                          <Money value={posicao.precoMedioUsd} />
-                        )}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted-foreground">Cotação hoje</dt>
-                      <dd className="mt-0.5">
-                        {posicao.precoUsd === null ? (
-                          <span className="text-caution">não informada</span>
-                        ) : (
-                          <Money value={posicao.precoUsd} />
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
-
-                  <p className="border-border text-muted-foreground mt-3 border-t pt-2 text-xs">
-                    aportado <Money value={posicao.investidoUsd} />
-                    {posicao.valorizacao !== null ? (
-                      <>
-                        {" · "}
-                        <Money value={posicao.valorizacao} tone="auto" signed />
-                        {posicao.valorizacaoPercent !== null ? (
-                          <> ({posicao.valorizacaoPercent > 0 ? "+" : ""}
-                          {posicao.valorizacaoPercent.toFixed(1)}%)</>
-                        ) : null}
-                      </>
-                    ) : null}
+                  <p className="text-muted-foreground mt-3 text-xs">
+                    preço de entrada{" "}
+                    {posicao.precoMedioUsd === null ? (
+                      "-"
+                    ) : (
+                      <Money value={posicao.precoMedioUsd} />
+                    )}
                   </p>
                 </div>
               ))}

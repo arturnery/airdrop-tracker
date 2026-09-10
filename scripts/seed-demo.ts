@@ -117,7 +117,6 @@ async function main() {
 
   // Limpeza: as FKs em cascata cuidam do resto a partir de projetos e contas.
   console.log("limpando dados anteriores deste usuário…");
-  await db.delete(schema.tokenPrices).where(eq(schema.tokenPrices.userId, userId));
   await db.delete(schema.projects).where(eq(schema.projects.userId, userId));
   await db.delete(schema.accounts).where(eq(schema.accounts.userId, userId));
 
@@ -188,16 +187,6 @@ async function main() {
     });
   }
   console.log(`  ${ds.transactions.length} lançamentos`);
-
-  // --------------------------------------------------------------- cotações
-  for (const p of ds.tokenPrices) {
-    await db.insert(schema.tokenPrices).values({
-      userId: userId,
-      symbol: p.symbol,
-      priceUsd: p.priceUsd,
-      updatedAt: p.updatedAt,
-    });
-  }
 
   // ----------------------------------------------------------------- pontos
   for (const p of ds.pointsSnapshots) {

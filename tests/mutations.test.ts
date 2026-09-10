@@ -465,8 +465,8 @@ describe("edição", () => {
     const resumo = selectDashboardSummary(ds, HOJE);
     // 337 − 180 + 100
     expect(toDbNumeric(resumo.aportado)).toBe("257.00");
-    // A exposição não muda: continua 1 SOL a $195.
-    expect(toDbNumeric(resumo.exposicao)).toBe("348.18");
+    // A exposição segue o valor em dólar lançado: 333,18 − 80 corrigidos.
+    expect(toDbNumeric(resumo.exposicao)).toBe("253.18");
   });
 
   it("tarefa inativa some das pendências sem apagar o registro", () => {

@@ -3145,20 +3145,68 @@ junto do clique em publicar.
 
 | | |
 |---|---|
-| Telas | Visão geral, tarefas, projetos (com catálogo da comunidade), aba do projeto, contas, cotações, histórico |
+| Telas | Visão geral, tarefas, projetos (com catálogo da comunidade), aba do projeto, contas, histórico |
 | Entrada | Login, cadastro, recuperação e espera por aprovação, com credencial verificada |
 | Administração | Fila de aprovação, membros com acesso e histórico de recusas |
 | Pontos | Programa por projeto, medições por conta e evolução entre medições |
-| Saldo | Livro-razão: soma dos lançamentos, com posição em token revalorizada |
+| Saldo | Livro-razão: soma dos lançamentos, aporte em token pelo valor em dólar lançado |
 | CRUD | Completo no banco: todo tipo de lançamento pode ser editado, e a exclusão desce em cascata |
-| Testes | 330, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas, detecção de saldo impossível, virada do dia no relógio da tela, cobertura do backup sobre o schema, catálogo da comunidade e restauração com referência circular |
+| Testes | 319, cobrindo aritmética monetária e de pontos, agregação financeira, seletores, mutações, perfil, alvo de tarefas, limite de login, tradução de erro do banco, independência entre metas, detecção de saldo impossível, virada do dia no relógio da tela, cobertura do backup sobre o schema, catálogo da comunidade e restauração com referência circular |
 | Verificação | `npm test`, `npm run check`, `npm run lint` e `npm run build`, rodando sozinhos no GitHub Actions a cada push |
-| Backend | Postgres no Neon, 19 tabelas, escrita por Server Actions |
+| Backend | Postgres no Neon, 18 tabelas, escrita por Server Actions |
 | Sessão | Auth.js com e-mail e senha; cada conta vê só os próprios dados |
 | Segurança | Auditada antes da divulgação: limite de tentativas, cabeçalhos e sem oráculo de e-mail cadastrado no login |
 | Senha | Recuperação por fila de administração, com troca obrigatória no primeiro acesso |
 | Produção | Vercel, com banco Neon e segredo de sessão próprio |
 | Demonstração | Conta pública com nome e senha travados, dados fictícios |
+
+## Marco 49: Cotação sai do sistema
+
+A conversa começou pedindo o oposto do que terminou acontecendo: deixar mais fácil
+informar a cotação, com um campo dentro do próprio formulário de lançamento em vez de
+uma aba separada. No meio da explicação de como isso funcionaria, veio a resposta:
+"o que já tem hoje faz isso que eu queria" — o formulário de depósito já pede o valor
+em dólar e, quando o aporte é em token, já mostra o preço de entrada calculado ali
+mesmo. A cotação manual, separada, não estava resolvendo nada que o lançamento não
+resolvesse sozinho. Pedido virou: tira a aba de cotação do sistema.
+
+Antes de tirar, a pergunta que importava: tirar a aba, ou tirar o conceito? Cotação não
+era só uma tela de entrada, era a única fonte que revalorizava a posição em token pelo
+preço de mercado em vez do preço pago. Só remover o link do menu deixaria o preço
+antigo congelado, sem forma de atualizar. A resposta foi tirar por completo: tabela,
+formulário, e a revalorização que dependia dela.
+
+### `exposureForPair` sempre devolvia o valor lançado, e ninguém tinha visto
+
+A parte que só apareceu ao mexer no código: sem preço nenhum informado, a função de
+exposição já caía sempre no mesmo ramo — `valorAtualToken = investedUsd` — e a conta
+`emDolar + valorAtualToken` sempre voltava a ser exatamente `totalUsd`, o valor lançado.
+Ou seja: tirar a cotação não troca a fórmula da exposição, **revela** que ela já era a
+soma simples do livro-razão o tempo todo, só embrulhada numa revalorização que, sem
+preço, nunca mudava nada. `tokenPositionsByPair` para cálculo de exposição, `priceMap`,
+`PairExposure` e `semCotacao` saíram inteiros: não sobrava nenhum caminho que os
+usasse. `tokenPositionsByPair` em si ficou, porque o preço médio de entrada mostrado no
+card do projeto ainda depende dele.
+
+### O teste que precisou inverter a própria afirmação
+
+Um teste de `mutations.test.ts` corrigia o valor em dólar de um depósito em SOL e
+afirmava que a exposição **não mudava** — prova, na época, de que o preço de mercado
+mandava mais que o valor lançado. Depois da remoção, o mesmo cenário passou a exigir o
+oposto: corrigir o valor lançado agora move a exposição na mesma medida, porque não há
+mais nada revalorizando por cima. Não foi um teste quebrado por engano; foi o teste
+descrevendo corretamente a regra nova, e a asserção precisou virar de cabeça para
+baixo para continuar certa.
+
+### O que ficou, e o que saiu
+
+Ficou o preço de entrada (`precoMedioUsd`), derivado do próprio lançamento e mostrado
+tanto no formulário quanto no card do projeto: não depende de entrada manual separada.
+Saiu a tabela `token_prices` (migração `0011`, com backup antes de aplicar em
+produção: a única linha existente, um preço de SOL, não sobreviveu), a tela e o
+formulário de cotação, o aviso de "token sem cotação" no painel e na aba do projeto, e
+os campos `valorAtualUsd`/`precoUsd`/`valorizacao`/`valorizacaoPercent` da posição em
+token. ARCHITECTURE §14.9-B e §14.12 registram a regra atual e a decisão.
 
 ### Pendências conhecidas
 

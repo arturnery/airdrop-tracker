@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CircleDollarSign,
   History,
   UserCheck,
   LayoutDashboard,
@@ -23,7 +22,6 @@ const itens = [
   { href: "/tarefas", label: "Tarefas", icon: ListChecks },
   { href: "/projetos", label: "Projetos", icon: Layers },
   { href: "/contas", label: "Contas", icon: Wallet },
-  { href: "/cotacoes", label: "Cotações", icon: CircleDollarSign },
   { href: "/historico", label: "Histórico", icon: History },
   { href: "/importar", label: "Importar", icon: Upload },
 ] as const;
@@ -42,7 +40,6 @@ const tons: Record<string, string> = {
   "/tarefas": "bg-chart-4/15 text-chart-4",
   "/projetos": "bg-chart-3/15 text-chart-3",
   "/contas": "bg-chart-2/15 text-chart-2",
-  "/cotacoes": "bg-chart-5/15 text-chart-5",
   "/historico": "bg-brand/15 text-brand-legivel",
   "/importar": "bg-chart-1/15 text-chart-1",
   "/membros": "bg-chart-4/15 text-chart-4",

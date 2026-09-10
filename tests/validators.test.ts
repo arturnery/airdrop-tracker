@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   feedbackSchema,
-  cotacaoSchema,
   lancamentoSchema,
   perfilSchema,
   pontosSchema,
@@ -23,23 +22,7 @@ import {
  * dado é sempre erro de desenho.
  */
 
-const cotacaoBruta = {
-  symbol: "SOL",
-  priceUsd: "195.00",
-  updatedAt: "2026-08-06",
-};
-
 describe("schemas com transform não são idempotentes", () => {
-  it("cotação: revalidar a saída falha", () => {
-    const primeira = cotacaoSchema.safeParse(cotacaoBruta);
-    expect(primeira.success).toBe(true);
-    // priceUsd virou centavos (número).
-    expect(primeira.data!.priceUsd).toBe(19_500);
-
-    const segunda = cotacaoSchema.safeParse(primeira.data);
-    expect(segunda.success).toBe(false);
-  });
-
   it("lançamento: revalidar a saída falha", () => {
     const bruto = {
       projectId: "6f1c2a2e-2c4a-4c4a-8c4a-2c4a4c4a8c4a",
@@ -70,35 +53,6 @@ describe("schemas com transform não são idempotentes", () => {
     expect(primeira.success).toBe(true);
 
     expect(pontosSchema.safeParse(primeira.data).success).toBe(false);
-  });
-
-  /** O dado bruto, esse sim, pode ser validado quantas vezes for. */
-  it("o bruto atravessa validações repetidas sem mudar", () => {
-    const a = cotacaoSchema.safeParse(cotacaoBruta);
-    const b = cotacaoSchema.safeParse(cotacaoBruta);
-    expect(a.success && b.success).toBe(true);
-    expect(a.data).toEqual(b.data);
-  });
-});
-
-describe("valores aceitos no formulário", () => {
-  it("aceita o preço com e sem símbolo", () => {
-    for (const entrada of ["195", "195.00", "$195.00", "195,00"]) {
-      const r = cotacaoSchema.safeParse({ ...cotacaoBruta, priceUsd: entrada });
-      expect(r.success, `falhou para "${entrada}"`).toBe(true);
-      expect(r.data!.priceUsd).toBe(19_500);
-    }
-  });
-
-  it("normaliza o símbolo para maiúsculo", () => {
-    const r = cotacaoSchema.safeParse({ ...cotacaoBruta, symbol: "sol" });
-    expect(r.data!.symbol).toBe("SOL");
-  });
-
-  it("recusa preço inválido com mensagem legível", () => {
-    const r = cotacaoSchema.safeParse({ ...cotacaoBruta, priceUsd: "abc" });
-    expect(r.success).toBe(false);
-    expect(r.error!.issues[0]!.message).toContain("inválido");
   });
 });
 

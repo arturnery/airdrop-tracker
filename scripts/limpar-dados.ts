@@ -2,8 +2,8 @@
  * Apaga os dados de um banco, preservando as contas de acesso.
  *
  * Serve para zerar um ambiente sem obrigar ninguém a recadastrar login: saem
- * projetos, contas de carteira, lançamentos, tarefas, metas, pontos, cotações e
- * lotes de importação. Ficam `users` e `profile_settings`, que são a identidade
+ * projetos, contas de carteira, lançamentos, tarefas, metas, pontos e lotes de
+ * importação. Ficam `users` e `profile_settings`, que são a identidade
  * e as preferências de quem entra.
  *
  * Quase tudo cai por cascata a partir de `projects` e `accounts`. As duas
@@ -34,8 +34,7 @@ async function main() {
       (select count(*) from projects) as projetos,
       (select count(*) from accounts) as contas,
       (select count(*) from transactions) as lancamentos,
-      (select count(*) from tasks) as tarefas,
-      (select count(*) from token_prices) as cotacoes
+      (select count(*) from tasks) as tarefas
   `;
   console.log("Antes:", antes[0]);
 
@@ -50,7 +49,6 @@ async function main() {
   // ler o que sai.
   await sql`delete from projects`;
   await sql`delete from accounts`;
-  await sql`delete from token_prices`;
   await sql`delete from import_batches`;
 
   const depois = await sql`
@@ -60,8 +58,7 @@ async function main() {
       (select count(*) from accounts) as contas,
       (select count(*) from transactions) as lancamentos,
       (select count(*) from tasks) as tarefas,
-      (select count(*) from task_occurrences) as ocorrencias,
-      (select count(*) from token_prices) as cotacoes
+      (select count(*) from task_occurrences) as ocorrencias
   `;
   console.log("Depois:", depois[0]);
 

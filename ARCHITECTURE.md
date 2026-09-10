@@ -1083,7 +1083,8 @@ progresso de meta. É a fronteira de §14.8 aplicada, e não uma troca de paleta
 ## 14.9-B. O que é saldo, e como o dinheiro sai dele
 
 A exposição é a soma dos lançamentos de caixa: depósito, retirada, rendimento, resultado de
-trade e `other`, mais a posição em token revalorizada. **Não há outra fonte.**
+trade e `other`. **Não há outra fonte.** Um depósito em token entra pelo valor em dólar
+lançado, e fica nele: o sistema não revaloriza posição por preço de mercado (§14.12).
 
 Isso precisa estar escrito porque a ausência de outra fonte já foi esquecida. Uma mudança
 tirou `trade_pnl` do saldo com a justificativa de que "o saldo real é conferido na
@@ -1445,6 +1446,25 @@ nome de tabela, valor colidido ou id de usuário.
 pendura o original em `cause`, então `erro.code` no nível de fora é `undefined`.
 A tradução percorre a cadeia. Esse detalhe custou uma rodada inteira de testes
 verdes sobre um módulo que não funcionava: ver o Marco 38 do DEVLOG.
+
+## 14.12. Cotação removida: sem revalorização por preço de mercado
+
+Existiu uma tela de cotação (`token_prices`): a pessoa informava o preço atual de um
+token à mão, e a exposição revalorizava a posição em token por esse preço em vez do
+valor aportado. Foi removida por decisão de produto, não por defeito.
+
+O motivo: todo depósito em token já carrega o valor em dólar lançado (é dele que vem o
+"preço de entrada" mostrado no formulário). Manter uma segunda tela só para repetir
+esse preço, ou atualizá-lo depois, custava uma aba e um passo extra sem responder a uma
+pergunta que o uso real fazia. A exposição de um token agora é sempre o que foi lançado,
+igual a qualquer outro tipo de movimento (§14.9-B): sem ganho nem perda de preço de
+mercado depois do depósito, só o que a plataforma registrou.
+
+O que saiu junto: a tabela `token_prices`, o formulário de cotação, o aviso de "token
+sem cotação" no painel e na aba do projeto, e o campo `valorAtualUsd`/`valorizacao` da
+posição em token, que dependia do preço do dia. Ficou `precoMedioUsd`: é derivado do
+próprio lançamento, não precisa de entrada manual separada, e continua respondendo "a
+quanto eu entrei".
 
 ## 15. Consumo do banco: o que medir antes de otimizar
 

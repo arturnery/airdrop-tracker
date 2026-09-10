@@ -109,8 +109,8 @@ senhas temporárias, mas não vê o farming de ninguém.
 
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
-- **Aportes em token com cotação manual.** Registrar "1 SOL a US$ 50" e atualizar a cotação
-  depois mostra quanto do resultado veio do farming e quanto veio do preço do token.
+- **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o
+  aporte entra no saldo pelo valor em dólar lançado, sem revalorização por preço de mercado.
 - **Programas de pontos.** Medições periódicas por projeto e conta, com evolução entre
   medições, para os projetos que distribuem por pontuação em vez de volume.
 - **Tarefas recorrentes.** Diária, semanal, mensal ou a cada N dias, expandidas por conta,

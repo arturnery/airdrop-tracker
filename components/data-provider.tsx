@@ -54,9 +54,6 @@ type Acoes = {
   atualizarLancamento: Acao<[string, unknown]>;
   excluirLancamento: Acao<[string]>;
 
-  definirCotacao: Acao<[unknown]>;
-  excluirCotacao: Acao<[string]>;
-
   registrarPontos: Acao<[unknown]>;
   atualizarPontos: Acao<[string, unknown]>;
   excluirPontos: Acao<[string]>;
@@ -209,9 +206,6 @@ export function DataProvider({
       criarLancamento: envolver(A.criarLancamento),
       atualizarLancamento: envolver(A.atualizarLancamento),
       excluirLancamento: envolver(A.excluirLancamento),
-
-      definirCotacao: envolver(A.definirCotacao),
-      excluirCotacao: envolver(A.excluirCotacao),
 
       registrarPontos: envolver(A.registrarPontos),
       atualizarPontos: envolver(A.atualizarPontos),

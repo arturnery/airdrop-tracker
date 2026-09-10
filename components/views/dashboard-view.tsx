@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, LayoutDashboard, TriangleAlert } from "lucide-react";
+import { ArrowRight, LayoutDashboard } from "lucide-react";
 
 import { CapitalPorProjetoChart } from "@/components/capital-chart";
 import { ListaAtividade } from "@/components/historico";
@@ -37,7 +37,6 @@ export function DashboardView() {
   const urgentes = tarefas.filter(
     (t) => t.urgencia === "atrasada" || t.urgencia === "hoje",
   );
-  const semCotacao = resumo.tokensSemCotacao;
 
   return (
     <>
@@ -77,11 +76,7 @@ export function DashboardView() {
           accent="idle"
           ajuda={explicacoes.exposicao}
           value={<Money value={resumo.exposicao} />}
-          hint={
-            semCotacao.length > 0
-              ? `${semCotacao.join(", ")} sem cotação`
-              : "soma de todos os lançamentos"
-          }
+          hint="soma de todos os lançamentos"
         />
         <StatCard
           label="Resultado"
@@ -109,26 +104,6 @@ export function DashboardView() {
           }
         />
       </section>
-
-      {semCotacao.length > 0 ? (
-        <p className="border-caution/30 bg-caution/5 text-muted-foreground mt-4 flex items-start gap-2 rounded-md border px-4 py-3 text-sm">
-          <TriangleAlert
-            className="text-caution mt-0.5 size-4 shrink-0"
-            aria-hidden="true"
-          />
-          <span>
-            <strong className="text-foreground font-medium">
-              {semCotacao.join(", ")} sem cotação informada.
-            </strong>{" "}
-            A posição nesses tokens está avaliada pelo valor do aporte, sem ganho nem
-            perda de preço.{" "}
-            <Link href="/cotacoes" className="text-foreground underline underline-offset-4">
-              Informar agora
-            </Link>
-            .
-          </span>
-        </p>
-      ) : null}
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1.15fr_1fr]">
         <section aria-labelledby="titulo-tarefas">

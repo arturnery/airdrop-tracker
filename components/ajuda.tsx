@@ -82,8 +82,9 @@ export const explicacoes = {
   exposicao: (
     <>
       Quanto está no projeto <strong>agora</strong>: depósitos, menos retiradas,
-      mais rendimento e resultado de trade, com a posição em token revalorizada
-      pela cotação que você informou. Volume operado e taxa de gas ficam de fora.
+      mais rendimento e resultado de trade. Um depósito em token entra pelo valor
+      em dólar lançado, sem revalorização por preço de mercado. Volume operado e
+      taxa de gas ficam de fora.
     </>
   ),
   resultado: (

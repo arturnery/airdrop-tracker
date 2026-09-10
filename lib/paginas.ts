@@ -1,5 +1,4 @@
 import {
-  CircleDollarSign,
   HelpCircle,
   History,
   LayoutDashboard,
@@ -30,7 +29,6 @@ export const PAGINAS: PaginaInfo[] = [
   { padrao: "/tarefas", rotulo: "Tarefas", icon: ListChecks },
   { padrao: "/projetos", rotulo: "Projetos", icon: Layers },
   { padrao: "/contas", rotulo: "Contas", icon: Wallet },
-  { padrao: "/cotacoes", rotulo: "Cotações", icon: CircleDollarSign },
   { padrao: "/historico", rotulo: "Histórico", icon: History },
   { padrao: "/importar", rotulo: "Importar", icon: Upload },
   { padrao: "/membros", rotulo: "Membros", icon: UserCheck },

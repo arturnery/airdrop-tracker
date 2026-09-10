@@ -69,8 +69,6 @@ export type DashboardSummary = FinancialSummary & {
   contasAtivas: number;
   tarefasHoje: number;
   tarefasAtrasadas: number;
-  /** Símbolos sem cotação informada: a interface pede a atualização. */
-  tokensSemCotacao: string[];
 };
 
 export type CapitalPorProjeto = {
@@ -126,7 +124,7 @@ export type ProjectAccountRow = {
   label: string;
   status: ProjectAccountStatus;
   aportado: Cents;
-  /** Soma de tudo que foi lançado nesta conta, com token revalorizado. */
+  /** Soma de tudo que foi lançado nesta conta. */
   saldo: Cents;
   resultado: Cents;
   tarefasPendentes: number;
@@ -147,26 +145,13 @@ export type TransactionRow = {
   tokenAmount: string | null;
 };
 
-/** Posição em token de um projeto, revalorizada pela cotação atual. */
+/** Posição em token de um projeto: quantidade e preço médio de entrada. */
 export type TokenPositionRow = {
   symbol: string;
   quantidade: number;
   investidoUsd: Cents;
   /** Investido ÷ quantidade: o preço que você pagou, em média. */
   precoMedioUsd: Cents | null;
-  valorAtualUsd: Cents;
-  /** null quando não há cotação informada. */
-  precoUsd: Cents | null;
-  valorizacao: Cents | null;
-  valorizacaoPercent: number | null;
-};
-
-export type TokenPriceRow2 = {
-  symbol: string;
-  precoUsd: Cents;
-  atualizadoEm: IsoDate;
-  /** Em quantos projetos esse token aparece. */
-  usadoEm: number;
 };
 
 export type GoalEntryRow = {

@@ -25,11 +25,6 @@ export type MovementRow = {
   tokenAmount?: string | null;
 };
 
-export type TokenPriceRow = {
-  symbol: string;
-  priceUsd: string;
-};
-
 export type PairKey = string;
 
 export const pairKey = (projectId: string, accountId: string): PairKey =>
@@ -317,80 +312,22 @@ export function tokenPositionsByPair(
   return result;
 }
 
-export function priceMap(prices: TokenPriceRow[]): Map<string, Cents> {
-  return new Map(
-    prices.map((p) => [p.symbol.toUpperCase(), fromDbNumeric(p.priceUsd)]),
-  );
-}
-
-export type PairExposure = {
-  value: Cents;
-  /** Parte do valor que veio de posição em token revalorizada. */
-  tokenValue: Cents;
-  /** Tokens sem cotação informada: a interface avisa em vez de fingir preço. */
-  semCotacao: string[];
-};
-
-/**
- * Exposição de um par projeto×conta.
- *
- * Lançamentos em dólar entram pelo valor lançado. Lançamentos em token são
- * revalorizados pela cotação atual: é isso que revela ganho ou perda no preço
- * do token, e não apenas o que foi aportado.
- *
- * Sem cotação informada para um token, o valor em dólar do aporte é mantido:
- * subestimar seria tão errado quanto inventar preço: e o símbolo é reportado
- * para que a interface peça a atualização.
- */
-export function exposureForPair(
-  key: PairKey,
-  netFlow: Map<PairKey, Cents>,
-  positions: Map<PairKey, Map<string, TokenPosition>>,
-  prices: Map<string, Cents>,
-): PairExposure {
-  const totalUsd = netFlow.get(key) ?? ZERO;
-  const doPar = positions.get(key);
-
-  if (!doPar || doPar.size === 0) {
-    return { value: totalUsd, tokenValue: ZERO, semCotacao: [] };
-  }
-
-  let investidoEmToken = ZERO;
-  let valorAtualToken = ZERO;
-  const semCotacao: string[] = [];
-
-  for (const posicao of doPar.values()) {
-    investidoEmToken = addCents(investidoEmToken, posicao.investedUsd);
-    const preco = prices.get(posicao.symbol);
-    if (preco === undefined) {
-      semCotacao.push(posicao.symbol);
-      valorAtualToken = addCents(valorAtualToken, posicao.investedUsd);
-      continue;
-    }
-    valorAtualToken = addCents(valorAtualToken, cents(Math.round(posicao.amount * preco)));
-  }
-
-  // Troca a parcela aportada em token pela parcela revalorizada.
-  const emDolar = cents(totalUsd - investidoEmToken);
-  return {
-    value: addCents(emDolar, valorAtualToken),
-    tokenValue: valorAtualToken,
-    semCotacao,
-  };
-}
-
 export type SummaryInput = {
   movements: MovementRow[];
-  prices: TokenPriceRow[];
   /** Pares ativos. Um par pode existir sem movimento (conta recém-vinculada). */
   pairs: { projectId: string; accountId: string }[];
   airdropsUsd?: string[];
 };
 
-export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
-  tokensSemCotacao: string[];
-} {
-  const { movements, prices, pairs, airdropsUsd = [] } = input;
+/**
+ * Exposição: soma dos lançamentos de caixa de cada par ativo.
+ *
+ * Um depósito em token já entra pelo valor em dólar lançado (§4.4): não há
+ * revalorização por preço de mercado, então a exposição é sempre a soma do
+ * livro-razão, sem passo intermediário.
+ */
+export function summarizeFinancials(input: SummaryInput): FinancialSummary {
+  const { movements, pairs, airdropsUsd = [] } = input;
 
   const aportado = sumOfType(movements, "deposit");
   const retirado = sumOfType(movements, "withdrawal");
@@ -402,20 +339,13 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
   );
 
   const netMap = netFlowByPair(movements);
-  const posMap = tokenPositionsByPair(movements);
-  const precos = priceMap(prices);
 
   let exposicao = ZERO;
-  const semCotacao = new Set<string>();
   for (const pair of pairs) {
-    const exposure = exposureForPair(
-      pairKey(pair.projectId, pair.accountId),
-      netMap,
-      posMap,
-      precos,
+    exposicao = addCents(
+      exposicao,
+      netMap.get(pairKey(pair.projectId, pair.accountId)) ?? ZERO,
     );
-    exposicao = addCents(exposicao, exposure.value);
-    for (const simbolo of exposure.semCotacao) semCotacao.add(simbolo);
   }
 
   const resultado = resultadoLiquido({
@@ -448,6 +378,5 @@ export function summarizeFinancials(input: SummaryInput): FinancialSummary & {
      * em dólar: sem capital parado não existe retorno sobre capital.
      */
     roi: percentOf(resultado, pico),
-    tokensSemCotacao: [...semCotacao],
   };
 }

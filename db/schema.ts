@@ -370,7 +370,7 @@ export const transactions = pgTable(
     type: transactionTypeEnum("type").notNull(),
     /** Valor em dólar na data. Negativo em perda, retirada e taxa. */
     amountUsd: numeric("amount_usd", { precision: 18, scale: 2 }).notNull(),
-    /** Preenchidos quando o aporte foi em token; a posição é revalorizada. */
+    /** Preenchidos quando o aporte foi em token: quantidade, para o preço de entrada. */
     tokenSymbol: text("token_symbol"),
     tokenAmount: numeric("token_amount", { precision: 36, scale: 18 }),
     description: text("description"),
@@ -394,25 +394,6 @@ export const transactions = pgTable(
     ),
     unique("transactions_user_dedupe_unq").on(t.userId, t.dedupeKey),
   ],
-);
-
-/**
- * Cotação informada manualmente (§4.4).
- *
- * Sem API externa por decisão de projeto. Um símbolo por usuário: reinformar
- * substitui o preço anterior.
- */
-export const tokenPrices = pgTable(
-  "token_prices",
-  {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    symbol: text("symbol").notNull(),
-    priceUsd: numeric("price_usd", { precision: 18, scale: 8 }).notNull(),
-    updatedAt: date("updated_at").notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.userId, t.symbol] })],
 );
 
 // -------------------------------------------------------------------- pontos
@@ -701,7 +682,6 @@ export type Project = typeof projects.$inferSelect;
 export type ProjectAccount = typeof projectAccounts.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
-export type TokenPrice = typeof tokenPrices.$inferSelect;
 export type PointsSnapshot = typeof pointsSnapshots.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type TaskOccurrence = typeof taskOccurrences.$inferSelect;

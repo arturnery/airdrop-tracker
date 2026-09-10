@@ -203,23 +203,6 @@ export type RawTransaction = {
 };
 
 /**
- * Cotação informada manualmente.
- *
- * Sem API externa por decisão de projeto: o usuário atualiza quando quiser
- * (tipicamente antes da live semanal). Um token sem cotação cai de volta para
- * o valor em dólar registrado na data, e a interface avisa.
- */
-export type RawTokenPrice = {
-  symbol: string;
-  priceUsd: string;
-  updatedAt: string;
-};
-
-export const rawTokenPrices: RawTokenPrice[] = [
-  { symbol: "SOL", priceUsd: "195.00", updatedAt: "2026-08-04" },
-];
-
-/**
  * Lançamentos. No modelo de razão, o saldo de cada par projeto×conta é a soma
  * de tudo que foi lançado: não existe registro de saldo em separado.
  *
@@ -260,8 +243,7 @@ export const rawTransactions: RawTransaction[] = [
   { id: "tx-24", projectId: "prj-prisma", accountId: "acc-chrome", occurredAt: "2026-07-26", type: "trade_pnl", amountUsd: "-1.10", tokenSymbol: null, tokenAmount: null, description: "Perda em trade" },
 
   // ------------------------------------------------------------------ Nebula
-  // Aporte em token: o dólar fica congelado na data, mas a posição de 1 SOL é
-  // revalorizada pela cotação atual: é o que revela ganho de preço.
+  // Aporte em token: entra no saldo pelo valor em dólar lançado.
   { id: "tx-25", projectId: "prj-nebula", accountId: "acc-mbox", occurredAt: "2026-07-28", type: "deposit", amountUsd: "180.00", tokenSymbol: "SOL", tokenAmount: "1", description: "Depósito de 1 SOL a $180" },
 ];
 
@@ -487,7 +469,6 @@ export function datasetInicial() {
     taskOccurrences: [...rawTaskOccurrences],
     goals: [...rawGoals],
     goalEntries: [...rawGoalEntries],
-    tokenPrices: [...rawTokenPrices],
     pointsSnapshots: [...rawPointsSnapshots],
     volumeSnapshots: [...rawVolumeSnapshots],
     airdropClaims: [...rawAirdropClaims],

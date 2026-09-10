@@ -2,16 +2,13 @@ import type { Dataset } from "./dataset";
 import { diagnosticarProjeto } from "./consistencia";
 import { daysBetween, urgencyOf } from "./dates";
 import {
-  exposureForPair,
   netFlowByPair,
   capitalNoPico,
   pairKey,
-  priceMap,
   resultadoLiquido,
   sumOfType,
   summarizeFinancials,
   tokenPositionsByPair,
-  type PairExposure,
 } from "./finance";
 import { addCents, cents, fromDbNumeric, percentOf, subtractCents, ZERO, type Cents } from "./money";
 import { apenasProximaDeCada } from "./tarefas";
@@ -42,7 +39,6 @@ import type {
   TaskOccurrenceRow,
   TipoAtividade,
   TokenPositionRow,
-  TokenPriceRow2,
   TransactionRow,
 } from "./types";
 
@@ -55,35 +51,19 @@ import type {
 
 // ------------------------------------------------------------------- helpers
 
-function contexto(ds: Dataset) {
-  return {
-    net: netFlowByPair(ds.transactions),
-    pos: tokenPositionsByPair(ds.transactions),
-    precos: priceMap(ds.tokenPrices),
-  };
-}
-
-function exposicaoDoPar(
-  ds: Dataset,
-  projectId: string,
-  accountId: string,
-): PairExposure {
-  const { net, pos, precos } = contexto(ds);
-  return exposureForPair(pairKey(projectId, accountId), net, pos, precos);
+/** Exposição de um par projeto×conta: soma dos lançamentos de caixa (§4.4). */
+function exposicaoDoPar(ds: Dataset, projectId: string, accountId: string): Cents {
+  const net = netFlowByPair(ds.transactions);
+  return net.get(pairKey(projectId, accountId)) ?? ZERO;
 }
 
 function exposicaoAgrupada(ds: Dataset, por: "project" | "account"): Map<string, Cents> {
-  const { net, pos, precos } = contexto(ds);
+  const net = netFlowByPair(ds.transactions);
   const result = new Map<string, Cents>();
   for (const par of ds.projectAccounts) {
-    const exposure = exposureForPair(
-      pairKey(par.projectId, par.accountId),
-      net,
-      pos,
-      precos,
-    );
+    const exposure = net.get(pairKey(par.projectId, par.accountId)) ?? ZERO;
     const chave = por === "project" ? par.projectId : par.accountId;
-    result.set(chave, addCents(result.get(chave) ?? ZERO, exposure.value));
+    result.set(chave, addCents(result.get(chave) ?? ZERO, exposure));
   }
   return result;
 }
@@ -131,7 +111,6 @@ function ocorrenciasPendentes(ds: Dataset) {
 export function selectDashboardSummary(ds: Dataset, hoje: string): DashboardSummary {
   const financeiro = summarizeFinancials({
     movements: ds.transactions,
-    prices: ds.tokenPrices,
     pairs: ds.projectAccounts,
     airdropsUsd: ds.airdropClaims.map((c) => c.valueUsd),
   });
@@ -364,7 +343,6 @@ export function selectProjectBySlug(
 
   const financeiro = summarizeFinancials({
     movements: movimentos,
-    prices: ds.tokenPrices,
     pairs: pares,
     airdropsUsd: claims.map((c) => c.valueUsd),
   });
@@ -385,9 +363,9 @@ export function selectProjectBySlug(
         label: labelDaConta(ds, par.accountId),
         status: par.status,
         aportado,
-        saldo: exposure.value,
+        saldo: exposure,
         resultado: resultadoLiquido({
-          exposicao: exposure.value,
+          exposicao: exposure,
           aportado,
           retirado: sumOfType(doPar, "withdrawal"),
           airdrops: airdropsDe(
@@ -470,8 +448,7 @@ export function selectProjectBySlug(
     valor: fromDbNumeric(c.valueUsd),
   }));
 
-  // Posições em token do projeto, revalorizadas pela cotação informada.
-  const precos = priceMap(ds.tokenPrices);
+  // Posições em token do projeto: quantidade e preço médio de entrada.
   const posicoesPorSimbolo = new Map<string, { qtd: number; investido: Cents }>();
   for (const par of pares) {
     const doPar = tokenPositionsByPair(movimentos).get(
@@ -491,24 +468,12 @@ export function selectProjectBySlug(
   }
 
   const posicoesToken: TokenPositionRow[] = [...posicoesPorSimbolo.entries()].map(
-    ([symbol, dados]) => {
-      const preco = precos.get(symbol) ?? null;
-      const valorAtual =
-        preco === null ? dados.investido : cents(Math.round(dados.qtd * preco));
-      return {
-        symbol,
-        quantidade: dados.qtd,
-        investidoUsd: dados.investido,
-        // Preço médio pago: é com ele que a cotação atual é comparada.
-        precoMedioUsd:
-          dados.qtd > 0 ? cents(Math.round(dados.investido / dados.qtd)) : null,
-        valorAtualUsd: valorAtual,
-        precoUsd: preco,
-        valorizacao: preco === null ? null : subtractCents(valorAtual, dados.investido),
-        valorizacaoPercent:
-          preco === null ? null : percentOf(subtractCents(valorAtual, dados.investido), dados.investido),
-      } satisfies TokenPositionRow;
-    },
+    ([symbol, dados]) => ({
+      symbol,
+      quantidade: dados.qtd,
+      investidoUsd: dados.investido,
+      precoMedioUsd: dados.qtd > 0 ? cents(Math.round(dados.investido / dados.qtd)) : null,
+    }),
   );
 
   return {
@@ -951,55 +916,6 @@ export function selectHistoricoDePontos(
         nota: registro.note,
       } satisfies PointsSnapshotRow;
     });
-}
-
-// ----------------------------------------------------------------- cotações
-
-/**
- * Cotações informadas, com quantos projetos usam cada token.
- *
- * Inclui também os tokens que aparecem em lançamentos mas ainda não têm preço,
- * com `precoUsd: null`: é o que permite à interface pedir a atualização em vez
- * de silenciosamente subestimar a posição.
- */
-export function selectCotacoes(ds: Dataset): TokenPriceRow2[] {
-  const usados = new Map<string, Set<string>>();
-  for (const t of ds.transactions) {
-    if (!t.tokenSymbol) continue;
-    const simbolo = t.tokenSymbol.toUpperCase();
-    const projetos = usados.get(simbolo) ?? new Set<string>();
-    projetos.add(t.projectId);
-    usados.set(simbolo, projetos);
-  }
-
-  const comPreco = ds.tokenPrices.map((p) => ({
-    symbol: p.symbol.toUpperCase(),
-    precoUsd: fromDbNumeric(p.priceUsd),
-    atualizadoEm: p.updatedAt,
-    usadoEm: usados.get(p.symbol.toUpperCase())?.size ?? 0,
-  }));
-
-  const semPreco = [...usados.entries()]
-    .filter(([simbolo]) => !comPreco.some((p) => p.symbol === simbolo))
-    .map(([simbolo, projetos]) => ({
-      symbol: simbolo,
-      precoUsd: ZERO,
-      atualizadoEm: "",
-      usadoEm: projetos.size,
-    }));
-
-  return [...comPreco, ...semPreco].sort((a, b) => b.usadoEm - a.usadoEm);
-}
-
-/** Tokens que aparecem em lançamentos e ainda não têm cotação informada. */
-export function selectTokensSemCotacao(ds: Dataset): string[] {
-  const comPreco = new Set(ds.tokenPrices.map((p) => p.symbol.toUpperCase()));
-  const usados = new Set(
-    ds.transactions
-      .filter((t) => t.tokenSymbol)
-      .map((t) => t.tokenSymbol!.toUpperCase()),
-  );
-  return [...usados].filter((s) => !comPreco.has(s));
 }
 
 /** Resumo da fila de aprovação. Puro: recebe as linhas já carregadas. */

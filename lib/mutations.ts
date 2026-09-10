@@ -680,37 +680,3 @@ export function atualizarPontos(
 export function excluirPontos(ds: Dataset, id: string): Dataset {
   return { ...ds, pointsSnapshots: ds.pointsSnapshots.filter((p) => p.id !== id) };
 }
-
-// ----------------------------------------------------------------- cotações
-
-/**
- * Define ou atualiza a cotação de um token.
- *
- * Sem API externa por decisão de projeto: o preço é informado pelo usuário e
- * vale até ele atualizar. Um símbolo por registro: reinformar substitui.
- */
-export function definirCotacao(
-  ds: Dataset,
-  dados: { symbol: string; priceUsd: Cents; updatedAt: string },
-): Dataset {
-  const simbolo = dados.symbol.trim().toUpperCase();
-  return {
-    ...ds,
-    tokenPrices: [
-      ...ds.tokenPrices.filter((p) => p.symbol.toUpperCase() !== simbolo),
-      {
-        symbol: simbolo,
-        priceUsd: toDbNumeric(dados.priceUsd),
-        updatedAt: dados.updatedAt,
-      },
-    ],
-  };
-}
-
-export function excluirCotacao(ds: Dataset, symbol: string): Dataset {
-  const simbolo = symbol.toUpperCase();
-  return {
-    ...ds,
-    tokenPrices: ds.tokenPrices.filter((p) => p.symbol.toUpperCase() !== simbolo),
-  };
-}

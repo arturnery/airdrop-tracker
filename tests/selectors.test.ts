@@ -8,12 +8,10 @@ import * as M from "@/lib/mutations";
 import {
   selectAccounts,
   selectCapitalPorProjeto,
-  selectCotacoes,
   selectDashboardSummary,
   selectPendingTasks,
   selectProjectBySlug,
   selectProjects,
-  selectTokensSemCotacao,
   selectVolumeDoProjeto,
 } from "@/lib/selectors";
 
@@ -27,20 +25,15 @@ describe("selectDashboardSummary", () => {
     expect(toDbNumeric(resumo.capitalNoPico)).toBe("337.00");
   });
 
-  it("exposição é a soma dos lançamentos, com token revalorizado", () => {
-    // Nebula entra com 1 SOL a $195, não com os $180 aportados.
-    expect(toDbNumeric(resumo.exposicao)).toBe("348.18");
-    expect(toDbNumeric(resumo.resultado)).toBe("11.18");
-    expect(resumo.roi).toBe(3.3);
+  it("exposição é a soma dos lançamentos, sem revalorização de token", () => {
+    // Nebula entra pelos $180 lançados, não por um preço de mercado.
+    expect(toDbNumeric(resumo.exposicao)).toBe("333.18");
+    expect(toDbNumeric(resumo.resultado)).toBe("-3.82");
   });
 
   it("separa rendimentos do capital aportado", () => {
     // 1,40 + 0,45 + 0,30 + 2,80 + 1,50
     expect(toDbNumeric(resumo.rendimentos)).toBe("6.45");
-  });
-
-  it("não reporta token sem cotação quando todos têm preço", () => {
-    expect(resumo.tokensSemCotacao).toEqual([]);
   });
 
   it("conta contas e projetos ativos", () => {
@@ -71,12 +64,11 @@ describe("selectProjects", () => {
     expect(toDbNumeric(porNome["Prisma DEX"]!.resultado)).toBe("-1.10");
   });
 
-  it("token valorizado aparece como resultado positivo", () => {
+  it("depósito em token conta pelo valor lançado, não por preço de mercado", () => {
     const nebula = projetos.find((p) => p.slug === "nebula")!;
-    // Aportou $180 em 1 SOL, que hoje vale $195.
     expect(toDbNumeric(nebula.capitalNoPico)).toBe("180.00");
-    expect(toDbNumeric(nebula.exposicao)).toBe("195.00");
-    expect(toDbNumeric(nebula.resultado)).toBe("15.00");
+    expect(toDbNumeric(nebula.exposicao)).toBe("180.00");
+    expect(toDbNumeric(nebula.resultado)).toBe("0.00");
   });
 
   it("não conta volume operado como capital", () => {
@@ -106,11 +98,8 @@ describe("selectProjectBySlug", () => {
     expect(sol.symbol).toBe("SOL");
     expect(sol.quantidade).toBe(1);
     expect(toDbNumeric(sol.investidoUsd)).toBe("180.00");
-    // 1 SOL por $180: entrou a $180; hoje vale $195.
+    // 1 SOL por $180: entrou a $180.
     expect(toDbNumeric(sol.precoMedioUsd!)).toBe("180.00");
-    expect(toDbNumeric(sol.valorAtualUsd)).toBe("195.00");
-    expect(toDbNumeric(sol.valorizacao!)).toBe("15.00");
-    expect(sol.valorizacaoPercent).toBe(8.3);
   });
 
   it("projeto sem token não tem posição", () => {
@@ -179,41 +168,6 @@ describe("selectCapitalPorProjeto", () => {
     expect(capital[0]?.nome).toBe("Nebula");
     expect(toDbNumeric(capital[0]!.capitalNoPico)).toBe("180.00");
     expect(capital).toHaveLength(5);
-  });
-});
-
-describe("cotações", () => {
-  it("lista os tokens em uso com o preço informado", () => {
-    const cotacoes = selectCotacoes(ds);
-    const sol = cotacoes.find((c) => c.symbol === "SOL")!;
-    expect(toDbNumeric(sol.precoUsd)).toBe("195.00");
-    expect(sol.usadoEm).toBe(1);
-  });
-
-  it("não há token pendente de cotação nos dados iniciais", () => {
-    expect(selectTokensSemCotacao(ds)).toEqual([]);
-  });
-
-  it("token usado sem preço aparece como pendente", () => {
-    const comArb = {
-      ...ds,
-      transactions: [
-        ...ds.transactions,
-        {
-          id: "tx-teste",
-          projectId: "prj-vertex",
-          accountId: "acc-brave",
-          occurredAt: HOJE,
-          type: "deposit" as const,
-          amountUsd: "50.00",
-          tokenSymbol: "ARB",
-          tokenAmount: "40",
-          description: null,
-        },
-      ],
-    };
-    expect(selectTokensSemCotacao(comArb)).toEqual(["ARB"]);
-    expect(selectCotacoes(comArb).find((c) => c.symbol === "ARB")?.atualizadoEm).toBe("");
   });
 });
 

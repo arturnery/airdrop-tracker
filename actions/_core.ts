@@ -124,5 +124,4 @@ export const ROTAS_DADOS: { caminho: string; tipo: "page" | "layout" }[] = [
   { caminho: "/contas", tipo: "page" },
   { caminho: "/historico", tipo: "page" },
   { caminho: "/tarefas", tipo: "page" },
-  { caminho: "/cotacoes", tipo: "page" },
 ];

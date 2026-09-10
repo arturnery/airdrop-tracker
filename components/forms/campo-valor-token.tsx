@@ -93,8 +93,8 @@ export function CampoValorToken({
           </p>
         ) : (
           <p className="text-muted-foreground mt-3 text-xs">
-            Preencha token e quantidade e o preço de entrada aparece aqui. A posição
-            é revalorizada pela cotação atual.
+            Preencha token e quantidade e o preço de entrada aparece aqui, para
+            conferência.
           </p>
         )}
       </fieldset>

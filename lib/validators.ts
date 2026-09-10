@@ -116,7 +116,7 @@ export const lancamentoSchema = z.object({
     "other",
   ]),
   amount: valorUsd,
-  /** Opcionais: quando preenchidos, a posição é revalorizada pela cotação. */
+  /** Opcionais: quando preenchidos, dão o preço de entrada do aporte em token. */
   tokenSymbol: z
     .string()
     .trim()
@@ -185,17 +185,6 @@ export const feedbackSchema = z.object({
     .max(20)
     .transform((v) => (v === "" ? null : v))
     .nullable(),
-});
-
-export const cotacaoSchema = z.object({
-  symbol: z
-    .string()
-    .trim()
-    .min(1, "Informe o símbolo do token.")
-    .max(12)
-    .transform((v) => v.toUpperCase()),
-  priceUsd: valorUsd,
-  updatedAt: dataIso,
 });
 
 /** Pontos usam escala própria: ver lib/points.ts. */

@@ -13,7 +13,6 @@ import { contasAlvoDaTarefa } from "@/lib/tarefas";
 import {
   adocaoSchema,
   contaSchema,
-  cotacaoSchema,
   destaqueSchema,
   lancamentoSchema,
   metaSchema,
@@ -505,40 +504,6 @@ export async function excluirLancamento(id: string): Promise<ResultadoAcao> {
         and(
           eq(schema.transactions.id, dados.id),
           eq(schema.transactions.userId, userId),
-        ),
-      );
-  }, ROTAS_DADOS);
-}
-
-// ------------------------------------------------------------------ cotações
-
-export async function definirCotacao(entrada: unknown): Promise<ResultadoAcao> {
-  return executar(cotacaoSchema, entrada, async (dados, userId) => {
-    await db
-      .insert(schema.tokenPrices)
-      .values({
-        userId,
-        symbol: dados.symbol,
-        priceUsd: toDbNumeric(dados.priceUsd),
-        updatedAt: dados.updatedAt,
-      })
-      // Um preço por símbolo: reinformar substitui.
-      .onConflictDoUpdate({
-        target: [schema.tokenPrices.userId, schema.tokenPrices.symbol],
-        set: { priceUsd: toDbNumeric(dados.priceUsd), updatedAt: dados.updatedAt },
-      });
-  }, ROTAS_DADOS);
-}
-
-export async function excluirCotacao(symbol: string): Promise<ResultadoAcao> {
-  const esquema = z.object({ symbol: z.string().min(1).max(12) });
-  return executar(esquema, { symbol }, async (dados, userId) => {
-    await db
-      .delete(schema.tokenPrices)
-      .where(
-        and(
-          eq(schema.tokenPrices.userId, userId),
-          eq(schema.tokenPrices.symbol, dados.symbol.toUpperCase()),
         ),
       );
   }, ROTAS_DADOS);

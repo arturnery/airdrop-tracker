@@ -210,7 +210,6 @@ describe("registro de pontos", () => {
     });
     // Aporte, exposição e resultado permanecem intactos.
     expect(ds.transactions).toEqual(base().transactions);
-    expect(ds.tokenPrices).toEqual(base().tokenPrices);
   });
 
   it("excluir medição remove o ganho correspondente", () => {

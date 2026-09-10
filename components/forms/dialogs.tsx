@@ -36,7 +36,6 @@ import {
   volumeSchema,
   projetoSchema,
   recebimentoSchema,
-  cotacaoSchema,
   tarefaSchema,
   vinculoSchema,
 } from "@/lib/validators";
@@ -545,71 +544,6 @@ export function NovoLancamento({
             placeholder="Depósito na plataforma"
           />
         </>
-      )}
-    </Formulario>
-  );
-}
-
-// ------------------------------------------------------------------ cotação
-
-export function DefinirCotacao({ symbol }: { symbol?: string }) {
-  const { acoes, hoje } = useDados();
-  const [preco, setPreco] = useState("");
-
-  return (
-    <Formulario
-      titulo={symbol ? `Atualizar cotação de ${symbol}` : "Nova cotação"}
-      descricao="Informe quanto o token vale hoje. Toda posição nesse token passa a ser avaliada por este preço."
-      gatilho={
-        symbol ? (
-          <Button variant="ghost" size="sm" className="h-8">
-            Atualizar
-          </Button>
-        ) : (
-          <BotaoNovo>Nova cotação</BotaoNovo>
-        )
-      }
-      aoEnviar={(dados) => {
-        const bruto = {
-          symbol: symbol ?? texto(dados, "symbol"),
-          priceUsd: texto(dados, "priceUsd"),
-          updatedAt: texto(dados, "updatedAt"),
-        };
-        const resultado = cotacaoSchema.safeParse(bruto);
-        if (!resultado.success) return erros(resultado);
-        return acoes.definirCotacao(bruto);
-      }}
-    >
-      {({ erros: e }) => (
-        <div className="grid gap-4 sm:grid-cols-3">
-          {symbol ? null : (
-            <CampoTexto
-              label="Token"
-              name="symbol"
-              obrigatorio
-              erro={e.symbol}
-              placeholder="SOL"
-              autoFocus
-            />
-          )}
-          <CampoValor
-            label="Preço em dólar"
-            name="priceUsd"
-            obrigatorio
-            valor={preco}
-            aoMudar={setPreco}
-            erro={e.priceUsd}
-            placeholder="195.00"
-            autoFocus={Boolean(symbol)}
-          />
-          <CampoData
-            label="Data"
-            name="updatedAt"
-            obrigatorio
-            defaultValue={hoje}
-            erro={e.updatedAt}
-          />
-        </div>
       )}
     </Formulario>
   );

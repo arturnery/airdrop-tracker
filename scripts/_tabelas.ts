@@ -27,7 +27,6 @@ export const TABELAS = [
   "projects",
   "project_accounts",
   "transactions",
-  "token_prices",
   "points_snapshots",
   "volume_snapshots",
   "catalog_projects",

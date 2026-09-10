@@ -42,7 +42,6 @@ export async function carregarDataset(
     contas,
     projetos,
     lancamentos,
-    cotacoes,
     pontos,
     volume,
     tarefas,
@@ -65,10 +64,6 @@ export async function carregarDataset(
       .from(schema.transactions)
       .where(eq(schema.transactions.userId, userId))
       .orderBy(asc(schema.transactions.occurredAt)),
-    db
-      .select()
-      .from(schema.tokenPrices)
-      .where(eq(schema.tokenPrices.userId, userId)),
     db
       .select()
       .from(schema.pointsSnapshots)
@@ -174,11 +169,6 @@ export async function carregarDataset(
       // cálculo, mas incomoda na tela: some aqui, não no componente.
       tokenAmount: t.tokenAmount === null ? null : String(Number(t.tokenAmount)),
       description: t.description,
-    })),
-    tokenPrices: cotacoes.map((p) => ({
-      symbol: p.symbol,
-      priceUsd: p.priceUsd,
-      updatedAt: p.updatedAt,
     })),
     pointsSnapshots: pontos.map((p) => ({
       id: p.id,
