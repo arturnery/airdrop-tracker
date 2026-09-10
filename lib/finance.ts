@@ -322,9 +322,9 @@ export type SummaryInput = {
 /**
  * Exposição: soma dos lançamentos de caixa de cada par ativo.
  *
- * Um depósito em token já entra pelo valor em dólar lançado (§4.4): não há
- * revalorização por preço de mercado, então a exposição é sempre a soma do
- * livro-razão, sem passo intermediário.
+ * Um depósito em token já entra pelo valor em dólar lançado (ARCHITECTURE
+ * §14.9-B): não há revalorização por preço de mercado, então a exposição é
+ * sempre a soma do livro-razão, sem passo intermediário.
  */
 export function summarizeFinancials(input: SummaryInput): FinancialSummary {
   const { movements, pairs, airdropsUsd = [] } = input;

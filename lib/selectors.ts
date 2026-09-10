@@ -51,7 +51,7 @@ import type {
 
 // ------------------------------------------------------------------- helpers
 
-/** Exposição de um par projeto×conta: soma dos lançamentos de caixa (§4.4). */
+/** Exposição de um par projeto×conta: soma dos lançamentos de caixa (ARCHITECTURE §14.9-B). */
 function exposicaoDoPar(ds: Dataset, projectId: string, accountId: string): Cents {
   const net = netFlowByPair(ds.transactions);
   return net.get(pairKey(projectId, accountId)) ?? ZERO;
