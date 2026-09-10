@@ -455,7 +455,7 @@ export function ProjetosView() {
                   <span className="text-muted-foreground text-xs">{grupo.nota}</span>
                 ) : null}
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {grupo.projetos.map((projeto) => (
                   <CardProjeto key={projeto.id} projeto={projeto} />
                 ))}
