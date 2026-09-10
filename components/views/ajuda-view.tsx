@@ -95,6 +95,7 @@ const grupos: Grupo[] = [
       { pergunta: "O que é exposição atual?", resposta: explicacoes.exposicao },
       { pergunta: "Como o resultado é calculado?", resposta: explicacoes.resultado },
       { pergunta: "O que é volume operado?", resposta: explicacoes.volume },
+      { pergunta: "O que conta como airdrop ganho?", resposta: explicacoes.airdropsGanhos },
       {
         pergunta: "Um projeto meu está com um aviso de saldo impossível. O que é isso?",
         resposta: (

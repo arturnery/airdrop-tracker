@@ -40,6 +40,49 @@ describe("selectDashboardSummary", () => {
     expect(resumo.projetosAtivos).toBe(5);
     expect(resumo.contasAtivas).toBe(6);
   });
+
+  it("sem airdrop recebido nos dados iniciais", () => {
+    expect(resumo.airdropsGanhos).toBe(0);
+  });
+
+  it("conta projeto, não recebimento: duas contas do mesmo projeto somam um", () => {
+    const comClaims = {
+      ...ds,
+      airdropClaims: [
+        {
+          id: "claim-teste-1",
+          projectId: "prj-meridian",
+          accountId: "acc-email",
+          receivedAt: HOJE,
+          tokenSymbol: "MRD",
+          tokenAmount: "100",
+          priceUsd: "1.00",
+          valueUsd: "100.00",
+        },
+        {
+          id: "claim-teste-2",
+          projectId: "prj-meridian",
+          accountId: "acc-chrome",
+          receivedAt: HOJE,
+          tokenSymbol: "MRD",
+          tokenAmount: "50",
+          priceUsd: "1.00",
+          valueUsd: "50.00",
+        },
+        {
+          id: "claim-teste-3",
+          projectId: "prj-solstice",
+          accountId: "acc-brave",
+          receivedAt: HOJE,
+          tokenSymbol: "SOL2",
+          tokenAmount: "10",
+          priceUsd: "5.00",
+          valueUsd: "50.00",
+        },
+      ],
+    };
+    expect(selectDashboardSummary(comClaims, HOJE).airdropsGanhos).toBe(2);
+  });
 });
 
 describe("selectProjects", () => {

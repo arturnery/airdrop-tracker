@@ -127,6 +127,10 @@ export function selectDashboardSummary(ds: Dataset, hoje: string): DashboardSumm
     tarefasHoje: pendentes.filter((o) => urgencyOf(o.dueDate, hoje) === "hoje").length,
     tarefasAtrasadas: pendentes.filter((o) => urgencyOf(o.dueDate, hoje) === "atrasada")
       .length,
+    // Conta o projeto, não o recebimento: duas contas do mesmo projeto
+    // recebendo o airdrop ainda somam um só, porque a pergunta é "de quantos
+    // projetos eu já vi o token cair", não "quantas linhas existem".
+    airdropsGanhos: new Set(ds.airdropClaims.map((c) => c.projectId)).size,
   };
 }
 

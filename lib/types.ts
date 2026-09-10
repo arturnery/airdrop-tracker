@@ -69,6 +69,8 @@ export type DashboardSummary = FinancialSummary & {
   contasAtivas: number;
   tarefasHoje: number;
   tarefasAtrasadas: number;
+  /** Projetos com pelo menos um airdrop recebido e registrado. */
+  airdropsGanhos: number;
 };
 
 export type CapitalPorProjeto = {

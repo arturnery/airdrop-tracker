@@ -100,4 +100,11 @@ export const explicacoes = {
       elegibilidade, e por isso <strong>não entra no saldo nem no resultado</strong>.
     </>
   ),
+  airdropsGanhos: (
+    <>
+      Quantos projetos já tiveram o token do airdrop <strong>recebido e
+      registrado</strong>. Conta o projeto, não o recebimento: mais de uma
+      conta recebendo no mesmo projeto ainda soma um.
+    </>
+  ),
 } as const;

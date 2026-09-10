@@ -4,8 +4,6 @@ import Link from "next/link";
 import { ArrowRight, LayoutDashboard } from "lucide-react";
 
 import { CapitalPorProjetoChart } from "@/components/capital-chart";
-import { ListaAtividade } from "@/components/historico";
-import { CardPrograma } from "@/components/pontos";
 import { useDados } from "@/components/data-provider";
 import { NovoLancamento, RegistrarPontos } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
@@ -16,11 +14,9 @@ import { StatCard } from "@/components/stat-card";
 import { UrgencyBadge } from "@/components/status-badge";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
 import {
-  selectAtividade,
   selectCapitalPorProjeto,
   selectDashboardSummary,
   selectPendingTasks,
-  selectProgramasDePontos,
   selectProjects,
 } from "@/lib/selectors";
 
@@ -31,8 +27,6 @@ export function DashboardView() {
   const capital = selectCapitalPorProjeto(dataset);
   const projetos = selectProjects(dataset, hoje);
   const tarefas = selectPendingTasks(dataset, hoje);
-  const atividade = selectAtividade(dataset, 10);
-  const programas = selectProgramasDePontos(dataset);
 
   const urgentes = tarefas.filter(
     (t) => t.urgencia === "atrasada" || t.urgencia === "hoje",
@@ -59,17 +53,31 @@ export function DashboardView() {
       */}
       <ResumoDeAvisos projetos={projetos} />
 
-      {/* Ordem: quanto entrou, onde está, o que sobrou, o que fazer. */}
+      {/*
+        Ordem: o que já rendeu, onde está o capital agora, o que sobrou.
+        Capital depositado e tarefas pendentes saíram daqui: o primeiro só
+        interessa de olho no ROI, e esse cálculo já mora na aba de cada
+        projeto; o segundo já tem número próprio no badge da barra lateral, e
+        repetir o mesmo total aqui não acrescentava, só duplicava.
+      */}
       <section
         aria-label="Indicadores"
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
       >
         <StatCard
-          label="Capital depositado"
-          accent="primary"
-          ajuda={explicacoes.capital}
-          value={<Money value={resumo.capitalNoPico} />}
-          hint={`${resumo.projetosAtivos} projetos ativos · ${resumo.contasAtivas} contas`}
+          label="Airdrops ganhos"
+          accent="positive"
+          ajuda={explicacoes.airdropsGanhos}
+          value={<span className="tabular">{resumo.airdropsGanhos}</span>}
+          hint={
+            resumo.airdropsGanhos > 0 ? (
+              <>
+                <Money value={resumo.airdrops} /> recebidos ao todo
+              </>
+            ) : (
+              "nenhum registrado ainda"
+            )
+          }
         />
         <StatCard
           label="Exposição atual"
@@ -91,16 +99,6 @@ export function DashboardView() {
                 ROI <Percent value={resumo.roi} />
               </span>
             )
-          }
-        />
-        <StatCard
-          label="Tarefas pendentes"
-          accent={resumo.tarefasAtrasadas > 0 ? "negative" : "caution"}
-          value={<span className="tabular">{urgentes.length}</span>}
-          hint={
-            resumo.tarefasAtrasadas > 0
-              ? `${resumo.tarefasAtrasadas} atrasadas · ${resumo.tarefasHoje} para hoje`
-              : `${resumo.tarefasHoje} para hoje`
           }
         />
       </section>
@@ -199,56 +197,6 @@ export function DashboardView() {
           />
         </section>
       ) : null}
-
-      {/* ------------------------------------------------------------- pontos */}
-      {programas.length > 0 ? (
-        <section aria-labelledby="titulo-pontos" className="mt-10">
-          <h2 id="titulo-pontos" className="text-lg font-medium">
-            Programas de pontos
-          </h2>
-          <p className="text-muted-foreground mt-1 mb-4 text-sm">
-            Cada programa tem unidade própria e por isso não existe total geral:
-            o que se compara entre projetos é o ganho, não o acumulado.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {programas.map((programa) => (
-              <CardPrograma
-                key={programa.projetoId}
-                programa={programa}
-                hoje={hoje}
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {/* ---------------------------------------------------------- histórico */}
-      <section aria-labelledby="titulo-historico" className="mt-10">
-        <div className="mb-1 flex items-baseline justify-between gap-4">
-          <h2 id="titulo-historico" className="text-lg font-medium">
-            Histórico
-          </h2>
-          <Link
-            href="/historico"
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex items-center gap-1 rounded-sm text-sm focus-visible:ring-2 focus-visible:outline-none"
-          >
-            Ver tudo
-            <ArrowRight className="size-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-        <p className="text-muted-foreground mb-4 text-sm">
-          Tudo que foi feito, do mais recente para o mais antigo.
-        </p>
-
-        {atividade.length === 0 ? (
-          <EmptyState
-            title="Nada registrado ainda"
-            description="Depósitos, saldos, tarefas concluídas e airdrops recebidos aparecem aqui conforme você registra."
-          />
-        ) : (
-          <ListaAtividade itens={atividade} hoje={hoje} />
-        )}
-      </section>
     </>
   );
 }
