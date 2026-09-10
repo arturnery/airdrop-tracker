@@ -71,25 +71,25 @@ function CardSugestao({ sugestao }: { sugestao: Sugestao }) {
   const ocupado = enviando || salvando;
 
   return (
-    <article className="bg-card border-border flex h-full flex-col rounded-lg border p-6">
-      <div className="flex items-center gap-3">
+    <article className="bg-card border-border flex h-full flex-col rounded-lg border p-4">
+      <div className="flex items-center gap-2.5">
         <span
           aria-hidden="true"
-          className="bg-brand/15 text-brand-legivel flex size-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold"
+          className="bg-brand/15 text-brand-legivel flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold"
         >
           {sugestao.nome.trim().charAt(0).toUpperCase()}
         </span>
-        <h3 className="min-w-0 truncate text-lg font-semibold tracking-tight">
+        <h3 className="min-w-0 truncate text-base font-semibold tracking-tight">
           {sugestao.nome}
         </h3>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
         <CategoryBadge category={sugestao.categoria} />
         <PriorityBadge value={sugestao.prioridade} />
       </div>
 
-      <div className="border-border mt-4 flex flex-1 flex-col justify-end gap-1.5 border-t pt-3">
+      <div className="border-border mt-3 flex flex-1 flex-col justify-end gap-1.5 border-t pt-2.5">
         <Button
           type="button"
           size="sm"

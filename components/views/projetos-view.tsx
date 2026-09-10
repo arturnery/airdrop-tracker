@@ -15,6 +15,7 @@ import {
 import { NovoProjeto } from "@/components/forms/dialogs";
 import { EditarProjeto } from "@/components/forms/editar";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { Money } from "@/components/money";
 import {
   CategoryBadge,
   categoryDescriptions,
@@ -84,6 +85,11 @@ const ordemCategoria: { chave: ProjectCategory | null; titulo: string; nota?: st
  * aba dele continua com o painel de indicadores inteiro. Cabe registrar o
  * custo aceito: comparar resultado entre projetos não dá mais para fazer só
  * de olho na lista.
+ *
+ * Uma exceção: projeto distribuído. Ali o resultado já fechou, o airdrop já
+ * caiu, e não vai mudar de novo só de olhar o card. Mostrar o valor de cara
+ * poupa o clique, e não reabre a porta para os outros números: exposição e
+ * capital continuam de fora, mesmo aqui.
  */
 function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
   const { dataset, hoje, acoes } = useDados();
@@ -101,9 +107,9 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
      * onde se está. `brand/60` dava 2,33:1 sobre o card e reprovava; o anel dá
      * 6,33:1. Medido no CSS compilado, que é o que o navegador recebe.
      */
-    <article className="group bg-card border-border hover:border-brand/40 focus-within:border-ring relative flex h-full flex-col rounded-lg border p-6 transition-colors">
+    <article className="group bg-card border-border hover:border-brand/40 focus-within:border-ring relative flex h-full flex-col rounded-lg border p-4 transition-colors">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
           {/*
             Inicial em vez de logo: o sistema não guarda imagem de projeto, e
             uma letra já basta para o olho reencontrar a mesma linha ao rolar
@@ -113,11 +119,11 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
           */}
           <span
             aria-hidden="true"
-            className="bg-brand/15 text-brand-legivel flex size-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold"
+            className="bg-brand/15 text-brand-legivel flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold"
           >
             {projeto.nome.trim().charAt(0).toUpperCase()}
           </span>
-          <h3 className="min-w-0 text-lg font-semibold tracking-tight">
+          <h3 className="min-w-0 text-base font-semibold tracking-tight">
             <Link
               href={`/projetos/${projeto.slug}`}
               className={cn(
@@ -156,14 +162,28 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         card vai ficar perto do título da seção depois de rolar a página, e
         aqui o selo é barato, cabe numa linha com os outros dois.
       */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
         <CategoryBadge category={projeto.categoria} />
         <ProjectStatusBadge status={projeto.status} />
         <PriorityBadge value={projeto.prioridade} />
       </div>
 
       {projeto.alerta ? (
-        <AvisoSaldo alerta={projeto.alerta} className="mt-4" />
+        <AvisoSaldo alerta={projeto.alerta} className="mt-3" />
+      ) : null}
+
+      {/*
+        Único número financeiro que volta ao card, e só porque o status é
+        final: distribuído não tem exposição em aberto nem capital para
+        comparar, só o resultado que já aconteceu.
+      */}
+      {projeto.status === "distribuido" ? (
+        <div className="bg-secondary/40 mt-3 flex items-center justify-between rounded-md px-3 py-2">
+          <span className="text-muted-foreground text-xs font-medium">Resultado</span>
+          <span className="text-sm font-semibold">
+            <Money value={projeto.resultado} tone="auto" signed />
+          </span>
+        </div>
       ) : null}
 
       {/*
@@ -176,7 +196,7 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         com um filho só: um card sem atrasada e sem data não deveria ver a
         data pular para a esquerda por falta de par do outro lado.
       */}
-      <div className="border-border mt-4 flex items-center justify-between gap-3 border-t pt-3 text-xs">
+      <div className="border-border mt-3 flex items-center justify-between gap-3 border-t pt-2.5 text-xs">
         <div>
           {projeto.tarefasAtrasadas > 0 ? (
             <span className="bg-negative/15 text-negative inline-flex items-center rounded-full px-2.5 py-0.5 font-medium">
