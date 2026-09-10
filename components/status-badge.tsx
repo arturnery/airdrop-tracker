@@ -112,17 +112,15 @@ export function RecurrenceLabel({ recurrence }: { recurrence: Recurrence }) {
 }
 
 /**
- * Escala de 1 a 3: baixa, média, alta.
+ * Escala de 1 a 3: baixa, média, alta, com três barras crescentes ao lado do
+ * nome (a barra sozinha já tinha sido tentada, sem nome nos níveis, e cinco
+ * barras iguais não diziam qual delas importava mais; o nome resolve isso,
+ * a barra dá o reconhecimento rápido por forma, sem precisar ler).
  *
- * Era um medidor de barrinhas (1 a 5, sem nome nos níveis). Virou selo com
- * nome porque três níveis nomeados se leem de cabeça, e cinco barras iguais
- * não diziam qual delas importava mais.
- *
- * A cor cresce com o nível de propósito: baixa não pede atenção (contorno
- * apenas), média é neutra mas presente, e alta usa o âmbar de atenção do
- * sistema, o mesmo de "isso precisa de olho" em outras telas. Não é a mesma
- * cor de ganho/perda (verde/vermelho): prioridade não é resultado, é
- * urgência, e âmbar já significa isso aqui.
+ * A cor cresce com o nível de propósito: baixa não pede atenção (cinza),
+ * média usa o âmbar de atenção do sistema, e alta usa o vermelho de urgência,
+ * o mesmo de tarefa atrasada. Não é a cor de ganho/perda financeiro (verde):
+ * prioridade não é resultado, e verde aqui sugeriria que baixa é "boa".
  */
 export const priorityLabels: Record<number, string> = {
   1: "Baixa",
@@ -132,20 +130,46 @@ export const priorityLabels: Record<number, string> = {
 
 const priorityStyles: Record<number, string> = {
   1: "border-border text-muted-foreground",
-  2: "border-border bg-secondary text-foreground",
-  3: "border-caution/40 bg-caution/15 text-caution font-semibold",
+  2: "border-caution/40 bg-caution/10 text-caution",
+  3: "border-negative/40 bg-negative/10 text-negative font-semibold",
 };
+
+const priorityBarColor: Record<number, string> = {
+  1: "bg-muted-foreground",
+  2: "bg-caution",
+  3: "bg-negative",
+};
+
+/** As três barras crescentes, decorativas: o texto ao lado já diz o nível. */
+function BarrasPrioridade({ value }: { value: number }) {
+  const cor = priorityBarColor[value] ?? priorityBarColor[2];
+  return (
+    <span aria-hidden="true" className="flex items-end gap-0.5">
+      {[1, 2, 3].map((barra) => (
+        <span
+          key={barra}
+          className={cn(
+            "w-1 rounded-xs",
+            barra === 1 ? "h-1.5" : barra === 2 ? "h-2.5" : "h-3.5",
+            barra <= value ? cor : "bg-border",
+          )}
+        />
+      ))}
+    </span>
+  );
+}
 
 export function PriorityBadge({ value }: { value: number }) {
   const rotulo = priorityLabels[value] ?? String(value);
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
         priorityStyles[value] ?? priorityStyles[2],
       )}
       title={`Prioridade ${rotulo.toLowerCase()}`}
     >
+      <BarrasPrioridade value={value} />
       {rotulo}
     </span>
   );
