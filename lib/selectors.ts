@@ -28,8 +28,10 @@ import type {
   CapitalPorProjeto,
   DashboardSummary,
   GoalRow,
+  IsoDate,
   MemberRow,
   MembersSummary,
+  PontoResultado,
   ProjectAccountRow,
   ProjectDetail,
   PointsAccountRow,
@@ -132,6 +134,63 @@ export function selectDashboardSummary(ds: Dataset, hoje: string): DashboardSumm
     // projetos eu já vi o token cair", não "quantas linhas existem".
     airdropsGanhos: new Set(ds.airdropClaims.map((c) => c.projectId)).size,
   };
+}
+
+const TIPOS_QUE_MUDAM_RESULTADO = ["trade_pnl", "yield", "fee_gas", "other"];
+
+/**
+ * Resultado acumulado, evento a evento, na ordem em que aconteceram.
+ *
+ * Depósito e retirada ficam de fora de propósito: nenhum dos dois muda o
+ * resultado (o depósito soma no aportado exatamente o que soma na exposição,
+ * a retirada desconta de um o que descontou do outro — ver `resultadoLiquido`
+ * e ARCHITECTURE §14.9-B), então incluí-los só encheria o gráfico de degraus
+ * que não sobem nem descem. Volume operado fica de fora pelo motivo de
+ * sempre: não é caixa.
+ *
+ * Cada evento soma ao acumulado exatamente o valor que ele contribui para o
+ * resultado: trade, rendimento e "outro" pelo valor lançado, taxa pelo valor
+ * negativo já gravado, airdrop pelo valor recebido. Por isso o último ponto
+ * desta série é sempre igual ao cartão "Resultado": é a mesma soma, só que
+ * parada em cada data em vez de só no fim.
+ */
+export function selectEvolucaoDoResultado(ds: Dataset): PontoResultado[] {
+  const eventos: { data: IsoDate; delta: Cents; airdrop: PontoResultado["airdrop"] }[] = [];
+
+  for (const t of ds.transactions) {
+    if (!TIPOS_QUE_MUDAM_RESULTADO.includes(t.type)) continue;
+    eventos.push({ data: t.occurredAt, delta: fromDbNumeric(t.amountUsd), airdrop: null });
+  }
+
+  for (const c of ds.airdropClaims) {
+    const nomeProjeto = ds.projects.find((p) => p.id === c.projectId)?.name ?? "Projeto removido";
+    const valor = fromDbNumeric(c.valueUsd);
+    eventos.push({ data: c.receivedAt, delta: valor, airdrop: { projeto: nomeProjeto, valor } });
+  }
+
+  eventos.sort((a, b) => a.data.localeCompare(b.data));
+
+  const pontos: PontoResultado[] = [];
+
+  /*
+   * Âncora em zero na primeira movimentação: sem ela, a linha começaria já no
+   * ar, sem dizer que aquele valor partiu de nada. Vem da primeira
+   * movimentação de qualquer tipo (mesmo depósito), porque é ali que a
+   * história do projeto começa de verdade, não no primeiro evento que mexe
+   * no resultado.
+   */
+  const primeiraMovimentacao = ds.transactions.map((t) => t.occurredAt).sort().at(0);
+  if (primeiraMovimentacao && (eventos.length === 0 || primeiraMovimentacao <= eventos[0]!.data)) {
+    pontos.push({ data: primeiraMovimentacao, resultado: ZERO, airdrop: null });
+  }
+
+  let acumulado = ZERO;
+  for (const evento of eventos) {
+    acumulado = addCents(acumulado, evento.delta);
+    pontos.push({ data: evento.data, resultado: acumulado, airdrop: evento.airdrop });
+  }
+
+  return pontos;
 }
 
 /**

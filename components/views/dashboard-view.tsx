@@ -8,6 +8,7 @@ import { useDados } from "@/components/data-provider";
 import { NovoLancamento, RegistrarPontos } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
+import { ResultadoChart } from "@/components/resultado-chart";
 import { ResumoDeAvisos } from "@/components/aviso-saldo";
 import { explicacoes } from "@/components/ajuda";
 import { StatCard } from "@/components/stat-card";
@@ -16,6 +17,7 @@ import { formatDateBr, relativeLabel } from "@/lib/dates";
 import {
   selectCapitalPorProjeto,
   selectDashboardSummary,
+  selectEvolucaoDoResultado,
   selectPendingTasks,
   selectProjects,
 } from "@/lib/selectors";
@@ -25,6 +27,7 @@ export function DashboardView() {
 
   const resumo = selectDashboardSummary(dataset, hoje);
   const capital = selectCapitalPorProjeto(dataset);
+  const evolucao = selectEvolucaoDoResultado(dataset);
   const projetos = selectProjects(dataset, hoje);
   const tarefas = selectPendingTasks(dataset, hoje);
 
@@ -101,6 +104,16 @@ export function DashboardView() {
             )
           }
         />
+      </section>
+
+      <section aria-labelledby="titulo-evolucao" className="mt-10">
+        <h2 id="titulo-evolucao" className="mb-1 text-lg font-medium">
+          Resultado ao longo do tempo
+        </h2>
+        <p className="text-muted-foreground mb-4 text-sm">
+          Cada ponto maior é um airdrop recebido: passe o mouse para ver qual.
+        </p>
+        <ResultadoChart pontos={evolucao} />
       </section>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1.15fr_1fr]">

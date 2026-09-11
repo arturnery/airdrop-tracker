@@ -9,6 +9,7 @@ import {
   selectAccounts,
   selectCapitalPorProjeto,
   selectDashboardSummary,
+  selectEvolucaoDoResultado,
   selectPendingTasks,
   selectProjectBySlug,
   selectProjects,
@@ -82,6 +83,81 @@ describe("selectDashboardSummary", () => {
       ],
     };
     expect(selectDashboardSummary(comClaims, HOJE).airdropsGanhos).toBe(2);
+  });
+});
+
+describe("selectEvolucaoDoResultado", () => {
+  it("o último ponto bate com o cartão de resultado", () => {
+    const pontos = selectEvolucaoDoResultado(ds);
+    const resumo = selectDashboardSummary(ds, HOJE);
+    expect(toDbNumeric(pontos.at(-1)!.resultado)).toBe(toDbNumeric(resumo.resultado));
+  });
+
+  it("começa com uma âncora em zero, na primeira movimentação", () => {
+    const pontos = selectEvolucaoDoResultado(ds);
+    const primeiraData = ds.transactions.map((t) => t.occurredAt).sort()[0];
+    expect(pontos[0]).toEqual({ data: primeiraData, resultado: 0, airdrop: null });
+  });
+
+  it("depósito e retirada não geram ponto: nenhum dos dois muda o resultado", () => {
+    const somenteDeposito = {
+      ...ds,
+      transactions: [
+        {
+          id: "tx-teste",
+          projectId: "prj-meridian",
+          accountId: "acc-email",
+          occurredAt: "2026-01-01",
+          type: "deposit" as const,
+          amountUsd: "100.00",
+          tokenSymbol: null,
+          tokenAmount: null,
+          description: null,
+        },
+        {
+          id: "tx-teste-2",
+          projectId: "prj-meridian",
+          accountId: "acc-email",
+          occurredAt: "2026-01-02",
+          type: "withdrawal" as const,
+          amountUsd: "-40.00",
+          tokenSymbol: null,
+          tokenAmount: null,
+          description: null,
+        },
+      ],
+      airdropClaims: [],
+    };
+    // Só a âncora em zero: nenhum dos dois lançamentos move o resultado.
+    expect(selectEvolucaoDoResultado(somenteDeposito)).toEqual([
+      { data: "2026-01-01", resultado: 0, airdrop: null },
+    ]);
+  });
+
+  it("airdrop soma ao acumulado e carrega o nome do projeto", () => {
+    const comAirdrop = {
+      ...ds,
+      transactions: [],
+      airdropClaims: [
+        {
+          id: "claim-teste",
+          projectId: "prj-meridian",
+          accountId: "acc-email",
+          receivedAt: "2026-02-01",
+          tokenSymbol: "MRD",
+          tokenAmount: "100",
+          priceUsd: "1.00",
+          valueUsd: "100.00",
+        },
+      ],
+    };
+    expect(selectEvolucaoDoResultado(comAirdrop)).toEqual([
+      {
+        data: "2026-02-01",
+        resultado: 10000,
+        airdrop: { projeto: "Meridian", valor: 10000 },
+      },
+    ]);
   });
 });
 

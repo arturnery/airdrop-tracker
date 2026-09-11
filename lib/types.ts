@@ -73,6 +73,14 @@ export type DashboardSummary = FinancialSummary & {
   airdropsGanhos: number;
 };
 
+/** Um ponto do resultado acumulado ao longo do tempo. */
+export type PontoResultado = {
+  data: IsoDate;
+  resultado: Cents;
+  /** Presente quando este ponto também é um airdrop recebido nesta data. */
+  airdrop: { projeto: string; valor: Cents } | null;
+};
+
 export type CapitalPorProjeto = {
   slug: string;
   nome: string;
