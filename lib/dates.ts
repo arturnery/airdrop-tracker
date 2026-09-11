@@ -95,6 +95,21 @@ export function somarDias(iso: IsoDate, dias: number): IsoDate {
   return dataParaIso(new Date(isoParaData(iso).getTime() + dias * DIA_MS));
 }
 
+/**
+ * Subtrai meses de uma data de calendário, para os recortes do gráfico de
+ * resultado ("1M", "3M", "6M").
+ *
+ * `setUTCMonth` estoura o dia para o mês seguinte quando o mês de origem não
+ * tem esse dia (31 de janeiro menos um mês vira 3 de março, não 28/29 de
+ * fevereiro). Aceito aqui: é um corte aproximado de "mais ou menos até
+ * quando", não uma data que vai para o banco.
+ */
+export function subtrairMeses(iso: IsoDate, meses: number): IsoDate {
+  const data = isoParaData(iso);
+  data.setUTCMonth(data.getUTCMonth() - meses);
+  return dataParaIso(data);
+}
+
 /** "2026-07-28" -> "28/07/2026" */
 export function formatDateBr(date: IsoDate): string {
   const [year, month, day] = date.split("-");
