@@ -105,7 +105,7 @@ describe("criação", () => {
       tokenAmount: "1250",
       priceUsd: "0.42",
     });
-    const claim = ds.airdropClaims[0]!;
+    const claim = ds.airdropClaims.find((c) => c.projectId === "prj-vertex")!;
     expect(claim.tokenSymbol).toBe("VTX");
     expect(claim.valueUsd).toBe("525.00");
   });
@@ -384,8 +384,8 @@ describe("exclusão em cascata", () => {
     const antes = selectDashboardSummary(base(), HOJE);
     const depois = selectDashboardSummary(M.excluirProjeto(base(), "prj-nebula"), HOJE);
     // Nebula tinha $180 aportados e nenhum outro projeto é afetado.
-    expect(toDbNumeric(antes.aportado)).toBe("337.00");
-    expect(toDbNumeric(depois.aportado)).toBe("157.00");
+    expect(toDbNumeric(antes.aportado)).toBe("827.00");
+    expect(toDbNumeric(depois.aportado)).toBe("647.00");
   });
 
   it("apagar conta remove seus movimentos sem deixar par órfão", () => {
@@ -463,10 +463,12 @@ describe("edição", () => {
       description: "Valor corrigido",
     });
     const resumo = selectDashboardSummary(ds, HOJE);
-    // 337 − 180 + 100
-    expect(toDbNumeric(resumo.aportado)).toBe("257.00");
-    // A exposição segue o valor em dólar lançado: 333,18 − 80 corrigidos.
-    expect(toDbNumeric(resumo.exposicao)).toBe("253.18");
+    // 827 − 180 + 100
+    expect(toDbNumeric(resumo.aportado)).toBe("747.00");
+    // A exposição segue o valor em dólar lançado: cai exatamente os 80
+    // corrigidos a menos, e nada mais no dataset muda.
+    const antes = selectDashboardSummary(base(), HOJE);
+    expect(resumo.exposicao).toBe(antes.exposicao - 8000);
   });
 
   it("tarefa inativa some das pendências sem apagar o registro", () => {

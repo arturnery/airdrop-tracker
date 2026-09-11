@@ -116,7 +116,8 @@ describe("categoria de projeto", () => {
 
   it("permite filtrar por categoria", () => {
     const projetos = selectProjects(base(), HOJE);
-    expect(projetos.filter((p) => p.categoria === "perps")).toHaveLength(2);
+    // Vertex Perp, Prisma DEX, Driftwood Perp, Comet Exchange, Solace Protocol, Kepler Perp
+    expect(projetos.filter((p) => p.categoria === "perps")).toHaveLength(6);
   });
 
   it("mantém a categoria ao editar outro campo", () => {

@@ -22,28 +22,37 @@ describe("selectDashboardSummary", () => {
   const resumo = selectDashboardSummary(ds, HOJE);
 
   it("soma o capital aportado", () => {
-    // 44 Meridian + 23 Solstice + 70 Vertex + 20 Prisma + 180 Nebula
-    expect(toDbNumeric(resumo.capitalNoPico)).toBe("337.00");
+    /*
+     * Não é a soma do pico de cada projeto (isso daria 827): é o pico do
+     * total simultâneo. Os 10 projetos já distribuídos farmaram em janelas
+     * que não se sobrepõem (cada um deposita e retira antes do próximo
+     * abrir), então o máximo histórico do portfólio inteiro fica abaixo da
+     * soma de todos os picos individuais.
+     */
+    expect(toDbNumeric(resumo.capitalNoPico)).toBe("462.00");
   });
 
   it("exposição é a soma dos lançamentos, sem revalorização de token", () => {
-    // Nebula entra pelos $180 lançados, não por um preço de mercado.
-    expect(toDbNumeric(resumo.exposicao)).toBe("333.18");
-    expect(toDbNumeric(resumo.resultado)).toBe("-3.82");
+    // Os 10 projetos distribuídos zeram (depósito = retirada); os 3 farmando
+    // atualmente (Halcyon, Kepler, Aurora) somam 128,20 de exposição nova.
+    expect(toDbNumeric(resumo.exposicao)).toBe("461.38");
+    // 2.405,00 em airdrops recebidos, 3,20 de rendimento novo, -3,82 de antes.
+    expect(toDbNumeric(resumo.resultado)).toBe("2404.38");
   });
 
   it("separa rendimentos do capital aportado", () => {
-    // 1,40 + 0,45 + 0,30 + 2,80 + 1,50
-    expect(toDbNumeric(resumo.rendimentos)).toBe("6.45");
+    // 1,40 + 0,45 + 0,30 + 2,80 + 1,50 + 3,20 (Kepler Perp)
+    expect(toDbNumeric(resumo.rendimentos)).toBe("9.65");
   });
 
   it("conta contas e projetos ativos", () => {
-    expect(resumo.projetosAtivos).toBe(5);
+    // 5 de antes + Halcyon Chain, Kepler Perp, Aurora Vault
+    expect(resumo.projetosAtivos).toBe(8);
     expect(resumo.contasAtivas).toBe(6);
   });
 
-  it("sem airdrop recebido nos dados iniciais", () => {
-    expect(resumo.airdropsGanhos).toBe(0);
+  it("conta os 10 airdrops recebidos nos dados iniciais", () => {
+    expect(resumo.airdropsGanhos).toBe(10);
   });
 
   it("conta projeto, não recebimento: duas contas do mesmo projeto somam um", () => {
@@ -260,7 +269,8 @@ describe("selectAccounts", () => {
     const chrome = contas.find((c) => c.label === "chrome")!;
     // Meridian 9 + Solstice 9 + Vertex 40 + Prisma 20
     expect(toDbNumeric(chrome.capitalNoPico)).toBe("78.00");
-    expect(chrome.projetos).toBe(4);
+    // Meridian, Solstice, Vertex Perp, Prisma DEX, Zenith Bridge, Tundra Testnet
+    expect(chrome.projetos).toBe(6);
   });
 });
 
@@ -286,7 +296,9 @@ describe("selectCapitalPorProjeto", () => {
     const capital = selectCapitalPorProjeto(ds);
     expect(capital[0]?.nome).toBe("Nebula");
     expect(toDbNumeric(capital[0]!.capitalNoPico)).toBe("180.00");
-    expect(capital).toHaveLength(5);
+    // Os 10 projetos distribuídos ficam de fora: já retiraram tudo, exposição
+    // zero. Sobram os 5 de sempre mais Halcyon, Kepler e Aurora, farmando.
+    expect(capital).toHaveLength(8);
   });
 });
 

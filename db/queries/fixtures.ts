@@ -9,6 +9,9 @@
  *  - Transações e os dois snapshots de Meridian/navegador-1: reais, vindos da planilha.
  *  - Demais snapshots, tarefas e metas: exemplos para dar o que ver às telas.
  *  - `chain` dos projetos: exemplo: conferir antes de levar a sério.
+ *  - Os 13 projetos a partir de Orbit Finance (10 distribuídos, 3 farmando):
+ *    inventados para popular o gráfico de evolução do resultado e o cartão de
+ *    airdrops ganhos com uma história plausível, valores e datas variados.
  */
 
 export const HOJE = "2026-07-28";
@@ -158,6 +161,231 @@ export const rawProjects: RawProject[] = [
     notes: "Aporte mais alto até agora. Saldo ainda não conferido.",
     adoptedFromId: null,
   },
+
+  // ---------------------------------------------------- distribuídos (airdrop já caiu)
+  {
+    id: "prj-orbit",
+    slug: "orbit-finance",
+    name: "Orbit Finance",
+    status: "distribuido",
+    category: "liquidez",
+    pointsLabel: null,
+    chain: "Ethereum",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-zenith",
+    slug: "zenith-bridge",
+    name: "Zenith Bridge",
+    status: "distribuido",
+    category: "interacoes",
+    pointsLabel: null,
+    chain: "Base",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-quasar",
+    slug: "quasar-swap",
+    name: "Quasar Swap",
+    status: "distribuido",
+    category: "liquidez",
+    pointsLabel: null,
+    chain: "Solana",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-fathom",
+    slug: "fathom-lend",
+    name: "Fathom Lend",
+    status: "distribuido",
+    category: "liquidez",
+    pointsLabel: null,
+    chain: "Arbitrum",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-driftwood",
+    slug: "driftwood-perp",
+    name: "Driftwood Perp",
+    status: "distribuido",
+    category: "perps",
+    pointsLabel: null,
+    chain: "Optimism",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-ledger",
+    slug: "ledger-peak",
+    name: "Ledger Peak",
+    status: "distribuido",
+    category: "interacoes",
+    pointsLabel: null,
+    chain: "Avalanche",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-comet",
+    slug: "comet-exchange",
+    name: "Comet Exchange",
+    status: "distribuido",
+    category: "perps",
+    pointsLabel: null,
+    chain: "Arbitrum",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: "Airdrop bem acima do esperado para o tamanho do aporte.",
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-tundra",
+    slug: "tundra-testnet",
+    name: "Tundra Testnet",
+    status: "distribuido",
+    category: "interacoes",
+    pointsLabel: null,
+    chain: "Sui",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-vantage",
+    slug: "vantage-chain",
+    name: "Vantage Chain",
+    status: "distribuido",
+    category: "liquidez",
+    pointsLabel: null,
+    chain: "Polygon",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-solace",
+    slug: "solace-protocol",
+    name: "Solace Protocol",
+    status: "distribuido",
+    category: "perps",
+    pointsLabel: null,
+    chain: "zkSync Era",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
+
+  // -------------------------------------------------------- farmando atualmente
+  {
+    id: "prj-halcyon",
+    slug: "halcyon-chain",
+    name: "Halcyon Chain",
+    status: "ativo",
+    category: "liquidez",
+    pointsLabel: null,
+    chain: "Ethereum",
+    priority: 2,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: "2026-10-15",
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-kepler",
+    slug: "kepler-perp",
+    name: "Kepler Perp",
+    status: "ativo",
+    category: "perps",
+    pointsLabel: null,
+    chain: "Arbitrum",
+    priority: 3,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: "2026-09-20",
+    notes: null,
+    adoptedFromId: null,
+  },
+  {
+    id: "prj-aurora",
+    slug: "aurora-vault",
+    name: "Aurora Vault",
+    status: "ativo",
+    category: "interacoes",
+    pointsLabel: null,
+    chain: "Base",
+    priority: 1,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
 ];
 
 export type RawProjectAccount = {
@@ -179,6 +407,23 @@ export const rawProjectAccounts: RawProjectAccount[] = [
   { projectId: "prj-vertex", accountId: "acc-chrome-2", status: "ativa", startedAt: "2026-07-13" },
   { projectId: "prj-prisma", accountId: "acc-chrome", status: "ativa", startedAt: "2026-07-08" },
   { projectId: "prj-nebula", accountId: "acc-mbox", status: "ativa", startedAt: "2026-07-28" },
+
+  // distribuídos
+  { projectId: "prj-orbit", accountId: "acc-brave", status: "ativa", startedAt: "2025-11-01" },
+  { projectId: "prj-zenith", accountId: "acc-chrome", status: "ativa", startedAt: "2025-11-20" },
+  { projectId: "prj-quasar", accountId: "acc-email", status: "ativa", startedAt: "2025-12-28" },
+  { projectId: "prj-fathom", accountId: "acc-mbox", status: "ativa", startedAt: "2026-02-01" },
+  { projectId: "prj-driftwood", accountId: "acc-chrome-1", status: "ativa", startedAt: "2026-02-15" },
+  { projectId: "prj-ledger", accountId: "acc-chrome-2", status: "ativa", startedAt: "2026-03-10" },
+  { projectId: "prj-comet", accountId: "acc-brave", status: "ativa", startedAt: "2026-03-20" },
+  { projectId: "prj-tundra", accountId: "acc-chrome", status: "ativa", startedAt: "2026-04-15" },
+  { projectId: "prj-vantage", accountId: "acc-email", status: "ativa", startedAt: "2026-05-10" },
+  { projectId: "prj-solace", accountId: "acc-mbox", status: "ativa", startedAt: "2026-06-20" },
+
+  // farmando atualmente
+  { projectId: "prj-halcyon", accountId: "acc-chrome-1", status: "ativa", startedAt: "2026-07-05" },
+  { projectId: "prj-kepler", accountId: "acc-chrome-2", status: "ativa", startedAt: "2026-07-18" },
+  { projectId: "prj-aurora", accountId: "acc-brave", status: "ativa", startedAt: "2026-07-20" },
 ];
 
 export type RawTransaction = {
@@ -245,6 +490,43 @@ export const rawTransactions: RawTransaction[] = [
   // ------------------------------------------------------------------ Nebula
   // Aporte em token: entra no saldo pelo valor em dólar lançado.
   { id: "tx-25", projectId: "prj-nebula", accountId: "acc-mbox", occurredAt: "2026-07-28", type: "deposit", amountUsd: "180.00", tokenSymbol: "SOL", tokenAmount: "1", description: "Depósito de 1 SOL a $180" },
+
+  // ------------------------------------------- distribuídos: farmado e encerrado
+  { id: "tx-26", projectId: "prj-orbit", accountId: "acc-brave", occurredAt: "2025-11-01", type: "deposit", amountUsd: "15.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-27", projectId: "prj-orbit", accountId: "acc-brave", occurredAt: "2025-11-07", type: "withdrawal", amountUsd: "-15.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  { id: "tx-28", projectId: "prj-zenith", accountId: "acc-chrome", occurredAt: "2025-11-20", type: "deposit", amountUsd: "20.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-29", projectId: "prj-zenith", accountId: "acc-chrome", occurredAt: "2025-12-02", type: "withdrawal", amountUsd: "-20.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  { id: "tx-30", projectId: "prj-quasar", accountId: "acc-email", occurredAt: "2025-12-28", type: "deposit", amountUsd: "40.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-31", projectId: "prj-quasar", accountId: "acc-email", occurredAt: "2026-01-11", type: "withdrawal", amountUsd: "-40.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  { id: "tx-32", projectId: "prj-fathom", accountId: "acc-mbox", occurredAt: "2026-02-01", type: "deposit", amountUsd: "25.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-33", projectId: "prj-fathom", accountId: "acc-mbox", occurredAt: "2026-02-17", type: "withdrawal", amountUsd: "-25.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  { id: "tx-34", projectId: "prj-driftwood", accountId: "acc-chrome-1", occurredAt: "2026-02-15", type: "deposit", amountUsd: "60.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-35", projectId: "prj-driftwood", accountId: "acc-chrome-1", occurredAt: "2026-03-05", type: "withdrawal", amountUsd: "-60.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  { id: "tx-36", projectId: "prj-ledger", accountId: "acc-chrome-2", occurredAt: "2026-03-10", type: "deposit", amountUsd: "30.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-37", projectId: "prj-ledger", accountId: "acc-chrome-2", occurredAt: "2026-03-30", type: "withdrawal", amountUsd: "-30.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  { id: "tx-38", projectId: "prj-comet", accountId: "acc-brave", occurredAt: "2026-03-20", type: "deposit", amountUsd: "50.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-39", projectId: "prj-comet", accountId: "acc-brave", occurredAt: "2026-04-22", type: "withdrawal", amountUsd: "-50.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  { id: "tx-40", projectId: "prj-tundra", accountId: "acc-chrome", occurredAt: "2026-04-15", type: "deposit", amountUsd: "10.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-41", projectId: "prj-tundra", accountId: "acc-chrome", occurredAt: "2026-05-16", type: "withdrawal", amountUsd: "-10.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  { id: "tx-42", projectId: "prj-vantage", accountId: "acc-email", occurredAt: "2026-05-10", type: "deposit", amountUsd: "80.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-43", projectId: "prj-vantage", accountId: "acc-email", occurredAt: "2026-06-08", type: "withdrawal", amountUsd: "-80.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  { id: "tx-44", projectId: "prj-solace", accountId: "acc-mbox", occurredAt: "2026-06-20", type: "deposit", amountUsd: "35.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-45", projectId: "prj-solace", accountId: "acc-mbox", occurredAt: "2026-07-12", type: "withdrawal", amountUsd: "-35.00", tokenSymbol: null, tokenAmount: null, description: "Retirada após farming" },
+
+  // ----------------------------------------------------- farmando atualmente
+  { id: "tx-46", projectId: "prj-halcyon", accountId: "acc-chrome-1", occurredAt: "2026-07-05", type: "deposit", amountUsd: "60.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-47", projectId: "prj-kepler", accountId: "acc-chrome-2", occurredAt: "2026-07-18", type: "deposit", amountUsd: "40.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
+  { id: "tx-48", projectId: "prj-kepler", accountId: "acc-chrome-2", occurredAt: "2026-07-26", type: "yield", amountUsd: "3.20", tokenSymbol: null, tokenAmount: null, description: "Funding recebido" },
+  { id: "tx-49", projectId: "prj-aurora", accountId: "acc-brave", occurredAt: "2026-07-20", type: "deposit", amountUsd: "25.00", tokenSymbol: null, tokenAmount: null, description: "Depósito na plataforma" },
 ];
 
 export type RawTask = {
@@ -450,8 +732,29 @@ export type RawAirdropClaim = {
   valueUsd: string;
 };
 
-/** Vazio de propósito: nenhum TGE aconteceu ainda. Exercita o estado vazio. */
-export const rawAirdropClaims: RawAirdropClaim[] = [];
+/**
+ * Dez airdrops recebidos, espalhados por cerca de nove meses, com valor
+ * crescendo do modesto ($18) a um resultado bem acima do aporte (Comet
+ * Exchange: $50 investidos, $1.250 recebidos). É o que alimenta o gráfico de
+ * evolução do resultado com uma linha que sobe aos saltos, não em degraus
+ * iguais.
+ *
+ * Metade informa quantidade e preço (o valor sai da multiplicação), metade
+ * só o total em dólar: os dois formatos que o formulário aceita, ambos em
+ * uso ao mesmo tempo.
+ */
+export const rawAirdropClaims: RawAirdropClaim[] = [
+  { id: "adc-01", projectId: "prj-orbit", accountId: "acc-brave", receivedAt: "2025-11-10", tokenSymbol: "ORB", tokenAmount: "900", priceUsd: "0.02", valueUsd: "18.00" },
+  { id: "adc-02", projectId: "prj-zenith", accountId: "acc-chrome", receivedAt: "2025-12-05", tokenSymbol: "ZNB", tokenAmount: "150", priceUsd: "0.30", valueUsd: "45.00" },
+  { id: "adc-03", projectId: "prj-quasar", accountId: "acc-email", receivedAt: "2026-01-14", tokenSymbol: "QSW", tokenAmount: null, priceUsd: null, valueUsd: "120.00" },
+  { id: "adc-04", projectId: "prj-fathom", accountId: "acc-mbox", receivedAt: "2026-02-20", tokenSymbol: "FTL", tokenAmount: "60", priceUsd: "0.50", valueUsd: "30.00" },
+  { id: "adc-05", projectId: "prj-driftwood", accountId: "acc-chrome-1", receivedAt: "2026-03-08", tokenSymbol: "DRW", tokenAmount: "200", priceUsd: "1.70", valueUsd: "340.00" },
+  { id: "adc-06", projectId: "prj-ledger", accountId: "acc-chrome-2", receivedAt: "2026-04-02", tokenSymbol: "LGP", tokenAmount: null, priceUsd: null, valueUsd: "75.00" },
+  { id: "adc-07", projectId: "prj-comet", accountId: "acc-brave", receivedAt: "2026-04-25", tokenSymbol: "CMX", tokenAmount: "500", priceUsd: "2.50", valueUsd: "1250.00" },
+  { id: "adc-08", projectId: "prj-tundra", accountId: "acc-chrome", receivedAt: "2026-05-19", tokenSymbol: "TND", tokenAmount: null, priceUsd: null, valueUsd: "22.00" },
+  { id: "adc-09", projectId: "prj-vantage", accountId: "acc-email", receivedAt: "2026-06-11", tokenSymbol: "VTG", tokenAmount: "410", priceUsd: "1.00", valueUsd: "410.00" },
+  { id: "adc-10", projectId: "prj-solace", accountId: "acc-mbox", receivedAt: "2026-07-15", tokenSymbol: "SLP", tokenAmount: "190", priceUsd: "0.50", valueUsd: "95.00" },
+];
 
 /**
  * Dataset inicial entregue ao provider client.
