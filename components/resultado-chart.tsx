@@ -216,6 +216,12 @@ function formatMesCurto(timestamp: number): string {
  * Só o airdrop ganha um marcador visível. Os demais pontos (trade, rendimento,
  * taxa) formam a linha sozinhos: marcá-los todos poluiria o traço sem
  * acrescentar o que o tooltip já responde ao passar o mouse.
+ *
+ * Âmbar, não verde: o marcador é um "olhe aqui", e verde sumia dentro da
+ * própria linha sempre que o resultado estava positivo (a cor mais comum).
+ * Âmbar contrasta com a linha verde e com a vermelha, e reaproveita a cor de
+ * "isso merece atenção" que o sistema já usa em prioridade e avisos, sem
+ * tocar no azul, que é só de marca (ARCHITECTURE §14.8).
  */
 function PontoDoGrafico(props: { cx?: number; cy?: number; payload?: PontoDoGrafico }) {
   const { cx, cy, payload } = props;
@@ -227,7 +233,7 @@ function PontoDoGrafico(props: { cx?: number; cy?: number; payload?: PontoDoGraf
       cx={cx}
       cy={cy}
       r={5}
-      fill="var(--positive)"
+      fill="var(--caution)"
       stroke="var(--card)"
       strokeWidth={2}
     />
