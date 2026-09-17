@@ -111,7 +111,8 @@ export function DashboardView() {
           Resultado ao longo do tempo
         </h2>
         <p className="text-muted-foreground mb-4 text-sm">
-          Cada ponto maior é um airdrop recebido: passe o mouse para ver qual.
+          Cada ponto é um airdrop lançado, com o líquido de trade e rendimento
+          do projeto somado: passe o mouse para ver qual.
         </p>
         <ResultadoChart pontos={evolucao} />
       </section>

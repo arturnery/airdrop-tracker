@@ -76,17 +76,22 @@ export type DashboardSummary = FinancialSummary & {
 /**
  * Um ponto do resultado acumulado ao longo do tempo.
  *
+ * Só existe ponto no dia em que um airdrop é **lançado** (ver
+ * `selectEvolucaoDoResultado`). Trade, rendimento e taxa de um projeto ficam
+ * pendentes até o próximo airdrop daquele projeto, e entram junto quando ele
+ * chega: por isso `valor` (o que o airdrop valeu) e `liquido` (valor mais o
+ * que estava pendente do projeto) podem ser diferentes.
+ *
  * Um ponto por DATA, não por evento: duas datas iguais no gráfico caem no
  * mesmo pixel do eixo X, e o recharts não consegue dizer ao hover qual dos
  * dois pontos colidentes é o de baixo do mouse. Juntar por data resolve o
- * hover e também é mais fiel ao que a pessoa quer ver: o resultado no fim
- * daquele dia, não um degrau por lançamento.
+ * hover, e dois airdrops no mesmo dia continuam os dois visíveis no tooltip.
  */
 export type PontoResultado = {
   data: IsoDate;
   resultado: Cents;
-  /** Todo airdrop recebido nesta data. Vazio quando não houver nenhum. */
-  airdrops: { projeto: string; valor: Cents }[];
+  /** Todo airdrop liquidado nesta data. Vazio quando não houver nenhum. */
+  airdrops: { projeto: string; valor: Cents; liquido: Cents }[];
 };
 
 export type CapitalPorProjeto = {

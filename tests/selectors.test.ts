@@ -96,10 +96,123 @@ describe("selectDashboardSummary", () => {
 });
 
 describe("selectEvolucaoDoResultado", () => {
-  it("o último ponto bate com o cartão de resultado", () => {
-    const pontos = selectEvolucaoDoResultado(ds);
-    const resumo = selectDashboardSummary(ds, HOJE);
+  it("sem pendência nenhuma sem liquidar, o total bate com o cartão de resultado", () => {
+    // Todo projeto com lançamento também recebe airdrop: nada fica pendente.
+    const semPendencia = {
+      ...ds,
+      transactions: [
+        {
+          id: "tx-t",
+          projectId: "prj-meridian",
+          accountId: "acc-email",
+          occurredAt: "2026-01-01",
+          type: "trade_pnl" as const,
+          amountUsd: "-20.00",
+          tokenSymbol: null,
+          tokenAmount: null,
+          description: null,
+        },
+      ],
+      airdropClaims: [
+        {
+          id: "claim-t",
+          projectId: "prj-meridian",
+          accountId: "acc-email",
+          receivedAt: "2026-01-05",
+          tokenSymbol: "MRD",
+          tokenAmount: null,
+          priceUsd: null,
+          valueUsd: "50.00",
+        },
+      ],
+    };
+    const pontos = selectEvolucaoDoResultado(semPendencia);
+    const resumo = selectDashboardSummary(semPendencia, HOJE);
     expect(toDbNumeric(pontos.at(-1)!.resultado)).toBe(toDbNumeric(resumo.resultado));
+  });
+
+  it("trade sem airdrop nenhum no projeto não gera ponto: fica pendente", () => {
+    // O caso do Polymarket: perdeu $200 em trade, mas o airdrop dele ainda
+    // não caiu. Enquanto isso, não aparece em lugar nenhum deste gráfico.
+    const semAirdropAinda = {
+      ...ds,
+      transactions: [
+        {
+          id: "tx-poly",
+          projectId: "prj-vertex",
+          accountId: "acc-brave",
+          occurredAt: "2026-01-01",
+          type: "trade_pnl" as const,
+          amountUsd: "-200.00",
+          tokenSymbol: null,
+          tokenAmount: null,
+          description: null,
+        },
+      ],
+      airdropClaims: [],
+    };
+    // Só a âncora em zero, da primeira movimentação: a perda em si não gera
+    // ponto nenhum, porque não há airdrop no projeto pra liquidá-la.
+    expect(selectEvolucaoDoResultado(semAirdropAinda)).toEqual([
+      { data: "2026-01-01", resultado: 0, airdrops: [] },
+    ]);
+  });
+
+  it("dois airdrops do mesmo projeto liquidam só o pendente entre um e outro", () => {
+    // O caso do Solstice: primeiro airdrop já vem com uma perda de trade
+    // pendente e sai líquido; o segundo, sem nada pendente no meio, sai igual
+    // ao valor bruto do airdrop.
+    const solsticeEmOndas = {
+      ...ds,
+      transactions: [
+        {
+          id: "tx-sol-1",
+          projectId: "prj-solstice",
+          accountId: "acc-brave",
+          occurredAt: "2026-01-01",
+          type: "trade_pnl" as const,
+          amountUsd: "-15.00",
+          tokenSymbol: null,
+          tokenAmount: null,
+          description: null,
+        },
+      ],
+      airdropClaims: [
+        {
+          id: "claim-sol-1",
+          projectId: "prj-solstice",
+          accountId: "acc-brave",
+          receivedAt: "2026-01-05",
+          tokenSymbol: "SLS",
+          tokenAmount: null,
+          priceUsd: null,
+          valueUsd: "50.00",
+        },
+        {
+          id: "claim-sol-2",
+          projectId: "prj-solstice",
+          accountId: "acc-brave",
+          receivedAt: "2026-02-01",
+          tokenSymbol: "SLS",
+          tokenAmount: null,
+          priceUsd: null,
+          valueUsd: "10.00",
+        },
+      ],
+    };
+    const pontos = selectEvolucaoDoResultado(solsticeEmOndas);
+    // Âncora em zero, depois as duas ondas.
+    expect(pontos).toHaveLength(3);
+    // Primeira onda: 50 de airdrop menos os 15 de trade já pendentes.
+    expect(pontos[1]).toMatchObject({
+      data: "2026-01-05",
+      airdrops: [{ projeto: "Solstice", valor: 5000, liquido: 3500 }],
+    });
+    // Segunda onda: nada pendente desde a primeira, então líquido = bruto.
+    expect(pontos[2]).toMatchObject({
+      data: "2026-02-01",
+      airdrops: [{ projeto: "Solstice", valor: 1000, liquido: 1000 }],
+    });
   });
 
   it("começa com uma âncora em zero, na primeira movimentação", () => {
@@ -164,7 +277,7 @@ describe("selectEvolucaoDoResultado", () => {
       {
         data: "2026-02-01",
         resultado: 10000,
-        airdrops: [{ projeto: "Meridian", valor: 10000 }],
+        airdrops: [{ projeto: "Meridian", valor: 10000, liquido: 10000 }],
       },
     ]);
   });
@@ -202,8 +315,8 @@ describe("selectEvolucaoDoResultado", () => {
     expect(pontos).toHaveLength(1);
     expect(pontos[0]!.resultado).toBe(5000);
     expect(pontos[0]!.airdrops).toEqual([
-      { projeto: "Meridian", valor: 3000 },
-      { projeto: "Solstice", valor: 2000 },
+      { projeto: "Meridian", valor: 3000, liquido: 3000 },
+      { projeto: "Solstice", valor: 2000, liquido: 2000 },
     ]);
   });
 });

@@ -72,6 +72,12 @@ function recortarJanela(pontos: PontoResultado[], janela: Janela): PontoResultad
  * recortes que fazem uma janela ter cara diferente da outra com lançamento
  * esparso.
  *
+ * Só existe ponto no dia em que um airdrop é lançado (ver a decisão em
+ * `selectEvolucaoDoResultado`): trade e rendimento de um projeto ficam
+ * pendentes e entram junto quando o airdrop dele chega, líquidos. Por isso
+ * todo ponto tem pelo menos um airdrop, e a linha não tem degrau isolado de
+ * um trade perdedor sem contexto.
+ *
  * Única biblioteca de gráfico do projeto: o resto da interface desenha com
  * CSS puro (ver `components/capital-chart.tsx`), mas a área com gradiente,
  * eixo de tempo e abas custaria bem mais para replicar à mão do que uma
@@ -85,8 +91,7 @@ export function ResultadoChart({ pontos }: { pontos: PontoResultado[] }) {
       <div className="border-border rounded-lg border border-dashed px-6 py-10 text-center">
         <p className="text-sm font-medium">Nada para mostrar ainda.</p>
         <p className="text-muted-foreground mt-1 text-sm">
-          A linha aparece assim que houver rendimento, taxa, resultado de trade
-          ou airdrop recebido.
+          A linha aparece quando você registrar o primeiro airdrop recebido.
         </p>
       </div>
     );
@@ -213,9 +218,11 @@ function formatMesCurto(timestamp: number): string {
 }
 
 /**
- * Só o airdrop ganha um marcador visível. Os demais pontos (trade, rendimento,
- * taxa) formam a linha sozinhos: marcá-los todos poluiria o traço sem
- * acrescentar o que o tooltip já responde ao passar o mouse.
+ * Todo ponto da série tem pelo menos um airdrop (é o que gera o ponto, ver
+ * `selectEvolucaoDoResultado`), então na prática todo ponto ganha marcador.
+ * A checagem fica aqui mesmo assim, e não com `dot={true}`, porque o formato
+ * (círculo âmbar com anel) é o mesmo que o resto do sistema usa para chamar
+ * atenção, e um `dot` genérico do recharts não teria esse desenho.
  *
  * Âmbar, não verde: o marcador é um "olhe aqui", e verde sumia dentro da
  * própria linha sempre que o resultado estava positivo (a cor mais comum).
@@ -255,9 +262,16 @@ function TooltipResultado({
       <p className="text-muted-foreground">{formatDateBr(ponto.dataIso)}</p>
       <p className="font-numeric mt-1 font-semibold">{formatUsd(cents(ponto.resultado))}</p>
       {ponto.airdrops.map((a, i) => (
-        <p key={i} className="text-positive mt-1 font-medium">
-          Airdrop de {a.projeto}: +{formatUsd(a.valor)}
-        </p>
+        <div key={i} className="mt-1">
+          <p className="text-positive font-medium">
+            Airdrop de {a.projeto}: +{formatUsd(a.valor)}
+          </p>
+          {a.liquido !== a.valor ? (
+            <p className={cn("font-medium", a.liquido >= 0 ? "text-positive" : "text-negative")}>
+              Líquido com trade/rendimento pendente: {formatUsd(a.liquido, { signDisplay: "always" })}
+            </p>
+          ) : null}
+        </div>
       ))}
     </div>
   );

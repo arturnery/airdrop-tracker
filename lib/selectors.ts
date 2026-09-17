@@ -139,41 +139,79 @@ export function selectDashboardSummary(ds: Dataset, hoje: string): DashboardSumm
 const TIPOS_QUE_MUDAM_RESULTADO = ["trade_pnl", "yield", "fee_gas", "other"];
 
 /**
- * Resultado acumulado, um ponto por data, na ordem em que aconteceram.
+ * Resultado acumulado, um ponto só no dia em que um airdrop é lançado.
  *
- * Depósito e retirada ficam de fora de propósito: nenhum dos dois muda o
+ * Decisão do Artur, depois de ver a alternativa "soma tudo assim que
+ * acontece": um trade perdedor lançado numa data qualquer, sem airdrop por
+ * perto, aparecia como um degrau isolado e assustador, mesmo quando o
+ * projeto no fim das contas deu lucro pequeno (o airdrop chegou depois, ou
+ * antes, numa data separada). A régua que ficou: trade, rendimento e taxa
+ * de um projeto ficam **pendentes**, sem aparecer em lugar nenhum, até o
+ * projeto receber um airdrop; aí entram junto, liquidados de uma vez.
+ *
+ * Por isso `airdrops[].valor` (o que o airdrop valeu, sozinho) pode
+ * divergir de `airdrops[].liquido` (valor mais o que estava pendente
+ * daquele projeto desde o **último** airdrop dele, ou desde o início, se
+ * for o primeiro). Duas consequências que valem registrar:
+ *
+ * - Projeto sem airdrop nunca recebido não aparece nesta série, mesmo tendo
+ *   trade lançado: a perda ou o ganho fica pendente indefinidamente. Isso é
+ *   proposital, não uma perda de dado — o número mora em `resultado`
+ *   (ARCHITECTURE §14.9-B), que continua somando tudo, projeto liquidado ou
+ *   não.
+ * - Dois airdrops do mesmo projeto em datas diferentes (ex.: um programa que
+ *   paga em ondas) liquidam só o que ficou pendente ENTRE os dois, não a
+ *   história inteira: a segunda liquidação não repete o que a primeira já
+ *   acertou.
+ *
+ * Depósito e retirada nunca entram no pendente: nenhum dos dois muda o
  * resultado (o depósito soma no aportado exatamente o que soma na exposição,
  * a retirada desconta de um o que descontou do outro; ver `resultadoLiquido`
- * e ARCHITECTURE §14.9-B). Incluí-los só encheria o gráfico de degraus que
- * não sobem nem descem. Volume operado fica de fora pelo motivo de sempre:
- * não é caixa.
+ * e ARCHITECTURE §14.9-B). Volume operado fica de fora pelo motivo de
+ * sempre: não é caixa.
  *
- * **Um ponto por data, não por evento.** Duas datas iguais caem no mesmo
- * pixel do eixo X do gráfico, e o recharts não consegue dizer ao hover qual
- * dos dois pontos colidentes está debaixo do mouse: o tooltip do airdrop
- * simplesmente não aparecia nos dias em que outro lançamento (ou outro
- * airdrop) caía na mesma data. Juntando por data, um dia com trade e airdrop
- * junto vira um ponto só, com a soma dos dois no resultado e a lista de
- * airdrops daquele dia no `airdrops` (pode ter mais de um).
- *
- * Cada evento soma ao acumulado exatamente o valor que ele contribui para o
- * resultado: trade, rendimento e "outro" pelo valor lançado, taxa pelo valor
- * negativo já gravado, airdrop pelo valor recebido. Por isso o último ponto
- * desta série é sempre igual ao cartão "Resultado": é a mesma soma, só que
- * parada em cada data em vez de só no fim.
+ * **Um ponto por data, não por evento**, pelo mesmo motivo de antes: duas
+ * datas iguais caem no mesmo pixel do eixo X do gráfico, e o recharts não
+ * consegue dizer ao hover qual dos dois pontos colidentes está debaixo do
+ * mouse. Dois airdrops (de projetos diferentes) no mesmo dia continuam os
+ * dois visíveis, num ponto só.
  */
 export function selectEvolucaoDoResultado(ds: Dataset): PontoResultado[] {
-  const eventos: { data: IsoDate; delta: Cents; airdrop: { projeto: string; valor: Cents } | null }[] = [];
+  type EventoRegular = { tipo: "regular"; data: IsoDate; projectId: string; delta: Cents };
+  type EventoAirdrop = {
+    tipo: "airdrop";
+    data: IsoDate;
+    projectId: string;
+    projeto: string;
+    valor: Cents;
+  };
+
+  /*
+   * Os regulares entram ANTES dos airdrops no array, e o sort abaixo é
+   * estável: num empate de data, um trade do mesmo dia do airdrop é somado
+   * ao pendente antes de o airdrop liquidar, não depois. Sem essa ordem, o
+   * trade do próprio dia da liquidação escaparia dela.
+   */
+  const eventos: (EventoRegular | EventoAirdrop)[] = [];
 
   for (const t of ds.transactions) {
     if (!TIPOS_QUE_MUDAM_RESULTADO.includes(t.type)) continue;
-    eventos.push({ data: t.occurredAt, delta: fromDbNumeric(t.amountUsd), airdrop: null });
+    eventos.push({
+      tipo: "regular",
+      data: t.occurredAt,
+      projectId: t.projectId,
+      delta: fromDbNumeric(t.amountUsd),
+    });
   }
 
   for (const c of ds.airdropClaims) {
-    const nomeProjeto = ds.projects.find((p) => p.id === c.projectId)?.name ?? "Projeto removido";
-    const valor = fromDbNumeric(c.valueUsd);
-    eventos.push({ data: c.receivedAt, delta: valor, airdrop: { projeto: nomeProjeto, valor } });
+    eventos.push({
+      tipo: "airdrop",
+      data: c.receivedAt,
+      projectId: c.projectId,
+      projeto: ds.projects.find((p) => p.id === c.projectId)?.name ?? "Projeto removido",
+      valor: fromDbNumeric(c.valueUsd),
+    });
   }
 
   eventos.sort((a, b) => a.data.localeCompare(b.data));
@@ -184,25 +222,39 @@ export function selectEvolucaoDoResultado(ds: Dataset): PontoResultado[] {
    * Âncora em zero na primeira movimentação: sem ela, a linha começaria já no
    * ar, sem dizer que aquele valor partiu de nada. Vem da primeira
    * movimentação de qualquer tipo (mesmo depósito), porque é ali que a
-   * história do projeto começa de verdade, não no primeiro evento que mexe
-   * no resultado.
+   * história do projeto começa de verdade, não no primeiro airdrop lançado.
    */
   const primeiraMovimentacao = ds.transactions.map((t) => t.occurredAt).sort().at(0);
   if (primeiraMovimentacao && (eventos.length === 0 || primeiraMovimentacao <= eventos[0]!.data)) {
     pontos.push({ data: primeiraMovimentacao, resultado: ZERO, airdrops: [] });
   }
 
+  const pendentePorProjeto = new Map<string, Cents>();
   let acumulado = ZERO;
   let i = 0;
   while (i < eventos.length) {
     const data = eventos[i]!.data;
-    const airdrops: { projeto: string; valor: Cents }[] = [];
+    const airdrops: { projeto: string; valor: Cents; liquido: Cents }[] = [];
+
     while (i < eventos.length && eventos[i]!.data === data) {
-      acumulado = addCents(acumulado, eventos[i]!.delta);
-      if (eventos[i]!.airdrop) airdrops.push(eventos[i]!.airdrop!);
+      const evento = eventos[i]!;
+      if (evento.tipo === "regular") {
+        const pendente = pendentePorProjeto.get(evento.projectId) ?? ZERO;
+        pendentePorProjeto.set(evento.projectId, addCents(pendente, evento.delta));
+      } else {
+        const pendente = pendentePorProjeto.get(evento.projectId) ?? ZERO;
+        const liquido = addCents(evento.valor, pendente);
+        pendentePorProjeto.set(evento.projectId, ZERO);
+        acumulado = addCents(acumulado, liquido);
+        airdrops.push({ projeto: evento.projeto, valor: evento.valor, liquido });
+      }
       i++;
     }
-    pontos.push({ data, resultado: acumulado, airdrops });
+
+    // Só existe ponto no dia em que algo foi de fato liquidado.
+    if (airdrops.length > 0) {
+      pontos.push({ data, resultado: acumulado, airdrops });
+    }
   }
 
   return pontos;
