@@ -247,6 +247,12 @@ function PontoDoGrafico(props: { cx?: number; cy?: number; payload?: PontoDoGraf
   );
 }
 
+/**
+ * Mostra `liquido`, não `valor`: o pedido do Artur foi não distinguir os
+ * dois na tela, só o número que de fato move a linha do gráfico. `valor`
+ * (o airdrop puro, sem o trade pendente) continua existindo no tipo, só não
+ * aparece aqui.
+ */
 function TooltipResultado({
   active,
   payload,
@@ -262,16 +268,12 @@ function TooltipResultado({
       <p className="text-muted-foreground">{formatDateBr(ponto.dataIso)}</p>
       <p className="font-numeric mt-1 font-semibold">{formatUsd(cents(ponto.resultado))}</p>
       {ponto.airdrops.map((a, i) => (
-        <div key={i} className="mt-1">
-          <p className="text-positive font-medium">
-            Airdrop de {a.projeto}: +{formatUsd(a.valor)}
-          </p>
-          {a.liquido !== a.valor ? (
-            <p className={cn("font-medium", a.liquido >= 0 ? "text-positive" : "text-negative")}>
-              Líquido com trade/rendimento pendente: {formatUsd(a.liquido, { signDisplay: "always" })}
-            </p>
-          ) : null}
-        </div>
+        <p
+          key={i}
+          className={cn("mt-1 font-medium", a.liquido >= 0 ? "text-positive" : "text-negative")}
+        >
+          Airdrop de {a.projeto}: {formatUsd(a.liquido, { signDisplay: "always" })}
+        </p>
       ))}
     </div>
   );
