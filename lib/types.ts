@@ -73,12 +73,20 @@ export type DashboardSummary = FinancialSummary & {
   airdropsGanhos: number;
 };
 
-/** Um ponto do resultado acumulado ao longo do tempo. */
+/**
+ * Um ponto do resultado acumulado ao longo do tempo.
+ *
+ * Um ponto por DATA, não por evento: duas datas iguais no gráfico caem no
+ * mesmo pixel do eixo X, e o recharts não consegue dizer ao hover qual dos
+ * dois pontos colidentes é o de baixo do mouse. Juntar por data resolve o
+ * hover e também é mais fiel ao que a pessoa quer ver: o resultado no fim
+ * daquele dia, não um degrau por lançamento.
+ */
 export type PontoResultado = {
   data: IsoDate;
   resultado: Cents;
-  /** Presente quando este ponto também é um airdrop recebido nesta data. */
-  airdrop: { projeto: string; valor: Cents } | null;
+  /** Todo airdrop recebido nesta data. Vazio quando não houver nenhum. */
+  airdrops: { projeto: string; valor: Cents }[];
 };
 
 export type CapitalPorProjeto = {

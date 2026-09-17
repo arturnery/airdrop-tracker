@@ -26,7 +26,7 @@ type PontoDoGrafico = {
   x: number;
   dataIso: string;
   resultado: number;
-  airdrop: PontoResultado["airdrop"];
+  airdrops: PontoResultado["airdrops"];
 };
 
 const JANELAS = [
@@ -58,7 +58,7 @@ function recortarJanela(pontos: PontoResultado[], janela: Janela): PontoResultad
   const carregado = antes.at(-1);
 
   if (!carregado) return depois;
-  return [{ data: corte, resultado: carregado.resultado, airdrop: null }, ...depois];
+  return [{ data: corte, resultado: carregado.resultado, airdrops: [] }, ...depois];
 }
 
 /**
@@ -102,7 +102,7 @@ export function ResultadoChart({ pontos }: { pontos: PontoResultado[] }) {
     x: isoParaData(p.data).getTime(),
     dataIso: p.data,
     resultado: p.resultado,
-    airdrop: p.airdrop,
+    airdrops: p.airdrops,
   }));
   const ticksDeMes = ticksPorMes(dados);
 
@@ -225,7 +225,7 @@ function formatMesCurto(timestamp: number): string {
  */
 function PontoDoGrafico(props: { cx?: number; cy?: number; payload?: PontoDoGrafico }) {
   const { cx, cy, payload } = props;
-  if (!payload?.airdrop || cx === undefined || cy === undefined) {
+  if (!payload?.airdrops?.length || cx === undefined || cy === undefined) {
     return <></>;
   }
   return (
@@ -254,11 +254,11 @@ function TooltipResultado({
     <div className="bg-popover border-border rounded-md border px-3 py-2 text-xs shadow-md">
       <p className="text-muted-foreground">{formatDateBr(ponto.dataIso)}</p>
       <p className="font-numeric mt-1 font-semibold">{formatUsd(cents(ponto.resultado))}</p>
-      {ponto.airdrop ? (
-        <p className="text-positive mt-1 font-medium">
-          Airdrop de {ponto.airdrop.projeto}: +{formatUsd(ponto.airdrop.valor)}
+      {ponto.airdrops.map((a, i) => (
+        <p key={i} className="text-positive mt-1 font-medium">
+          Airdrop de {a.projeto}: +{formatUsd(a.valor)}
         </p>
-      ) : null}
+      ))}
     </div>
   );
 }

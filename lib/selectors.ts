@@ -139,14 +139,22 @@ export function selectDashboardSummary(ds: Dataset, hoje: string): DashboardSumm
 const TIPOS_QUE_MUDAM_RESULTADO = ["trade_pnl", "yield", "fee_gas", "other"];
 
 /**
- * Resultado acumulado, evento a evento, na ordem em que aconteceram.
+ * Resultado acumulado, um ponto por data, na ordem em que aconteceram.
  *
  * Depósito e retirada ficam de fora de propósito: nenhum dos dois muda o
  * resultado (o depósito soma no aportado exatamente o que soma na exposição,
- * a retirada desconta de um o que descontou do outro — ver `resultadoLiquido`
- * e ARCHITECTURE §14.9-B), então incluí-los só encheria o gráfico de degraus
- * que não sobem nem descem. Volume operado fica de fora pelo motivo de
- * sempre: não é caixa.
+ * a retirada desconta de um o que descontou do outro; ver `resultadoLiquido`
+ * e ARCHITECTURE §14.9-B). Incluí-los só encheria o gráfico de degraus que
+ * não sobem nem descem. Volume operado fica de fora pelo motivo de sempre:
+ * não é caixa.
+ *
+ * **Um ponto por data, não por evento.** Duas datas iguais caem no mesmo
+ * pixel do eixo X do gráfico, e o recharts não consegue dizer ao hover qual
+ * dos dois pontos colidentes está debaixo do mouse: o tooltip do airdrop
+ * simplesmente não aparecia nos dias em que outro lançamento (ou outro
+ * airdrop) caía na mesma data. Juntando por data, um dia com trade e airdrop
+ * junto vira um ponto só, com a soma dos dois no resultado e a lista de
+ * airdrops daquele dia no `airdrops` (pode ter mais de um).
  *
  * Cada evento soma ao acumulado exatamente o valor que ele contribui para o
  * resultado: trade, rendimento e "outro" pelo valor lançado, taxa pelo valor
@@ -155,7 +163,7 @@ const TIPOS_QUE_MUDAM_RESULTADO = ["trade_pnl", "yield", "fee_gas", "other"];
  * parada em cada data em vez de só no fim.
  */
 export function selectEvolucaoDoResultado(ds: Dataset): PontoResultado[] {
-  const eventos: { data: IsoDate; delta: Cents; airdrop: PontoResultado["airdrop"] }[] = [];
+  const eventos: { data: IsoDate; delta: Cents; airdrop: { projeto: string; valor: Cents } | null }[] = [];
 
   for (const t of ds.transactions) {
     if (!TIPOS_QUE_MUDAM_RESULTADO.includes(t.type)) continue;
@@ -181,13 +189,20 @@ export function selectEvolucaoDoResultado(ds: Dataset): PontoResultado[] {
    */
   const primeiraMovimentacao = ds.transactions.map((t) => t.occurredAt).sort().at(0);
   if (primeiraMovimentacao && (eventos.length === 0 || primeiraMovimentacao <= eventos[0]!.data)) {
-    pontos.push({ data: primeiraMovimentacao, resultado: ZERO, airdrop: null });
+    pontos.push({ data: primeiraMovimentacao, resultado: ZERO, airdrops: [] });
   }
 
   let acumulado = ZERO;
-  for (const evento of eventos) {
-    acumulado = addCents(acumulado, evento.delta);
-    pontos.push({ data: evento.data, resultado: acumulado, airdrop: evento.airdrop });
+  let i = 0;
+  while (i < eventos.length) {
+    const data = eventos[i]!.data;
+    const airdrops: { projeto: string; valor: Cents }[] = [];
+    while (i < eventos.length && eventos[i]!.data === data) {
+      acumulado = addCents(acumulado, eventos[i]!.delta);
+      if (eventos[i]!.airdrop) airdrops.push(eventos[i]!.airdrop!);
+      i++;
+    }
+    pontos.push({ data, resultado: acumulado, airdrops });
   }
 
   return pontos;

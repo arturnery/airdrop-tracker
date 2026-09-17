@@ -105,7 +105,7 @@ describe("selectEvolucaoDoResultado", () => {
   it("começa com uma âncora em zero, na primeira movimentação", () => {
     const pontos = selectEvolucaoDoResultado(ds);
     const primeiraData = ds.transactions.map((t) => t.occurredAt).sort()[0];
-    expect(pontos[0]).toEqual({ data: primeiraData, resultado: 0, airdrop: null });
+    expect(pontos[0]).toEqual({ data: primeiraData, resultado: 0, airdrops: [] });
   });
 
   it("depósito e retirada não geram ponto: nenhum dos dois muda o resultado", () => {
@@ -139,7 +139,7 @@ describe("selectEvolucaoDoResultado", () => {
     };
     // Só a âncora em zero: nenhum dos dois lançamentos move o resultado.
     expect(selectEvolucaoDoResultado(somenteDeposito)).toEqual([
-      { data: "2026-01-01", resultado: 0, airdrop: null },
+      { data: "2026-01-01", resultado: 0, airdrops: [] },
     ]);
   });
 
@@ -164,8 +164,46 @@ describe("selectEvolucaoDoResultado", () => {
       {
         data: "2026-02-01",
         resultado: 10000,
-        airdrop: { projeto: "Meridian", valor: 10000 },
+        airdrops: [{ projeto: "Meridian", valor: 10000 }],
       },
+    ]);
+  });
+
+  it("dois eventos na mesma data virem um ponto só, com os dois airdrops juntos", () => {
+    const doisNoMesmoDia = {
+      ...ds,
+      transactions: [],
+      airdropClaims: [
+        {
+          id: "claim-a",
+          projectId: "prj-meridian",
+          accountId: "acc-email",
+          receivedAt: "2026-03-01",
+          tokenSymbol: "MRD",
+          tokenAmount: null,
+          priceUsd: null,
+          valueUsd: "30.00",
+        },
+        {
+          id: "claim-b",
+          projectId: "prj-solstice",
+          accountId: "acc-brave",
+          receivedAt: "2026-03-01",
+          tokenSymbol: "SLS",
+          tokenAmount: null,
+          priceUsd: null,
+          valueUsd: "20.00",
+        },
+      ],
+    };
+    // Antes disso, as duas datas iguais caíam no mesmo pixel do eixo X do
+    // gráfico e o hover não conseguia mostrar nenhum dos dois tooltips.
+    const pontos = selectEvolucaoDoResultado(doisNoMesmoDia);
+    expect(pontos).toHaveLength(1);
+    expect(pontos[0]!.resultado).toBe(5000);
+    expect(pontos[0]!.airdrops).toEqual([
+      { projeto: "Meridian", valor: 3000 },
+      { projeto: "Solstice", valor: 2000 },
     ]);
   });
 });
