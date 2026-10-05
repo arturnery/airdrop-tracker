@@ -174,7 +174,7 @@ export function ResultadoChart({ pontos }: { pontos: PontoResultado[] }) {
               strokeWidth={2}
               fill="url(#preenchimentoResultado)"
               dot={<PontoDoGrafico />}
-              activeDot={{ r: 4 }}
+              activeDot={<PontoDoGrafico />}
               isAnimationActive={false}
             />
           </AreaChart>
@@ -239,6 +239,14 @@ function formatMesCurto(timestamp: number): string {
  * mais de um airdrop no mesmo dia (projetos diferentes), leva para o
  * primeiro com projeto ainda existente; é a simplificação aceita para um
  * caso raro, em vez de abrir um menu de escolha.
+ *
+ * Esta mesma função também é usada como `activeDot` do `<Area>` (ver abaixo):
+ * o recharts desenha o ponto ativo (o que aparece sob o mouse) numa camada
+ * própria, por cima do `dot` normal, e por padrão esse ponto ativo não tem
+ * `onClick`, então ele "rouba" o clique do círculo de baixo sempre que o
+ * mouse está perto o bastante para ativar o hover, ou seja, exatamente na
+ * hora em que a pessoa tentaria clicar. Repetir o mesmo componente nos dois
+ * lugares garante que o círculo clicável é sempre o que está por cima.
  */
 function PontoDoGrafico(props: { cx?: number; cy?: number; payload?: PontoDoGrafico }) {
   const router = useRouter();
