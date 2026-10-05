@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Area,
   AreaChart,
@@ -229,12 +230,28 @@ function formatMesCurto(timestamp: number): string {
  * Âmbar contrasta com a linha verde e com a vermelha, e reaproveita a cor de
  * "isso merece atenção" que o sistema já usa em prioridade e avisos, sem
  * tocar no azul, que é só de marca (ARCHITECTURE §14.8).
+ *
+ * Clicável: pedido do Artur, pra chegar à aba do projeto (que tem o
+ * histórico completo) direto do ponto que gerou dúvida, sem precisar
+ * procurar o projeto manualmente. O clique vai no círculo de verdade, não
+ * num link dentro do tooltip: o tooltip do recharts some ao tirar o mouse
+ * de cima, e um link lá dentro seria clicável só por sorte de timing. Com
+ * mais de um airdrop no mesmo dia (projetos diferentes), leva para o
+ * primeiro com projeto ainda existente; é a simplificação aceita para um
+ * caso raro, em vez de abrir um menu de escolha.
  */
 function PontoDoGrafico(props: { cx?: number; cy?: number; payload?: PontoDoGrafico }) {
+  const router = useRouter();
   const { cx, cy, payload } = props;
   if (!payload?.airdrops?.length || cx === undefined || cy === undefined) {
     return <></>;
   }
+
+  const alvo = payload.airdrops.find((a) => a.slug) ?? null;
+  const irParaProjeto = () => {
+    if (alvo) router.push(`/projetos/${alvo.slug}`);
+  };
+
   return (
     <circle
       cx={cx}
@@ -243,6 +260,21 @@ function PontoDoGrafico(props: { cx?: number; cy?: number; payload?: PontoDoGraf
       fill="var(--caution)"
       stroke="var(--card)"
       strokeWidth={2}
+      className={alvo ? "cursor-pointer" : undefined}
+      tabIndex={alvo ? 0 : undefined}
+      role={alvo ? "link" : undefined}
+      aria-label={alvo ? `Ver ${alvo.projeto} no histórico do projeto` : undefined}
+      onClick={alvo ? irParaProjeto : undefined}
+      onKeyDown={
+        alvo
+          ? (evento) => {
+              if (evento.key === "Enter" || evento.key === " ") {
+                evento.preventDefault();
+                irParaProjeto();
+              }
+            }
+          : undefined
+      }
     />
   );
 }

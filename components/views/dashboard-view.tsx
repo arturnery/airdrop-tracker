@@ -112,7 +112,8 @@ export function DashboardView() {
         </h2>
         <p className="text-muted-foreground mb-4 text-sm">
           Cada ponto é um airdrop lançado, com o líquido de trade e rendimento
-          do projeto somado: passe o mouse para ver qual.
+          do projeto somado: passe o mouse para ver qual, clique para abrir o
+          projeto.
         </p>
         <ResultadoChart pontos={evolucao} />
       </section>

@@ -91,7 +91,13 @@ export type PontoResultado = {
   data: IsoDate;
   resultado: Cents;
   /** Todo airdrop liquidado nesta data. Vazio quando não houver nenhum. */
-  airdrops: { projeto: string; valor: Cents; liquido: Cents }[];
+  airdrops: {
+    projeto: string;
+    /** Null quando o projeto foi excluído depois do airdrop: sem link possível. */
+    slug: string | null;
+    valor: Cents;
+    liquido: Cents;
+  }[];
 };
 
 export type CapitalPorProjeto = {

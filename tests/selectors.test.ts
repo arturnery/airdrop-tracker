@@ -277,7 +277,7 @@ describe("selectEvolucaoDoResultado", () => {
       {
         data: "2026-02-01",
         resultado: 10000,
-        airdrops: [{ projeto: "Meridian", valor: 10000, liquido: 10000 }],
+        airdrops: [{ projeto: "Meridian", slug: "meridian", valor: 10000, liquido: 10000 }],
       },
     ]);
   });
@@ -315,8 +315,8 @@ describe("selectEvolucaoDoResultado", () => {
     expect(pontos).toHaveLength(1);
     expect(pontos[0]!.resultado).toBe(5000);
     expect(pontos[0]!.airdrops).toEqual([
-      { projeto: "Meridian", valor: 3000, liquido: 3000 },
-      { projeto: "Solstice", valor: 2000, liquido: 2000 },
+      { projeto: "Meridian", slug: "meridian", valor: 3000, liquido: 3000 },
+      { projeto: "Solstice", slug: "solstice", valor: 2000, liquido: 2000 },
     ]);
   });
 });

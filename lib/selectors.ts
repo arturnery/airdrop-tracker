@@ -183,6 +183,7 @@ export function selectEvolucaoDoResultado(ds: Dataset): PontoResultado[] {
     data: IsoDate;
     projectId: string;
     projeto: string;
+    slug: string | null;
     valor: Cents;
   };
 
@@ -205,11 +206,13 @@ export function selectEvolucaoDoResultado(ds: Dataset): PontoResultado[] {
   }
 
   for (const c of ds.airdropClaims) {
+    const projeto = ds.projects.find((p) => p.id === c.projectId);
     eventos.push({
       tipo: "airdrop",
       data: c.receivedAt,
       projectId: c.projectId,
-      projeto: ds.projects.find((p) => p.id === c.projectId)?.name ?? "Projeto removido",
+      projeto: projeto?.name ?? "Projeto removido",
+      slug: projeto?.slug ?? null,
       valor: fromDbNumeric(c.valueUsd),
     });
   }
@@ -234,7 +237,7 @@ export function selectEvolucaoDoResultado(ds: Dataset): PontoResultado[] {
   let i = 0;
   while (i < eventos.length) {
     const data = eventos[i]!.data;
-    const airdrops: { projeto: string; valor: Cents; liquido: Cents }[] = [];
+    const airdrops: PontoResultado["airdrops"] = [];
 
     while (i < eventos.length && eventos[i]!.data === data) {
       const evento = eventos[i]!;
@@ -246,7 +249,12 @@ export function selectEvolucaoDoResultado(ds: Dataset): PontoResultado[] {
         const liquido = addCents(evento.valor, pendente);
         pendentePorProjeto.set(evento.projectId, ZERO);
         acumulado = addCents(acumulado, liquido);
-        airdrops.push({ projeto: evento.projeto, valor: evento.valor, liquido });
+        airdrops.push({
+          projeto: evento.projeto,
+          slug: evento.slug,
+          valor: evento.valor,
+          liquido,
+        });
       }
       i++;
     }
