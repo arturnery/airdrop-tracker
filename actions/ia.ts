@@ -33,9 +33,10 @@ const LIMITE_TOTAL = 300;
 
 /*
  * Sem prazo, uma API lenta prende a requisição até a Vercel derrubá-la, e a
- * pessoa fica olhando um botão girando sem mensagem nenhuma.
+ * pessoa fica olhando um botão girando sem mensagem nenhuma. 30 segundos
+ * porque o plano gratuito do Gemini, medido, responde entre 12 e 16.
  */
-const PRAZO_MS = 20_000;
+const PRAZO_MS = 30_000;
 
 const entradaSchema = z
   .string()
@@ -145,44 +146,63 @@ async function carregarContexto(userId: string): Promise<ContextoIA> {
 
 /**
  * Devolve o texto da resposta, ou `null` quando estourou o prazo.
- * Qualquer outra falha (chave inválida, saldo, formato) sobe como erro e é
+ * Qualquer outra falha (chave inválida, cota, formato) sobe como erro e é
  * logada inteira por quem chamou, porque cada uma pede uma correção diferente
  * do lado de quem administra.
+ *
+ * Uma segunda tentativa só para o que é passageiro: rede que caiu no meio e
+ * o "alta demanda" (503) que o plano gratuito do Gemini devolve em picos.
+ * Cota esgotada (429) e chave recusada não se repetem: dariam o mesmo erro, e
+ * cada tentativa conta na cota. O prazo é um só para as duas, então a pessoa
+ * nunca espera mais que `PRAZO_MS`.
  */
+const STATUS_PASSAGEIRO = new Set([500, 502, 503, 504]);
+
 async function chamarModelo(
   mensagens: { role: string; content: string }[],
 ): Promise<string | null> {
-  let resposta: Response;
-  try {
-    resposta = await fetch(`${env.IA_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${env.IA_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: env.IA_MODELO,
-        messages: mensagens,
-        response_format: { type: "json_object" },
-        temperature: 0,
-        // Folgado de propósito: em modelos que raciocinam antes de responder
-        // (Gemini 2.5, por exemplo), o raciocínio conta neste teto, e um teto
-        // justo para o JSON cortaria a resposta antes de ela começar.
-        max_tokens: 2000,
-      }),
-      signal: AbortSignal.timeout(PRAZO_MS),
-    });
-  } catch (erro) {
-    if (erro instanceof DOMException && erro.name === "TimeoutError") return null;
-    throw erro;
+  const prazo = AbortSignal.timeout(PRAZO_MS);
+  let resposta: Response | null = null;
+
+  for (let tentativa = 1; tentativa <= 2; tentativa++) {
+    const ultima = tentativa === 2;
+    try {
+      resposta = await fetch(`${env.IA_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.IA_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: env.IA_MODELO,
+          messages: mensagens,
+          response_format: { type: "json_object" },
+          temperature: 0,
+          // Folgado de propósito: em modelos que raciocinam antes de responder
+          // (Gemini, por exemplo), o raciocínio conta neste teto, e um teto
+          // justo para o JSON cortaria a resposta antes de ela começar.
+          max_tokens: 2000,
+        }),
+        signal: prazo,
+      });
+    } catch (erro) {
+      if (prazo.aborted) return null;
+      if (ultima) throw erro;
+      console.warn("[ia] falha de rede, tentando de novo:", erro);
+      continue;
+    }
+
+    if (resposta.ok || ultima || !STATUS_PASSAGEIRO.has(resposta.status)) break;
+    console.warn(`[ia] status ${resposta.status}, tentando de novo`);
+    await resposta.body?.cancel();
   }
 
-  if (!resposta.ok) {
-    const corpo = await resposta.text().catch(() => "");
-    throw new Error(`IA respondeu ${resposta.status}: ${corpo.slice(0, 300)}`);
+  if (!resposta!.ok) {
+    const corpo = await resposta!.text().catch(() => "");
+    throw new Error(`IA respondeu ${resposta!.status}: ${corpo.slice(0, 300)}`);
   }
 
-  const dados: unknown = await resposta.json();
+  const dados: unknown = await resposta!.json();
   const conteudo = z
     .object({
       choices: z
