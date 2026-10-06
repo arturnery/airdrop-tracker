@@ -169,7 +169,7 @@ export function interpretarResposta(
   const indiceProjeto = r.projeto ? Number(/^P(\d+)$/i.exec(r.projeto.trim())?.[1]) - 1 : -1;
   const projeto: ContextoIA["projetos"][number] | null = ctx.projetos[indiceProjeto] ?? null;
   if (r.projeto && !projeto) avisos.push("Não reconheci o projeto: escolha na lista.");
-  else if (!projeto) avisos.push("A frase não disse o projeto: escolha qual.");
+  else if (!projeto) avisos.push("Escolha o projeto: a IA não conseguiu identificar qual.");
 
   const indiceConta = r.conta ? Number(/^C(\d+)$/i.exec(r.conta.trim())?.[1]) - 1 : -1;
   let conta: ContextoIA["contas"][number] | null = ctx.contas[indiceConta] ?? null;
