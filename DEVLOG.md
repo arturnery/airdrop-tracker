@@ -3216,3 +3216,81 @@ token. ARCHITECTURE §14.9-B e §14.12 registram a regra atual e a decisão.
 - O vínculo projeto×conta só nasce no primeiro lançamento. Funciona, mas é implícito:
   criar o vínculo junto com o projeto tornaria a regra mais previsível.
 - Falta separar o ambiente de preview da Vercel: hoje ele não tem variáveis próprias.
+
+## Marco 50: Lançar com IA
+
+O pedido: escrever "depositei $100 na Lighter conta X para fazer estratégia de DN" e ter
+o lançamento pronto, como se tivesse sido digitado no formulário. Com um modelo de custo
+quase zero, de preferência um dos chineses.
+
+### A IA sugere, não grava
+
+A decisão que mais pesou veio antes do código. A IA poderia gravar direto, e o
+lançamento sairia com um clique a menos. Mas este é um livro-razão: um campo errado em
+silêncio (conta trocada, data de outro mês) distorce o resultado, o gráfico e o ROI dali
+em diante, e ninguém percebe até a conta não fechar. O mesmo mês tinha mostrado o custo
+disso na prática, com uma perda lançada com data errada que ficou meses fora do gráfico.
+
+Então a frase abre o **mesmo** `NovoLancamento` de sempre, preenchido, com o título
+"Confira o lançamento". O salvar é a Server Action e o `lancamentoSchema` que já
+existiam. Um formulário paralelo "da IA" teria a própria validação e envelheceria
+separado do original na primeira mudança de campo.
+
+### O provedor é configuração, não código
+
+DeepSeek pelo custo, mas chamado pelo formato de API da OpenAI, que quase todos os
+provedores aceitam. `IA_API_KEY`, `IA_BASE_URL` e `IA_MODELO` trocam DeepSeek por Qwen
+ou outro sem tocar no código. Sem SDK: um `fetch` com prazo de 20 segundos, porque sem
+prazo uma API lenta prende a requisição até a plataforma derrubá-la, e a pessoa fica
+olhando um botão girando. A chave é opcional na validação de ambiente: sem ela o sistema
+sobe normal, e só esse recurso responde que não está configurado.
+
+### Nada que a IA devolve é aceito por ter vindo dela
+
+`lib/interpretar-lancamento.ts` é puro: monta o pedido e confere a resposta, e por isso
+é testado sem rede. A conferência existe porque cada saída plausível da IA tinha um
+jeito de virar dado errado sem aviso:
+
+- **Projetos e contas viajam como apelidos** (`P1`, `C2`), não como uuid. Modelo
+  copiando 36 caracteres erra um dígito de vez em quando, e o provedor não precisa
+  conhecer identificador interno nenhum. Também não recebe endereço de carteira nem
+  e-mail: só os nomes que a pessoa já usa, e a tela diz isso embaixo do campo.
+- **Conta fora do projeto é descartada.** O select de conta só oferece as vinculadas ao
+  projeto (`contasDisponiveisNoProjeto`, a mesma regra do formulário). Uma conta que não
+  está entre as opções apareceria como outra, a primeira da lista, sem ninguém notar.
+- **Campo em branco avisa.** Pelo mesmo motivo: select sem valor mostra a primeira opção,
+  e ela pareceria escolha da IA. Projeto, conta e tipo que ficaram sem resposta viram um
+  aviso no topo do formulário ("A frase não disse a conta: escolha qual").
+- **Valor com duas casas, sempre.** O leitor de valores lê "1.234" como milhar, então um
+  número com três decimais viraria outro número. O sinal só fica onde o formulário pede
+  que a pessoa o digite (trade e ajuste).
+- **Data impossível ou no futuro fica em branco.** "2026-02-30" passa numa regex.
+
+O teste que mais importa não é de nenhuma dessas regras isoladas: é o que pega a
+sugestão e passa pelo `lancamentoSchema` real. É o elo entre a IA e o formulário, e é
+onde uma divergência de formato só apareceria na hora de salvar.
+
+### Dois limites, e não um
+
+A conta de demonstração é pública e cada pedido custa na chave do dono. A tabela
+`ia_usos` guarda só quem e quando (nunca o texto), e a Server Action recusa acima de 30
+pedidos por pessoa em 24 horas **e** acima de 300 no total. Só o limite por pessoa
+deixaria várias contas, cada uma abaixo do teto, somarem sem limite. O pedido é contado
+antes da chamada: um erro em laço também custa. A tabela fica fora do backup, como
+`login_attempts`: perdê-la só zera a contagem do dia.
+
+### O diálogo que mudava o estado do pai durante a renderização
+
+O `Formulario` fecha depois de salvar com um ajuste durante a renderização, que é o
+padrão do React para reagir a mudança de valor. A primeira versão deixava quem criou o
+diálogo controlar o aberto/fechado, e aí o ajuste passava a mudar o estado **do pai**
+durante a renderização do filho, que o React recusa com aviso. A troca: o diálogo nasce
+aberto (`abertoAoMontar`) e continua dono do próprio estado. Uma sugestão nova remonta o
+formulário pela `key`, o que de quebra garante que os campos leem os valores novos.
+
+### Como foi verificado
+
+Sem gastar chave: um servidor falso no formato da OpenAI, local, respondendo a partir do
+próprio pedido. O fluxo inteiro rodou num Chrome de verdade contra a conta demo: frase
+completa preenchendo os seis campos e salvando, frase vaga abrindo com aviso em vez de
+inventar projeto.

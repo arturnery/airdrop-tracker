@@ -15,6 +15,7 @@ import {
   rotuloDoTipo,
   TIPOS_LANCAMENTO,
 } from "@/lib/finance";
+import type { SugestaoLancamento } from "@/lib/interpretar-lancamento";
 import { contasDisponiveisNoProjeto } from "@/lib/tarefas";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,16 +58,25 @@ function Formulario({
   children,
   aoEnviar,
   rotuloEnvio = "Salvar",
+  abertoAoMontar = false,
 }: {
   titulo: string;
   descricao?: string;
-  gatilho: ReactNode;
+  /** Botão que abre. Sem ele, quem abre é `controle`. */
+  gatilho?: ReactNode;
   children: (props: { erros: Erros }) => ReactNode;
   aoEnviar: (dados: FormData) => Promise<Erros | null> | Erros | null;
   rotuloEnvio?: string;
+  /*
+   * Nasce aberto, para quando outro fluxo cria o diálogo (ver `LancarComIA`).
+   * O estado continua sendo dele, e não de quem o criou: o fechamento depois
+   * de salvar acontece durante a renderização (logo abaixo), e lá só é
+   * permitido mudar o estado do próprio componente.
+   */
+  abertoAoMontar?: boolean;
 }) {
   const { salvando } = useDados();
-  const [aberto, setAberto] = useState(false);
+  const [aberto, setAberto] = useState(abertoAoMontar);
   const [problemas, setProblemas] = useState<Erros>({});
   const [enviando, setEnviando] = useState(false);
 
@@ -98,7 +108,7 @@ function Formulario({
         if (!estado) setProblemas({});
       }}
     >
-      <DialogTrigger asChild>{gatilho}</DialogTrigger>
+      {gatilho ? <DialogTrigger asChild>{gatilho}</DialogTrigger> : null}
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
@@ -442,14 +452,24 @@ export function NovoLancamento({
   projectId,
   tipo,
   rotulo = "Novo lançamento",
+  sugestao,
 }: {
   projectId?: string;
   tipo?: string;
   rotulo?: string;
+  /**
+   * Campos já preenchidos pela IA (`LancarComIA`). Só valores iniciais: tudo
+   * continua editável, e o salvar é o mesmo de um lançamento digitado.
+   */
+  sugestao?: SugestaoLancamento;
 }) {
   const { acoes, hoje } = useDados();
   const { projetos } = useOpcoes();
-  const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
+  const projetoInicial = sugestao?.projectId ?? projectId;
+  const tipoInicial = sugestao?.type ?? tipo;
+  const [projetoSel, setProjetoSel] = useState(
+    projetoInicial ?? projetos[0]?.valor ?? "",
+  );
   const contas = useContasDoProjeto(projetoSel);
 
   /*
@@ -457,18 +477,27 @@ export function NovoLancamento({
    * só a quantia. Mostrar para onde o dinheiro vai evita a dúvida de digitar
    * ou não o menos, que antes produzia um saque somando à posição.
    */
-  const [tipoSel, setTipoSel] = useState(tipo ?? "deposit");
+  const [tipoSel, setTipoSel] = useState(tipoInicial ?? "deposit");
   const direcao = direcaoDoTipo(tipoSel);
 
   return (
     <Formulario
-      titulo={tipo ? (rotuloDoTipo(tipo) ?? "Novo lançamento") : "Novo lançamento"}
-      descricao={
-        tipo
-          ? efeitoDoTipo(tipo)
-          : "Depósito, retirada, resultado de trade ou volume operado."
+      titulo={
+        sugestao
+          ? "Confira o lançamento"
+          : tipo
+            ? (rotuloDoTipo(tipo) ?? "Novo lançamento")
+            : "Novo lançamento"
       }
-      gatilho={<BotaoNovo>{rotulo}</BotaoNovo>}
+      descricao={
+        sugestao
+          ? "Preenchido pela IA a partir da sua frase. Nada foi salvo ainda: ajuste o que precisar e salve."
+          : tipo
+            ? efeitoDoTipo(tipo)
+            : "Depósito, retirada, resultado de trade ou volume operado."
+      }
+      gatilho={sugestao ? undefined : <BotaoNovo>{rotulo}</BotaoNovo>}
+      abertoAoMontar={Boolean(sugestao)}
       aoEnviar={(dados) => {
         const bruto = {
           projectId: texto(dados, "projectId"),
@@ -487,12 +516,19 @@ export function NovoLancamento({
     >
       {({ erros: e }) => (
         <>
+          {sugestao && sugestao.avisos.length > 0 ? (
+            <ul className="border-caution/40 bg-caution/10 space-y-1 rounded-md border px-3 py-2 text-sm">
+              {sugestao.avisos.map((aviso) => (
+                <li key={aviso}>{aviso}</li>
+              ))}
+            </ul>
+          ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoSelecao
               label="Projeto"
               name="projectId"
               obrigatorio
-              defaultValue={projectId}
+              defaultValue={projetoInicial}
               erro={e.projectId}
               opcoes={projetos}
               onChange={(evento) => setProjetoSel(evento.target.value)}
@@ -501,6 +537,7 @@ export function NovoLancamento({
               label="Conta"
               name="accountId"
               obrigatorio
+              defaultValue={sugestao?.accountId ?? undefined}
               erro={e.accountId}
               opcoes={contas}
               ajuda={
@@ -514,7 +551,7 @@ export function NovoLancamento({
             <CampoSelecao
               label="Tipo"
               name="type"
-              defaultValue={tipo ?? "deposit"}
+              defaultValue={tipoInicial ?? "deposit"}
               erro={e.type}
               onChange={(evento) => setTipoSel(evento.target.value)}
               ajuda={
@@ -531,15 +568,22 @@ export function NovoLancamento({
               label="Data"
               name="occurredAt"
               obrigatorio
-              defaultValue={hoje}
+              defaultValue={sugestao?.occurredAt ?? hoje}
               erro={e.occurredAt}
             />
           </div>
-          <CampoValorToken erros={e} focar={Boolean(tipo)} />
+          <CampoValorToken
+            erros={e}
+            focar={Boolean(tipo)}
+            valorInicial={sugestao?.amount}
+            simboloInicial={sugestao?.tokenSymbol}
+            quantidadeInicial={sugestao?.tokenAmount}
+          />
 
           <CampoTexto
             label="Descrição"
             name="description"
+            defaultValue={sugestao?.description}
             erro={e.description}
             placeholder="Depósito na plataforma"
           />

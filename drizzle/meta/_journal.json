@@ -85,6 +85,13 @@
       "when": 1789068094545,
       "tag": "0011_remove_cotacao",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791312384741,
+      "tag": "0012_ia_usos",
+      "breakpoints": true
     }
   ]
 }

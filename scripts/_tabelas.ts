@@ -54,4 +54,6 @@ export const TABELAS = [
 export const FORA_DO_BACKUP: Record<string, string> = {
   login_attempts:
     "estado passageiro do limite de login: restaurar reimporia bloqueio vencido",
+  ia_usos:
+    "contador passageiro do limite de uso da IA: perder só zera a contagem do dia",
 };

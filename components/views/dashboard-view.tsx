@@ -6,6 +6,7 @@ import { ArrowRight, LayoutDashboard } from "lucide-react";
 import { CapitalPorProjetoChart } from "@/components/capital-chart";
 import { useDados } from "@/components/data-provider";
 import { NovoLancamento, RegistrarPontos } from "@/components/forms/dialogs";
+import { LancarComIA } from "@/components/forms/lancar-com-ia";
 import { Money, Percent } from "@/components/money";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { ResultadoChart } from "@/components/resultado-chart";
@@ -44,6 +45,7 @@ export function DashboardView() {
         actions={
           <>
             <RegistrarPontos />
+            <LancarComIA />
             <NovoLancamento />
           </>
         }

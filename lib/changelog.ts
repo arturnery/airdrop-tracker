@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.9",
+    data: "2026-10-06",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Lançar com IA, na Visão geral. Escreva o que aconteceu do jeito que contaria para alguém (\"depositei $100 na Lighter, conta X, para estratégia DN\") e o formulário de lançamento abre já preenchido com projeto, conta, tipo, valor, data e descrição. Nada é salvo antes de você conferir: o que a IA não conseguiu decidir fica em branco, com um aviso dizendo o quê.",
+      },
+    ],
+  },
+  {
     versao: "1.8",
     data: "2026-09-04",
     mudancas: [

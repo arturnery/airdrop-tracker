@@ -780,3 +780,27 @@ export const loginAttempts = pgTable(
   },
   (t) => [index("login_attempts_email_idx").on(t.email, t.tentadoEm)],
 );
+
+/**
+ * Cada pedido feito à IA que interpreta lançamentos (`actions/ia.ts`).
+ *
+ * Existe só para os limites de uso: um por pessoa e um total, porque a conta
+ * de demonstração é pública e cada pedido custa dinheiro na chave do dono do
+ * sistema. Não guarda o texto enviado: para contar, basta quem e quando.
+ */
+export const iaUsos = pgTable(
+  "ia_usos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    criadoEm: timestamp("criado_em", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("ia_usos_usuario_idx").on(t.userId, t.criadoEm),
+    index("ia_usos_criado_idx").on(t.criadoEm),
+  ],
+);
