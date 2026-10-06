@@ -165,7 +165,10 @@ async function chamarModelo(
         messages: mensagens,
         response_format: { type: "json_object" },
         temperature: 0,
-        max_tokens: 400,
+        // Folgado de propósito: em modelos que raciocinam antes de responder
+        // (Gemini 2.5, por exemplo), o raciocínio conta neste teto, e um teto
+        // justo para o JSON cortaria a resposta antes de ela começar.
+        max_tokens: 2000,
       }),
       signal: AbortSignal.timeout(PRAZO_MS),
     });
