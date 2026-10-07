@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 
 import { interpretarLancamento } from "@/actions/ia";
@@ -33,14 +33,26 @@ export function LancarComIA() {
   const [carregando, setCarregando] = useState(false);
 
   /*
-   * `versao` remonta o formulário a cada sugestão nova: ele nasce aberto e os
-   * campos leem o valor inicial só ao montar, então reaproveitar a instância
-   * não reabriria nada e mostraria a sugestão anterior.
+   * Uma frase pode virar mais de um lançamento ("tirei 70 da Lighter e pus
+   * na Variational" são dois). Eles são conferidos um de cada vez, no mesmo
+   * formulário, e fechar um (salvando ou cancelando) abre o próximo.
+   *
+   * `versao` e `indice` vão na `key`: o formulário nasce aberto e os campos
+   * leem o valor inicial só ao montar, então reaproveitar a instância não
+   * reabriria nada e mostraria a sugestão anterior.
    */
-  const [sugestao, setSugestao] = useState<{
-    dados: SugestaoLancamento;
+  const [fila, setFila] = useState<{
+    itens: SugestaoLancamento[];
+    indice: number;
     versao: number;
   } | null>(null);
+  const atual = fila?.itens[fila.indice];
+
+  const avancar = useCallback(() => {
+    setFila((f) =>
+      f && f.indice + 1 < f.itens.length ? { ...f, indice: f.indice + 1 } : null,
+    );
+  }, []);
 
   async function interpretar() {
     setErro(null);
@@ -51,8 +63,9 @@ export function LancarComIA() {
         setErro(resultado.erro);
         return;
       }
-      setSugestao((anterior) => ({
-        dados: resultado.sugestao,
+      setFila((anterior) => ({
+        itens: resultado.sugestoes,
+        indice: 0,
         versao: (anterior?.versao ?? 0) + 1,
       }));
       setPedindo(false);
@@ -128,7 +141,7 @@ export function LancarComIA() {
                 {carregando ? (
                   <>
                     <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    Interpretando…
+                    Interpretando, pode levar até meio minuto…
                   </>
                 ) : (
                   "Interpretar"
@@ -139,10 +152,16 @@ export function LancarComIA() {
         </DialogContent>
       </Dialog>
 
-      {sugestao ? (
+      {fila && atual ? (
         <NovoLancamento
-          key={sugestao.versao}
-          sugestao={sugestao.dados}
+          key={`${fila.versao}-${fila.indice}`}
+          sugestao={atual}
+          posicao={
+            fila.itens.length > 1
+              ? `${fila.indice + 1} de ${fila.itens.length}`
+              : undefined
+          }
+          aoFechar={avancar}
         />
       ) : null}
     </>

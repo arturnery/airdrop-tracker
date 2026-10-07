@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2, Plus } from "lucide-react";
 
 import { CampoValorToken } from "@/components/forms/campo-valor-token";
@@ -59,10 +59,11 @@ function Formulario({
   aoEnviar,
   rotuloEnvio = "Salvar",
   abertoAoMontar = false,
+  aoFechar,
 }: {
   titulo: string;
   descricao?: string;
-  /** Botão que abre. Sem ele, quem abre é `controle`. */
+  /** Botão que abre. Sem ele, o diálogo depende de `abertoAoMontar`. */
   gatilho?: ReactNode;
   children: (props: { erros: Erros }) => ReactNode;
   aoEnviar: (dados: FormData) => Promise<Erros | null> | Erros | null;
@@ -74,9 +75,23 @@ function Formulario({
    * permitido mudar o estado do próprio componente.
    */
   abertoAoMontar?: boolean;
+  /** Avisado depois que fecha, por salvar ou por cancelar. */
+  aoFechar?: () => void;
 }) {
   const { salvando } = useDados();
   const [aberto, setAberto] = useState(abertoAoMontar);
+
+  /*
+   * Num efeito, e não junto do `setAberto(false)` lá embaixo: aquele fecha
+   * durante a renderização, e avisar o pai ali mudaria o estado dele no meio
+   * da renderização do filho, que o React recusa.
+   */
+  const estavaAberto = useRef(aberto);
+  useEffect(() => {
+    if (estavaAberto.current && !aberto) aoFechar?.();
+    estavaAberto.current = aberto;
+  }, [aberto, aoFechar]);
+
   const [problemas, setProblemas] = useState<Erros>({});
   const [enviando, setEnviando] = useState(false);
 
@@ -453,6 +468,8 @@ export function NovoLancamento({
   tipo,
   rotulo = "Novo lançamento",
   sugestao,
+  posicao,
+  aoFechar,
 }: {
   projectId?: string;
   tipo?: string;
@@ -462,6 +479,9 @@ export function NovoLancamento({
    * continua editável, e o salvar é o mesmo de um lançamento digitado.
    */
   sugestao?: SugestaoLancamento;
+  /** "1 de 2", quando a frase virou mais de um lançamento. */
+  posicao?: string;
+  aoFechar?: () => void;
 }) {
   const { acoes, hoje } = useDados();
   const { projetos } = useOpcoes();
@@ -484,20 +504,22 @@ export function NovoLancamento({
     <Formulario
       titulo={
         sugestao
-          ? "Confira o lançamento"
+          ? `Confira o lançamento${posicao ? ` ${posicao}` : ""}`
           : tipo
             ? (rotuloDoTipo(tipo) ?? "Novo lançamento")
             : "Novo lançamento"
       }
       descricao={
         sugestao
-          ? "Preenchido pela IA a partir da sua frase. Nada foi salvo ainda: ajuste o que precisar e salve."
+          ? "Preenchido pela IA a partir da sua frase. Nada foi salvo ainda: ajuste o que precisar e salve." +
+            (posicao ? " Cancelar pula só este e segue para o próximo." : "")
           : tipo
             ? efeitoDoTipo(tipo)
             : "Depósito, retirada, resultado de trade ou volume operado."
       }
       gatilho={sugestao ? undefined : <BotaoNovo>{rotulo}</BotaoNovo>}
       abertoAoMontar={Boolean(sugestao)}
+      aoFechar={aoFechar}
       aoEnviar={(dados) => {
         const bruto = {
           projectId: texto(dados, "projectId"),

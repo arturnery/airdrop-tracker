@@ -41,6 +41,9 @@ export type SugestaoLancamento = {
 
 const TIPOS_PERMITIDOS: string[] = TIPOS_LANCAMENTO.map((t) => t.valor);
 
+/** Uma frase vira no máximo isto: mais que isso é planilha, não frase. */
+export const MAX_LANCAMENTOS = 5;
+
 /*
  * Projetos e contas viajam como apelidos curtos (P1, C2), não como uuid.
  *
@@ -75,7 +78,7 @@ export function montarMensagens(
     .filter(Boolean)
     .join("\n");
 
-  const sistema = `Você converte uma frase em português sobre farm de airdrop em UM lançamento financeiro, respondendo só com um objeto JSON.
+  const sistema = `Você converte uma frase em português sobre farm de airdrop em lançamentos financeiros, respondendo só com um objeto JSON.
 
 Hoje é ${ctx.hoje}. Datas relativas ("ontem", "sexta passada") são calculadas a partir de hoje. Sem data na frase, use hoje.
 
@@ -97,10 +100,11 @@ Tipos possíveis:
 - other: ajuste que não se encaixa nos demais
 
 Formato da resposta:
-{"projeto": "P1" ou null, "conta": "C1" ou null, "tipo": um dos tipos ou null, "valor": número em dólar ou null, "data": "AAAA-MM-DD" ou null, "token": símbolo ou null, "quantidade_token": número ou null, "descricao": texto curto ou null, "duvida": texto curto ou null}
+{"lancamentos": [{"projeto": "P1" ou null, "conta": "C1" ou null, "tipo": um dos tipos ou null, "valor": número em dólar ou null, "data": "AAAA-MM-DD" ou null, "token": símbolo ou null, "quantidade_token": número ou null, "descricao": texto curto ou null, "duvida": texto curto ou null}]}
 
 Regras:
-- "projeto" e "conta" são SEMPRE um dos apelidos acima. Aceite nome aproximado ou parcial ("conta x", "lighter"), mas nunca invente.
+- Normalmente a frase descreve um lançamento só. Quando descreve mais de um, cada um vira um item da lista, na ordem em que aconteceram. Dinheiro movido de um projeto para outro são DOIS: withdrawal no de origem e deposit no de destino. No máximo ${MAX_LANCAMENTOS}.
+- "projeto" e "conta" são SEMPRE um dos apelidos acima (P1, C1), não o nome. Aceite nome aproximado ou parcial ("conta x", "lighter"), mas nunca invente.
 - Se a conta não for dita e o projeto tiver só uma conta vinculada, use essa.
 - "valor" é a quantia em dólar, positiva. Só é negativo para perda em trade_pnl ou other.
 - Se o aporte foi em token ("2 SOL"), preencha "token" e "quantidade_token"; "valor" é o equivalente em dólar se a frase disser, senão null.
@@ -115,12 +119,12 @@ Regras:
 }
 
 /**
- * Formato aceito da IA. Tudo opcional e tolerante a tipo trocado (número que
- * veio como texto), porque quem decide se o campo serve é `interpretarResposta`,
- * não a validação: um campo ruim vira campo vazio, não a sugestão inteira
- * recusada.
+ * Formato aceito de cada lançamento. Tudo opcional e tolerante a tipo trocado
+ * (número que veio como texto), porque quem decide se o campo serve é
+ * `interpretarItem`, não a validação: um campo ruim vira campo vazio, não a
+ * sugestão inteira recusada.
  */
-const respostaSchema = z.object({
+const itemSchema = z.object({
   projeto: z.string().nullish().catch(null),
   conta: z.string().nullish().catch(null),
   tipo: z.string().nullish().catch(null),
@@ -131,6 +135,23 @@ const respostaSchema = z.object({
   descricao: z.string().nullish().catch(null),
   duvida: z.string().nullish().catch(null),
 });
+
+type Item = z.infer<typeof itemSchema>;
+
+/*
+ * Os três formatos que o modelo de fato devolve, mesmo com o pedido sendo um
+ * só: o objeto com a lista (o pedido), a lista solta (o Gemini, numa frase
+ * com dois lançamentos) e um lançamento solto (o formato de antes, que um
+ * modelo pode repetir de memória). Recusar os dois últimos fazia a pessoa ver
+ * "não consegui entender" para uma resposta perfeitamente legível.
+ */
+function listaDeItens(bruto: unknown): unknown[] | null {
+  if (Array.isArray(bruto)) return bruto;
+  if (typeof bruto !== "object" || bruto === null) return null;
+  const lancamentos = (bruto as { lancamentos?: unknown }).lancamentos;
+  if (Array.isArray(lancamentos)) return lancamentos;
+  return [bruto];
+}
 
 function numero(valor: number | string | null | undefined): number | null {
   if (valor === null || valor === undefined) return null;
@@ -149,6 +170,25 @@ function formatarQuantidade(n: number): string {
 }
 
 /**
+ * Acha o projeto ou a conta pelo apelido (`P2`) ou, se o modelo devolveu o
+ * nome em vez do apelido, pelo nome **exato**, sem diferenciar maiúscula.
+ * Exato de propósito: aproximar aqui ("light" para "Lighter") seria
+ * adivinhar de novo o que a IA já devia ter resolvido, e um erro desses
+ * chegaria à tela com cara de certeza.
+ */
+function lerReferencia<T>(
+  valor: string,
+  lista: T[],
+  prefixo: "P" | "C",
+  nomeDe: (item: T) => string,
+): T | null {
+  const limpo = valor.trim();
+  const apelido = new RegExp(`^${prefixo}(\\d+)$`, "i").exec(limpo);
+  if (apelido) return lista[Number(apelido[1]) - 1] ?? null;
+  return lista.find((item) => nomeDe(item).trim().toLowerCase() === limpo.toLowerCase()) ?? null;
+}
+
+/**
  * Confere a resposta da IA contra os dados reais do usuário.
  *
  * Nada que a IA devolve é aceito por ter vindo dela: apelido que não existe,
@@ -156,23 +196,35 @@ function formatarQuantidade(n: number): string {
  * viram campo vazio com um aviso dizendo o porquê. Assim a tela nunca mostra
  * um valor que o formulário não conseguiria representar (uma conta que não
  * está entre as opções do select, por exemplo, apareceria como outra).
+ *
+ * `null` só quando não sobra nenhum lançamento legível.
  */
 export function interpretarResposta(
   bruto: unknown,
   ctx: ContextoIA,
-): SugestaoLancamento | null {
-  const analisado = respostaSchema.safeParse(bruto);
-  if (!analisado.success) return null;
-  const r = analisado.data;
+): SugestaoLancamento[] | null {
+  const itens = listaDeItens(bruto);
+  if (!itens) return null;
+
+  const sugestoes = itens
+    .slice(0, MAX_LANCAMENTOS)
+    .map((item) => itemSchema.safeParse(item))
+    .filter((analisado) => analisado.success)
+    .map((analisado) => interpretarItem(analisado.data, ctx));
+
+  return sugestoes.length > 0 ? sugestoes : null;
+}
+
+function interpretarItem(r: Item, ctx: ContextoIA): SugestaoLancamento {
   const avisos: string[] = [];
 
-  const indiceProjeto = r.projeto ? Number(/^P(\d+)$/i.exec(r.projeto.trim())?.[1]) - 1 : -1;
-  const projeto: ContextoIA["projetos"][number] | null = ctx.projetos[indiceProjeto] ?? null;
+  const projeto = r.projeto
+    ? lerReferencia(r.projeto, ctx.projetos, "P", (p) => p.name)
+    : null;
   if (r.projeto && !projeto) avisos.push("Não reconheci o projeto: escolha na lista.");
   else if (!projeto) avisos.push("Escolha o projeto: a IA não conseguiu identificar qual.");
 
-  const indiceConta = r.conta ? Number(/^C(\d+)$/i.exec(r.conta.trim())?.[1]) - 1 : -1;
-  let conta: ContextoIA["contas"][number] | null = ctx.contas[indiceConta] ?? null;
+  let conta = r.conta ? lerReferencia(r.conta, ctx.contas, "C", (c) => c.label) : null;
   if (r.conta && !conta) avisos.push("Não reconheci a conta: escolha na lista.");
 
   if (projeto) {

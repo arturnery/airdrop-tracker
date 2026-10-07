@@ -55,7 +55,7 @@ export const changelog: Versao[] = [
       {
         tipo: "novidade",
         texto:
-          "Lançar com IA, na Visão geral. Escreva o que aconteceu do jeito que contaria para alguém (\"depositei $100 na Lighter, conta X, para estratégia DN\") e o formulário de lançamento abre já preenchido com projeto, conta, tipo, valor, data e descrição. Nada é salvo antes de você conferir: o que a IA não conseguiu decidir fica em branco, com um aviso dizendo o quê.",
+          "Lançar com IA, na Visão geral. Escreva o que aconteceu do jeito que contaria para alguém (\"depositei $100 na Lighter, conta X, para estratégia DN\") e o formulário de lançamento abre já preenchido com projeto, conta, tipo, valor, data e descrição. Nada é salvo antes de você conferir: o que a IA não conseguiu decidir fica em branco, com um aviso dizendo o quê. Uma frase pode ter mais de um lançamento (\"tirei $70 da Lighter e depositei na Variational\" são uma retirada e um depósito): eles abrem um depois do outro para conferir.",
       },
     ],
   },

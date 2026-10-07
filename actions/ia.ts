@@ -33,10 +33,18 @@ const LIMITE_TOTAL = 300;
 
 /*
  * Sem prazo, uma API lenta prende a requisição até a Vercel derrubá-la, e a
- * pessoa fica olhando um botão girando sem mensagem nenhuma. 30 segundos
- * porque o plano gratuito do Gemini, medido, responde entre 12 e 16.
+ * pessoa fica olhando um botão girando sem mensagem nenhuma.
+ *
+ * Dois prazos porque o plano gratuito do Gemini, medido, não tem tempo de
+ * resposta: a mesma chamada levou 2, 10, 14, 20 e 58 segundos, e às vezes
+ * devolve "alta demanda" depois de 50. Esperar mais pelo modelo travado
+ * quase nunca adianta; trocar de modelo costuma adiantar, porque o pico de
+ * demanda pega um modelo de cada vez. Então a primeira tentativa tem
+ * `PRAZO_TENTATIVA_MS`, e a segunda, no modelo reserva, fica com o que sobra
+ * de `PRAZO_TOTAL_MS`.
  */
-const PRAZO_MS = 30_000;
+const PRAZO_TOTAL_MS = 45_000;
+const PRAZO_TENTATIVA_MS = 20_000;
 
 const entradaSchema = z
   .string()
@@ -45,7 +53,7 @@ const entradaSchema = z
   .max(500, "Seja mais breve: até 500 caracteres.");
 
 export type ResultadoIA =
-  | { ok: true; sugestao: SugestaoLancamento }
+  | { ok: true; sugestoes: SugestaoLancamento[] }
   | { ok: false; erro: string };
 
 export async function interpretarLancamento(entrada: unknown): Promise<ResultadoIA> {
@@ -107,12 +115,12 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
       return { ok: false, erro: "Não consegui entender a resposta da IA. Tente reescrever a frase." };
     }
 
-    const sugestao = interpretarResposta(json, ctx);
-    if (!sugestao) {
+    const sugestoes = interpretarResposta(json, ctx);
+    if (!sugestoes) {
       console.error("[ia] resposta fora do formato:", conteudo.slice(0, 300));
       return { ok: false, erro: "Não consegui entender a resposta da IA. Tente reescrever a frase." };
     }
-    return { ok: true, sugestao };
+    return { ok: true, sugestoes };
   } catch (erro) {
     console.error("[ia]", erro);
     return { ok: false, erro: "Não foi possível falar com a IA agora. Tente de novo." };
@@ -145,27 +153,30 @@ async function carregarContexto(userId: string): Promise<ContextoIA> {
 }
 
 /**
- * Devolve o texto da resposta, ou `null` quando estourou o prazo.
+ * Devolve o texto da resposta, ou `null` quando estourou o prazo total.
  * Qualquer outra falha (chave inválida, cota, formato) sobe como erro e é
  * logada inteira por quem chamou, porque cada uma pede uma correção diferente
  * do lado de quem administra.
  *
- * Uma segunda tentativa só para o que é passageiro: rede que caiu no meio e
- * o "alta demanda" (503) que o plano gratuito do Gemini devolve em picos.
+ * A segunda tentativa só acontece para o que é passageiro: rede que caiu,
+ * tentativa que passou do seu prazo e erro 5xx (o "alta demanda" é um 503).
  * Cota esgotada (429) e chave recusada não se repetem: dariam o mesmo erro, e
- * cada tentativa conta na cota. O prazo é um só para as duas, então a pessoa
- * nunca espera mais que `PRAZO_MS`.
+ * cada tentativa conta na cota.
  */
 const STATUS_PASSAGEIRO = new Set([500, 502, 503, 504]);
 
 async function chamarModelo(
   mensagens: { role: string; content: string }[],
 ): Promise<string | null> {
-  const prazo = AbortSignal.timeout(PRAZO_MS);
+  const total = AbortSignal.timeout(PRAZO_TOTAL_MS);
+  const modelos = [env.IA_MODELO, env.IA_MODELO_RESERVA ?? env.IA_MODELO];
   let resposta: Response | null = null;
 
-  for (let tentativa = 1; tentativa <= 2; tentativa++) {
-    const ultima = tentativa === 2;
+  for (const [indice, modelo] of modelos.entries()) {
+    const ultima = indice === modelos.length - 1;
+    const prazo = ultima
+      ? total
+      : AbortSignal.any([total, AbortSignal.timeout(PRAZO_TENTATIVA_MS)]);
     try {
       resposta = await fetch(`${env.IA_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
         method: "POST",
@@ -174,7 +185,7 @@ async function chamarModelo(
           Authorization: `Bearer ${env.IA_API_KEY}`,
         },
         body: JSON.stringify({
-          model: env.IA_MODELO,
+          model: modelo,
           messages: mensagens,
           response_format: { type: "json_object" },
           temperature: 0,
@@ -186,14 +197,14 @@ async function chamarModelo(
         signal: prazo,
       });
     } catch (erro) {
-      if (prazo.aborted) return null;
+      if (total.aborted) return null;
       if (ultima) throw erro;
-      console.warn("[ia] falha de rede, tentando de novo:", erro);
+      console.warn(`[ia] ${modelo} sem resposta, tentando ${modelos[indice + 1]}:`, erro);
       continue;
     }
 
     if (resposta.ok || ultima || !STATUS_PASSAGEIRO.has(resposta.status)) break;
-    console.warn(`[ia] status ${resposta.status}, tentando de novo`);
+    console.warn(`[ia] ${modelo} respondeu ${resposta.status}, tentando ${modelos[indice + 1]}`);
     await resposta.body?.cancel();
   }
 

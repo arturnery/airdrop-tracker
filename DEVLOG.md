@@ -3294,3 +3294,33 @@ Sem gastar chave: um servidor falso no formato da OpenAI, local, respondendo a p
 próprio pedido. O fluxo inteiro rodou num Chrome de verdade contra a conta demo: frase
 completa preenchendo os seis campos e salvando, frase vaga abrindo com aviso em vez de
 inventar projeto.
+
+### No ar, e as duas primeiras frases de verdade
+
+**O provedor mudou para o Gemini, no plano gratuito.** DeepSeek não tem plano gratuito, e a
+troca foi só de configuração, que era o motivo de o provedor ser variável de ambiente.
+O `gemini-2.5-flash` já não é liberado para contas novas; ficaram os `flash-lite`.
+
+**A primeira frase real tinha dois lançamentos**: "retirei $70 da Lighter conta edge e
+depositei os $70 na Variational na conta chrome". O prompt pedia um, o modelo devolveu
+uma lista, e a conferência, que esperava um objeto, respondeu "não consegui entender".
+A resposta estava certa; o formato é que não estava previsto. Agora o pedido é uma lista
+(`{"lancamentos": [...]}`, até 5), a conferência aceita também a lista solta e o objeto
+solto, e a tela abre um formulário depois do outro ("1 de 2", "2 de 2"). Fechar um,
+salvando ou cancelando, abre o próximo. O aviso de que fechou sai num efeito: o
+`Formulario` fecha durante a renderização, e avisar o pai ali seria o mesmo erro de
+estado já corrigido antes.
+
+Na mesma resposta, o modelo devolveu os **nomes** ("Lighter", "edge") no lugar dos
+apelidos pedidos. A conferência passou a aceitar o nome exato também, sem diferenciar
+maiúscula. Exato e não aproximado: aproximar seria adivinhar de novo o que a IA já
+deveria ter resolvido, com cara de certeza na tela.
+
+**O tempo de resposta do plano gratuito não existe.** Medido com a mesma frase: 2, 10,
+14, 20 e 58 segundos, e um "alta demanda" (503) depois de 51. Esperar mais pelo modelo
+travado quase nunca adiantou; trocar de modelo adiantou, porque o pico pega um de cada
+vez. A chamada ficou com dois prazos: 20 segundos no modelo principal
+(`gemini-3.5-flash-lite`, o mais rápido nas medições) e o que sobrar de 45 no reserva
+(`IA_MODELO_RESERVA`). Erro de rede, prazo da tentativa e 5xx passam para o reserva;
+cota (429) e chave recusada não, porque dariam o mesmo erro. A tela diz que pode levar
+até meio minuto, em vez de deixar um botão girando sem explicação.
