@@ -63,6 +63,7 @@ projeto). Tarefa e histórico são conceitos distintos e precisam de tabelas dis
 | Gráficos | **Recharts** | 3.10 | Integra com shadcn, leve. |
 | Testes | **Vitest** | 4.1 | Já dominado. |
 | Deploy | **Vercel** | (do Next) | Caminho natural do Next; já feito antes. |
+| LLM | **Gemini + OpenRouter**, API de chat no formato da OpenAI | `fetch`, sem SDK | Provedor vira configuração; dois provedores consultados juntos. Ver §18. |
 
 Notas de versão relevantes para a implementação:
 
@@ -1726,3 +1727,114 @@ Sem isso ela cresceria para sempre guardando tentativas que já não decidem nad
   tempo. "$500 por um mês" e "$500 por seis meses" pesam muito diferente para decidir onde
   alocar, e nenhuma tela distingue os dois. Exigiria medir a posição ao longo do tempo, com
   depósitos e saques parciais, e não apenas o saldo atual.
+
+## 18. Lançamento por linguagem natural (LLM)
+
+Uma frase em português vira um ou mais lançamentos preenchidos, que a pessoa confere e
+salva pelo formulário de sempre. O README traz a visão de produto e os trade-offs; aqui
+fica o contrato.
+
+### 18.1. Peças
+
+| Peça | Papel |
+|---|---|
+| `components/forms/lancar-com-ia.tsx` | Caixa de texto; recebe as sugestões e abre um `NovoLancamento` preenchido por vez ("1 de 2") |
+| `actions/ia.ts` | Server Action: sessão, limites de uso, contexto do usuário, monta os alvos a partir do ambiente |
+| `lib/interpretar-lancamento.ts` | Puro: monta as instruções e confere a resposta contra os dados reais |
+| `lib/perguntar-ia.ts` | Disputa entre provedores, prazos e classificação de falha; recebe o `fetch` de fora |
+| `ia_usos` | Uma linha por pedido (quem e quando), só para os limites; fora do backup |
+
+A IA não escreve no banco. O que grava é `criarLancamento`, a mesma ação do lançamento
+manual, com o mesmo `lancamentoSchema`.
+
+### 18.2. Contrato com o modelo
+
+As instruções vão como mensagem de sistema; a frase, como mensagem do usuário. O contexto
+enviado é só o necessário para escolher:
+
+```
+Hoje é 2026-10-13.
+Projetos do usuário:      P1: Lighter        P2: Variational   ...
+Contas do usuário:        C1: edge           C2: chrome        ...
+Contas já usadas em cada projeto:   P1: C1, C2   ...
+```
+
+Resposta pedida em modo JSON (`response_format: json_object`, `temperature: 0`):
+
+```json
+{ "lancamentos": [
+  { "projeto": "P1", "conta": "C2", "tipo": "withdrawal", "valor": 70,
+    "data": "2026-10-13", "token": null, "quantidade_token": null,
+    "descricao": null, "duvida": null } ] }
+```
+
+Apelidos em vez de uuid: o modelo copiando 36 caracteres erra um dígito de vez em quando, e
+o provedor não precisa de identificador interno nenhum. Nada da conta além dos nomes sai do
+servidor (nem carteira, nem e-mail). `max_tokens` é folgado (2000) porque, nos modelos que
+raciocinam antes de responder, o raciocínio conta no mesmo teto.
+
+### 18.3. Conferência
+
+Nada é aceito por ter vindo do modelo. `interpretarResposta` devolve `null` só quando não
+sobra nenhum lançamento legível; fora isso, campo ruim vira campo vazio com aviso.
+
+- **Formato.** Aceita `{lancamentos: [...]}` (o pedido), a lista solta e um lançamento
+  solto: os três aparecem na prática. No máximo 5 por frase.
+- **Projeto e conta.** Apelido, ou nome exato sem diferenciar maiúscula. Aproximação não.
+- **Conta fora do projeto.** Descartada, pela mesma regra do select
+  (`contasDisponiveisNoProjeto`). Projeto com uma conta só preenche a conta sozinho.
+- **Campo sem resposta.** Gera aviso: select vazio mostra a primeira opção, que pareceria
+  escolha da IA.
+- **Tipo.** Só os do formulário de lançamento (volume tem fluxo próprio).
+- **Valor.** Duas casas sempre (o leitor de valores lê "1.234" como milhar). Sinal só onde o
+  formulário deixa a pessoa decidir (trade e ajuste); nos demais o sinal vem do tipo.
+- **Data.** Real (não "2026-02-30") e não futura.
+- **Token.** Símbolo validado; quantidade sem notação científica.
+- **Dúvida do modelo.** Vira o primeiro aviso.
+
+### 18.4. Disputa entre provedores
+
+Cada alvo é um par modelo e provedor, com endereço e chave próprios. Configuração atual:
+
+| Alvo | Variáveis |
+|---|---|
+| Gemini `3.5-flash-lite` | `IA_API_KEY`, `IA_BASE_URL`, `IA_MODELO` |
+| Gemini `3.1-flash-lite` | o mesmo provedor, `IA_MODELO_RESERVA` |
+| OpenRouter `nemotron-3-super` (gratuito) | `IA2_API_KEY`, `IA2_BASE_URL`, `IA2_MODELO` |
+
+Todos são consultados ao mesmo tempo. Cada tentativa só resolve depois de passar pela
+conferência, para que uma resposta inútil não vença e cancele a boa que chegaria depois. O
+primeiro a resolver vence e os outros são abortados.
+
+| Falha da tentativa | Tipo | Efeito |
+|---|---|---|
+| Rede, 5xx (inclui o 503 de alta demanda) | passageira | volta numa segunda rodada, após 2 s |
+| 4xx (429 de cota, 401, modelo inexistente) | definitiva | não volta |
+| Resposta sem JSON utilizável | resposta | não volta |
+
+Prazo total de 45 s, compartilhado entre as rodadas. O desfecho vira uma de quatro
+mensagens: prazo, sobrecarga (todas as últimas falhas passageiras), resposta (algum modelo
+respondeu, nada se aproveitou) e erro (o resto, logado inteiro para quem administra).
+
+### 18.5. Limites
+
+30 pedidos por pessoa e 300 no total, em 24 horas móveis, contados antes da chamada. Dois
+tetos porque só o individual deixaria várias contas somarem sem limite numa demonstração
+pública. Os modelos gratuitos do OpenRouter têm cota diária própria; quando ela acaba, o
+429 é definitivo para aquele alvo e a disputa segue com os outros.
+
+### 18.6. Testes
+
+`tests/interpretar-lancamento.test.ts` cobre a conferência, incluindo as respostas reais que
+quebraram a primeira versão, e passa uma sugestão pelo `lancamentoSchema` de verdade.
+`tests/perguntar-ia.test.ts` simula cada provedor com um `fetch` falso: sobrecarregado,
+travado, lixo antes de resposta boa, segunda rodada, prazo, erro definitivo sem repetição e
+endereço e chave corretos por alvo.
+
+### 18.7. Fora do escopo, por enquanto
+
+- Conversa de várias mensagens (a IA perguntar de volta). Hoje a dúvida vira aviso no
+  formulário, e a pessoa resolve ali.
+- Recebimento de airdrop por frase.
+- Métrica de acerto (sugestões salvas sem edição), que seria a forma objetiva de comparar
+  modelos depois da escolha inicial.

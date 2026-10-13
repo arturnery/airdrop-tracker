@@ -5,7 +5,8 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
-![Tests](https://img.shields.io/badge/testes-298%20passando-3FB950)
+![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
+![Tests](https://img.shields.io/badge/testes-358%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -22,6 +23,13 @@ projeto.
 > nasceu de uma necessidade concreta da comunidade, e é usada por ela: por isso o cadastro
 > tem aprovação manual e cada assinante enxerga apenas os próprios dados.
 
+**Lançamento por linguagem natural, com LLM.** "Retirei $70 da Lighter na conta chrome e
+depositei na Variational na mesma conta" vira dois lançamentos já preenchidos, esperando
+conferência. A integração usa Gemini e OpenRouter pela API compatível com a OpenAI, valida
+a saída do modelo contra os dados reais de quem usa, consulta dois provedores em paralelo
+para sobreviver à instabilidade do plano gratuito e tem teto de custo, porque a conta de
+demonstração é pública. [Como funciona e por quê](#integração-com-llm-lançamento-por-frase).
+
 ## Testar sem instalar nada
 
 **[Abrir a aplicação](https://lvl-airdrop.vercel.app)** e entrar com:
@@ -37,7 +45,20 @@ A conta já vem com projetos, lançamentos e tarefas de exemplo. Pode criar, edi
 Só duas coisas ficam travadas nela, nome e senha, porque valem para todo mundo que entra
 pelo mesmo login. Cadastros novos entram numa fila de aprovação manual.
 
+Para ver a integração com LLM: **Lançar com IA**, na Visão geral, e uma frase como
+*"retirei $70 da Meridian na conta brave e depositei na Nebula na mesma conta"*. A conta
+brave não está vinculada à Nebula nos dados de exemplo, então o segundo formulário também
+mostra um aviso, que é a conferência funcionando.
+
 ## Demonstração
+
+**Lançar com IA.** A frase vira formulários preenchidos, um por operação. Nada é salvo
+antes da conferência, e o que a IA não conseguiu decidir aparece em branco, com um aviso.
+
+<p>
+  <img alt="Diálogo Lançar com IA com a frase: Retirei $70 da Aurora Vault na conta brave e depositei os $70 na Comet Exchange na mesma conta" src="docs/imagens/ia-1-frase.png" width="49%" />
+  <img alt="Formulário Confira o lançamento 1 de 2, preenchido pela IA: projeto Aurora Vault, conta brave, tipo Retirada, valor 70 dólares, data de hoje" src="docs/imagens/ia-2-conferir.png" width="49%" />
+</p>
 
 **Visão geral.** Os quatro indicadores no topo, as tarefas do dia e a distribuição do capital
 por projeto. Cada número tem uma interrogação que explica como ele é calculado.
@@ -107,6 +128,10 @@ senhas temporárias, mas não vê o farming de ninguém.
 
 ## Funcionalidades
 
+- **Lançar com IA.** Uma frase em português ("tomei um loss de 42,50 na Backpack ontem e
+  paguei 1,20 de gás") vira um ou mais lançamentos preenchidos: projeto, conta, tipo,
+  valor, data relativa, token e descrição. A pessoa confere e salva pelo mesmo formulário
+  do lançamento manual.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o
@@ -145,6 +170,7 @@ senhas temporárias, mas não vê o farming de ninguém.
 | Autenticação | Auth.js (next-auth), Credentials + JWT | 5 |
 | Estilo | Tailwind CSS + shadcn/ui (Radix) | 4 |
 | Gráficos | Recharts | 3.10 |
+| LLM | Gemini (Google AI Studio) e OpenRouter, pela API de chat compatível com a OpenAI, sem SDK | |
 | Testes | Vitest | 4.1 |
 | Hospedagem | Vercel | |
 
@@ -165,7 +191,8 @@ flowchart TB
         L["lib/<br/>funções puras"]
     end
 
-    DB[("PostgreSQL<br/>14 tabelas")]
+    DB[("PostgreSQL<br/>19 tabelas")]
+    IA["Provedores de LLM<br/>Gemini e OpenRouter"]
 
     P -->|Dataset pronto| V
     V -->|Server Actions| A
@@ -174,6 +201,7 @@ flowchart TB
     Q -->|agrega com| L
     A --> DB
     Q --> DB
+    A -->|frase, sem ids nem carteiras| IA
 
     style L fill:#1f6feb,color:#fff
     style DB fill:#336791,color:#fff
@@ -188,6 +216,108 @@ flowchart TB
    Isso soa acadêmico até render (ver os trade-offs abaixo).
 
 ## Decisões técnicas e trade-offs
+
+### Integração com LLM: lançamento por frase
+
+Lançar à mão são seis campos por operação, e uma transferência entre projetos são duas
+operações. A frase que a pessoa diria em voz alta já tem tudo isso; o trabalho do modelo é
+transformá-la nos campos, e o do sistema é não confiar cegamente no resultado.
+
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant T as Tela
+    participant A as Server Action
+    participant G as Gemini (2 modelos)
+    participant O as OpenRouter
+    U->>T: "Retirei $70 da Lighter e depositei na Variational"
+    T->>A: interpretarLancamento(frase)
+    A->>A: sessão, limite de uso, projetos e contas do usuário
+    par consulta em paralelo
+        A->>G: instruções + frase
+        A->>O: instruções + frase
+    end
+    G-->>A: JSON (vence a primeira resposta utilizável)
+    A->>A: confere cada campo contra os dados reais
+    A-->>T: 2 sugestões
+    T->>U: formulário preenchido, "1 de 2"
+    U->>T: confere e salva
+    T->>A: criarLancamento (a mesma ação do lançamento manual)
+```
+
+**A IA sugere, não grava.** A sugestão abre o mesmo formulário do lançamento manual, e o
+salvar passa pela mesma Server Action e pelo mesmo schema Zod. Num livro-razão, um campo
+errado em silêncio (conta trocada, data de outro mês) distorce resultado, gráfico e ROI
+dali em diante. Um clique de conferência é barato perto disso. E não existe um segundo
+formulário "da IA" para envelhecer separado do original.
+
+**Saída do modelo é entrada não confiável.** O modelo responde em modo JSON, e cada campo
+é conferido contra os dados reais de quem usa
+([`lib/interpretar-lancamento.ts`](lib/interpretar-lancamento.ts)). Campo que não passa
+vira campo em branco com aviso, nunca a sugestão inteira recusada. Os casos abaixo
+aconteceram com modelos de verdade, não são hipotéticos:
+
+| O modelo devolveu | O que o sistema faz |
+|---|---|
+| Uma lista solta, quando o pedido era um objeto com a lista dentro | Aceita os três formatos que modelos de fato devolvem |
+| O nome do projeto ("Lighter") no lugar do apelido pedido (`P1`) | Aceita o nome **exato**; parecido não é adivinhado |
+| Conta que não está vinculada ao projeto | Descarta e avisa: o select da tela mostraria outra conta no lugar |
+| Data no futuro ou impossível ("2026-02-30") | Deixa em branco e avisa |
+| Texto de raciocínio em vez de JSON | A resposta não vence a disputa entre provedores |
+
+O campo que fica sem resposta também gera aviso, porque um select vazio mostra a primeira
+opção, e ela pareceria escolha da IA.
+
+**O provedor recebe o mínimo.** Projetos e contas viajam como apelidos (`P1`, `C2`) com o
+nome que a pessoa já usa. Nenhum identificador interno, endereço de carteira ou e-mail sai
+do servidor, e a tela diz isso embaixo do campo de texto. A frase vai separada das
+instruções, como mensagem do usuário, e mesmo uma frase escrita para manipular o modelo só
+consegue preencher campos que a pessoa vai ver antes de salvar.
+
+**Provedor é configuração, não código.** A chamada é um `fetch` para o endpoint de chat no
+formato da OpenAI, que quase todo provedor aceita. Trocar de provedor é trocar
+`IA_BASE_URL`, `IA_API_KEY` e `IA_MODELO`. Foi assim que o projeto saiu do DeepSeek
+(planejado) para o Gemini gratuito, e depois ganhou o OpenRouter como segundo provedor, sem
+mexer no código que conversa com o modelo.
+
+**Resiliência medida, não presumida.** O plano gratuito do Gemini não tem tempo de
+resposta: a mesma frase levou de 2 a 58 segundos, e num mesmo minuto quatro de sete
+modelos estavam travados ou devolvendo "alta demanda" (503). Esperar um modelo travado para
+só depois tentar outro gastava o prazo inteiro no modelo errado. A chamada virou uma
+disputa ([`lib/perguntar-ia.ts`](lib/perguntar-ia.ts)): dois modelos do Google e um do
+OpenRouter são consultados ao mesmo tempo, vence a primeira resposta **utilizável** e os
+outros são cancelados.
+
+| Falha | Reação |
+|---|---|
+| Rede caída, 5xx, "alta demanda" | Passageira: entra numa segunda rodada, depois de 2 s |
+| Cota esgotada (429), chave recusada, modelo descontinuado | Definitiva: não repete, porque daria o mesmo erro e gastaria cota |
+| Resposta que não se aproveita | Perde a disputa; se ninguém responder melhor, pede para reescrever a frase |
+| Nada em 45 s | Desiste com mensagem própria |
+
+Na mesma frase em que antes a pessoa via 30 segundos de espera ou um erro, as medições
+seguintes ficaram entre 4 e 16 segundos, todas certas. Quando tudo falha, a tela diz o que houve ("a IA gratuita do
+Google está sobrecarregada agora") e aponta o lançamento manual.
+
+**Custo sob controle numa demonstração pública.** Cada pedido custa na chave de quem mantém
+o projeto, e a senha da conta demo está publicada neste README. A Server Action recusa
+acima de 30 pedidos por pessoa em 24 horas **e** de 300 no total: só o limite individual
+deixaria várias contas, cada uma abaixo do teto, somarem sem limite. O pedido é contado
+antes da chamada, porque erro em laço também custa, e a tabela de uso guarda quem e quando,
+nunca o texto.
+
+**Testável sem rede.** Montar as instruções, conferir a resposta e conduzir a disputa são
+funções que recebem o `fetch` de fora. Os testes simulam um modelo sobrecarregado, um
+travado, um que responde lixo antes do outro responder certo, a segunda rodada e o prazo
+estourado. Um teste passa a sugestão pelo schema real do formulário, porque é nesse elo que
+uma divergência de formato só apareceria na hora de salvar. A escolha do modelo do
+OpenRouter também foi medida: sete modelos gratuitos testados com frases reais; três
+acertaram a transferência entre projetos, e um só acertou também a perda com taxa e o saque
+em token.
+
+**Trade-offs assumidos.** No plano gratuito, o pior caso ainda chega perto de meio minuto, e
+o provedor pode usar o que recebe para treinar modelos; por isso a tela diz o que é
+enviado. O plano pago resolveria os dois por centavos ao mês, e trocar é configuração.
 
 ### Dinheiro em inteiros, nunca em ponto flutuante
 
@@ -356,6 +486,10 @@ Nada de RPC, API de exchange ou cotação automática. Um farmer opera em vária
 exchanges, e cada integração é um ponto de falha que envelhece sozinho. A entrada manual é
 mais trabalhosa e mantém o sistema funcionando sem depender de nada externo.
 
+O LLM não muda isso: ele não consulta saldo nem preço em lugar nenhum, só transforma em
+campos o que a pessoa escreveu. Se todos os provedores caírem, o formulário manual continua
+igual.
+
 ### Dois bancos, escolhidos por argumento
 
 Produção e desenvolvimento são branches distintos do mesmo projeto Neon. Desenvolvimento
@@ -402,11 +536,18 @@ cp .env.example .env.local
 | `DATABASE_URL` | Conexão do Postgres | Neon → Project → Connection Details (use a URL *pooled*) |
 | `AUTH_SECRET` | Assina os tokens de sessão | `openssl rand -base64 32` |
 | `ADMIN_EMAIL` | E-mail que nasce administrador | O seu |
+| `IA_API_KEY` | Opcional: liga o "Lançar com IA" | Chave do provedor (ex.: Google AI Studio) |
+| `IA_BASE_URL`, `IA_MODELO` | Endereço e modelo, no formato da OpenAI | Ex.: `https://generativelanguage.googleapis.com/v1beta/openai` e `gemini-3.5-flash-lite` |
+| `IA_MODELO_RESERVA` | Opcional: outro modelo do mesmo provedor, consultado junto | Ex.: `gemini-3.1-flash-lite` |
+| `IA2_API_KEY`, `IA2_BASE_URL`, `IA2_MODELO` | Opcional: um segundo provedor, consultado junto | Ex.: OpenRouter, `https://openrouter.ai/api/v1` |
+
+Sem as variáveis de IA, o sistema sobe normalmente e só o botão "Lançar com IA" responde que
+o recurso não está configurado.
 
 ### Banco e primeiro acesso
 
 ```bash
-npm run db:migrate      # cria as 14 tabelas
+npm run db:migrate      # cria as 19 tabelas
 npm run db:seed-demo    # opcional: dados fictícios para explorar
 npm run dev             # http://localhost:3000
 ```
@@ -447,7 +588,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 298 testes
+npm test              # 358 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -460,7 +601,9 @@ então nada consulta o banco durante o build, e uma conexão real daria ao CI ac
 de produção sem necessidade.
 
 Os testes cobrem o que quebra em silêncio: aritmética monetária e de pontos, agregação
-financeira, seletores, mutações, regras de validação e o alvo de ocorrências das tarefas.
+financeira, seletores, mutações, regras de validação, o alvo de ocorrências das tarefas e a
+integração com LLM (conferência da resposta e disputa entre provedores, com `fetch`
+simulado).
 Componentes de interface não têm teste automatizado, o que é uma lacuna consciente e está
 no roadmap.
 
@@ -476,7 +619,7 @@ app/              Rotas. Server Components por padrão
   entrar/         Login, cadastro, recuperação, espera por aprovação
 actions/          Server Actions: toda escrita passa por aqui
 db/
-  schema.ts       14 tabelas (Drizzle), com cascatas e FK composta
+  schema.ts       19 tabelas (Drizzle), com cascatas e FK composta
   queries/        Toda leitura e agregação
 lib/              Funções puras, testáveis sem banco
   money.ts        Aritmética monetária em centavos
@@ -487,6 +630,8 @@ lib/              Funções puras, testáveis sem banco
   selectors.ts    Derivações do Dataset para as telas
   mutations.ts    Transformações puras (também usadas na UI otimista)
   validators.ts   Schemas Zod, compartilhados entre cliente e servidor
+  interpretar-lancamento.ts  Instruções ao LLM e conferência da resposta
+  perguntar-ia.ts Disputa entre provedores de LLM, com prazos e classificação de falha
 components/
   views/          Telas
   forms/          Diálogos e campos
@@ -520,17 +665,28 @@ tests/            Vitest
       a mesma decisão vista de ângulos diferentes. Enquanto isso não existe, os campos de
       data e de valor confirmam embaixo como o dado foi interpretado
 
-- [ ] **Catálogo de projetos da comunidade.** Quem administra cadastra o projeto uma vez,
-      com links e data prevista de TGE, e quem farma o adiciona aos próprios com um clique,
-      em vez de recadastrar tudo do zero. Modelado em
-      [`ARCHITECTURE.md` §13](ARCHITECTURE.md): adoção por cópia, para que o projeto passe
-      a ser de quem adotou e nenhuma ação de quem administra alcance dados de terceiros
+- [ ] **Medir o acerto da IA.** Quantas sugestões são salvas sem nenhuma edição, por tipo
+      de lançamento. É o número que diria se uma troca de modelo melhorou ou piorou, em vez
+      de impressão
+- [ ] **Registrar recebimento de airdrop por frase.** "Caíram 3.078 tokens da Solstice a
+      $0,12" tem os mesmos campos que o formulário de recebimento já pede
 - [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
-- [ ] Edição de metas, recebimentos e medições (hoje só criar e excluir)
 - [ ] Alternância entre tema claro e escuro (o tema claro já existe, falta o controle)
 - [ ] Criar o vínculo projeto×conta junto com o projeto, em vez de no primeiro lançamento
 
 ## O que aprendi
+
+**Saída de LLM é entrada de usuário, só que mais criativa.** As instruções pediam um objeto
+com apelidos. A primeira frase real, com duas operações, voltou como lista solta e com os
+nomes no lugar dos apelidos, e o sistema respondeu "não consegui entender" para uma
+resposta perfeitamente correta. O conserto não foi brigar com o modelo pelo formato, foi
+aceitar o que ele de fato devolve e conferir cada campo contra os dados reais. O que
+protege é a conferência, não o prompt.
+
+**Disponibilidade de API gratuita não é um número.** Escolher pelo tempo de resposta médio
+teria escolhido o modelo errado, porque não existe tempo médio: a mesma chamada variou de 2
+a 58 segundos. A resposta não foi esperar mais, foi perguntar a mais de um provedor ao mesmo
+tempo e medir de novo.
 
 **Falhar em silêncio é pior que falhar.** Criar tarefa com o campo de conta em branco
 resolvia o alvo como lista vazia e um `if` pulava a inserção sem reclamar. A tarefa ia para
@@ -570,7 +726,7 @@ justificativa inventada depois do fato.
 
 | Documento | Conteúdo |
 |---|---|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Modelo de dados, fórmulas financeiras, motor de recorrência, autorização |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Modelo de dados, fórmulas financeiras, motor de recorrência, autorização, integração com LLM (§18) |
 | [`DEVLOG.md`](DEVLOG.md) | Como se chegou aqui: alternativas descartadas, trade-offs e os bugs do caminho |
 
 ## Licença
