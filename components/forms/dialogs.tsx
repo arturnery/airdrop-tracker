@@ -15,7 +15,11 @@ import {
   rotuloDoTipo,
   TIPOS_LANCAMENTO,
 } from "@/lib/finance";
-import type { SugestaoLancamento } from "@/lib/interpretar-lancamento";
+import type {
+  SugestaoLancamento,
+  SugestaoMedicao,
+  SugestaoRecebimento,
+} from "@/lib/interpretar-lancamento";
 import { contasDisponiveisNoProjeto } from "@/lib/tarefas";
 import { Button } from "@/components/ui/button";
 import {
@@ -202,6 +206,39 @@ function BotaoNovo({ children, ...props }: React.ComponentProps<typeof Button>) 
       <Plus className="size-4" aria-hidden="true" />
       {children}
     </Button>
+  );
+}
+
+// -------------------------------------------------------- aberto pela IA
+
+/*
+ * Os quatro formulários que a IA sabe preencher (lançamento, pontos, volume e
+ * recebimento) recebem as mesmas três coisas de `LancarComIA`, e mudam do
+ * mesmo jeito: nascem abertos, sem botão próprio, com título de conferência e
+ * os avisos da IA no topo. O resto do formulário é o de sempre.
+ */
+type AbertoPelaIA<S> = {
+  sugestao?: S;
+  /** "1 de 2", quando a frase virou mais de um registro. */
+  posicao?: string;
+  aoFechar?: () => void;
+};
+
+const tituloDaIA = (base: string, posicao?: string) =>
+  posicao ? `${base} ${posicao}` : base;
+
+const descricaoDaIA = (posicao?: string) =>
+  "Preenchido pela IA a partir da sua frase. Nada foi salvo ainda: ajuste o que precisar e salve." +
+  (posicao ? " Cancelar pula só este e segue para o próximo." : "");
+
+function AvisosDaIA({ avisos }: { avisos?: string[] }) {
+  if (!avisos || avisos.length === 0) return null;
+  return (
+    <ul className="border-caution/40 bg-caution/10 space-y-1 rounded-md border px-3 py-2 text-sm">
+      {avisos.map((aviso) => (
+        <li key={aviso}>{aviso}</li>
+      ))}
+    </ul>
   );
 }
 
@@ -474,15 +511,7 @@ export function NovoLancamento({
   projectId?: string;
   tipo?: string;
   rotulo?: string;
-  /**
-   * Campos já preenchidos pela IA (`LancarComIA`). Só valores iniciais: tudo
-   * continua editável, e o salvar é o mesmo de um lançamento digitado.
-   */
-  sugestao?: SugestaoLancamento;
-  /** "1 de 2", quando a frase virou mais de um lançamento. */
-  posicao?: string;
-  aoFechar?: () => void;
-}) {
+} & AbertoPelaIA<SugestaoLancamento>) {
   const { acoes, hoje } = useDados();
   const { projetos } = useOpcoes();
   const projetoInicial = sugestao?.projectId ?? projectId;
@@ -504,15 +533,14 @@ export function NovoLancamento({
     <Formulario
       titulo={
         sugestao
-          ? `Confira o lançamento${posicao ? ` ${posicao}` : ""}`
+          ? tituloDaIA("Confira o lançamento", posicao)
           : tipo
             ? (rotuloDoTipo(tipo) ?? "Novo lançamento")
             : "Novo lançamento"
       }
       descricao={
         sugestao
-          ? "Preenchido pela IA a partir da sua frase. Nada foi salvo ainda: ajuste o que precisar e salve." +
-            (posicao ? " Cancelar pula só este e segue para o próximo." : "")
+          ? descricaoDaIA(posicao)
           : tipo
             ? efeitoDoTipo(tipo)
             : "Depósito, retirada, resultado de trade ou volume operado."
@@ -538,13 +566,7 @@ export function NovoLancamento({
     >
       {({ erros: e }) => (
         <>
-          {sugestao && sugestao.avisos.length > 0 ? (
-            <ul className="border-caution/40 bg-caution/10 space-y-1 rounded-md border px-3 py-2 text-sm">
-              {sugestao.avisos.map((aviso) => (
-                <li key={aviso}>{aviso}</li>
-              ))}
-            </ul>
-          ) : null}
+          <AvisosDaIA avisos={sugestao?.avisos} />
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoSelecao
               label="Projeto"
@@ -590,7 +612,7 @@ export function NovoLancamento({
               label="Data"
               name="occurredAt"
               obrigatorio
-              defaultValue={sugestao?.occurredAt ?? hoje}
+              defaultValue={sugestao?.data ?? hoje}
               erro={e.occurredAt}
             />
           </div>
@@ -1013,21 +1035,29 @@ export function LancarProgressoMeta({
  * campos aparecem**: mostrada no fim, a pessoa preencheria para depois
  * descobrir que preencheu o formulário errado.
  */
-export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
+export function RegistrarRecebimento({
+  projectId,
+  sugestao,
+  posicao,
+  aoFechar,
+}: { projectId?: string } & AbertoPelaIA<SugestaoRecebimento>) {
   const { acoes, hoje } = useDados();
   const { projetos } = useOpcoes();
-  const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
+  const projetoInicial = sugestao?.projectId ?? projectId;
+  const [projetoSel, setProjetoSel] = useState(projetoInicial ?? projetos[0]?.valor ?? "");
   const contas = useContasDoProjeto(projetoSel);
-  const [modo, setModo] = useState<"token" | "total">("token");
-  const [quantidade, setQuantidade] = useState("");
-  const [precoToken, setPrecoToken] = useState("");
-  const [total, setTotal] = useState("");
+  const [modo, setModo] = useState<"token" | "total">(sugestao?.modo ?? "token");
+  const [quantidade, setQuantidade] = useState(sugestao?.tokenAmount ?? "");
+  const [precoToken, setPrecoToken] = useState(sugestao?.priceUsd ?? "");
+  const [total, setTotal] = useState(sugestao?.valueUsd ?? "");
 
   return (
     <Formulario
-      titulo="Registrar airdrop recebido"
-      descricao="Quanto cada conta recebeu. É o que fecha o ROI real."
-      gatilho={<BotaoNovo>Registrar recebimento</BotaoNovo>}
+      titulo={sugestao ? tituloDaIA("Confira o airdrop recebido", posicao) : "Registrar airdrop recebido"}
+      descricao={sugestao ? descricaoDaIA(posicao) : "Quanto cada conta recebeu. É o que fecha o ROI real."}
+      gatilho={sugestao ? undefined : <BotaoNovo>Registrar recebimento</BotaoNovo>}
+      abertoAoMontar={Boolean(sugestao)}
+      aoFechar={aoFechar}
       aoEnviar={(dados) => {
         const bruto = {
           projectId: texto(dados, "projectId"),
@@ -1046,12 +1076,13 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
     >
       {({ erros: e }) => (
         <>
+          <AvisosDaIA avisos={sugestao?.avisos} />
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoSelecao
               label="Projeto"
               name="projectId"
               obrigatorio
-              defaultValue={projectId}
+              defaultValue={projetoInicial}
               erro={e.projectId}
               opcoes={projetos}
               onChange={(evento) => setProjetoSel(evento.target.value)}
@@ -1060,6 +1091,7 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
               label="Conta"
               name="accountId"
               obrigatorio
+              defaultValue={sugestao?.accountId ?? undefined}
               erro={e.accountId}
               opcoes={contas}
             />
@@ -1089,6 +1121,7 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
                 name="tokenSymbol"
                 obrigatorio
                 autoFocus={Boolean(projectId)}
+                defaultValue={sugestao?.tokenSymbol}
                 erro={e.tokenSymbol}
                 placeholder="VTX"
               />
@@ -1121,6 +1154,7 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
                 label="Token"
                 name="tokenSymbol"
                 obrigatorio
+                defaultValue={sugestao?.tokenSymbol}
                 erro={e.tokenSymbol}
                 placeholder="VTX"
               />
@@ -1139,7 +1173,7 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
             label="Data"
             name="receivedAt"
             obrigatorio
-            defaultValue={hoje}
+            defaultValue={sugestao?.data ?? hoje}
             erro={e.receivedAt}
           />
         </>
@@ -1161,13 +1195,19 @@ export function RegistrarRecebimento({ projectId }: { projectId?: string }) {
  * antes de salvar: é onde se percebe um total digitado errado, porque um salto
  * absurdo aparece ali na hora.
  */
-export function RegistrarVolume({ projectId }: { projectId?: string }) {
+export function RegistrarVolume({
+  projectId,
+  sugestao,
+  posicao,
+  aoFechar,
+}: { projectId?: string } & AbertoPelaIA<SugestaoMedicao>) {
   const { dataset, acoes, hoje } = useDados();
   const { projetos } = useOpcoes();
-  const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
+  const projetoInicial = sugestao?.projectId ?? projectId;
+  const [projetoSel, setProjetoSel] = useState(projetoInicial ?? projetos[0]?.valor ?? "");
   const contas = useContasDoProjeto(projetoSel);
-  const [contaSel, setContaSel] = useState("");
-  const [valor, setValor] = useState("");
+  const [contaSel, setContaSel] = useState(sugestao?.accountId ?? "");
+  const [valor, setValor] = useState(sugestao?.valor ?? "");
 
   const alvo = contaSel || contas[0]?.valor || "";
   const anterior = dataset.volumeSnapshots
@@ -1183,9 +1223,15 @@ export function RegistrarVolume({ projectId }: { projectId?: string }) {
 
   return (
     <Formulario
-      titulo="Registrar volume acumulado"
-      descricao="O total que a plataforma mostra hoje. A diferença para a medição anterior é calculada aqui."
-      gatilho={<BotaoNovo>Registrar volume</BotaoNovo>}
+      titulo={sugestao ? tituloDaIA("Confira o volume", posicao) : "Registrar volume acumulado"}
+      descricao={
+        sugestao
+          ? descricaoDaIA(posicao)
+          : "O total que a plataforma mostra hoje. A diferença para a medição anterior é calculada aqui."
+      }
+      gatilho={sugestao ? undefined : <BotaoNovo>Registrar volume</BotaoNovo>}
+      abertoAoMontar={Boolean(sugestao)}
+      aoFechar={aoFechar}
       aoEnviar={(dados) => {
         const bruto = {
           projectId: texto(dados, "projectId"),
@@ -1201,12 +1247,13 @@ export function RegistrarVolume({ projectId }: { projectId?: string }) {
     >
       {({ erros: e }) => (
         <>
+          <AvisosDaIA avisos={sugestao?.avisos} />
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoSelecao
               label="Projeto"
               name="projectId"
               obrigatorio
-              defaultValue={projectId}
+              defaultValue={projetoInicial}
               erro={e.projectId}
               opcoes={projetos}
               onChange={(evento) => setProjetoSel(evento.target.value)}
@@ -1215,6 +1262,7 @@ export function RegistrarVolume({ projectId }: { projectId?: string }) {
               label="Conta"
               name="accountId"
               obrigatorio
+              defaultValue={sugestao?.accountId ?? undefined}
               erro={e.accountId}
               opcoes={contas}
               onChange={(evento) => setContaSel(evento.target.value)}
@@ -1241,7 +1289,7 @@ export function RegistrarVolume({ projectId }: { projectId?: string }) {
               label="Data"
               name="takenAt"
               obrigatorio
-              defaultValue={hoje}
+              defaultValue={sugestao?.data ?? hoje}
               erro={e.takenAt}
             />
           </div>
@@ -1271,6 +1319,7 @@ export function RegistrarVolume({ projectId }: { projectId?: string }) {
           <CampoTexto
             label="Nota"
             name="note"
+            defaultValue={sugestao?.note}
             erro={e.note}
             placeholder="Semana de volume alto no perp"
           />
@@ -1282,7 +1331,12 @@ export function RegistrarVolume({ projectId }: { projectId?: string }) {
 
 // -------------------------------------------------------------------- pontos
 
-export function RegistrarPontos({ projectId }: { projectId?: string }) {
+export function RegistrarPontos({
+  projectId,
+  sugestao,
+  posicao,
+  aoFechar,
+}: { projectId?: string } & AbertoPelaIA<SugestaoMedicao>) {
   const { dataset, acoes, hoje } = useDados();
 
   // Só projetos que declararam ter programa de pontos.
@@ -1290,19 +1344,28 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
     .filter((p) => p.pointsLabel !== null)
     .map((p) => ({ valor: p.id, rotulo: `${p.name} · ${p.pointsLabel}` }));
 
+  const projetoInicial = sugestao?.projectId ?? projectId;
   const [projetoSel, setProjetoSel] = useState(
-    projectId ?? comPrograma[0]?.valor ?? "",
+    projetoInicial ?? comPrograma[0]?.valor ?? "",
   );
   const contas = useContasDoProjeto(projetoSel);
-  const [pontos, setPontos] = useState("");
+  const [pontos, setPontos] = useState(sugestao?.valor ?? "");
 
+  // Aberto pela IA, a Server Action já recusa a frase de pontos de quem não
+  // tem programa nenhum; este retorno vale para o botão do painel.
   if (comPrograma.length === 0) return null;
 
   return (
     <Formulario
-      titulo="Registrar pontos"
-      descricao="O total acumulado que a plataforma mostra hoje. O ganho do período sai da diferença entre dois registros."
-      gatilho={<BotaoNovo>Registrar pontos</BotaoNovo>}
+      titulo={sugestao ? tituloDaIA("Confira os pontos", posicao) : "Registrar pontos"}
+      descricao={
+        sugestao
+          ? descricaoDaIA(posicao)
+          : "O total acumulado que a plataforma mostra hoje. O ganho do período sai da diferença entre dois registros."
+      }
+      gatilho={sugestao ? undefined : <BotaoNovo>Registrar pontos</BotaoNovo>}
+      abertoAoMontar={Boolean(sugestao)}
+      aoFechar={aoFechar}
       aoEnviar={(dados) => {
         const bruto = {
           projectId: texto(dados, "projectId"),
@@ -1318,12 +1381,13 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
     >
       {({ erros: e }) => (
         <>
+          <AvisosDaIA avisos={sugestao?.avisos} />
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoSelecao
               label="Projeto"
               name="projectId"
               obrigatorio
-              defaultValue={projectId}
+              defaultValue={projetoInicial}
               erro={e.projectId}
               opcoes={comPrograma}
               onChange={(evento) => setProjetoSel(evento.target.value)}
@@ -1332,6 +1396,7 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
               label="Conta"
               name="accountId"
               obrigatorio
+              defaultValue={sugestao?.accountId ?? undefined}
               erro={e.accountId}
               opcoes={contas}
             />
@@ -1353,13 +1418,14 @@ export function RegistrarPontos({ projectId }: { projectId?: string }) {
               label="Data"
               name="takenAt"
               obrigatorio
-              defaultValue={hoje}
+              defaultValue={sugestao?.data ?? hoje}
               erro={e.takenAt}
             />
           </div>
           <CampoTexto
             label="Observação"
             name="note"
+            defaultValue={sugestao?.note}
             erro={e.note}
             placeholder="Semana de volume alto, bônus de maker…"
           />

@@ -3355,3 +3355,29 @@ modelos gratuitos de lá, três acertaram a frase de duas operações; o Nemotro
 NVIDIA, foi o único que acertou também as outras duas frases de teste (perda com taxa de
 gás na mesma frase, saque em token com valor aproximado). Verificado isolado: com a chave
 do Google propositalmente inválida, o OpenRouter respondeu sozinho em 7 segundos.
+
+### Quatro formulários, não um
+
+A pergunta "funciona com pontos também?" foi respondida testando antes de responder. Três
+frases fora do lançamento, com os modelos reais: pontos e volume abriam o formulário de
+lançamento com avisos (inútil, mas honesto), e "caiu o airdrop da Solstice, 3000 SLX a
+0,12" virou **rendimento de $360, sem aviso nenhum**. Esse era o perigoso: salvo, o valor
+entraria no resultado sem passar pelo registro de recebimento, ficaria fora do cartão de
+airdrops ganhos e fora das bolinhas do gráfico.
+
+A sugestão virou uma união discriminada por `formulario` (lançamento, pontos, volume,
+recebimento), e a fila da tela abre o componente de cada tipo, os mesmos do registro manual,
+que ganharam a mesma entrada "aberto pela IA" do lançamento. Três regras novas na
+conferência, todas vindas de regra que o formulário já tinha:
+
+- **Total, não incremento.** Os formulários de pontos e volume pedem o acumulado que a
+  plataforma mostra, e quem diz "fiz 20 mil hoje" deu o incremento. O modelo marca qual é
+  qual, e o sistema soma à última medição daquela conta, avisando a base. A soma não é do
+  modelo: ele não conhece as medições, e aritmética de modelo não é coisa em que se confie.
+- **Pontos exigem programa**, como o select do formulário exige.
+- **Recebimento nos dois modos do formulário**, com o preço calculado quando a frase dá
+  quantidade e total.
+
+Um detalhe do leitor de pontos reapareceu: "1500.125" seria lido como um milhão e
+quinhentos mil, pela mesma regra de três dígitos do leitor de dinheiro. Pontos saem com
+quatro casas quando teriam três.

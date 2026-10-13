@@ -4,7 +4,12 @@ import { useCallback, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 
 import { interpretarLancamento } from "@/actions/ia";
-import { NovoLancamento } from "@/components/forms/dialogs";
+import {
+  NovoLancamento,
+  RegistrarPontos,
+  RegistrarRecebimento,
+  RegistrarVolume,
+} from "@/components/forms/dialogs";
 import { CampoArea } from "@/components/forms/fields";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,15 +21,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { SugestaoLancamento } from "@/lib/interpretar-lancamento";
+import type { Sugestao } from "@/lib/interpretar-lancamento";
 
 /**
- * Lançamento escrito em frase, conferido no formulário de sempre.
+ * Registro escrito em frase, conferido no formulário de sempre.
  *
  * Dois diálogos em sequência, não um só com dois passos: o segundo é o
- * próprio `NovoLancamento`, então salvar daqui e salvar à mão passam pela
- * mesma tela, validação e Server Action. Um formulário paralelo "da IA"
- * envelheceria separado do original na primeira mudança de campo.
+ * próprio formulário do tipo entendido (`NovoLancamento`, `RegistrarPontos`,
+ * `RegistrarVolume` ou `RegistrarRecebimento`), então salvar daqui e salvar à
+ * mão passam pela mesma tela, validação e Server Action. Um formulário
+ * paralelo "da IA" envelheceria separado do original na primeira mudança de
+ * campo.
  */
 export function LancarComIA() {
   const [pedindo, setPedindo] = useState(false);
@@ -42,7 +49,7 @@ export function LancarComIA() {
    * reabriria nada e mostraria a sugestão anterior.
    */
   const [fila, setFila] = useState<{
-    itens: SugestaoLancamento[];
+    itens: Sugestao[];
     indice: number;
     versao: number;
   } | null>(null);
@@ -96,8 +103,9 @@ export function LancarComIA() {
           <DialogHeader>
             <DialogTitle>Lançar com IA</DialogTitle>
             <DialogDescription>
-              Escreva como contaria para alguém. O formulário abre preenchido
-              para você conferir, e nada é salvo antes disso.
+              Escreva como contaria para alguém: lançamento, pontos, volume ou
+              airdrop recebido. O formulário certo abre preenchido para você
+              conferir, e nada é salvo antes disso.
             </DialogDescription>
           </DialogHeader>
 
@@ -153,7 +161,7 @@ export function LancarComIA() {
       </Dialog>
 
       {fila && atual ? (
-        <NovoLancamento
+        <FormularioDaSugestao
           key={`${fila.versao}-${fila.indice}`}
           sugestao={atual}
           posicao={
@@ -166,4 +174,26 @@ export function LancarComIA() {
       ) : null}
     </>
   );
+}
+
+function FormularioDaSugestao({
+  sugestao,
+  posicao,
+  aoFechar,
+}: {
+  sugestao: Sugestao;
+  posicao?: string;
+  aoFechar: () => void;
+}) {
+  const comum = { posicao, aoFechar };
+  switch (sugestao.formulario) {
+    case "lancamento":
+      return <NovoLancamento sugestao={sugestao} {...comum} />;
+    case "pontos":
+      return <RegistrarPontos sugestao={sugestao} {...comum} />;
+    case "volume":
+      return <RegistrarVolume sugestao={sugestao} {...comum} />;
+    case "recebimento":
+      return <RegistrarRecebimento sugestao={sugestao} {...comum} />;
+  }
 }

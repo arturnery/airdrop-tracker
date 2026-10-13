@@ -83,7 +83,7 @@ describe("perguntar", () => {
       b: { tipo: "responde", conteudo: BOA },
     });
     const r = await base(buscar, ["a", "b"]);
-    expect(r.ok && r.sugestoes.map((s) => s.type)).toEqual(["withdrawal", "deposit"]);
+    expect(r.ok && r.sugestoes.map((s) => (s.formulario === "lancamento" ? s.type : null))).toEqual(["withdrawal", "deposit"]);
   });
 
   it("um travado não segura o outro: o rápido vence sem esperar o prazo", async () => {

@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.10",
+    data: "2026-10-13",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O Lançar com IA passou a entender também pontos, volume e airdrop recebido, e abre o formulário certo de cada um. \"Ganhei 300 pontos na Lighter\" ou \"fiz 20 mil de volume hoje\" viram o total acumulado, somado à sua última medição, com um aviso dizendo a base usada. \"Caiu o airdrop da Solstice, 3.000 SLX a $0,12\" abre o registro de recebimento, que antes era confundido com rendimento.",
+      },
+    ],
+  },
+  {
     versao: "1.9",
     data: "2026-10-06",
     mudancas: [

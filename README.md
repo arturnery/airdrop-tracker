@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-358%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-369%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -128,10 +128,11 @@ senhas temporárias, mas não vê o farming de ninguém.
 
 ## Funcionalidades
 
-- **Lançar com IA.** Uma frase em português ("tomei um loss de 42,50 na Backpack ontem e
-  paguei 1,20 de gás") vira um ou mais lançamentos preenchidos: projeto, conta, tipo,
-  valor, data relativa, token e descrição. A pessoa confere e salva pelo mesmo formulário
-  do lançamento manual.
+- **Lançar com IA.** Uma frase em português vira um ou mais registros preenchidos, cada um
+  no formulário do seu tipo: lançamento ("tomei um loss de 42,50 na Backpack ontem e
+  paguei 1,20 de gás"), pontos e volume ("ganhei 300 pontos na Lighter", somados à última
+  medição porque o formulário pede o total) e airdrop recebido ("caíram 3.000 SLX a
+  $0,12"). A pessoa confere e salva pelo mesmo formulário do registro manual.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o
@@ -588,7 +589,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 358 testes
+npm test              # 369 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -668,8 +669,6 @@ tests/            Vitest
 - [ ] **Medir o acerto da IA.** Quantas sugestões são salvas sem nenhuma edição, por tipo
       de lançamento. É o número que diria se uma troca de modelo melhorou ou piorou, em vez
       de impressão
-- [ ] **Registrar recebimento de airdrop por frase.** "Caíram 3.078 tokens da Solstice a
-      $0,12" tem os mesmos campos que o formulário de recebimento já pede
 - [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
 - [ ] Alternância entre tema claro e escuro (o tema claro já existe, falta o controle)
 - [ ] Criar o vínculo projeto×conta junto com o projeto, em vez de no primeiro lançamento

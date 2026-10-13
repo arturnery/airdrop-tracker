@@ -1730,22 +1730,24 @@ Sem isso ela cresceria para sempre guardando tentativas que já não decidem nad
 
 ## 18. Lançamento por linguagem natural (LLM)
 
-Uma frase em português vira um ou mais lançamentos preenchidos, que a pessoa confere e
-salva pelo formulário de sempre. O README traz a visão de produto e os trade-offs; aqui
+Uma frase em português vira um ou mais registros preenchidos, cada um no formulário do seu
+tipo (lançamento, pontos, volume ou recebimento de airdrop), que a pessoa confere e salva
+pelo formulário de sempre. O README traz a visão de produto e os trade-offs; aqui
 fica o contrato.
 
 ### 18.1. Peças
 
 | Peça | Papel |
 |---|---|
-| `components/forms/lancar-com-ia.tsx` | Caixa de texto; recebe as sugestões e abre um `NovoLancamento` preenchido por vez ("1 de 2") |
+| `components/forms/lancar-com-ia.tsx` | Caixa de texto; recebe as sugestões e abre um formulário preenchido por vez ("1 de 2"): `NovoLancamento`, `RegistrarPontos`, `RegistrarVolume` ou `RegistrarRecebimento` |
 | `actions/ia.ts` | Server Action: sessão, limites de uso, contexto do usuário, monta os alvos a partir do ambiente |
 | `lib/interpretar-lancamento.ts` | Puro: monta as instruções e confere a resposta contra os dados reais |
 | `lib/perguntar-ia.ts` | Disputa entre provedores, prazos e classificação de falha; recebe o `fetch` de fora |
 | `ia_usos` | Uma linha por pedido (quem e quando), só para os limites; fora do backup |
 
-A IA não escreve no banco. O que grava é `criarLancamento`, a mesma ação do lançamento
-manual, com o mesmo `lancamentoSchema`.
+A IA não escreve no banco. O que grava é a ação do formulário aberto (`criarLancamento`,
+`registrarPontos`, `registrarVolume`, `registrarRecebimento`), a mesma do registro manual,
+com o mesmo schema.
 
 ### 18.2. Contrato com o modelo
 
@@ -1791,6 +1793,21 @@ sobra nenhum lançamento legível; fora isso, campo ruim vira campo vazio com av
 - **Data.** Real (não "2026-02-30") e não futura.
 - **Token.** Símbolo validado; quantidade sem notação científica.
 - **Dúvida do modelo.** Vira o primeiro aviso.
+- **Qual formulário.** `airdrop` abre o recebimento, `pontos` e `volume` abrem as medições,
+  o resto abre o lançamento. As instruções proíbem chamar airdrop de rendimento: foi o
+  engano que motivou o suporte aos quatro tipos, porque o rendimento entraria no resultado
+  sem passar pelo registro de recebimento nem pelo gráfico.
+- **Pontos e volume pedem o total acumulado.** O modelo diz se o número da frase é o total
+  (`acumulado: true`) ou o ganho do período (`false`). No segundo caso, o sistema soma à
+  última medição daquele par projeto e conta (enviada no contexto) e avisa com qual base
+  somou; sem medição anterior, usa o número e pede conferência. Pontos com três casas
+  decimais viram quatro, porque o leitor de pontos lê três dígitos como milhar.
+- **Pontos exigem programa.** Projeto sem programa de pontos fica em branco, com aviso; e
+  quem não tem nenhum projeto com programa recebe a recusa antes de o formulário abrir,
+  porque ele não teria o que mostrar no select.
+- **Recebimento nos dois modos.** Quantidade e preço vão para o modo "quantidade e preço";
+  quantidade e total calculam o preço (com aviso); só o total vai para o modo "só o
+  total".
 
 ### 18.4. Disputa entre provedores
 
@@ -1835,6 +1852,5 @@ endereço e chave corretos por alvo.
 
 - Conversa de várias mensagens (a IA perguntar de volta). Hoje a dúvida vira aviso no
   formulário, e a pessoa resolve ali.
-- Recebimento de airdrop por frase.
 - Métrica de acerto (sugestões salvas sem edição), que seria a forma objetiva de comparar
   modelos depois da escolha inicial.

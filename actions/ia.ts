@@ -11,7 +11,7 @@ import { env } from "@/lib/env";
 import {
   montarMensagens,
   type ContextoIA,
-  type SugestaoLancamento,
+  type Sugestao,
 } from "@/lib/interpretar-lancamento";
 import { MENSAGEM_DE_FALHA, perguntar, type Alvo } from "@/lib/perguntar-ia";
 
@@ -38,7 +38,7 @@ const entradaSchema = z
   .max(500, "Seja mais breve: até 500 caracteres.");
 
 export type ResultadoIA =
-  | { ok: true; sugestoes: SugestaoLancamento[] }
+  | { ok: true; sugestoes: Sugestao[] }
   | { ok: false; erro: string };
 
 export async function interpretarLancamento(entrada: unknown): Promise<ResultadoIA> {
@@ -92,7 +92,23 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
       ctx,
       alvos: alvosConfigurados(),
     });
-    if (desfecho.ok) return { ok: true, sugestoes: desfecho.sugestoes };
+    if (desfecho.ok) {
+      /*
+       * O formulário de pontos não abre para quem não tem nenhum projeto com
+       * programa de pontos (não haveria o que escolher no select), e a fila
+       * da tela travaria esperando ele fechar. Melhor dizer agora o porquê.
+       */
+      const semPrograma =
+        desfecho.sugestoes.some((s) => s.formulario === "pontos") &&
+        !ctx.projetos.some((p) => p.pontos);
+      if (semPrograma) {
+        return {
+          ok: false,
+          erro: "Nenhum projeto seu tem programa de pontos cadastrado. Edite o projeto, informe o nome dos pontos e tente de novo.",
+        };
+      }
+      return { ok: true, sugestoes: desfecho.sugestoes };
+    }
     return { ok: false, erro: MENSAGEM_DE_FALHA[desfecho.motivo] };
   } catch (erro) {
     console.error("[ia]", erro);
@@ -116,9 +132,13 @@ function alvosConfigurados(): Alvo[] {
 }
 
 async function carregarContexto(userId: string): Promise<ContextoIA> {
-  const [projetos, contas, vinculos] = await Promise.all([
+  const [projetos, contas, vinculos, pontos, volumes] = await Promise.all([
     db
-      .select({ id: schema.projects.id, name: schema.projects.name })
+      .select({
+        id: schema.projects.id,
+        name: schema.projects.name,
+        pontos: schema.projects.pointsLabel,
+      })
       .from(schema.projects)
       .where(eq(schema.projects.userId, userId)),
     db
@@ -135,7 +155,51 @@ async function carregarContexto(userId: string): Promise<ContextoIA> {
       .from(schema.projectAccounts)
       .innerJoin(schema.projects, eq(schema.projects.id, schema.projectAccounts.projectId))
       .where(eq(schema.projects.userId, userId)),
+    db
+      .select({
+        projectId: schema.pointsSnapshots.projectId,
+        accountId: schema.pointsSnapshots.accountId,
+        valor: schema.pointsSnapshots.points,
+        data: schema.pointsSnapshots.takenAt,
+      })
+      .from(schema.pointsSnapshots)
+      .where(eq(schema.pointsSnapshots.userId, userId)),
+    db
+      .select({
+        projectId: schema.volumeSnapshots.projectId,
+        accountId: schema.volumeSnapshots.accountId,
+        valor: schema.volumeSnapshots.volumeUsd,
+        data: schema.volumeSnapshots.takenAt,
+      })
+      .from(schema.volumeSnapshots)
+      .where(eq(schema.volumeSnapshots.userId, userId)),
   ]);
 
-  return { hoje: dataDeHoje(), projetos, contas, vinculos };
+  return {
+    hoje: dataDeHoje(),
+    projetos,
+    contas,
+    vinculos,
+    medicoes: [
+      ...ultimaDeCadaPar("pontos", pontos),
+      ...ultimaDeCadaPar("volume", volumes),
+    ],
+  };
+}
+
+/**
+ * Só a medição mais recente de cada par projeto e conta: é a base sobre a
+ * qual "ganhei 200 pontos" vira o total que o formulário pede.
+ */
+function ultimaDeCadaPar(
+  tipo: "pontos" | "volume",
+  linhas: { projectId: string; accountId: string; valor: string; data: string }[],
+): NonNullable<ContextoIA["medicoes"]> {
+  const ultimas = new Map<string, (typeof linhas)[number]>();
+  for (const linha of linhas) {
+    const chave = `${linha.projectId}:${linha.accountId}`;
+    const atual = ultimas.get(chave);
+    if (!atual || linha.data > atual.data) ultimas.set(chave, linha);
+  }
+  return [...ultimas.values()].map((l) => ({ ...l, tipo, valor: Number(l.valor) }));
 }

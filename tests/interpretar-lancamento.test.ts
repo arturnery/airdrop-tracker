@@ -4,8 +4,15 @@ import {
   interpretarResposta,
   montarMensagens,
   type ContextoIA,
+  type SugestaoLancamento,
 } from "@/lib/interpretar-lancamento";
-import { lancamentoSchema } from "@/lib/validators";
+import {
+  lancamentoSchema,
+  pontosSchema,
+  recebimentoSchema,
+  valorDoRecebimento,
+  volumeSchema,
+} from "@/lib/validators";
 
 const ctx: ContextoIA = {
   hoje: "2026-10-06",
@@ -43,7 +50,8 @@ describe("montarMensagens", () => {
 });
 
 /** O primeiro lançamento da resposta: a maioria dos casos tem um só. */
-const um = (bruto: unknown, c: ContextoIA) => interpretarResposta(bruto, c)![0]!;
+const um = (bruto: unknown, c: ContextoIA) =>
+  interpretarResposta(bruto, c)![0]! as SugestaoLancamento;
 
 describe("interpretarResposta", () => {
   it("o exemplo do pedido vira um lançamento completo", () => {
@@ -60,11 +68,12 @@ describe("interpretarResposta", () => {
       ctx,
     );
     expect(sugestao).toEqual({
+      formulario: "lancamento",
       projectId: "prj-lighter",
       accountId: "acc-x",
       type: "deposit",
       amount: "100.00",
-      occurredAt: "2026-10-06",
+      data: "2026-10-06",
       tokenSymbol: "",
       tokenAmount: "",
       description: "Estratégia DN",
@@ -85,7 +94,7 @@ describe("interpretarResposta", () => {
     const resultado = lancamentoSchema.safeParse({
       projectId: sugestao.projectId,
       accountId: sugestao.accountId,
-      occurredAt: sugestao.occurredAt ?? ctx.hoje,
+      occurredAt: sugestao.data ?? ctx.hoje,
       type: sugestao.type,
       amount: sugestao.amount,
       tokenSymbol: sugestao.tokenSymbol,
@@ -151,8 +160,8 @@ describe("interpretarResposta", () => {
   it("data impossível ou no futuro fica em branco", () => {
     const impossivel = um({ projeto: "P2", tipo: "deposit", valor: 1, data: "2026-02-30" }, ctx)!;
     const futura = um({ projeto: "P2", tipo: "deposit", valor: 1, data: "2026-12-01" }, ctx)!;
-    expect(impossivel.occurredAt).toBeNull();
-    expect(futura.occurredAt).toBeNull();
+    expect(impossivel.data).toBeNull();
+    expect(futura.data).toBeNull();
     expect(futura.avisos).toContain("A data entendida estava no futuro: confira.");
   });
 
@@ -199,7 +208,9 @@ describe("interpretarResposta", () => {
       ],
       ctxDois,
     )!;
-    expect(sugestoes.map((s) => [s.projectId, s.accountId, s.type, s.amount])).toEqual([
+    expect(
+      (sugestoes as SugestaoLancamento[]).map((s) => [s.projectId, s.accountId, s.type, s.amount]),
+    ).toEqual([
       ["l", "e", "withdrawal", "70.00"],
       ["v", "c", "deposit", "70.00"],
     ]);
@@ -229,5 +240,125 @@ describe("interpretarResposta", () => {
     expect(interpretarResposta("texto solto", ctx)).toBeNull();
     expect(interpretarResposta(null, ctx)).toBeNull();
     expect(interpretarResposta({ lancamentos: [] }, ctx)).toBeNull();
+  });
+});
+
+describe("interpretarResposta: pontos, volume e recebimento", () => {
+  const ctxMedicoes: ContextoIA = {
+    hoje: "2026-10-13",
+    projetos: [
+      { id: "l", name: "Lighter", pontos: "LP" },
+      { id: "s", name: "Solstice", pontos: null },
+    ],
+    contas: [{ id: "c", label: "chrome" }],
+    vinculos: [
+      { projectId: "l", accountId: "c" },
+      { projectId: "s", accountId: "c" },
+    ],
+    medicoes: [
+      { tipo: "pontos", projectId: "l", accountId: "c", valor: 1200.5, data: "2026-10-01" },
+      { tipo: "volume", projectId: "l", accountId: "c", valor: 80000, data: "2026-10-05" },
+    ],
+  };
+  const primeiro = (bruto: unknown) => interpretarResposta(bruto, ctxMedicoes)![0]!;
+
+  it("o projeto entra nas instruções com o nome do programa de pontos", () => {
+    const [sistema] = montarMensagens("x", ctxMedicoes);
+    expect(sistema!.content).toContain("P1: Lighter (programa de pontos: LP)");
+    expect(sistema!.content).toContain("P2: Solstice\n");
+  });
+
+  /*
+   * O caso que motivou a mudança: "caiu o airdrop" era classificado como
+   * rendimento, e entraria no resultado sem passar pelo registro de
+   * recebimento nem pelo gráfico.
+   */
+  it("airdrop abre o recebimento, não um rendimento", () => {
+    const s = primeiro({ projeto: "P2", tipo: "airdrop", token: "slx", quantidade_token: 3000, preco_token: 0.12 });
+    expect(s).toMatchObject({
+      formulario: "recebimento",
+      projectId: "s",
+      accountId: "c",
+      modo: "token",
+      tokenSymbol: "SLX",
+      tokenAmount: "3000",
+      priceUsd: "0.12",
+    });
+  });
+
+  it("airdrop com quantidade e total calcula o preço e avisa", () => {
+    const s = primeiro({ projeto: "P2", tipo: "airdrop", token: "SLX", quantidade_token: 3000, valor: 360 });
+    expect(s).toMatchObject({ modo: "token", priceUsd: "0.12" });
+    expect(s.avisos[0]).toMatch(/Preço por token calculado/);
+  });
+
+  it("airdrop só com o total vai para o modo do total", () => {
+    const s = primeiro({ projeto: "P2", tipo: "airdrop", token: "SLX", valor: 75 });
+    expect(s).toMatchObject({ formulario: "recebimento", modo: "total", valueUsd: "75.00" });
+  });
+
+  it("total de pontos dito na frase vai direto", () => {
+    const s = primeiro({ projeto: "P1", tipo: "pontos", medida: 1500, acumulado: true });
+    expect(s).toMatchObject({ formulario: "pontos", valor: "1500", avisos: [] });
+  });
+
+  it("ganho de pontos vira total, somado à última medição, com aviso", () => {
+    const s = primeiro({ projeto: "P1", tipo: "pontos", medida: 200, acumulado: false });
+    expect(s).toMatchObject({ formulario: "pontos", valor: "1400.5" });
+    expect(s.avisos[0]).toMatch(/Somei 200 pontos à última medição \(1\.200,5 pontos em 01\/10\/2026\)/);
+  });
+
+  it("ganho de volume sem medição anterior não inventa base: usa o número e avisa", () => {
+    const s = primeiro({ projeto: "P2", tipo: "volume", medida: 20000, acumulado: false });
+    expect(s).toMatchObject({ formulario: "volume", valor: "20000.00" });
+    expect(s.avisos[0]).toMatch(/Não há medição anterior/);
+  });
+
+  it("ganho de volume com medição anterior soma", () => {
+    const s = primeiro({ projeto: "P1", tipo: "volume", medida: 20000, acumulado: false });
+    expect(s).toMatchObject({ valor: "100000.00" });
+  });
+
+  it("pontos num projeto sem programa deixa o projeto em branco e explica", () => {
+    const s = primeiro({ projeto: "P2", tipo: "pontos", medida: 10 });
+    expect(s.projectId).toBeNull();
+    expect(s.avisos[0]).toMatch(/Solstice não tem programa de pontos/);
+  });
+
+  it("pontos com três casas viram quatro, para não serem lidos como milhar", () => {
+    const s = primeiro({ projeto: "P1", tipo: "pontos", medida: 1500.125 });
+    expect(s).toMatchObject({ valor: "1500.1250" });
+  });
+
+  /*
+   * O mesmo elo do lançamento: o que a sugestão preenche precisa passar pelo
+   * schema do formulário que ela abre, senão o erro só aparece ao salvar.
+   */
+  it("cada sugestão passa pelo schema do formulário que abre", () => {
+    const pontos = primeiro({ projeto: "P1", tipo: "pontos", medida: 1500.125, data: "2026-10-12" });
+    const volume = primeiro({ projeto: "P1", tipo: "volume", medida: 20000, acumulado: false });
+    const recebimento = primeiro({ projeto: "P2", tipo: "airdrop", token: "SLX", quantidade_token: 3000, valor: 360 });
+
+    if (pontos.formulario !== "pontos" || volume.formulario !== "volume" || recebimento.formulario !== "recebimento") {
+      throw new Error("formulário inesperado");
+    }
+    expect(
+      pontosSchema.safeParse({ projectId: pontos.projectId, accountId: pontos.accountId, takenAt: pontos.data, points: pontos.valor, note: pontos.note }).success,
+    ).toBe(true);
+    expect(
+      volumeSchema.safeParse({ projectId: volume.projectId, accountId: volume.accountId, takenAt: ctxMedicoes.hoje, volume: volume.valor, note: volume.note }).success,
+    ).toBe(true);
+    const r = recebimentoSchema.safeParse({
+      projectId: recebimento.projectId,
+      accountId: recebimento.accountId,
+      receivedAt: ctxMedicoes.hoje,
+      tokenSymbol: recebimento.tokenSymbol,
+      modo: recebimento.modo,
+      tokenAmount: recebimento.tokenAmount,
+      priceUsd: recebimento.priceUsd,
+      valueUsd: recebimento.valueUsd,
+    });
+    expect(r.success).toBe(true);
+    expect(valorDoRecebimento(r.data!)).toBe("360.00");
   });
 });

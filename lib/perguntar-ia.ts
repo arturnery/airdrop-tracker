@@ -3,7 +3,7 @@ import { z } from "zod";
 import {
   interpretarResposta,
   type ContextoIA,
-  type SugestaoLancamento,
+  type Sugestao,
 } from "./interpretar-lancamento";
 
 /*
@@ -77,7 +77,7 @@ export async function perguntar({
   prazoMs = PRAZO_TOTAL_MS,
   pausaMs = PAUSA_ENTRE_RODADAS_MS,
   buscar = fetch,
-}: Pedido): Promise<{ ok: true; sugestoes: SugestaoLancamento[] } | { ok: false; motivo: Motivo }> {
+}: Pedido): Promise<{ ok: true; sugestoes: Sugestao[] } | { ok: false; motivo: Motivo }> {
   const total = AbortSignal.timeout(prazoMs);
   let alvos = configurados.filter(
     (a, i) =>
@@ -141,7 +141,7 @@ async function perguntarAoModelo(
   mensagens: Mensagens,
   ctx: ContextoIA,
   sinal: AbortSignal,
-): Promise<SugestaoLancamento[]> {
+): Promise<Sugestao[]> {
   let resposta: Response;
   try {
     resposta = await buscar(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
