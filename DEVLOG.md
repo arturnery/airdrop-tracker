@@ -3324,3 +3324,26 @@ vez. A chamada ficou com dois prazos: 20 segundos no modelo principal
 (`IA_MODELO_RESERVA`). Erro de rede, prazo da tentativa e 5xx passam para o reserva;
 cota (429) e chave recusada não, porque dariam o mesmo erro. A tela diz que pode levar
 até meio minuto, em vez de deixar um botão girando sem explicação.
+
+**Dois modelos em sequência não bastaram.** No dia seguinte, a frase "retirei $70 da
+Lighter na conta chrome e depositei na Variational na mesma conta" recebeu 503 de alta
+demanda do principal **e** do reserva, e a pessoa viu o genérico "não foi possível falar
+com a IA". Medido logo depois, ao mesmo tempo: quatro de sete modelos travados ou
+sobrecarregados, e um respondendo em 6 segundos. Esperar 20 segundos por um travado para
+só então tentar o outro gastava o prazo no modelo errado.
+
+A chamada virou corrida: os modelos configurados são consultados **ao mesmo tempo**, e
+vence a primeira resposta **utilizável**. O "utilizável" importa: o modelo que devolve
+texto solto (os Gemma devolvem o raciocínio em vez de JSON) não pode vencer e cancelar a
+resposta boa que chegaria logo depois, então cada tentativa só resolve depois de passar
+pela conferência. Se todos falharem por motivo passageiro, uma segunda rodada depois de 2
+segundos, só com esses. Cota (429), chave recusada e modelo que não existe mais não se
+repetem.
+
+A falha também ganhou nome na tela. "A IA gratuita do Google está sobrecarregada agora"
+diz o que aconteceu e o que fazer; o genérico parecia defeito do app.
+
+A lógica saiu da Server Action para `lib/perguntar-ia.ts`, com o `fetch` recebido de
+fora, para ser testada sem rede: dez cenários simulando um modelo sobrecarregado, um
+travado, um que responde lixo antes do outro responder certo, duas rodadas, prazo
+estourado. Com o Gemini real, a mesma frase passou de 30 segundos (ou erro) para 4 a 6.

@@ -1,0 +1,195 @@
+import { z } from "zod";
+
+import {
+  interpretarResposta,
+  type ContextoIA,
+  type SugestaoLancamento,
+} from "./interpretar-lancamento";
+
+/*
+ * Sem prazo, uma API lenta prende a requisição até a Vercel derrubá-la, e a
+ * pessoa fica olhando um botão girando sem mensagem nenhuma.
+ *
+ * O plano gratuito do Gemini, medido, não tem tempo de resposta: a mesma
+ * chamada levou de 2 a 58 segundos, e cada modelo entra e sai de "alta
+ * demanda" (503) por conta própria. Num mesmo minuto, quatro de sete
+ * modelos estavam travados ou sobrecarregados e um respondia em 6 segundos.
+ * Por isso os modelos configurados são consultados **ao mesmo tempo** e vale
+ * a primeira resposta que servir. Esperar um travado para só então tentar o
+ * outro gastava o prazo inteiro no modelo errado.
+ *
+ * Se todos estiverem sobrecarregados, uma segunda rodada depois de uma pausa
+ * curta, só com os que falharam por motivo passageiro.
+ */
+const PRAZO_TOTAL_MS = 45_000;
+const PAUSA_ENTRE_RODADAS_MS = 2_000;
+
+export type Motivo = "prazo" | "sobrecarga" | "resposta" | "erro";
+
+export const MENSAGEM_DE_FALHA: Record<Motivo, string> = {
+  prazo: "A IA não respondeu a tempo. Tente de novo em instantes.",
+  sobrecarga:
+    "A IA gratuita do Google está sobrecarregada agora. Tente de novo em alguns minutos, ou use o Novo lançamento.",
+  resposta: "Não consegui entender a resposta da IA. Tente reescrever a frase.",
+  erro: "Não foi possível falar com a IA agora. Tente de novo.",
+};
+
+/**
+ * Por que uma tentativa falhou, porque cada motivo pede uma reação diferente.
+ * `passageira` (rede, 5xx, o 503 de alta demanda) merece outra rodada.
+ * `definitiva` (chave recusada, cota de 429, modelo que não existe mais) daria
+ * o mesmo erro de novo, e cada tentativa conta na cota. `resposta` é o modelo
+ * que respondeu, mas com algo que não dá para usar.
+ */
+class FalhaDaIA extends Error {
+  constructor(
+    readonly tipo: "passageira" | "definitiva" | "resposta",
+    mensagem: string,
+  ) {
+    super(mensagem);
+  }
+}
+
+type Mensagens = { role: string; content: string }[];
+
+export type Pedido = {
+  mensagens: Mensagens;
+  ctx: ContextoIA;
+  /** Consultados ao mesmo tempo. Repetidos e vazios são ignorados. */
+  modelos: (string | undefined)[];
+  baseUrl: string;
+  chave: string;
+  prazoMs?: number;
+  pausaMs?: number;
+  /** Trocável nos testes, que simulam cada modelo sem rede. */
+  buscar?: typeof fetch;
+};
+
+export async function perguntar({
+  mensagens,
+  ctx,
+  modelos: configurados,
+  baseUrl,
+  chave,
+  prazoMs = PRAZO_TOTAL_MS,
+  pausaMs = PAUSA_ENTRE_RODADAS_MS,
+  buscar = fetch,
+}: Pedido): Promise<{ ok: true; sugestoes: SugestaoLancamento[] } | { ok: false; motivo: Motivo }> {
+  const total = AbortSignal.timeout(prazoMs);
+  const alvo = { baseUrl, chave, buscar };
+  let modelos = [...new Set(configurados.filter((m): m is string => Boolean(m)))];
+  let ultimas: FalhaDaIA[] = [];
+  const todas: FalhaDaIA[] = [];
+
+  for (let rodada = 1; rodada <= 2 && modelos.length > 0; rodada++) {
+    if (rodada > 1) await pausa(pausaMs, total);
+    if (total.aborted) break;
+
+    // Quem perde a corrida é cancelado: não há por que esperar a resposta.
+    const cancelar = new AbortController();
+    const sinal = AbortSignal.any([total, cancelar.signal]);
+    try {
+      const sugestoes = await Promise.any(
+        modelos.map((modelo) => perguntarAoModelo(alvo, modelo, mensagens, ctx, sinal)),
+      );
+      return { ok: true, sugestoes };
+    } catch (agregado) {
+      ultimas = (agregado as AggregateError).errors.map((e) =>
+        e instanceof FalhaDaIA ? e : new FalhaDaIA("passageira", String(e)),
+      );
+      todas.push(...ultimas);
+      ultimas.forEach((falha, i) =>
+        console.warn(`[ia] ${modelos[i]} (rodada ${rodada}) ${falha.tipo}: ${falha.message}`),
+      );
+      modelos = modelos.filter((_, i) => ultimas[i]!.tipo === "passageira");
+    } finally {
+      cancelar.abort();
+    }
+  }
+
+  if (total.aborted) return { ok: false, motivo: "prazo" };
+  if (ultimas.length > 0 && ultimas.every((f) => f.tipo === "passageira")) {
+    return { ok: false, motivo: "sobrecarga" };
+  }
+  if (todas.some((f) => f.tipo === "resposta")) return { ok: false, motivo: "resposta" };
+  return { ok: false, motivo: "erro" };
+}
+
+function pausa(ms: number, sinal: AbortSignal): Promise<void> {
+  return new Promise((resolver) => {
+    const relogio = setTimeout(resolver, ms);
+    sinal.addEventListener("abort", () => {
+      clearTimeout(relogio);
+      resolver();
+    }, { once: true });
+  });
+}
+
+/**
+ * Uma tentativa num modelo. Só resolve com uma resposta **utilizável**: um
+ * modelo que devolve texto solto em vez de JSON não pode vencer a corrida e
+ * deixar a resposta boa do outro ser cancelada.
+ */
+async function perguntarAoModelo(
+  alvo: { baseUrl: string; chave: string; buscar: typeof fetch },
+  modelo: string,
+  mensagens: Mensagens,
+  ctx: ContextoIA,
+  sinal: AbortSignal,
+): Promise<SugestaoLancamento[]> {
+  let resposta: Response;
+  try {
+    resposta = await alvo.buscar(`${alvo.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${alvo.chave}`,
+      },
+      body: JSON.stringify({
+        model: modelo,
+        messages: mensagens,
+        response_format: { type: "json_object" },
+        temperature: 0,
+        // Folgado de propósito: em modelos que raciocinam antes de responder
+        // (Gemini, por exemplo), o raciocínio conta neste teto, e um teto
+        // justo para o JSON cortaria a resposta antes de ela começar.
+        max_tokens: 2000,
+      }),
+      signal: sinal,
+    });
+  } catch (erro) {
+    throw new FalhaDaIA("passageira", `sem resposta: ${String(erro)}`);
+  }
+
+  if (!resposta.ok) {
+    const corpo = (await resposta.text().catch(() => "")).slice(0, 300);
+    const tipo = resposta.status >= 500 ? "passageira" : "definitiva";
+    throw new FalhaDaIA(tipo, `status ${resposta.status}: ${corpo}`);
+  }
+
+  const dados: unknown = await resposta.json().catch(() => null);
+  const envelope = z
+    .object({
+      choices: z
+        .array(z.object({ message: z.object({ content: z.string() }) }))
+        .min(1),
+    })
+    .safeParse(dados);
+  if (!envelope.success) {
+    throw new FalhaDaIA("resposta", `formato inesperado: ${JSON.stringify(dados).slice(0, 300)}`);
+  }
+
+  const conteudo = envelope.data.choices[0]!.message.content;
+  let json: unknown;
+  try {
+    json = JSON.parse(conteudo);
+  } catch {
+    throw new FalhaDaIA("resposta", `não é JSON: ${conteudo.slice(0, 300)}`);
+  }
+
+  const sugestoes = interpretarResposta(json, ctx);
+  if (!sugestoes) {
+    throw new FalhaDaIA("resposta", `fora do formato: ${conteudo.slice(0, 300)}`);
+  }
+  return sugestoes;
+}

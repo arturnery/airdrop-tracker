@@ -42,7 +42,7 @@ const envSchema = z.object({
     z.url().default("https://api.deepseek.com"),
   ),
   IA_MODELO: z.preprocess(vazioComoAusente, z.string().default("deepseek-chat")),
-  /** Segunda tentativa quando o principal trava ou está sobrecarregado. */
+  /** Consultado junto com o principal: vale a primeira resposta que servir. */
   IA_MODELO_RESERVA: z.preprocess(vazioComoAusente, z.string().optional()),
   NODE_ENV: z
     .enum(["development", "test", "production"])
