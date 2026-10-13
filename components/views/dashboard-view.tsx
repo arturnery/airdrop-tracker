@@ -44,8 +44,8 @@ export function DashboardView() {
         description={`Posição consolidada em ${formatDateBr(hoje)}.`}
         actions={
           <>
-            <RegistrarPontos />
             <LancarComIA />
+            <RegistrarPontos />
             <NovoLancamento />
           </>
         }
