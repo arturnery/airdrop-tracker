@@ -52,13 +52,18 @@ class FalhaDaIA extends Error {
 
 type Mensagens = { role: string; content: string }[];
 
+/**
+ * Um modelo num provedor. Cada um com endereço e chave próprios, porque o
+ * ganho de verdade está em misturar **provedores**: dois modelos do mesmo
+ * provedor caíram juntos no mesmo pico de demanda.
+ */
+export type Alvo = { modelo: string; baseUrl: string; chave: string };
+
 export type Pedido = {
   mensagens: Mensagens;
   ctx: ContextoIA;
-  /** Consultados ao mesmo tempo. Repetidos e vazios são ignorados. */
-  modelos: (string | undefined)[];
-  baseUrl: string;
-  chave: string;
+  /** Consultados ao mesmo tempo. Os repetidos contam uma vez só. */
+  alvos: Alvo[];
   prazoMs?: number;
   pausaMs?: number;
   /** Trocável nos testes, que simulam cada modelo sem rede. */
@@ -68,20 +73,20 @@ export type Pedido = {
 export async function perguntar({
   mensagens,
   ctx,
-  modelos: configurados,
-  baseUrl,
-  chave,
+  alvos: configurados,
   prazoMs = PRAZO_TOTAL_MS,
   pausaMs = PAUSA_ENTRE_RODADAS_MS,
   buscar = fetch,
 }: Pedido): Promise<{ ok: true; sugestoes: SugestaoLancamento[] } | { ok: false; motivo: Motivo }> {
   const total = AbortSignal.timeout(prazoMs);
-  const alvo = { baseUrl, chave, buscar };
-  let modelos = [...new Set(configurados.filter((m): m is string => Boolean(m)))];
+  let alvos = configurados.filter(
+    (a, i) =>
+      configurados.findIndex((b) => b.modelo === a.modelo && b.baseUrl === a.baseUrl) === i,
+  );
   let ultimas: FalhaDaIA[] = [];
   const todas: FalhaDaIA[] = [];
 
-  for (let rodada = 1; rodada <= 2 && modelos.length > 0; rodada++) {
+  for (let rodada = 1; rodada <= 2 && alvos.length > 0; rodada++) {
     if (rodada > 1) await pausa(pausaMs, total);
     if (total.aborted) break;
 
@@ -90,7 +95,7 @@ export async function perguntar({
     const sinal = AbortSignal.any([total, cancelar.signal]);
     try {
       const sugestoes = await Promise.any(
-        modelos.map((modelo) => perguntarAoModelo(alvo, modelo, mensagens, ctx, sinal)),
+        alvos.map((alvo) => perguntarAoModelo(alvo, buscar, mensagens, ctx, sinal)),
       );
       return { ok: true, sugestoes };
     } catch (agregado) {
@@ -99,9 +104,9 @@ export async function perguntar({
       );
       todas.push(...ultimas);
       ultimas.forEach((falha, i) =>
-        console.warn(`[ia] ${modelos[i]} (rodada ${rodada}) ${falha.tipo}: ${falha.message}`),
+        console.warn(`[ia] ${alvos[i]!.modelo} (rodada ${rodada}) ${falha.tipo}: ${falha.message}`),
       );
-      modelos = modelos.filter((_, i) => ultimas[i]!.tipo === "passageira");
+      alvos = alvos.filter((_, i) => ultimas[i]!.tipo === "passageira");
     } finally {
       cancelar.abort();
     }
@@ -131,19 +136,19 @@ function pausa(ms: number, sinal: AbortSignal): Promise<void> {
  * deixar a resposta boa do outro ser cancelada.
  */
 async function perguntarAoModelo(
-  alvo: { baseUrl: string; chave: string; buscar: typeof fetch },
-  modelo: string,
+  { modelo, baseUrl, chave }: Alvo,
+  buscar: typeof fetch,
   mensagens: Mensagens,
   ctx: ContextoIA,
   sinal: AbortSignal,
 ): Promise<SugestaoLancamento[]> {
   let resposta: Response;
   try {
-    resposta = await alvo.buscar(`${alvo.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+    resposta = await buscar(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${alvo.chave}`,
+        Authorization: `Bearer ${chave}`,
       },
       body: JSON.stringify({
         model: modelo,

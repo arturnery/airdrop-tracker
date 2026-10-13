@@ -60,13 +60,13 @@ function simular(porModelo: Record<string, Comportamento | Comportamento[]>) {
   return { buscar, chamadas };
 }
 
+const alvo = (modelo: string, baseUrl = "https://ia.exemplo") => ({ modelo, baseUrl, chave: "x" });
+
 const base = (buscar: typeof fetch, modelos: string[], prazoMs = 2_000) =>
   perguntar({
     mensagens: [],
     ctx,
-    modelos,
-    baseUrl: "https://ia.exemplo",
-    chave: "x",
+    alvos: modelos.map((m) => alvo(m)),
     prazoMs,
     pausaMs: 10,
     buscar,
@@ -155,16 +155,31 @@ describe("perguntar", () => {
     expect(await base(buscar, ["a"])).toEqual({ ok: false, motivo: "resposta" });
   });
 
-  it("reserva vazio ou igual ao principal não gera consulta repetida", async () => {
+  it("o mesmo modelo no mesmo provedor é consultado uma vez só", async () => {
     const { buscar, chamadas } = simular({ a: { tipo: "responde", conteudo: BOA } });
+    await perguntar({ mensagens: [], ctx, alvos: [alvo("a"), alvo("a")], buscar });
+    expect(chamadas).toEqual(["a"]);
+  });
+
+  it("cada alvo vai para o próprio provedor, com a própria chave", async () => {
+    const vistos: string[] = [];
+    const buscar = (async (url: string, init: RequestInit) => {
+      const auth = (init.headers as Record<string, string>).Authorization;
+      vistos.push(`${url} ${auth}`);
+      return new Response(JSON.stringify({ choices: [{ message: { content: BOA } }] }));
+    }) as unknown as typeof fetch;
     await perguntar({
       mensagens: [],
       ctx,
-      modelos: ["a", undefined, "a"],
-      baseUrl: "https://ia.exemplo",
-      chave: "x",
+      alvos: [
+        { modelo: "g", baseUrl: "https://google.exemplo/", chave: "chave-g" },
+        { modelo: "o", baseUrl: "https://openrouter.exemplo", chave: "chave-o" },
+      ],
       buscar,
     });
-    expect(chamadas).toEqual(["a"]);
+    expect(vistos.sort()).toEqual([
+      "https://google.exemplo/chat/completions Bearer chave-g",
+      "https://openrouter.exemplo/chat/completions Bearer chave-o",
+    ]);
   });
 });

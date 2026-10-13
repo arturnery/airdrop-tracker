@@ -3347,3 +3347,11 @@ A lógica saiu da Server Action para `lib/perguntar-ia.ts`, com o `fetch` recebi
 fora, para ser testada sem rede: dez cenários simulando um modelo sobrecarregado, um
 travado, um que responde lixo antes do outro responder certo, duas rodadas, prazo
 estourado. Com o Gemini real, a mesma frase passou de 30 segundos (ou erro) para 4 a 6.
+
+**Um segundo provedor.** A corrida entre dois modelos do Google não protege contra o
+Google inteiro sobrecarregado. Entrou o OpenRouter, também no gratuito, com endereço e
+chave próprios (`IA2_*`): cada alvo da corrida agora é um par modelo e provedor. Dos 15
+modelos gratuitos de lá, três acertaram a frase de duas operações; o Nemotron 3 Super, da
+NVIDIA, foi o único que acertou também as outras duas frases de teste (perda com taxa de
+gás na mesma frase, saque em token com valor aproximado). Verificado isolado: com a chave
+do Google propositalmente inválida, o OpenRouter respondeu sozinho em 7 segundos.

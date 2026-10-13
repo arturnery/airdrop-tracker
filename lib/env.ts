@@ -44,6 +44,13 @@ const envSchema = z.object({
   IA_MODELO: z.preprocess(vazioComoAusente, z.string().default("deepseek-chat")),
   /** Consultado junto com o principal: vale a primeira resposta que servir. */
   IA_MODELO_RESERVA: z.preprocess(vazioComoAusente, z.string().optional()),
+  /*
+   * Segundo provedor, consultado junto: quando um provedor inteiro
+   * sobrecarrega, os modelos dele caem juntos. Vale só com os três.
+   */
+  IA2_API_KEY: z.preprocess(vazioComoAusente, z.string().optional()),
+  IA2_BASE_URL: z.preprocess(vazioComoAusente, z.url().optional()),
+  IA2_MODELO: z.preprocess(vazioComoAusente, z.string().optional()),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),

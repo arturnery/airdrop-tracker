@@ -13,7 +13,7 @@ import {
   type ContextoIA,
   type SugestaoLancamento,
 } from "@/lib/interpretar-lancamento";
-import { MENSAGEM_DE_FALHA, perguntar } from "@/lib/perguntar-ia";
+import { MENSAGEM_DE_FALHA, perguntar, type Alvo } from "@/lib/perguntar-ia";
 
 /**
  * Interpreta uma frase como lançamento. Ver `lib/interpretar-lancamento.ts`.
@@ -90,9 +90,7 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
     const desfecho = await perguntar({
       mensagens: montarMensagens(texto.data, ctx),
       ctx,
-      modelos: [env.IA_MODELO, env.IA_MODELO_RESERVA],
-      baseUrl: env.IA_BASE_URL,
-      chave: env.IA_API_KEY,
+      alvos: alvosConfigurados(),
     });
     if (desfecho.ok) return { ok: true, sugestoes: desfecho.sugestoes };
     return { ok: false, erro: MENSAGEM_DE_FALHA[desfecho.motivo] };
@@ -100,6 +98,21 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
     console.error("[ia]", erro);
     return { ok: false, erro: "Não foi possível falar com a IA agora. Tente de novo." };
   }
+}
+
+/**
+ * Os modelos a consultar: o principal e o reserva no provedor principal
+ * (`IA_*`), e o modelo de um segundo provedor (`IA2_*`), quando houver.
+ */
+function alvosConfigurados(): Alvo[] {
+  const alvos: Alvo[] = [];
+  const principal = { baseUrl: env.IA_BASE_URL, chave: env.IA_API_KEY! };
+  alvos.push({ ...principal, modelo: env.IA_MODELO });
+  if (env.IA_MODELO_RESERVA) alvos.push({ ...principal, modelo: env.IA_MODELO_RESERVA });
+  if (env.IA2_API_KEY && env.IA2_BASE_URL && env.IA2_MODELO) {
+    alvos.push({ baseUrl: env.IA2_BASE_URL, chave: env.IA2_API_KEY, modelo: env.IA2_MODELO });
+  }
+  return alvos;
 }
 
 async function carregarContexto(userId: string): Promise<ContextoIA> {
