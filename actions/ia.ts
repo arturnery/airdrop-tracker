@@ -75,7 +75,7 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
       };
     }
 
-    const ctx = await carregarContexto(userId);
+    const ctx = { ...(await carregarContexto(userId)), frase: texto.data };
     if (ctx.projetos.length === 0 || ctx.contas.length === 0) {
       return {
         ok: false,

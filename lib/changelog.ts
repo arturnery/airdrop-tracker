@@ -57,6 +57,11 @@ export const changelog: Versao[] = [
         texto:
           "Nova área Comunidade no menu, separada da de airdrops, começando pelo calendário de lives da Level Cripto: a grade do mês, de domingo a sábado, com horário, apresentador e tema de cada live, as que se repetem toda semana ou a cada duas semanas e o evento especial em destaque. Clique numa live para ver a descrição e o link. O menu agora divide as áreas em grupos.",
       },
+      {
+        tipo: "correcao",
+        texto:
+          "No Lançar com IA, uma frase como \"registrar recebimento Solstice 75 dólares\" abria um lançamento de rendimento, em vez do registro de airdrop recebido. Agora \"recebimento\", \"airdrop\" e \"claim\" abrem o formulário de recebimento, e o valor entra nos airdrops ganhos.",
+      },
     ],
   },
   {

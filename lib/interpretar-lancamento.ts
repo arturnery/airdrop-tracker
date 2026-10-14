@@ -24,6 +24,11 @@ export type ContextoIA = {
   projetos: { id: string; name: string; pontos?: string | null }[];
   contas: { id: string; label: string }[];
   vinculos: { projectId: string; accountId: string }[];
+  /**
+   * A frase original. Só a conferência usa, para a rede de segurança do
+   * recebimento (ver `interpretarItem`); não vai de novo para o modelo.
+   */
+  frase?: string;
   /** A medição mais recente de cada par projeto e conta, para somar incrementos. */
   medicoes?: {
     tipo: "pontos" | "volume";
@@ -134,7 +139,7 @@ Tipos possíveis:
 - other: ajuste financeiro que não se encaixa nos demais
 - pontos: pontuação de um programa de pontos (só para projetos marcados com programa de pontos)
 - volume: volume operado ou negociado
-- airdrop: airdrop recebido, tokens que caíram, claim de distribuição. NUNCA use yield para airdrop.
+- airdrop: airdrop recebido, tokens que caíram, claim de distribuição. Neste app, "recebimento" é o nome do registro de airdrop recebido: "registrar recebimento", "recebimento de 75 dólares" e "recebi 500 tokens" de um projeto são airdrop. NUNCA use yield para airdrop.
 
 Formato da resposta:
 {"lancamentos": [{"projeto": "P1" ou null, "conta": "C1" ou null, "tipo": um dos tipos ou null, "valor": número em dólar ou null, "data": "AAAA-MM-DD" ou null, "token": símbolo ou null, "quantidade_token": número ou null, "preco_token": número ou null, "medida": número ou null, "acumulado": true, false ou null, "descricao": texto curto ou null, "duvida": texto curto ou null}]}
@@ -280,12 +285,29 @@ export function interpretarResposta(
 function interpretarItem(r: Item, ctx: ContextoIA): Sugestao {
   const avisos: string[] = [];
   const tipo = r.tipo?.trim().toLowerCase() ?? null;
+
+  /*
+   * Rede de segurança que não depende do modelo. "Registrar recebimento
+   * solstice 75 dólares" voltava como rendimento: "recebimento", para o
+   * modelo, parece dinheiro que entrou, e neste app é o nome do registro de
+   * airdrop. Salvo como rendimento, o valor ficaria fora dos airdrops ganhos
+   * e do gráfico. Só rendimento e ajuste são convertidos: numa frase com
+   * "caiu o airdrop e saquei 50", a retirada continua retirada.
+   */
+  const falaDeAirdrop = /\b(airdrops?|recebimentos?|claim\w*)\b/i.test(ctx.frase ?? "");
+  const convertido = falaDeAirdrop && (tipo === "yield" || tipo === "other");
+
   const formulario: Sugestao["formulario"] =
-    tipo === "airdrop"
+    tipo === "airdrop" || convertido
       ? "recebimento"
       : tipo === "pontos" || tipo === "volume"
         ? tipo
         : "lancamento";
+  if (convertido) {
+    avisos.push(
+      "Aberto como airdrop recebido, porque a frase fala em airdrop ou recebimento. Se era rendimento, cancele e use Novo lançamento.",
+    );
+  }
 
   let projeto = r.projeto
     ? lerReferencia(r.projeto, ctx.projetos, "P", (p) => p.name)

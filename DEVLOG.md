@@ -3461,3 +3461,24 @@ Dois detalhes de texto: `capitalize` do CSS sobe a inicial de cada palavra ("Mar
 2026", "Segunda-Feira"), então a maiúscula passou a ser feita no código, só na primeira
 letra. E o nome do apresentador, cortado com reticências na grade, passou a quebrar a linha,
 como na versão impressa.
+
+### "Registrar recebimento" virava rendimento
+
+Relato de uso: um recebimento de airdrop lançado pela IA abria o formulário de lançamento.
+Reproduzido com os modelos reais, quatro de cinco frases de recebimento funcionavam, e a que
+falhava era justamente a escrita com o vocabulário do próprio app: "registrar recebimento
+Solstice 75 dólares" voltava como rendimento. Para o modelo, "recebimento de 75 dólares" é
+dinheiro que entrou; neste app, é o nome do registro de airdrop.
+
+Duas camadas. As instruções passaram a dizer que "recebimento", "recebi tokens" e "claim"
+são airdrop. E uma rede de segurança que não depende do modelo: a frase original vai na
+conferência, e se ela fala em airdrop, recebimento ou claim, um item classificado como
+rendimento ou ajuste abre como recebimento, com aviso. Só esses dois tipos são convertidos,
+para que "caiu o airdrop e saquei 50" continue tendo uma retirada.
+
+### Conta de administrador para testar
+
+A conta de teste é membro, como deve ser numa conta com senha publicada, e por isso não dava
+para testar as telas de administração sem a conta pessoal. `npm run admin:teste` cria
+`admin@teste.local` com senha conhecida, e recusa produção sem opção de confirmar: lá, um
+administrador com senha fácil veria o e-mail de todos os membros e decidiria quem entra.

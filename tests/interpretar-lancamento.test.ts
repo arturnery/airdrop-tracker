@@ -362,3 +362,38 @@ describe("interpretarResposta: pontos, volume e recebimento", () => {
     expect(valorDoRecebimento(r.data!)).toBe("360.00");
   });
 });
+
+describe("rede de segurança do recebimento", () => {
+  const base: ContextoIA = {
+    hoje: "2026-10-14",
+    projetos: [{ id: "s", name: "Solstice" }],
+    contas: [{ id: "c", label: "chrome" }],
+    vinculos: [],
+  };
+
+  // Resposta real do modelo para esta frase: rendimento de $75.
+  it("frase que fala em recebimento, classificada como rendimento, abre o recebimento", () => {
+    const ctx = { ...base, frase: "registrar recebimento solstice 75 dolares" };
+    const [s] = interpretarResposta({ projeto: "P1", tipo: "yield", valor: 75 }, ctx)!;
+    expect(s).toMatchObject({ formulario: "recebimento", modo: "total", valueUsd: "75.00" });
+    expect(s!.avisos).toContainEqual(expect.stringMatching(/Aberto como airdrop recebido/));
+  });
+
+  it("numa frase mista, só o rendimento vira recebimento; a retirada continua retirada", () => {
+    const ctx = { ...base, frase: "caiu o airdrop da solstice, 75 dolares, e saquei 50" };
+    const sugestoes = interpretarResposta(
+      [
+        { projeto: "P1", tipo: "yield", valor: 75 },
+        { projeto: "P1", tipo: "withdrawal", valor: 50 },
+      ],
+      ctx,
+    )!;
+    expect(sugestoes.map((s) => s.formulario)).toEqual(["recebimento", "lancamento"]);
+  });
+
+  it("rendimento numa frase sem airdrop continua rendimento", () => {
+    const ctx = { ...base, frase: "recebi 5 dolares de juros na solstice" };
+    const [s] = interpretarResposta({ projeto: "P1", tipo: "yield", valor: 5 }, ctx)!;
+    expect(s!.formulario).toBe("lancamento");
+  });
+});

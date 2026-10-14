@@ -22,6 +22,7 @@
     "backup:restaurar": "tsx scripts/restaurar.ts",
     "admin:liberar": "tsx scripts/liberar-admin.ts",
     "demo:restaurar": "tsx scripts/criar-demo.ts",
+    "admin:teste": "tsx scripts/criar-admin-teste.ts",
     "auditar": "tsx scripts/auditar-isolamento.ts"
   },
   "dependencies": {
