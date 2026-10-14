@@ -9,6 +9,7 @@ import {
   Layers,
   LifeBuoy,
   ListChecks,
+  Radio,
   Upload,
   Wallet,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 const itens = [
   { href: "/", label: "Visão geral", icon: LayoutDashboard },
+  { href: "/comunidade", label: "Comunidade", icon: Radio },
   { href: "/tarefas", label: "Tarefas", icon: ListChecks },
   { href: "/projetos", label: "Projetos", icon: Layers },
   { href: "/contas", label: "Contas", icon: Wallet },
@@ -37,6 +39,7 @@ const itens = [
  */
 const tons: Record<string, string> = {
   "/": "bg-chart-1/15 text-chart-1",
+  "/comunidade": "bg-chart-5/15 text-chart-5",
   "/tarefas": "bg-chart-4/15 text-chart-4",
   "/projetos": "bg-chart-3/15 text-chart-3",
   "/contas": "bg-chart-2/15 text-chart-2",

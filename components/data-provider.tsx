@@ -14,6 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import * as A from "@/actions";
+import * as Comunidade from "@/actions/comunidade";
 import * as M from "@/lib/mutations";
 import type { Dataset } from "@/lib/dataset";
 import { criarRelogio } from "@/lib/local-store";
@@ -81,6 +82,9 @@ type Acoes = {
   destacarProjeto: Acao<[string, unknown]>;
   removerDestaque: Acao<[string]>;
   adotarDoCatalogo: Acao<[unknown]>;
+  criarLive: Acao<[unknown]>;
+  atualizarLive: Acao<[string, unknown]>;
+  excluirLive: Acao<[string]>;
 };
 
 type Contexto = {
@@ -234,6 +238,9 @@ export function DataProvider({
       destacarProjeto: envolver(A.destacarProjeto),
       removerDestaque: envolver(A.removerDestaque),
       adotarDoCatalogo: envolver(A.adotarDoCatalogo),
+      criarLive: envolver(Comunidade.criarLive),
+      atualizarLive: envolver(Comunidade.atualizarLive),
+      excluirLive: envolver(Comunidade.excluirLive),
     }),
     [envolver, alternarTarefa],
   );

@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.11",
+    data: "2026-10-14",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Nova aba Comunidade, com a agenda das lives da Level Cripto: data, horário de Brasília e link de cada uma, inclusive as que se repetem toda semana. A próxima live também aparece na Visão geral.",
+      },
+    ],
+  },
+  {
     versao: "1.10",
     data: "2026-10-13",
     mudancas: [

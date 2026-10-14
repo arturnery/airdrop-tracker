@@ -160,6 +160,28 @@ export const lancamentoSchema = z.object({
  * curto e não influenciam nenhuma decisão do servidor, então um valor forjado
  * atrapalha só quem forjou.
  */
+/**
+ * Live da comunidade. Dia e hora são de Brasília, como a pessoa digita; a
+ * conversão para instante mora em `lib/lives.ts`.
+ *
+ * "Repetir" é um select (`nao`/`sim`) e não um checkbox: é o mesmo controle
+ * nativo dos outros formulários, e um checkbox desmarcado simplesmente não
+ * aparece no envio, o que faz "ausente" e "não" se confundirem.
+ */
+export const liveSchema = z.object({
+  titulo: z.string().trim().min(1, "Dê um título à live.").max(100, "Até 100 caracteres."),
+  descricao: z
+    .string()
+    .trim()
+    .max(300, "Até 300 caracteres.")
+    .transform((v) => (v === "" ? null : v))
+    .nullable(),
+  link: urlOpcional,
+  dia: dataIso,
+  hora: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Informe o horário, como 20:00."),
+  semanal: z.enum(["nao", "sim"]).transform((v) => v === "sim"),
+});
+
 export const feedbackSchema = z.object({
   tipo: z.enum(["bug", "duvida", "sugestao"]),
   mensagem: z

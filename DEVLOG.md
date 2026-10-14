@@ -3381,3 +3381,37 @@ conferência, todas vindas de regra que o formulário já tinha:
 Um detalhe do leitor de pontos reapareceu: "1500.125" seria lido como um milhão e
 quinhentos mil, pela mesma regra de três dígitos do leitor de dinheiro. Pontos saem com
 quatro casas quando teriam três.
+
+## Marco 51: Comunidade, começando pelas lives
+
+O pedido: o site deixar de ser só gerenciador de airdrops e passar a ter novidades do dia,
+calendário das lives da comunidade e dados macro. Antes de desenhar, quatro perguntas, porque
+cada resposta mudava a arquitetura: quem escreve as novidades, de onde vêm as datas das
+lives, de onde vêm os dados macro e onde isso aparece. Ficou: lives cadastradas por quem
+administra; dados macro vindos do EcoBot, que já busca o Investing.com numa VM (o Investing
+bloqueia acesso comum, e o bot precisou de uma biblioteca de imitação de navegador para
+passar, o que a Vercel não reproduziria); novidades selecionadas pela IA e aprovadas por
+quem administra, depois publicadas sozinhas; tudo numa aba nova.
+
+A primeira etapa é a que não depende de nada externo: a agenda de lives. Três decisões:
+
+- **Fora do Dataset.** O Dataset é a carteira de cada um, recarregada a cada navegação.
+  Lives são da comunidade e têm consulta própria, lida só onde aparecem.
+- **Semanal calculada, não materializada.** Uma linha por live, e as datas saem na leitura,
+  como as tarefas recorrentes.
+- **Horário de Brasília com deslocamento fixo.** Sem horário de verão desde 2019. Os
+  testes cobrem o caso que quebraria primeiro: 22:30 em Brasília já é o dia seguinte em
+  UTC, e a ida e volta precisa devolver o dia certo para o formulário de edição.
+
+### O teste que acusou um defeito que não existia, e o que existia
+
+O primeiro teste no navegador disse que editar e excluir não atualizavam a lista. O banco
+mostrava as duas operações feitas: o teste lia a lista 500 ms depois de fechar o diálogo, e
+a ação levava dois segundos no banco de desenvolvimento. Esperando o resultado aparecer em
+vez de um intervalo fixo, tudo passava.
+
+Mas a medição mostrou o defeito real: o diálogo fechava e a lista só mudava 1,3 s depois,
+o "fechou e não mudou nada" que o sistema já tinha resolvido nos outros formulários. As
+ações das lives chamavam a Server Action direto, sem passar pelo provider, que é quem
+segura o diálogo até a tela receber o dado. Passando por ele, criar e editar aparecem no
+mesmo instante em que o diálogo fecha.

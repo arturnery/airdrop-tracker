@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-369%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-378%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -133,6 +133,9 @@ senhas temporárias, mas não vê o farming de ninguém.
   paguei 1,20 de gás"), pontos e volume ("ganhei 300 pontos na Lighter", somados à última
   medição porque o formulário pede o total) e airdrop recebido ("caíram 3.000 SLX a
   $0,12"). A pessoa confere e salva pelo mesmo formulário do registro manual.
+- **Comunidade.** Agenda de lives da Level Cripto, cadastrada por quem administra e vista
+  por todos, com lives semanais calculadas na leitura (sem cron) e horário de Brasília. A
+  próxima live aparece na Visão geral.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o
@@ -192,7 +195,7 @@ flowchart TB
         L["lib/<br/>funções puras"]
     end
 
-    DB[("PostgreSQL<br/>19 tabelas")]
+    DB[("PostgreSQL<br/>20 tabelas")]
     IA["Provedores de LLM<br/>Gemini e OpenRouter"]
 
     P -->|Dataset pronto| V
@@ -548,7 +551,7 @@ o recurso não está configurado.
 ### Banco e primeiro acesso
 
 ```bash
-npm run db:migrate      # cria as 19 tabelas
+npm run db:migrate      # cria as 20 tabelas
 npm run db:seed-demo    # opcional: dados fictícios para explorar
 npm run dev             # http://localhost:3000
 ```
@@ -589,7 +592,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 369 testes
+npm test              # 378 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -620,7 +623,7 @@ app/              Rotas. Server Components por padrão
   entrar/         Login, cadastro, recuperação, espera por aprovação
 actions/          Server Actions: toda escrita passa por aqui
 db/
-  schema.ts       19 tabelas (Drizzle), com cascatas e FK composta
+  schema.ts       20 tabelas (Drizzle), com cascatas e FK composta
   queries/        Toda leitura e agregação
 lib/              Funções puras, testáveis sem banco
   money.ts        Aritmética monetária em centavos
@@ -633,6 +636,7 @@ lib/              Funções puras, testáveis sem banco
   validators.ts   Schemas Zod, compartilhados entre cliente e servidor
   interpretar-lancamento.ts  Instruções ao LLM e conferência da resposta
   perguntar-ia.ts Disputa entre provedores de LLM, com prazos e classificação de falha
+  lives.ts        Próximas ocorrências das lives, inclusive as semanais
 components/
   views/          Telas
   forms/          Diálogos e campos

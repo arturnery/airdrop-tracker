@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, LayoutDashboard } from "lucide-react";
+import { ArrowRight, LayoutDashboard, Radio } from "lucide-react";
 
 import { CapitalPorProjetoChart } from "@/components/capital-chart";
 import { useDados } from "@/components/data-provider";
@@ -15,6 +15,7 @@ import { explicacoes } from "@/components/ajuda";
 import { StatCard } from "@/components/stat-card";
 import { UrgencyBadge } from "@/components/status-badge";
 import { formatDateBr, relativeLabel } from "@/lib/dates";
+import { formatarQuando, type Ocorrencia } from "@/lib/lives";
 import {
   selectCapitalPorProjeto,
   selectDashboardSummary,
@@ -23,7 +24,7 @@ import {
   selectProjects,
 } from "@/lib/selectors";
 
-export function DashboardView() {
+export function DashboardView({ proximaLive = null }: { proximaLive?: Ocorrencia | null }) {
   const { dataset, hoje } = useDados();
 
   const resumo = selectDashboardSummary(dataset, hoje);
@@ -57,6 +58,25 @@ export function DashboardView() {
         antes de tirar conclusão dele.
       */}
       <ResumoDeAvisos projetos={projetos} />
+
+      {proximaLive ? (
+        <Link
+          href="/comunidade"
+          className="border-border hover:border-brand/50 focus-visible:ring-ring mb-6 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        >
+          <span className="bg-chart-5/15 text-chart-5 flex size-8 shrink-0 items-center justify-center rounded-md">
+            <Radio className="size-4" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="text-muted-foreground">
+              {proximaLive.aoVivo ? "Ao vivo agora: " : "Próxima live: "}
+            </span>
+            <span className="font-medium">{proximaLive.titulo}</span>
+            <span className="text-muted-foreground"> · {formatarQuando(proximaLive.quando)}</span>
+          </span>
+          <ArrowRight className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
+        </Link>
+      ) : null}
 
       {/*
         Ordem: o que já rendeu, onde está o capital agora, o que sobrou.

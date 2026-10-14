@@ -75,7 +75,7 @@ type Erros = Record<string, string>;
 const texto = (dados: FormData, campo: string) => String(dados.get(campo) ?? "");
 const nulo = (valor: string) => (valor === "" ? null : valor);
 
-function DialogoEdicao({
+export function DialogoEdicao({
   titulo,
   descricao,
   children,

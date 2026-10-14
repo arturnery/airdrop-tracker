@@ -38,6 +38,7 @@ export const TABELAS = [
   "import_batches",
   "feedback",
   "password_reset_requests",
+  "lives",
 ] as const;
 
 /**

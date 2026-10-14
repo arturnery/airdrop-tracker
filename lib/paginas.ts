@@ -5,6 +5,7 @@ import {
   Layers,
   LifeBuoy,
   ListChecks,
+  Radio,
   Sparkles,
   Upload,
   UserCheck,
@@ -26,6 +27,7 @@ import {
 export type PaginaInfo = { padrao: string; rotulo: string; icon: LucideIcon };
 
 export const PAGINAS: PaginaInfo[] = [
+  { padrao: "/comunidade", rotulo: "Comunidade", icon: Radio },
   { padrao: "/tarefas", rotulo: "Tarefas", icon: ListChecks },
   { padrao: "/projetos", rotulo: "Projetos", icon: Layers },
   { padrao: "/contas", rotulo: "Contas", icon: Wallet },

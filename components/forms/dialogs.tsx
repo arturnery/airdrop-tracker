@@ -55,7 +55,7 @@ import {
 
 type Erros = Record<string, string>;
 
-function Formulario({
+export function Formulario({
   titulo,
   descricao,
   gatilho,
@@ -200,7 +200,7 @@ const nulo = (valor: string) => (valor === "" ? null : valor);
  * elemento e injeta onClick, aria-* e ref nele. Sem o spread, o clique é
  * descartado silenciosamente e o botão simplesmente não abre nada.
  */
-function BotaoNovo({ children, ...props }: React.ComponentProps<typeof Button>) {
+export function BotaoNovo({ children, ...props }: React.ComponentProps<typeof Button>) {
   return (
     <Button size="sm" {...props}>
       <Plus className="size-4" aria-hidden="true" />

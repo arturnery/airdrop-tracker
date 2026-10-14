@@ -1854,3 +1854,41 @@ endereço e chave corretos por alvo.
   formulário, e a pessoa resolve ali.
 - Métrica de acerto (sugestões salvas sem edição), que seria a forma objetiva de comparar
   modelos depois da escolha inicial.
+
+## 19. Comunidade
+
+Até aqui o sistema era a carteira de cada um: todo dado tem dono e ninguém vê o de outro. A
+aba Comunidade é o oposto, como o catálogo (§13): conteúdo da Level Cripto, igual para
+todos, que só quem administra escreve.
+
+### 19.1. Lives
+
+| Peça | Papel |
+|---|---|
+| `lives` | Título, descrição, link, `inicio_em` (com fuso) e `semanal`; `criado_por` vira nulo se a conta for apagada |
+| `lib/lives.ts` | Puro: próximas ocorrências, conversão de dia e hora de Brasília para instante |
+| `actions/comunidade.ts` | Criar, editar e excluir, todas começando por `exigirAdministrador` |
+| `db/queries/comunidade.ts` | Leitura sem filtro de usuário, fora do Dataset pessoal |
+
+- **Recorrência na leitura.** Uma live semanal é uma linha só; as datas saem de
+  `proximasOcorrencias`, como as tarefas (§6). Sem cron, sem estado a perder.
+- **Horário de Brasília, deslocamento fixo.** O Brasil não tem horário de verão desde
+  2019, então "dia e hora digitados" vira instante somando `-03:00`, sem tabela de fuso. A
+  exibição usa `America/Sao_Paulo`, para continuar certa se isso mudar.
+- **"Ao vivo" sem duração cadastrada.** A live fica listada por duas horas depois de
+  começar, para quem chega atrasado ainda achar o link. Pedir a duração seria um campo que
+  quase ninguém sabe de antemão.
+- **Fora do Dataset.** O Dataset pessoal é recarregado a cada navegação; as lives são lidas
+  só pela aba Comunidade e pela Visão geral (a próxima dos sete dias seguintes).
+- **As ações passam pelo provider** (`acoes.criarLive` etc.), mesmo sem fazer parte do
+  Dataset: é ele que segura o diálogo aberto até a tela mostrar o dado novo (§14.7-D).
+
+### 19.2. Próximas etapas
+
+- **Agenda macro**, vinda do EcoBot, que já busca o calendário do Investing.com 24/7 numa
+  VM e contorna o bloqueio que a Vercel não contornaria. O bot envia os eventos a um
+  endereço protegido por chave.
+- **Alertas do mercado**: manchetes de alguns sites lidas várias vezes ao dia, a IA separa
+  só as críticas (hack, exploit, regulação, quebra) e resume, e quem administra aprova.
+  Depois, publicação automática. O nome não pode ser "Novidades", que já é o histórico de
+  mudanças do sistema.
