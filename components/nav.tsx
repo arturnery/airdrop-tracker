@@ -18,15 +18,38 @@ import { useDados } from "@/components/data-provider";
 import { selectPendingTasks } from "@/lib/selectors";
 import { cn } from "@/lib/utils";
 
-const itens = [
-  { href: "/", label: "Visão geral", icon: LayoutDashboard },
-  { href: "/comunidade", label: "Comunidade", icon: Radio },
-  { href: "/tarefas", label: "Tarefas", icon: ListChecks },
-  { href: "/projetos", label: "Projetos", icon: Layers },
-  { href: "/contas", label: "Contas", icon: Wallet },
-  { href: "/historico", label: "Histórico", icon: History },
-  { href: "/importar", label: "Importar", icon: Upload },
-] as const;
+type Item = { href: string; label: string; icon: typeof LayoutDashboard };
+
+/**
+ * O menu é dividido em áreas que não se misturam: o que é a carteira de cada
+ * um (Airdrops) e o que é da comunidade, igual para todos. Uma área nova (um
+ * dia, Trade) entra como um grupo a mais, sem mexer nos outros.
+ */
+const grupos: { titulo: string; itens: Item[] }[] = [
+  {
+    titulo: "Airdrops",
+    itens: [
+      { href: "/", label: "Visão geral", icon: LayoutDashboard },
+      { href: "/tarefas", label: "Tarefas", icon: ListChecks },
+      { href: "/projetos", label: "Projetos", icon: Layers },
+      { href: "/contas", label: "Contas", icon: Wallet },
+      { href: "/historico", label: "Histórico", icon: History },
+      { href: "/importar", label: "Importar", icon: Upload },
+    ],
+  },
+  {
+    titulo: "Comunidade",
+    itens: [{ href: "/comunidade/lives", label: "Lives", icon: Radio }],
+  },
+];
+
+const grupoAdministracao = {
+  titulo: "Administração",
+  itens: [
+    { href: "/membros", label: "Membros", icon: UserCheck },
+    { href: "/suporte", label: "Suporte", icon: LifeBuoy },
+  ],
+};
 
 /**
  * Um tom fixo por item, para a bolha atrás do ícone.
@@ -39,7 +62,7 @@ const itens = [
  */
 const tons: Record<string, string> = {
   "/": "bg-chart-1/15 text-chart-1",
-  "/comunidade": "bg-chart-5/15 text-chart-5",
+  "/comunidade/lives": "bg-chart-5/15 text-chart-5",
   "/tarefas": "bg-chart-4/15 text-chart-4",
   "/projetos": "bg-chart-3/15 text-chart-3",
   "/contas": "bg-chart-2/15 text-chart-2",
@@ -73,83 +96,104 @@ export function Nav({
   // A contagem de membros pendentes não entra aqui: ela vive em `users` e é
   // dado de administração, que não deve ser carregado em toda navegação.
   const contagem = (href: string) =>
-    href === "/tarefas"
-      ? urgentes
-      : href === "/suporte"
-        ? feedbackNaoLido
-        : 0;
+    href === "/tarefas" ? urgentes : href === "/suporte" ? feedbackNaoLido : 0;
 
   const estaAtivo = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
+  const visiveis = ehAdmin ? [...grupos, grupoAdministracao] : grupos;
+
+  /*
+   * No celular o menu é uma fileira de ícones, sem espaço para títulos: os
+   * grupos se desfazem (`contents`) e os itens ficam lado a lado. Na barra
+   * lateral, cada grupo ganha o seu título; recolhida, o título vira uma linha
+   * divisória, que ainda separa as áreas sem ocupar largura.
+   */
   return (
     <nav aria-label="Navegação principal" className="p-3">
-      <ul className="flex gap-1 lg:flex-col">
-        {[
-          ...itens,
-          ...(ehAdmin
-            ? ([
-                { href: "/membros", label: "Membros", icon: UserCheck },
-                { href: "/suporte", label: "Suporte", icon: LifeBuoy },
-              ] as const)
-            : []),
-        ].map((item) => {
-          const ativo = estaAtivo(item.href);
-          const Icon = item.icon;
-          return (
-            <li key={item.href} className="flex-1 lg:flex-none">
-              <Link
-                href={item.href}
-                aria-current={ativo ? "page" : undefined}
-                title={recolhida ? item.label : undefined}
-                className={cn(
-                  "relative flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm transition-colors lg:justify-start",
-                  recolhida && "lg:justify-center lg:px-0",
-                  "focus-visible:ring-ring focus-visible:ring-offset-sidebar focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-                  ativo
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "flex size-7 shrink-0 items-center justify-center rounded-md",
-                    tons[item.href] ?? "bg-secondary text-muted-foreground",
-                  )}
-                >
-                  <Icon className="size-4" />
-                </span>
-                {/* Recolhida, o rótulo sai da tela e permanece no DOM: leitor
+      <div className="flex gap-1 lg:flex-col lg:gap-4">
+        {visiveis.map((grupo, indiceGrupo) => (
+          <div key={grupo.titulo} className="contents lg:block">
+            <p
+              id={`menu-${grupo.titulo}`}
+              className={cn(
+                "text-muted-foreground mb-1 hidden px-3 text-[11px] font-medium tracking-wider uppercase lg:block",
+                recolhida && "lg:sr-only",
+              )}
+            >
+              {grupo.titulo}
+            </p>
+            {recolhida && indiceGrupo > 0 ? (
+              <hr
+                className="border-sidebar-border mx-2 mb-2 hidden lg:block"
+                aria-hidden="true"
+              />
+            ) : null}
+            <ul
+              aria-labelledby={`menu-${grupo.titulo}`}
+              className="contents lg:flex lg:flex-col lg:gap-1"
+            >
+              {grupo.itens.map((item) => {
+                const ativo = estaAtivo(item.href);
+                const Icon = item.icon;
+                return (
+                  <li key={item.href} className="flex-1 lg:flex-none">
+                    <Link
+                      href={item.href}
+                      aria-current={ativo ? "page" : undefined}
+                      title={recolhida ? item.label : undefined}
+                      className={cn(
+                        "relative flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm transition-colors lg:justify-start",
+                        recolhida && "lg:justify-center lg:px-0",
+                        "focus-visible:ring-ring focus-visible:ring-offset-sidebar focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+                        ativo
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "flex size-7 shrink-0 items-center justify-center rounded-md",
+                          tons[item.href] ??
+                            "bg-secondary text-muted-foreground",
+                        )}
+                      >
+                        <Icon className="size-4" />
+                      </span>
+                      {/* Recolhida, o rótulo sai da tela e permanece no DOM: leitor
                     de tela e busca da página continuam encontrando a palavra. */}
-                <span
-                  className={cn(
-                    "hidden sm:inline",
-                    recolhida && "lg:sr-only",
-                  )}
-                >
-                  {item.label}
-                </span>
-                {contagem(item.href) > 0 ? (
-                  /* Recolhida, o número vira um ponto: dizer "3" em 68px
+                      <span
+                        className={cn(
+                          "hidden sm:inline",
+                          recolhida && "lg:sr-only",
+                        )}
+                      >
+                        {item.label}
+                      </span>
+                      {contagem(item.href) > 0 ? (
+                        /* Recolhida, o número vira um ponto: dizer "3" em 68px
                      empurraria o ícone, e o que importa ali é saber que há
                      algo esperando. */
-                  recolhida ? (
-                    <span
-                      aria-label={`${contagem(item.href)} pendente(s)`}
-                      className="bg-caution absolute top-1.5 right-1.5 hidden size-1.5 rounded-full lg:block"
-                    />
-                  ) : (
-                    <span className="bg-caution/15 text-caution tabular ml-auto hidden rounded px-1.5 py-0.5 text-xs font-medium lg:inline">
-                      {contagem(item.href)}
-                    </span>
-                  )
-                ) : null}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+                        recolhida ? (
+                          <span
+                            aria-label={`${contagem(item.href)} pendente(s)`}
+                            className="bg-caution absolute top-1.5 right-1.5 hidden size-1.5 rounded-full lg:block"
+                          />
+                        ) : (
+                          <span className="bg-caution/15 text-caution tabular ml-auto hidden rounded px-1.5 py-0.5 text-xs font-medium lg:inline">
+                            {contagem(item.href)}
+                          </span>
+                        )
+                      ) : null}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
     </nav>
   );
 }

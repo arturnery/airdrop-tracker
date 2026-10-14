@@ -1858,8 +1858,14 @@ endereço e chave corretos por alvo.
 ## 19. Comunidade
 
 Até aqui o sistema era a carteira de cada um: todo dado tem dono e ninguém vê o de outro. A
-aba Comunidade é o oposto, como o catálogo (§13): conteúdo da Level Cripto, igual para
+área Comunidade é o oposto, como o catálogo (§13): conteúdo da Level Cripto, igual para
 todos, que só quem administra escreve.
+
+**As áreas não se comunicam.** A Visão geral e as demais telas de airdrops não mostram nada
+da Comunidade, e vice-versa. O menu é dividido em grupos com título ("Airdrops",
+"Comunidade", "Administração"), e cada página da Comunidade vive sob `/comunidade/...`. É o
+desenho que deixa uma área nova (Trade, por exemplo) entrar como mais um grupo, sem tocar
+nas outras.
 
 ### 19.1. Lives
 
@@ -1869,6 +1875,7 @@ todos, que só quem administra escreve.
 | `lib/lives.ts` | Puro: próximas ocorrências, conversão de dia e hora de Brasília para instante |
 | `actions/comunidade.ts` | Criar, editar e excluir, todas começando por `exigirAdministrador` |
 | `db/queries/comunidade.ts` | Leitura sem filtro de usuário, fora do Dataset pessoal |
+| `/comunidade/lives` | A página; `/comunidade` redireciona para ela |
 
 - **Recorrência na leitura.** Uma live semanal é uma linha só; as datas saem de
   `proximasOcorrencias`, como as tarefas (§6). Sem cron, sem estado a perder.
@@ -1879,16 +1886,16 @@ todos, que só quem administra escreve.
   começar, para quem chega atrasado ainda achar o link. Pedir a duração seria um campo que
   quase ninguém sabe de antemão.
 - **Fora do Dataset.** O Dataset pessoal é recarregado a cada navegação; as lives são lidas
-  só pela aba Comunidade e pela Visão geral (a próxima dos sete dias seguintes).
+  só pela página delas.
 - **As ações passam pelo provider** (`acoes.criarLive` etc.), mesmo sem fazer parte do
   Dataset: é ele que segura o diálogo aberto até a tela mostrar o dado novo (§14.7-D).
 
 ### 19.2. Próximas etapas
 
-- **Agenda macro**, vinda do EcoBot, que já busca o calendário do Investing.com 24/7 numa
+- **Agenda macro** (`/comunidade/agenda`), vinda do EcoBot, que já busca o calendário do Investing.com 24/7 numa
   VM e contorna o bloqueio que a Vercel não contornaria. O bot envia os eventos a um
   endereço protegido por chave.
-- **Alertas do mercado**: manchetes de alguns sites lidas várias vezes ao dia, a IA separa
+- **Alertas do mercado** (`/comunidade/alertas`): manchetes de alguns sites lidas várias vezes ao dia, a IA separa
   só as críticas (hack, exploit, regulação, quebra) e resume, e quem administra aprova.
   Depois, publicação automática. O nome não pode ser "Novidades", que já é o histórico de
   mudanças do sistema.

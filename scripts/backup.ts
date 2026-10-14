@@ -41,7 +41,24 @@ async function main() {
   const dados: Record<string, unknown[]> = {};
   let total = 0;
 
+  /*
+   * Tabela da lista que ainda não existe neste banco é migração pendente, e
+   * o backup segue sem ela, dizendo isso. Abortar aqui travava o backup
+   * justamente entre o commit de uma tabela nova e a migração em produção,
+   * que é o momento em que a regra manda fazer backup.
+   */
+  const existentes = new Set(
+    ((await sql.query(
+      `select table_name from information_schema.tables where table_schema = 'public'`,
+    )) as { table_name: string }[]).map((t) => t.table_name),
+  );
+  const ausentes = TABELAS.filter((t) => !existentes.has(t));
+
   for (const tabela of TABELAS) {
+    if (!existentes.has(tabela)) {
+      console.log(`  ${tabela}: ainda não existe neste banco (migração pendente), fica de fora`);
+      continue;
+    }
     // `sql.query` é a via para SQL montado: a forma de template só aceita
     // literais, e o nome da tabela vem da constante acima, não de entrada.
     const linhas = (await sql.query(`select * from ${tabela}`)) as Record<
@@ -76,6 +93,7 @@ async function main() {
     banco: ambiente.host,
     ultimaMigracao: migracoes[0]?.hash ?? null,
     contemSenhas: false,
+    tabelasAusentes: ausentes,
     tabelas: dados,
   };
 

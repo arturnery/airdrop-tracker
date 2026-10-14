@@ -46,8 +46,8 @@ export function ComunidadeView({
     <>
       <PageHeader
         icon={Radio}
-        title="Comunidade"
-        description="Lives da comunidade Level Cripto. Horários de Brasília."
+        title="Lives"
+        description="Agenda das lives da comunidade Level Cripto. Horários de Brasília."
         actions={ehAdmin ? <NovaLive /> : null}
       />
 
@@ -60,8 +60,8 @@ export function ComunidadeView({
             title="Nenhuma live marcada para os próximos 14 dias."
             description={
               ehAdmin
-                ? "Cadastre a próxima em Nova live: ela aparece aqui e na Visão geral."
-                : "Quando a próxima for marcada, ela aparece aqui e na Visão geral."
+                ? "Cadastre a próxima em Nova live."
+                : "Quando a próxima for marcada, ela aparece aqui."
             }
           />
         ) : (

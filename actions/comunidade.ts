@@ -18,9 +18,7 @@ import { executar, type ResultadoAcao } from "./_core";
  */
 
 const ROTAS: { caminho: string; tipo: "page" | "layout" }[] = [
-  { caminho: "/comunidade", tipo: "page" },
-  // A Visão geral mostra a próxima live.
-  { caminho: "/", tipo: "page" },
+  { caminho: "/comunidade/lives", tipo: "page" },
 ];
 
 export async function criarLive(entrada: unknown): Promise<ResultadoAcao> {

@@ -3415,3 +3415,26 @@ o "fechou e não mudou nada" que o sistema já tinha resolvido nos outros formul
 ações das lives chamavam a Server Action direto, sem passar pelo provider, que é quem
 segura o diálogo até a tela receber o dado. Passando por ele, criar e editar aparecem no
 mesmo instante em que o diálogo fecha.
+
+### As áreas não se misturam
+
+A primeira versão punha um aviso da próxima live na Visão geral. A correção veio logo: a
+Visão geral é da área de airdrops, e as áreas não devem se comunicar, porque o plano é
+subdividir o site depois (airdrops, trade e o que vier). O aviso saiu, a Visão geral voltou
+a ser idêntica à de antes, e o menu ganhou grupos com título. A página de lives foi para
+`/comunidade/lives`, para que as próximas (agenda, alertas) entrem como irmãs dela, sob o
+mesmo prefixo, cada uma com seu item no grupo.
+
+### A senha de teste, e o backup que travou
+
+A senha da conta de demonstração virou `teste@1234`, nos dois bancos e no README, a pedido
+de quem mais esquecia a anterior. No caminho, o backup de produção falhou: a lista de
+tabelas já tinha `lives`, que em produção ainda não existia, e o script abortava inteiro.
+Era um backup inutilizado exatamente no intervalo entre o commit de uma tabela e a migração,
+que é quando a regra manda fazer backup. Agora tabela ausente é pulada com aviso e
+registrada no próprio arquivo (`tabelasAusentes`).
+
+O mesmo episódio teve um erro meu: o backup estava encadeado com `| tail -3 &&` antes da
+troca de senha em produção, e o `&&` olhou o código de saída do `tail`, não o do backup. A
+troca de senha rodou sem backup. Era pequena e reversível, e o backup foi refeito logo em
+seguida, mas a regra virou item do catálogo de erros: passo que protege outro roda sozinho.

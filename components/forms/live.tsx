@@ -111,7 +111,7 @@ export function NovaLive() {
   return (
     <Formulario
       titulo="Nova live"
-      descricao="Aparece para toda a comunidade, na aba Comunidade e na Visão geral."
+      descricao="Aparece para toda a comunidade, na página de lives."
       gatilho={<BotaoNovo>Nova live</BotaoNovo>}
       aoEnviar={(dados) => enviar(dados, acoes.criarLive)}
     >

@@ -26,7 +26,7 @@ import { anunciar, resolverAmbiente } from "./_ambiente";
 
 /** Publicadas no README: não são segredo, e é essa a intenção. */
 export const DEMO_EMAIL = "demo@airdrop-tracker.app";
-export const DEMO_SENHA = "demo1234";
+export const DEMO_SENHA = "teste@1234";
 const DEMO_NOME = "Visitante";
 
 const ambiente = resolverAmbiente();

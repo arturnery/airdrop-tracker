@@ -36,7 +36,7 @@ demonstração é pública. [Como funciona e por quê](#integração-com-llm-lan
 
 ```
 e-mail: demo@airdrop-tracker.app
-senha:  demo1234
+senha:  teste@1234
 ```
 
 A conta já vem com projetos, lançamentos e tarefas de exemplo. Pode criar, editar e excluir
@@ -133,9 +133,9 @@ senhas temporárias, mas não vê o farming de ninguém.
   paguei 1,20 de gás"), pontos e volume ("ganhei 300 pontos na Lighter", somados à última
   medição porque o formulário pede o total) e airdrop recebido ("caíram 3.000 SLX a
   $0,12"). A pessoa confere e salva pelo mesmo formulário do registro manual.
-- **Comunidade.** Agenda de lives da Level Cripto, cadastrada por quem administra e vista
-  por todos, com lives semanais calculadas na leitura (sem cron) e horário de Brasília. A
-  próxima live aparece na Visão geral.
+- **Comunidade.** Área separada da de airdrops, com conteúdo igual para todos. Começa pela
+  agenda de lives da Level Cripto, cadastrada por quem administra, com lives semanais
+  calculadas na leitura (sem cron) e horário de Brasília.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o
