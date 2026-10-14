@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.12",
+    data: "2026-10-14",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Projetos ganharam o campo Vídeo tutorial, nas informações do projeto. Quando preenchido, um ícone do YouTube aparece ao lado do nome, na página do projeto, e abre o vídeo direto.",
+      },
+    ],
+  },
+  {
     versao: "1.11",
     data: "2026-10-14",
     mudancas: [

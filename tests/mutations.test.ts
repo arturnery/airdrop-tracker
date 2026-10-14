@@ -21,6 +21,7 @@ describe("criação", () => {
       discordUrl: null,
       twitterUrl: null,
       docsUrl: null,
+      tutorialUrl: null,
       expectedTgeDate: null,
       notes: null,
     });
@@ -172,6 +173,7 @@ describe("catálogo da comunidade", () => {
       discordUrl: null,
       twitterUrl: null,
       docsUrl: null,
+      tutorialUrl: null,
       expectedTgeDate: null,
       notes: null,
     });

@@ -147,6 +147,7 @@ export async function carregarDataset(
       discordUrl: p.discordUrl,
       twitterUrl: p.twitterUrl,
       docsUrl: p.docsUrl,
+      tutorialUrl: p.tutorialUrl,
       expectedTgeDate: p.expectedTgeDate,
       notes: p.notes,
       adoptedFromId: p.adoptedFromId,

@@ -3482,3 +3482,12 @@ A conta de teste é membro, como deve ser numa conta com senha publicada, e por 
 para testar as telas de administração sem a conta pessoal. `npm run admin:teste` cria
 `admin@teste.local` com senha conhecida, e recusa produção sem opção de confirmar: lá, um
 administrador com senha fácil veria o e-mail de todos os membros e decidiria quem entra.
+
+### Vídeo tutorial no projeto
+
+Campo novo `tutorial_url` no projeto, e um ícone do YouTube ao lado do nome que abre o
+vídeo. Duas decisões pequenas. O ícone é um SVG próprio, porque a biblioteca de ícones
+deixou de trazer marcas, e fica em cinza, não no vermelho do YouTube: aqui vermelho é
+prejuízo, e um ícone vermelho ao lado do nome seria lido como alerta. E o campo não entra no
+catálogo da comunidade nem é copiado na adoção: o tutorial é de quem cadastrou o projeto, e
+levar para o catálogo é uma decisão de produto ainda não tomada.

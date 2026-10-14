@@ -19,6 +19,7 @@ export function PageHeader({
   /** Estilo extra no título: usado para riscar projeto descartado. */
   titleClassName,
   titleHref,
+  titleAside,
 }: {
   title: string;
   description?: string;
@@ -31,6 +32,8 @@ export function PageHeader({
    * executa código ao ser clicado.
    */
   titleHref?: string | null;
+  /** Ao lado do título, na mesma linha (o atalho do vídeo tutorial). */
+  titleAside?: ReactNode;
 }) {
   const link = titleHref && /^https?:\/\//i.test(titleHref) ? titleHref : null;
   return (
@@ -71,6 +74,7 @@ export function PageHeader({
                 title
               )}
             </h1>
+            {titleAside}
           </div>
           {description ? (
             <p className="text-muted-foreground mt-2 text-sm">{description}</p>

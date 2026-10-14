@@ -273,6 +273,7 @@ export function NovoProjeto() {
           discordUrl: texto(dados, "discordUrl"),
           twitterUrl: texto(dados, "twitterUrl"),
           docsUrl: texto(dados, "docsUrl"),
+          tutorialUrl: texto(dados, "tutorialUrl"),
           expectedTgeDate: texto(dados, "expectedTgeDate"),
           notes: texto(dados, "notes"),
         };
@@ -383,6 +384,14 @@ export function NovoProjeto() {
               placeholder="https://"
             />
           </div>
+          <CampoTexto
+            label="Vídeo tutorial"
+            name="tutorialUrl"
+            type="url"
+            erro={e.tutorialUrl}
+            placeholder="https://youtube.com/watch?v=..."
+            ajuda="Aparece como um ícone do YouTube ao lado do nome do projeto."
+          />
           <CampoArea
             label="Anotações"
             name="notes"

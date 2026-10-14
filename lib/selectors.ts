@@ -644,6 +644,7 @@ export function selectProjectBySlug(
       discord: projeto.discordUrl,
       twitter: projeto.twitterUrl,
       docs: projeto.docsUrl,
+      tutorial: projeto.tutorialUrl,
     },
     notas: projeto.notes,
     posicoesToken,

@@ -230,6 +230,8 @@ export const projects = pgTable(
     discordUrl: text("discord_url"),
     twitterUrl: text("twitter_url"),
     docsUrl: text("docs_url"),
+    /** Vídeo tutorial do projeto: o ícone do YouTube ao lado do nome abre ele. */
+    tutorialUrl: text("tutorial_url"),
     expectedTgeDate: date("expected_tge_date"),
     notes: text("notes"),
     /**

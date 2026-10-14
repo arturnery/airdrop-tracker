@@ -145,6 +145,7 @@ export type ProjectLinks = {
   discord: string | null;
   twitter: string | null;
   docs: string | null;
+  tutorial: string | null;
 };
 
 /** Uma linha da tabela "conta por conta" dentro de um projeto. */

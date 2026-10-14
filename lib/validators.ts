@@ -59,6 +59,7 @@ export const projetoSchema = z.object({
   discordUrl: urlOpcional,
   twitterUrl: urlOpcional,
   docsUrl: urlOpcional,
+  tutorialUrl: urlOpcional,
   expectedTgeDate: dataIso.nullable().or(z.literal("").transform(() => null)),
   notes: textoOpcional,
 });

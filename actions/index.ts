@@ -71,6 +71,7 @@ export async function criarProjeto(entrada: unknown): Promise<ResultadoAcao> {
       discordUrl: dados.discordUrl,
       twitterUrl: dados.twitterUrl,
       docsUrl: dados.docsUrl,
+      tutorialUrl: dados.tutorialUrl,
       expectedTgeDate: dados.expectedTgeDate,
       notes: dados.notes,
     });
@@ -96,6 +97,7 @@ export async function atualizarProjeto(
         discordUrl: dados.discordUrl,
         twitterUrl: dados.twitterUrl,
         docsUrl: dados.docsUrl,
+        tutorialUrl: dados.tutorialUrl,
         expectedTgeDate: dados.expectedTgeDate,
         notes: dados.notes,
       })

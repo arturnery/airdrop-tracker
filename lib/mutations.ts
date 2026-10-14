@@ -603,6 +603,8 @@ export function adotarDoCatalogo(
     discordUrl: entrada.discordUrl,
     twitterUrl: entrada.twitterUrl,
     docsUrl: entrada.docsUrl,
+    // O catálogo não carrega vídeo: o tutorial é de quem adotou.
+    tutorialUrl: null,
     expectedTgeDate: entrada.expectedTgeDate,
     notes: null,
     adoptedFromId: entrada.id,

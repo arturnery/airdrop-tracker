@@ -38,6 +38,7 @@ import {
   VincularConta,
 } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
+import { IconeYoutube } from "@/components/icone-youtube";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import {
@@ -120,6 +121,7 @@ export function ProjetoView({ slug }: { slug: string }) {
     { href: projeto.links.docs, label: "Docs" },
     { href: projeto.links.twitter, label: "Twitter" },
     { href: projeto.links.discord, label: "Discord" },
+    { href: projeto.links.tutorial, label: "Vídeo tutorial" },
   ].filter((l): l is { href: string; label: string } => Boolean(l.href));
 
   return (
@@ -143,6 +145,20 @@ export function ProjetoView({ slug }: { slug: string }) {
         titleClassName={nomeRiscado(projeto.status)}
         // O nome abre o site do projeto, quando houver um cadastrado.
         titleHref={projeto.links.website}
+        titleAside={
+          projeto.links.tutorial && /^https?:\/\//i.test(projeto.links.tutorial) ? (
+            <a
+              href={projeto.links.tutorial}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Vídeo tutorial"
+              aria-label={`Assistir o vídeo tutorial de ${projeto.nome} (abre em nova aba)`}
+              className="text-muted-foreground hover:text-foreground hover:bg-secondary focus-visible:ring-ring flex size-8 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            >
+              <IconeYoutube className="size-5" />
+            </a>
+          ) : null
+        }
         description={
           [
             projeto.chain,

@@ -153,6 +153,7 @@ async function main() {
         discordUrl: projeto.discordUrl,
         twitterUrl: projeto.twitterUrl,
         docsUrl: projeto.docsUrl,
+        tutorialUrl: projeto.tutorialUrl,
         expectedTgeDate: projeto.expectedTgeDate,
         notes: projeto.notes,
       })
