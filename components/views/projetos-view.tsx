@@ -169,57 +169,58 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         <PriorityBadge value={projeto.prioridade} />
       </div>
 
-      {projeto.alerta ? (
-        <AvisoSaldo alerta={projeto.alerta} className="mt-3" />
-      ) : null}
+      {/*
+        Todo card tem a mesma estrutura, com as mesmas alturas: selos, uma
+        faixa do meio de altura reservada e o rodapé preso à base. Antes, o que
+        aparecia ou não (links, resultado) empurrava o rodapé, e a linha de
+        separação ficava num lugar diferente em cada card da mesma fileira.
+
+        A faixa do meio é reservada mesmo vazia. Único número financeiro que
+        volta ao card, o resultado, só aparece quando o status é final:
+        distribuído não tem exposição em aberto nem capital para comparar, só o
+        resultado que já aconteceu. O aviso de saldo impossível é o único
+        conteúdo que pode deixar um card mais alto: é raro, e importante demais
+        para ser cortado.
+      */}
+      <div className="mt-3 mb-3 flex min-h-10 flex-col justify-center gap-2">
+        {projeto.alerta ? <AvisoSaldo alerta={projeto.alerta} /> : null}
+        {projeto.status === "distribuido" ? (
+          <div className="bg-secondary/40 flex h-10 items-center justify-between rounded-md px-3">
+            <span className="text-muted-foreground text-xs font-medium">Resultado</span>
+            <span className="text-sm font-semibold">
+              <Money value={projeto.resultado} tone="auto" signed />
+            </span>
+          </div>
+        ) : null}
+      </div>
 
       {/*
-        Único número financeiro que volta ao card, e só porque o status é
-        final: distribuído não tem exposição em aberto nem capital para
-        comparar, só o resultado que já aconteceu.
+        Rodapé com `mt-auto`, preso à base: a grade iguala a altura dos cards
+        da mesma fileira, e o rodapé acompanha a base em vez de boiar logo
+        abaixo do conteúdo.
+
+        À esquerda, os atalhos para os links do projeto (discretos até o mouse
+        passar pelo card: dezenas de cards com cinco ícones acesos disputariam
+        atenção com o status e as atrasadas). À direita, atrasadas e data. As
+        duas metades existem sempre, mesmo vazias, para nada trocar de lado
+        por falta do vizinho. `z-10` tira os links de baixo do link esticado
+        do card, senão o clique abriria o projeto.
       */}
-      {projeto.status === "distribuido" ? (
-        <div className="bg-secondary/40 mt-3 flex items-center justify-between rounded-md px-3 py-2">
-          <span className="text-muted-foreground text-xs font-medium">Resultado</span>
-          <span className="text-sm font-semibold">
-            <Money value={projeto.resultado} tone="auto" signed />
-          </span>
+      <div className="border-border mt-auto flex min-h-10 items-center justify-between gap-3 border-t pt-2.5 text-xs">
+        <div className="relative z-10 -ml-1.5 min-w-0">
+          <LinksDoProjeto
+            nome={projeto.nome}
+            links={projeto.links}
+            className="text-muted-foreground/60 group-hover:text-muted-foreground group-focus-within:text-muted-foreground"
+          />
         </div>
-      ) : null}
-
-      {/*
-        Atalhos para os links do projeto, sem precisar abrir a página dele.
-        Discretos até o mouse passar pelo card: com dezenas de cards na tela,
-        cinco ícones acesos em cada um disputariam atenção com o que importa
-        (status, atrasadas). `z-10` os tira de baixo do link esticado do card,
-        senão o clique abriria o projeto em vez do link.
-      */}
-      <LinksDoProjeto
-        nome={projeto.nome}
-        links={projeto.links}
-        className="text-muted-foreground/60 group-hover:text-muted-foreground group-focus-within:text-muted-foreground relative z-10 mt-3 -ml-1.5"
-      />
-
-      {/*
-        `mt-auto` empurra o rodapé para a base. Sem isso, num card mais curto
-        que o vizinho da mesma fileira, o rodapé ficava boiando no meio, com
-        espaço vazio embaixo: a grade iguala a altura dos cards, e só o
-        conteúdo é que não enchia.
-
-        Duas metades sempre presentes (mesmo vazias), e não um `justify-between`
-        com um filho só: um card sem atrasada e sem data não deveria ver a
-        data pular para a esquerda por falta de par do outro lado.
-      */}
-      <div className="border-border mt-3 flex items-center justify-between gap-3 border-t pt-2.5 text-xs">
-        <div>
+        <div className="flex shrink-0 items-center gap-2">
           {projeto.tarefasAtrasadas > 0 ? (
             <span className="bg-negative/15 text-negative inline-flex items-center rounded-full px-2.5 py-0.5 font-medium">
               {projeto.tarefasAtrasadas} atrasada
               {projeto.tarefasAtrasadas > 1 ? "s" : ""}
             </span>
           ) : null}
-        </div>
-        <div>
           {projeto.ultimaAtividade ? (
             <span
               className="text-muted-foreground"
