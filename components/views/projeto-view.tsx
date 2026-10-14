@@ -141,6 +141,8 @@ export function ProjetoView({ slug }: { slug: string }) {
         icon={Layers}
         title={projeto.nome}
         titleClassName={nomeRiscado(projeto.status)}
+        // O nome abre o site do projeto, quando houver um cadastrado.
+        titleHref={projeto.links.website}
         description={
           [
             projeto.chain,

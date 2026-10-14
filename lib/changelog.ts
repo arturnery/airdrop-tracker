@@ -62,6 +62,11 @@ export const changelog: Versao[] = [
         texto:
           "No Lançar com IA, uma frase como \"registrar recebimento Solstice 75 dólares\" abria um lançamento de rendimento, em vez do registro de airdrop recebido. Agora \"recebimento\", \"airdrop\" e \"claim\" abrem o formulário de recebimento, e o valor entra nos airdrops ganhos.",
       },
+      {
+        tipo: "melhoria",
+        texto:
+          "Na página de um projeto, o nome no topo abre o site dele numa aba nova, quando o site estiver cadastrado nas informações do projeto.",
+      },
     ],
   },
   {

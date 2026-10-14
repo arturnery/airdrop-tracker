@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import { ExternalLink, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -18,13 +18,21 @@ export function PageHeader({
   icon: Icon,
   /** Estilo extra no título: usado para riscar projeto descartado. */
   titleClassName,
+  titleHref,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
   icon?: LucideIcon;
   titleClassName?: string;
+  /**
+   * Endereço externo que o título abre (o site do projeto). Só `http(s)`:
+   * é texto que alguém digitou, e um `javascript:` ali viraria um link que
+   * executa código ao ser clicado.
+   */
+  titleHref?: string | null;
 }) {
+  const link = titleHref && /^https?:\/\//i.test(titleHref) ? titleHref : null;
   return (
     <header className="border-border bg-card/40 mb-8 rounded-lg border p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -44,7 +52,24 @@ export function PageHeader({
                 titleClassName,
               )}
             >
-              {title}
+              {link ? (
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Abrir o site de ${title}`}
+                  className="hover:text-brand-legivel focus-visible:ring-ring group inline-flex items-center gap-2 rounded-sm underline-offset-4 transition-colors hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  {title}
+                  <ExternalLink
+                    className="text-muted-foreground group-hover:text-brand-legivel size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="sr-only">(abre o site em nova aba)</span>
+                </a>
+              ) : (
+                title
+              )}
             </h1>
           </div>
           {description ? (
