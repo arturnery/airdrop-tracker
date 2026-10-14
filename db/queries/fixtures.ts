@@ -405,6 +405,26 @@ export const rawProjects: RawProject[] = [
     notes: null,
     adoptedFromId: null,
   },
+  {
+    // Sem nenhuma conta vinculada, de propósito: é o caso que o aviso de
+    // "projeto sem conta" existe para mostrar.
+    id: "prj-lumen",
+    slug: "lumen-restake",
+    name: "Lumen Restake",
+    status: "ativo",
+    category: "liquidez",
+    pointsLabel: null,
+    chain: "Ethereum",
+    priority: 2,
+    websiteUrl: null,
+    discordUrl: null,
+    twitterUrl: null,
+    docsUrl: null,
+    tutorialUrl: null,
+    expectedTgeDate: null,
+    notes: null,
+    adoptedFromId: null,
+  },
 ];
 
 export type RawProjectAccount = {

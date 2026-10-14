@@ -46,8 +46,8 @@ describe("selectDashboardSummary", () => {
   });
 
   it("conta contas e projetos ativos", () => {
-    // 5 de antes + Halcyon Chain, Kepler Perp, Aurora Vault
-    expect(resumo.projetosAtivos).toBe(8);
+    // 5 de antes + Halcyon Chain, Kepler Perp, Aurora Vault, Lumen Restake
+    expect(resumo.projetosAtivos).toBe(9);
     expect(resumo.contasAtivas).toBe(6);
   });
 

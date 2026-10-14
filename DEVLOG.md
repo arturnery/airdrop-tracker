@@ -3505,3 +3505,15 @@ No caminho, a regra "só `http(s)` vira link" já estava escrita em dois lugares
 um terceiro. Virou `urlExterna` (`lib/links.ts`), aplicada onde os links do projeto são
 montados (`linksDoProjeto`, que também estava duplicado entre a lista e a página do
 projeto), de modo que nenhum endereço inseguro chega à tela por nenhum caminho.
+
+### Projeto sem conta vinculada
+
+Todo projeto precisa de pelo menos uma conta, e até aqui o vínculo só nascia no primeiro
+lançamento: um projeto recém-cadastrado ficava sem conta, e as telas dele vazias sem dizer
+por quê. Agora há um aviso em âmbar (algo faltando, não prejuízo), compacto no card, na
+mesma altura do "Resultado" para não desalinhar a grade, e completo no topo da página do
+projeto, com o botão de vincular ali mesmo. Sem nenhuma conta cadastrada, o botão vira
+"Cadastrar uma conta", porque o formulário de vínculo não teria o que oferecer. Os dados
+de exemplo ganharam um projeto sem conta (Lumen Restake), que é o caso que o aviso existe
+para mostrar. Impedir o cadastro de projeto sem conta, pedindo a conta já no formulário de
+criação, continua no roadmap.

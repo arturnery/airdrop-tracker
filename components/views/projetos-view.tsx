@@ -30,6 +30,7 @@ import { formatDateShort, relativeLabel } from "@/lib/dates";
 import { normalizar } from "@/lib/dataset";
 import { cn } from "@/lib/utils";
 import { LinksDoProjeto } from "@/components/links-do-projeto";
+import { AvisoSemContaCompacto } from "@/components/aviso-sem-conta";
 import {
   contarDependenciasProjeto,
   descreverImpacto,
@@ -171,6 +172,7 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         para ser cortado.
       */}
       <div className="mt-3 flex min-h-10 flex-col justify-center gap-2">
+        {projeto.contas === 0 ? <AvisoSemContaCompacto /> : null}
         {projeto.alerta ? <AvisoSaldo alerta={projeto.alerta} /> : null}
         {projeto.status === "distribuido" ? (
           <div className="bg-secondary/40 flex h-10 items-center justify-between rounded-md px-3">

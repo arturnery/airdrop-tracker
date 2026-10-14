@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.14",
+    data: "2026-10-15",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Projeto sem nenhuma conta vinculada agora avisa: no card da tela de Projetos e no topo da página do projeto, com um botão para vincular a conta ali mesmo. Todo projeto precisa de pelo menos uma conta, porque é ela que recebe os lançamentos, as tarefas e os pontos.",
+      },
+    ],
+  },
+  {
     versao: "1.13",
     data: "2026-10-14",
     mudancas: [

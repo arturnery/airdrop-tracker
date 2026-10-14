@@ -26,6 +26,7 @@ import { Ajuda, explicacoes } from "@/components/ajuda";
 import { DestacarProjeto } from "@/components/forms/catalogo";
 import { faltaRegistrarRecebimento } from "@/lib/consistencia";
 import { AvisoSaldo } from "@/components/aviso-saldo";
+import { AvisoSemConta } from "@/components/aviso-sem-conta";
 import { Button } from "@/components/ui/button";
 import {
   LancarProgressoMeta,
@@ -185,6 +186,10 @@ export function ProjetoView({ slug }: { slug: string }) {
         O aviso vem antes dos indicadores, e não depois: quem lê o número
         primeiro e o aviso depois já tirou a conclusão errada no caminho.
       */}
+      {projeto.contas === 0 ? (
+        <AvisoSemConta projectId={projeto.id} className="mb-6" />
+      ) : null}
+
       {projeto.alerta ? (
         <AvisoSaldo alerta={projeto.alerta} className="mb-6" />
       ) : null}
