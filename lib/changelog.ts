@@ -55,7 +55,7 @@ export const changelog: Versao[] = [
       {
         tipo: "melhoria",
         texto:
-          "Os cards da tela de Projetos mostram atalhos para os links de cada projeto (site, vídeo tutorial, docs, X e Discord), só os que estiverem preenchidos. Um clique abre o link numa aba nova, sem precisar entrar na página do projeto. Os cards também ficaram padronizados: mesmo tamanho, rodapé sempre na base e a linha de separação no mesmo lugar em todos.",
+          "Os cards da tela de Projetos mostram atalhos para os links de cada projeto (site, vídeo tutorial, docs, X e Discord), só os que estiverem preenchidos. Um clique abre o link numa aba nova, sem precisar entrar na página do projeto. Os cards também ficaram padronizados: mesmo tamanho, nome e inicial do projeto em destaque no topo, selos logo acima da linha de separação e o rodapé sempre na base.",
       },
     ],
   },

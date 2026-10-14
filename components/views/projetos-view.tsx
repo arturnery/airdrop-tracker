@@ -120,11 +120,11 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
           */}
           <span
             aria-hidden="true"
-            className="bg-brand/15 text-brand-legivel flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold"
+            className="bg-brand/15 text-brand-legivel flex size-11 shrink-0 items-center justify-center rounded-xl text-lg font-semibold"
           >
             {projeto.nome.trim().charAt(0).toUpperCase()}
           </span>
-          <h3 className="min-w-0 text-base font-semibold tracking-tight">
+          <h3 className="min-w-0 text-lg leading-tight font-semibold tracking-tight">
             <Link
               href={`/projetos/${projeto.slug}`}
               className={cn(
@@ -158,18 +158,6 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
       </div>
 
       {/*
-        Os três filtros da tela, no card, como selo: categoria, status e
-        prioridade. A categoria repete a da seção de propósito — nem todo
-        card vai ficar perto do título da seção depois de rolar a página, e
-        aqui o selo é barato, cabe numa linha com os outros dois.
-      */}
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-        <CategoryBadge category={projeto.categoria} />
-        <ProjectStatusBadge status={projeto.status} />
-        <PriorityBadge value={projeto.prioridade} />
-      </div>
-
-      {/*
         Todo card tem a mesma estrutura, com as mesmas alturas: selos, uma
         faixa do meio de altura reservada e o rodapé preso à base. Antes, o que
         aparecia ou não (links, resultado) empurrava o rodapé, e a linha de
@@ -182,7 +170,7 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         conteúdo que pode deixar um card mais alto: é raro, e importante demais
         para ser cortado.
       */}
-      <div className="mt-3 mb-3 flex min-h-10 flex-col justify-center gap-2">
+      <div className="mt-3 flex min-h-10 flex-col justify-center gap-2">
         {projeto.alerta ? <AvisoSaldo alerta={projeto.alerta} /> : null}
         {projeto.status === "distribuido" ? (
           <div className="bg-secondary/40 flex h-10 items-center justify-between rounded-md px-3">
@@ -195,9 +183,9 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
       </div>
 
       {/*
-        Rodapé com `mt-auto`, preso à base: a grade iguala a altura dos cards
-        da mesma fileira, e o rodapé acompanha a base em vez de boiar logo
-        abaixo do conteúdo.
+        Rodapé preso à base, junto com os selos: a grade iguala a altura dos
+        cards da mesma fileira, e os dois acompanham a base em vez de boiar
+        logo abaixo do conteúdo.
 
         À esquerda, os atalhos para os links do projeto (discretos até o mouse
         passar pelo card: dezenas de cards com cinco ícones acesos disputariam
@@ -206,7 +194,21 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         por falta do vizinho. `z-10` tira os links de baixo do link esticado
         do card, senão o clique abriria o projeto.
       */}
-      <div className="border-border mt-auto flex min-h-10 items-center justify-between gap-3 border-t pt-2.5 text-xs">
+      {/*
+        Os três filtros da tela, no card, como selo: categoria, status e
+        prioridade, logo acima da linha de separação. Embaixo, e não colados
+        ao nome, para o topo do card ser só a identidade do projeto, que é o
+        que o olho procura numa lista. `mt-auto` prende os selos e o rodapé à
+        base. A categoria repete a da seção de propósito: nem todo card fica
+        perto do título da seção depois de rolar a página.
+      */}
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
+        <CategoryBadge category={projeto.categoria} />
+        <ProjectStatusBadge status={projeto.status} />
+        <PriorityBadge value={projeto.prioridade} />
+      </div>
+
+      <div className="border-border mt-3 flex min-h-10 items-center justify-between gap-3 border-t pt-2.5 text-xs">
         <div className="relative z-10 -ml-1.5 min-w-0">
           <LinksDoProjeto
             nome={projeto.nome}
