@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-378%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-391%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -133,9 +133,11 @@ senhas temporárias, mas não vê o farming de ninguém.
   paguei 1,20 de gás"), pontos e volume ("ganhei 300 pontos na Lighter", somados à última
   medição porque o formulário pede o total) e airdrop recebido ("caíram 3.000 SLX a
   $0,12"). A pessoa confere e salva pelo mesmo formulário do registro manual.
-- **Comunidade.** Área separada da de airdrops, com conteúdo igual para todos. Começa pela
-  agenda de lives da Level Cripto, cadastrada por quem administra, com lives semanais
-  calculadas na leitura (sem cron) e horário de Brasília.
+- **Comunidade.** Área separada da de airdrops, com conteúdo igual para todos. Começa pelo
+  calendário mensal de lives da Level Cripto, no formato de grade que a comunidade já usa
+  para divulgar a programação: cadastrado por quem administra, com lives semanais e
+  quinzenais calculadas na leitura (sem cron), data final opcional, evento em destaque e
+  horário de Brasília.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o
@@ -592,7 +594,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 378 testes
+npm test              # 391 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -636,7 +638,7 @@ lib/              Funções puras, testáveis sem banco
   validators.ts   Schemas Zod, compartilhados entre cliente e servidor
   interpretar-lancamento.ts  Instruções ao LLM e conferência da resposta
   perguntar-ia.ts Disputa entre provedores de LLM, com prazos e classificação de falha
-  lives.ts        Próximas ocorrências das lives, inclusive as semanais
+  lives.ts        Ocorrências das lives (semanais, quinzenais) e a grade do mês
 components/
   views/          Telas
   forms/          Diálogos e campos

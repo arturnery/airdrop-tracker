@@ -55,7 +55,7 @@ export const changelog: Versao[] = [
       {
         tipo: "novidade",
         texto:
-          "Nova área Comunidade no menu, separada da de airdrops, começando pela agenda das lives da Level Cripto: data, horário de Brasília e link de cada uma, inclusive as que se repetem toda semana. O menu agora divide as áreas em grupos.",
+          "Nova área Comunidade no menu, separada da de airdrops, começando pelo calendário de lives da Level Cripto: a grade do mês, de domingo a sábado, com horário, apresentador e tema de cada live, as que se repetem toda semana ou a cada duas semanas e o evento especial em destaque. Clique numa live para ver a descrição e o link. O menu agora divide as áreas em grupos.",
       },
     ],
   },

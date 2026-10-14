@@ -3438,3 +3438,26 @@ O mesmo episódio teve um erro meu: o backup estava encadeado com `| tail -3 &&`
 troca de senha em produção, e o `&&` olhou o código de saída do `tail`, não o do backup. A
 troca de senha rodou sem backup. Era pequena e reversível, e o backup foi refeito logo em
 seguida, mas a regra virou item do catálogo de erros: passo que protege outro roda sozinho.
+
+### De agenda para calendário
+
+A referência veio em imagem: a grade de março de outra comunidade, de domingo a sábado,
+cada dia com "19h – apresentador – tema" e um evento especial destacado. A lista de
+"próximas lives" virou um calendário mensal, e a imagem mostrou três coisas que o cadastro
+não cobria: apresentador separado do tema, lives **quinzenais** (dias 2, 16 e 30) e o
+destaque. A grade de março inteira virou caso de teste, e o calendário renderizado bateu
+com a imagem dia a dia.
+
+Renderizar outubro mostrou o que a imagem não mostrava: as recorrentes cadastradas em março
+continuavam em todos os meses seguintes, porque "toda semana" não tinha fim. Como a
+programação é montada mês a mês, entrou "repetir até", opcional e inclusivo.
+
+Como a tabela ainda não tinha ido para produção, os campos novos entraram na própria
+migração `0013`, refeita duas vezes no banco de desenvolvimento (tabela, tipo e o registro
+da migração removidos antes de gerar de novo), em vez de empilhar migrações de correção
+sobre uma tabela que nunca existiu em produção.
+
+Dois detalhes de texto: `capitalize` do CSS sobe a inicial de cada palavra ("Março De
+2026", "Segunda-Feira"), então a maiúscula passou a ser feita no código, só na primeira
+letra. E o nome do apresentador, cortado com reticências na grade, passou a quebrar a linha,
+como na versão impressa.

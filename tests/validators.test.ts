@@ -6,6 +6,7 @@ import {
   perfilSchema,
   pontosSchema,
   trocaSenhaSchema,
+  liveSchema,
 } from "@/lib/validators";
 
 /**
@@ -156,5 +157,40 @@ describe("feedbackSchema", () => {
   it("recusa mensagem acima do limite", () => {
     const r = feedbackSchema.safeParse({ ...base, mensagem: "a".repeat(2001) });
     expect(r.success).toBe(false);
+  });
+});
+
+describe("liveSchema", () => {
+  const base = {
+    titulo: "Análise Técnica",
+    apresentador: "3rd Eye",
+    descricao: "",
+    link: "",
+    dia: "2026-03-03",
+    hora: "20:00",
+    recorrencia: "semanal",
+    repetirAte: "",
+    destaque: "nao",
+  };
+
+  it("repetir até em branco vira sem data final", () => {
+    const r = liveSchema.safeParse(base);
+    expect(r.success && r.data.repetirAte).toBeNull();
+  });
+
+  it("repetir até antes do primeiro dia é recusado no campo certo", () => {
+    const r = liveSchema.safeParse({ ...base, repetirAte: "2026-03-01" });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0]?.path).toEqual(["repetirAte"]);
+  });
+
+  it("repetir até é descartado numa live que não se repete", () => {
+    const r = liveSchema.safeParse({ ...base, recorrencia: "nenhuma", repetirAte: "2026-03-31" });
+    expect(r.success && r.data.repetirAte).toBeNull();
+  });
+
+  it("horário fora do formato é recusado", () => {
+    expect(liveSchema.safeParse({ ...base, hora: "25:00" }).success).toBe(false);
+    expect(liveSchema.safeParse({ ...base, hora: "8h" }).success).toBe(false);
   });
 });

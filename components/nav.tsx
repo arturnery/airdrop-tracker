@@ -9,7 +9,7 @@ import {
   Layers,
   LifeBuoy,
   ListChecks,
-  Radio,
+  CalendarDays,
   Upload,
   Wallet,
 } from "lucide-react";
@@ -39,7 +39,7 @@ const grupos: { titulo: string; itens: Item[] }[] = [
   },
   {
     titulo: "Comunidade",
-    itens: [{ href: "/comunidade/lives", label: "Lives", icon: Radio }],
+    itens: [{ href: "/comunidade/calendario", label: "Calendário", icon: CalendarDays }],
   },
 ];
 
@@ -62,7 +62,7 @@ const grupoAdministracao = {
  */
 const tons: Record<string, string> = {
   "/": "bg-chart-1/15 text-chart-1",
-  "/comunidade/lives": "bg-chart-5/15 text-chart-5",
+  "/comunidade/calendario": "bg-chart-5/15 text-chart-5",
   "/tarefas": "bg-chart-4/15 text-chart-4",
   "/projetos": "bg-chart-3/15 text-chart-3",
   "/contas": "bg-chart-2/15 text-chart-2",

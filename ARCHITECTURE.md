@@ -1867,35 +1867,45 @@ da Comunidade, e vice-versa. O menu é dividido em grupos com título ("Airdrops
 desenho que deixa uma área nova (Trade, por exemplo) entrar como mais um grupo, sem tocar
 nas outras.
 
-### 19.1. Lives
+### 19.1. Calendário de lives
+
+Grade mensal, de domingo a sábado, no formato que a comunidade já usa para divulgar a
+programação: em cada dia, "19h · apresentador" e o tema embaixo, e o evento especial do mês
+em destaque. Quem administra monta o mês ali mesmo (o "+" de cada dia já traz a data); no
+celular, onde sete colunas não cabem, a grade vira uma lista dos dias que têm live.
 
 | Peça | Papel |
 |---|---|
-| `lives` | Título, descrição, link, `inicio_em` (com fuso) e `semanal`; `criado_por` vira nulo se a conta for apagada |
-| `lib/lives.ts` | Puro: próximas ocorrências, conversão de dia e hora de Brasília para instante |
+| `lives` | Tema, apresentador, descrição, link, `inicio_em` (com fuso), `recorrencia` (`nenhuma`, `semanal`, `quinzenal`), `repetir_ate`, `destaque`; `criado_por` vira nulo se a conta for apagada |
+| `lib/lives.ts` | Puro: ocorrências num intervalo, grade do mês, conversão de dia e hora de Brasília |
 | `actions/comunidade.ts` | Criar, editar e excluir, todas começando por `exigirAdministrador` |
 | `db/queries/comunidade.ts` | Leitura sem filtro de usuário, fora do Dataset pessoal |
-| `/comunidade/lives` | A página; `/comunidade` redireciona para ela |
+| `/comunidade/calendario?mes=aaaa-mm` | A página; `/comunidade` redireciona para ela |
 
-- **Recorrência na leitura.** Uma live semanal é uma linha só; as datas saem de
-  `proximasOcorrencias`, como as tarefas (§6). Sem cron, sem estado a perder.
+- **Recorrência na leitura.** Uma live semanal ou quinzenal é uma linha só; as datas saem
+  de `ocorrenciasEntre`, como as tarefas (§6). Sem cron, sem estado a perder. Quinzenal
+  existe porque a grade real tinha lives a cada duas semanas (dias 2, 16 e 30).
+- **Data final opcional.** A programação é montada mês a mês, e sem `repetir_ate` uma live
+  que saiu da grade continuaria aparecendo nos meses seguintes. O dia final é inclusivo, em
+  Brasília. Editar uma live recorrente vale para todas as datas dela, e o formulário diz isso.
 - **Horário de Brasília, deslocamento fixo.** O Brasil não tem horário de verão desde
   2019, então "dia e hora digitados" vira instante somando `-03:00`, sem tabela de fuso. A
-  exibição usa `America/Sao_Paulo`, para continuar certa se isso mudar.
-- **"Ao vivo" sem duração cadastrada.** A live fica listada por duas horas depois de
-  começar, para quem chega atrasado ainda achar o link. Pedir a duração seria um campo que
-  quase ninguém sabe de antemão.
+  exibição usa `America/Sao_Paulo`, para continuar certa se isso mudar. A célula de cada
+  live é o dia **de Brasília**: uma live às 22h do dia 31 já é dia 1º em UTC.
+- **Destaque em âmbar**, a cor de "olhe aqui" do sistema; o dia de hoje é marcado em neutro,
+  porque o azul é só da marca (§14.8).
 - **Fora do Dataset.** O Dataset pessoal é recarregado a cada navegação; as lives são lidas
-  só pela página delas.
+  só pela página do calendário.
 - **As ações passam pelo provider** (`acoes.criarLive` etc.), mesmo sem fazer parte do
   Dataset: é ele que segura o diálogo aberto até a tela mostrar o dado novo (§14.7-D).
 
 ### 19.2. Próximas etapas
 
-- **Agenda macro** (`/comunidade/agenda`), vinda do EcoBot, que já busca o calendário do Investing.com 24/7 numa
-  VM e contorna o bloqueio que a Vercel não contornaria. O bot envia os eventos a um
-  endereço protegido por chave.
-- **Alertas do mercado** (`/comunidade/alertas`): manchetes de alguns sites lidas várias vezes ao dia, a IA separa
-  só as críticas (hack, exploit, regulação, quebra) e resume, e quem administra aprova.
-  Depois, publicação automática. O nome não pode ser "Novidades", que já é o histórico de
-  mudanças do sistema.
+- **Eventos macro no mesmo calendário**, vindos do EcoBot, que já busca o calendário do
+  Investing.com 24/7 numa VM e contorna o bloqueio que a Vercel não contornaria. O bot envia
+  os eventos a um endereço protegido por chave, e eles aparecem nos dias, com marcação
+  própria, ao lado das lives.
+- **Alertas do mercado** (`/comunidade/alertas`): manchetes de alguns sites lidas várias
+  vezes ao dia, a IA separa só as críticas (hack, exploit, regulação, quebra) e resume, e
+  quem administra aprova. Depois, publicação automática. O nome não pode ser "Novidades",
+  que já é o histórico de mudanças do sistema.

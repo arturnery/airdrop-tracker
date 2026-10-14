@@ -1,10 +1,14 @@
+CREATE TYPE "public"."recorrencia_live" AS ENUM('nenhuma', 'semanal', 'quinzenal');--> statement-breakpoint
 CREATE TABLE "lives" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"titulo" text NOT NULL,
+	"apresentador" text,
 	"descricao" text,
 	"link" text,
 	"inicio_em" timestamp with time zone NOT NULL,
-	"semanal" boolean DEFAULT false NOT NULL,
+	"recorrencia" "recorrencia_live" DEFAULT 'nenhuma' NOT NULL,
+	"repetir_ate" date,
+	"destaque" boolean DEFAULT false NOT NULL,
 	"criado_por" uuid,
 	"criado_em" timestamp with time zone DEFAULT now() NOT NULL
 );

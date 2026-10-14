@@ -164,12 +164,18 @@ export const lancamentoSchema = z.object({
  * Live da comunidade. Dia e hora são de Brasília, como a pessoa digita; a
  * conversão para instante mora em `lib/lives.ts`.
  *
- * "Repetir" é um select (`nao`/`sim`) e não um checkbox: é o mesmo controle
+ * "Destaque" é um select (`nao`/`sim`) e não um checkbox: é o mesmo controle
  * nativo dos outros formulários, e um checkbox desmarcado simplesmente não
  * aparece no envio, o que faz "ausente" e "não" se confundirem.
  */
 export const liveSchema = z.object({
-  titulo: z.string().trim().min(1, "Dê um título à live.").max(100, "Até 100 caracteres."),
+  titulo: z.string().trim().min(1, "Informe o tema da live.").max(80, "Até 80 caracteres."),
+  apresentador: z
+    .string()
+    .trim()
+    .max(60, "Até 60 caracteres.")
+    .transform((v) => (v === "" ? null : v))
+    .nullable(),
   descricao: z
     .string()
     .trim()
@@ -179,8 +185,23 @@ export const liveSchema = z.object({
   link: urlOpcional,
   dia: dataIso,
   hora: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Informe o horário, como 20:00."),
-  semanal: z.enum(["nao", "sim"]).transform((v) => v === "sim"),
-});
+  recorrencia: z.enum(["nenhuma", "semanal", "quinzenal"]),
+  repetirAte: dataIso.nullable().or(z.literal("").transform(() => null)),
+  destaque: z.enum(["nao", "sim"]).transform((v) => v === "sim"),
+})
+  /*
+   * "Repetir até" só faz sentido numa live que se repete, e não pode vir
+   * antes do primeiro dia: uma live sem nenhuma data no calendário seria
+   * salva e sumiria sem explicação.
+   */
+  .transform((dados) => ({
+    ...dados,
+    repetirAte: dados.recorrencia === "nenhuma" ? null : dados.repetirAte,
+  }))
+  .refine((dados) => dados.repetirAte === null || dados.repetirAte >= dados.dia, {
+    path: ["repetirAte"],
+    message: "Precisa ser no mesmo dia ou depois do primeiro.",
+  });
 
 export const feedbackSchema = z.object({
   tipo: z.enum(["bug", "duvida", "sugestao"]),

@@ -16,10 +16,13 @@ export async function listarLives(): Promise<Live[]> {
     .select({
       id: schema.lives.id,
       titulo: schema.lives.titulo,
+      apresentador: schema.lives.apresentador,
       descricao: schema.lives.descricao,
       link: schema.lives.link,
       inicioEm: schema.lives.inicioEm,
-      semanal: schema.lives.semanal,
+      recorrencia: schema.lives.recorrencia,
+      repetirAte: schema.lives.repetirAte,
+      destaque: schema.lives.destaque,
     })
     .from(schema.lives)
     .orderBy(asc(schema.lives.inicioEm));

@@ -805,27 +805,43 @@ export const iaUsos = pgTable(
   ],
 );
 
+/** Uma vez só, toda semana ou a cada duas semanas, no mesmo dia e horário. */
+export const recorrenciaLiveEnum = pgEnum("recorrencia_live", [
+  "nenhuma",
+  "semanal",
+  "quinzenal",
+]);
+
 /**
- * Lives da comunidade, cadastradas por quem administra e vistas por todos.
+ * Lives e eventos da comunidade, cadastrados por quem administra e vistos por
+ * todos no calendário do mês.
  *
  * Conteúdo compartilhado, como o catálogo (§13): não tem dono no sentido de
  * isolamento, e só quem administra escreve (`exigirAdministrador`). `criadoPor`
  * fica para saber quem cadastrou, e vira nulo se a conta for apagada, em vez
  * de levar a live junto.
  *
- * `semanal` repete a live toda semana, no mesmo dia e horário de `inicioEm`.
- * As ocorrências são calculadas na leitura (`lib/lives.ts`), como as tarefas:
- * sem cron, sem estado a perder.
+ * `titulo` é o tema ("Visão de Mercado") e `apresentador` quem conduz
+ * ("Papini + Guigo"), separados porque o calendário mostra os dois em linhas
+ * diferentes. `destaque` marca o evento especial do mês.
+ *
+ * A recorrência repete a live a partir de `inicioEm`. As ocorrências são
+ * calculadas na leitura (`lib/lives.ts`), como as tarefas: sem cron, sem
+ * estado a perder.
  */
 export const lives = pgTable(
   "lives",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     titulo: text("titulo").notNull(),
+    apresentador: text("apresentador"),
     descricao: text("descricao"),
     link: text("link"),
     inicioEm: timestamp("inicio_em", { withTimezone: true }).notNull(),
-    semanal: boolean("semanal").notNull().default(false),
+    recorrencia: recorrenciaLiveEnum("recorrencia").notNull().default("nenhuma"),
+    /** Último dia (em Brasília) em que a recorrência vale. Nulo: sem fim. */
+    repetirAte: date("repetir_ate"),
+    destaque: boolean("destaque").notNull().default(false),
     criadoPor: uuid("criado_por").references(() => users.id, { onDelete: "set null" }),
     criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
   },

@@ -18,7 +18,7 @@ import { executar, type ResultadoAcao } from "./_core";
  */
 
 const ROTAS: { caminho: string; tipo: "page" | "layout" }[] = [
-  { caminho: "/comunidade/lives", tipo: "page" },
+  { caminho: "/comunidade/calendario", tipo: "page" },
 ];
 
 export async function criarLive(entrada: unknown): Promise<ResultadoAcao> {
@@ -26,29 +26,41 @@ export async function criarLive(entrada: unknown): Promise<ResultadoAcao> {
     await exigirAdministrador(userId);
     await db.insert(schema.lives).values({
       titulo: dados.titulo,
+      apresentador: dados.apresentador,
       descricao: dados.descricao,
       link: dados.link,
       inicioEm: new Date(instanteDeBrasilia(dados.dia, dados.hora)),
-      semanal: dados.semanal,
+      recorrencia: dados.recorrencia,
+      repetirAte: dados.repetirAte,
+      destaque: dados.destaque,
       criadoPor: userId,
     });
   }, ROTAS);
 }
 
 export async function atualizarLive(id: string, entrada: unknown): Promise<ResultadoAcao> {
-  const comId = liveSchema.extend({ id: z.uuid("Live inválida.") });
-  return executar(comId, { ...(entrada as object), id }, async (dados, userId) => {
+  /*
+   * O id fica fora do schema da live, que termina num refine e não aceita
+   * `.extend`: é conferido aqui, e um id que não seja uuid nem chega ao banco.
+   */
+  if (!z.uuid().safeParse(id).success) {
+    return { ok: false, erros: { geral: "Live inválida." } };
+  }
+  return executar(liveSchema, entrada, async (dados, userId) => {
     await exigirAdministrador(userId);
     await db
       .update(schema.lives)
       .set({
         titulo: dados.titulo,
+        apresentador: dados.apresentador,
         descricao: dados.descricao,
         link: dados.link,
         inicioEm: new Date(instanteDeBrasilia(dados.dia, dados.hora)),
-        semanal: dados.semanal,
+        recorrencia: dados.recorrencia,
+        repetirAte: dados.repetirAte,
+        destaque: dados.destaque,
       })
-      .where(eq(schema.lives.id, dados.id));
+      .where(eq(schema.lives.id, id));
   }, ROTAS);
 }
 
