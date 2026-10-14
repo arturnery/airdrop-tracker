@@ -578,7 +578,7 @@ histórico do shell.
 | `npm run db:seed-demo` | Carrega dados de demonstração |
 | `npm run backup` | Salva todas as tabelas num JSON datado |
 | `npm run demo:restaurar` | Devolve senha e dados originais à conta de demonstração |
-| `npm run admin:teste` | Cria no banco de desenvolvimento a conta `admin@teste.local` (senha `teste@1234`) para testar as telas de administração; recusa produção |
+| `npm run admin:teste` | Cria no banco de desenvolvimento a conta `admin@teste.local` (senha `teste@1234`), com os mesmos dados de exemplo da demo, para testar as telas de administração; recusa produção |
 | `npm run auditar` | Confere no banco que uma conta não alcança dados de outra |
 | `npx tsx scripts/limpar-dados.ts` | Relata o que uma limpeza apagaria, preservando as contas de acesso |
 

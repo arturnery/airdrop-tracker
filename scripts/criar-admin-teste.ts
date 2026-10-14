@@ -5,6 +5,15 @@
  *
  *   npm run admin:teste
  *
+ * Depois de criar, carrega nela os mesmos dados de exemplo da conta demo
+ * (`seed-demo --email admin@teste.local`): as duas contas de teste têm os
+ * mesmos projetos, para que o que se testa numa possa ser comparado na outra.
+ *
+ * O carregamento é chamado daqui, com argumentos fixos, e não encadeado no
+ * `package.json` com `&&`: o npm passa os argumentos extras para o **último**
+ * comando da cadeia, e `npm run admin:teste -- --producao` mandaria a criação
+ * rodar no desenvolvimento e o carregamento rodar em produção.
+ *
  * **Só no banco de desenvolvimento, e isso não é configurável.** A senha é
  * conhecida e fácil de adivinhar, o que é o ponto num banco descartável e um
  * desastre em produção: quem administra vê o e-mail de todos os membros e
@@ -15,6 +24,8 @@
  * demonstração, para a conta continuar com a senha que todo mundo que testa
  * conhece. Rodar de novo restaura senha, papel e aprovação.
  */
+import { execFileSync } from "node:child_process";
+
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq } from "drizzle-orm";
@@ -61,7 +72,13 @@ async function main() {
       .values({ ...campos, email: ADMIN_TESTE_EMAIL, reviewedAt: new Date() });
     console.log(`conta criada: ${ADMIN_TESTE_EMAIL}`);
   }
-  console.log(`senha: ${ADMIN_TESTE_SENHA}`);
+  console.log(`senha: ${ADMIN_TESTE_SENHA}\n`);
+
+  // Sem `--producao` na lista, de propósito: o seed resolve o ambiente pelos
+  // próprios argumentos, e estes são sempre os de desenvolvimento.
+  execFileSync("npx", ["tsx", "scripts/seed-demo.ts", "--email", ADMIN_TESTE_EMAIL], {
+    stdio: "inherit",
+  });
 }
 
 main().then(() => process.exit(0));
