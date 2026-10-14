@@ -138,6 +138,8 @@ export type ProjectSummary = {
   tgePrevisto: IsoDate | null;
   /** Aviso de saldo impossível, quando houver. Ver lib/consistencia. */
   alerta: AlertaProjeto | null;
+  /** Já filtrados: só endereços `http(s)` (ver `linksDoProjeto`). */
+  links: ProjectLinks;
 };
 
 export type ProjectLinks = {

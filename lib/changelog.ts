@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.13",
+    data: "2026-10-14",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Os cards da tela de Projetos mostram atalhos para os links de cada projeto (site, vídeo tutorial, docs, X e Discord), só os que estiverem preenchidos. Um clique abre o link numa aba nova, sem precisar entrar na página do projeto.",
+      },
+    ],
+  },
+  {
     versao: "1.12",
     data: "2026-10-14",
     mudancas: [

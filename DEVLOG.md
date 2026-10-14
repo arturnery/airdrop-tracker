@@ -3491,3 +3491,17 @@ deixou de trazer marcas, e fica em cinza, não no vermelho do YouTube: aqui verm
 prejuízo, e um ícone vermelho ao lado do nome seria lido como alerta. E o campo não entra no
 catálogo da comunidade nem é copiado na adoção: o tutorial é de quem cadastrou o projeto, e
 levar para o catálogo é uma decisão de produto ainda não tomada.
+
+### Links nos cards
+
+Os links do projeto (site, vídeo, docs, X, Discord) passaram a aparecer no card da lista,
+como ícones, só os preenchidos. O card já usava "link esticado" (o card inteiro leva ao
+projeto sem ser um link por fora), então os ícones entram por cima dele com `z-10`, como os
+botões de editar e excluir, e não há link dentro de link. Ficam em cinza até o mouse passar
+pelo card: dezenas de cards com cinco ícones acesos disputariam atenção com o status e as
+tarefas atrasadas.
+
+No caminho, a regra "só `http(s)` vira link" já estava escrita em dois lugares e iria para
+um terceiro. Virou `urlExterna` (`lib/links.ts`), aplicada onde os links do projeto são
+montados (`linksDoProjeto`, que também estava duplicado entre a lista e a página do
+projeto), de modo que nenhum endereço inseguro chega à tela por nenhum caminho.

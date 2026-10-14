@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { formatDateShort, relativeLabel } from "@/lib/dates";
 import { normalizar } from "@/lib/dataset";
 import { cn } from "@/lib/utils";
+import { LinksDoProjeto } from "@/components/links-do-projeto";
 import {
   contarDependenciasProjeto,
   descreverImpacto,
@@ -185,6 +186,19 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
           </span>
         </div>
       ) : null}
+
+      {/*
+        Atalhos para os links do projeto, sem precisar abrir a página dele.
+        Discretos até o mouse passar pelo card: com dezenas de cards na tela,
+        cinco ícones acesos em cada um disputariam atenção com o que importa
+        (status, atrasadas). `z-10` os tira de baixo do link esticado do card,
+        senão o clique abriria o projeto em vez do link.
+      */}
+      <LinksDoProjeto
+        nome={projeto.nome}
+        links={projeto.links}
+        className="text-muted-foreground/60 group-hover:text-muted-foreground group-focus-within:text-muted-foreground relative z-10 mt-3 -ml-1.5"
+      />
 
       {/*
         `mt-auto` empurra o rodapé para a base. Sem isso, num card mais curto

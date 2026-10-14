@@ -37,12 +37,14 @@ import type {
   PointsAccountRow,
   PointsProgramRow,
   PointsSnapshotRow,
+  ProjectLinks,
   ProjectSummary,
   TaskOccurrenceRow,
   TipoAtividade,
   TokenPositionRow,
   TransactionRow,
 } from "./types";
+import { urlExterna } from "./links";
 
 /**
  * Agregação do domínio. Toda função é pura: `(Dataset, hoje) -> view model`.
@@ -409,6 +411,21 @@ export function selectCapitalPorProjeto(ds: Dataset): CapitalPorProjeto[] {
 
 // ------------------------------------------------------------------ projetos
 
+/**
+ * Os links do projeto, montados num lugar só para a lista e a página do
+ * projeto, e já sem o que não for `http(s)`: daqui eles vão direto para
+ * `href`.
+ */
+function linksDoProjeto(projeto: Dataset["projects"][number]): ProjectLinks {
+  return {
+    website: urlExterna(projeto.websiteUrl),
+    discord: urlExterna(projeto.discordUrl),
+    twitter: urlExterna(projeto.twitterUrl),
+    docs: urlExterna(projeto.docsUrl),
+    tutorial: urlExterna(projeto.tutorialUrl),
+  };
+}
+
 export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
   const exposicoes = exposicaoAgrupada(ds, "project");
   const pendentes = ocorrenciasPendentes(ds);
@@ -462,6 +479,7 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
           exposicao,
           lancamentos: doProjetoMov,
         }),
+        links: linksDoProjeto(projeto),
       } satisfies ProjectSummary;
     })
     .sort((a, b) => b.prioridade - a.prioridade || b.aportado - a.aportado);
@@ -639,13 +657,7 @@ export function selectProjectBySlug(
       .length,
     ultimaAtividade: ultimaAtividade(ds, (r) => r.projectId === projeto.id),
     tgePrevisto: projeto.expectedTgeDate,
-    links: {
-      website: projeto.websiteUrl,
-      discord: projeto.discordUrl,
-      twitter: projeto.twitterUrl,
-      docs: projeto.docsUrl,
-      tutorial: projeto.tutorialUrl,
-    },
+    links: linksDoProjeto(projeto),
     notas: projeto.notes,
     posicoesToken,
     contasDetalhe,

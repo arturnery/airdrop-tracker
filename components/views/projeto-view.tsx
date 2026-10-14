@@ -38,7 +38,7 @@ import {
   VincularConta,
 } from "@/components/forms/dialogs";
 import { Money, Percent } from "@/components/money";
-import { IconeYoutube } from "@/components/icone-youtube";
+import { IconeYoutube } from "@/components/icones-marca";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import {
@@ -146,7 +146,7 @@ export function ProjetoView({ slug }: { slug: string }) {
         // O nome abre o site do projeto, quando houver um cadastrado.
         titleHref={projeto.links.website}
         titleAside={
-          projeto.links.tutorial && /^https?:\/\//i.test(projeto.links.tutorial) ? (
+          projeto.links.tutorial ? (
             <a
               href={projeto.links.tutorial}
               target="_blank"

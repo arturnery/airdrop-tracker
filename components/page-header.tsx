@@ -1,6 +1,7 @@
 import { ExternalLink, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { urlExterna } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,7 +36,7 @@ export function PageHeader({
   /** Ao lado do título, na mesma linha (o atalho do vídeo tutorial). */
   titleAside?: ReactNode;
 }) {
-  const link = titleHref && /^https?:\/\//i.test(titleHref) ? titleHref : null;
+  const link = urlExterna(titleHref);
   return (
     <header className="border-border bg-card/40 mb-8 rounded-lg border p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
