@@ -12,6 +12,7 @@ import {
   LifeBuoy,
   ListChecks,
   CalendarDays,
+  ChartCandlestick,
   Upload,
   Wallet,
 } from "lucide-react";
@@ -24,8 +25,9 @@ type Item = { href: string; label: string; icon: typeof LayoutDashboard };
 
 /**
  * O menu é dividido em áreas que não se misturam: o que é a carteira de cada
- * um (Airdrops) e o que é da comunidade, igual para todos. Uma área nova (um
- * dia, Trade) entra como um grupo a mais, sem mexer nos outros.
+ * um (Airdrops), o que é da comunidade e a área de trade, as duas últimas
+ * iguais para todos. Uma área nova entra como um grupo a mais, sem mexer nos
+ * outros.
  */
 const grupos: { titulo: string; itens: Item[] }[] = [
   {
@@ -42,6 +44,10 @@ const grupos: { titulo: string; itens: Item[] }[] = [
   {
     titulo: "Comunidade",
     itens: [{ href: "/comunidade/calendario", label: "Calendário", icon: CalendarDays }],
+  },
+  {
+    titulo: "Trade",
+    itens: [{ href: "/trade/sinais", label: "Sinais", icon: ChartCandlestick }],
   },
 ];
 
@@ -118,6 +124,7 @@ const grupoAdministracao = {
 const tons: Record<string, string> = {
   "/": "bg-chart-1/15 text-chart-1",
   "/comunidade/calendario": "bg-chart-5/15 text-chart-5",
+  "/trade/sinais": "bg-chart-4/15 text-chart-4",
   "/tarefas": "bg-chart-4/15 text-chart-4",
   "/projetos": "bg-chart-3/15 text-chart-3",
   "/contas": "bg-chart-2/15 text-chart-2",

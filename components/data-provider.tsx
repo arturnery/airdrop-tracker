@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 
 import * as A from "@/actions";
 import * as Comunidade from "@/actions/comunidade";
+import * as Trade from "@/actions/trade";
 import * as M from "@/lib/mutations";
 import type { Dataset } from "@/lib/dataset";
 import { criarRelogio } from "@/lib/local-store";
@@ -85,6 +86,8 @@ type Acoes = {
   criarLive: Acao<[unknown]>;
   atualizarLive: Acao<[string, unknown]>;
   excluirLive: Acao<[string]>;
+  publicarSinal: Acao<[unknown]>;
+  excluirSinal: Acao<[string]>;
 };
 
 type Contexto = {
@@ -241,6 +244,8 @@ export function DataProvider({
       criarLive: envolver(Comunidade.criarLive),
       atualizarLive: envolver(Comunidade.atualizarLive),
       excluirLive: envolver(Comunidade.excluirLive),
+      publicarSinal: envolver(Trade.publicarSinal),
+      excluirSinal: envolver(Trade.excluirSinal),
     }),
     [envolver, alternarTarefa],
   );

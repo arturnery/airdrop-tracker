@@ -3,6 +3,7 @@ import { z } from "zod";
 import { aplicarSinalDoTipo } from "./finance";
 import { parseUserInput } from "./money";
 import { parsePointsInput } from "./points";
+import { incoerencias, lerPreco } from "./sinais";
 
 /**
  * Schemas de entrada dos formulários.
@@ -202,6 +203,75 @@ export const liveSchema = z.object({
   .refine((dados) => dados.repetirAte === null || dados.repetirAte >= dados.dia, {
     path: ["repetirAte"],
     message: "Precisa ser no mesmo dia ou depois do primeiro.",
+  });
+
+/**
+ * Sinal de trade, a partir do formulário (ou do que a IA preencheu nele).
+ *
+ * Os preços chegam como texto digitado e saem normalizados por `lerPreco`.
+ * Os alvos vêm em quatro campos (`alvo1` obrigatório, os outros opcionais),
+ * porque é assim que a tela os mostra, e saem como lista sem os vazios.
+ * A coerência entre direção e preços (`incoerencias`) é conferida aqui, e
+ * não só na tela, porque a Server Action valida de novo com este schema.
+ */
+const precoObrigatorio = (rotulo: string) =>
+  z.string().transform((v, ctx) => {
+    const preco = lerPreco(v);
+    if (!preco) {
+      ctx.addIssue({ code: "custom", message: `Informe ${rotulo} (um número maior que zero).` });
+      return z.NEVER;
+    }
+    return preco;
+  });
+
+const precoOpcional = z.string().transform((v, ctx) => {
+  if (v.trim() === "") return null;
+  const preco = lerPreco(v);
+  if (!preco) {
+    ctx.addIssue({ code: "custom", message: "Preço inválido." });
+    return z.NEVER;
+  }
+  return preco;
+});
+
+export const sinalSchema = z
+  .object({
+    ativo: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .min(1, "Informe o ativo.")
+      .max(24, "Até 24 caracteres.")
+      .regex(/^[A-Z0-9][A-Z0-9/.\-]*$/, "Use letras, números e /, como BTC/USDT."),
+    direcao: z.enum(["compra", "venda"], "Escolha compra ou venda."),
+    entrada: precoObrigatorio("a entrada"),
+    entradaAte: precoOpcional,
+    stop: precoObrigatorio("o stop"),
+    alvo1: precoObrigatorio("o primeiro alvo"),
+    alvo2: precoOpcional,
+    alvo3: precoOpcional,
+    alvo4: precoOpcional,
+    timeframe: z
+      .string()
+      .trim()
+      .max(12, "Até 12 caracteres.")
+      .transform((v) => (v === "" ? null : v))
+      .nullable(),
+    observacao: z
+      .string()
+      .trim()
+      .max(500, "Até 500 caracteres.")
+      .transform((v) => (v === "" ? null : v))
+      .nullable(),
+  })
+  .transform(({ alvo1, alvo2, alvo3, alvo4, ...resto }) => ({
+    ...resto,
+    alvos: [alvo1, alvo2, alvo3, alvo4].filter((a): a is string => a !== null),
+  }))
+  .superRefine((dados, ctx) => {
+    for (const [campo, mensagem] of Object.entries(incoerencias(dados))) {
+      ctx.addIssue({ code: "custom", path: [campo], message: mensagem });
+    }
   });
 
 export const feedbackSchema = z.object({

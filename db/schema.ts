@@ -849,3 +849,40 @@ export const lives = pgTable(
   },
   (t) => [index("lives_inicio_idx").on(t.inicioEm)],
 );
+
+export const direcaoSinalEnum = pgEnum("direcao_sinal", ["compra", "venda"]);
+export const statusSinalEnum = pgEnum("status_sinal", ["aberto", "encerrado", "cancelado"]);
+
+/**
+ * Sinais de trade publicados para a comunidade: a operação montada (ativo,
+ * direção, entrada, stop, alvos), não o print de onde ela foi lida.
+ *
+ * Conteúdo compartilhado, como as lives: só quem tem permissão publica, todos
+ * leem. Os preços são `numeric` sem escala fixa, porque vão de 0,00000123 a
+ * 100.000; voltam como texto e assim são mostrados, sem passar por ponto
+ * flutuante. A coerência entre direção e preços é conferida em
+ * `lib/sinais.ts` antes de gravar.
+ *
+ * `status` existe desde já para o acompanhamento de PnL que vem depois.
+ * `discordEnviadoEm` registra se o aviso no Discord saiu: um envio que falhou
+ * fica visível em vez de presumido.
+ */
+export const sinaisTrade = pgTable(
+  "sinais_trade",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ativo: text("ativo").notNull(),
+    direcao: direcaoSinalEnum("direcao").notNull(),
+    entrada: numeric("entrada").notNull(),
+    entradaAte: numeric("entrada_ate"),
+    stop: numeric("stop").notNull(),
+    alvos: numeric("alvos").array().notNull(),
+    timeframe: text("timeframe"),
+    observacao: text("observacao"),
+    status: statusSinalEnum("status").notNull().default("aberto"),
+    publicadoPor: uuid("publicado_por").references(() => users.id, { onDelete: "set null" }),
+    publicadoEm: timestamp("publicado_em", { withTimezone: true }).notNull().defaultNow(),
+    discordEnviadoEm: timestamp("discord_enviado_em", { withTimezone: true }),
+  },
+  (t) => [index("sinais_publicado_idx").on(t.publicadoEm)],
+);
