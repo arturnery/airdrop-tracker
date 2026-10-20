@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, gte, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -9,11 +9,13 @@ import { getCurrentUserId } from "@/lib/auth";
 import { dataDeHoje } from "@/lib/dates";
 import { env } from "@/lib/env";
 import {
+  interpretarResposta,
   montarMensagens,
   type ContextoIA,
   type Sugestao,
 } from "@/lib/interpretar-lancamento";
 import { MENSAGEM_DE_FALHA, perguntar, type Alvo } from "@/lib/perguntar-ia";
+import { LIMITE_POR_PESSOA, reservarUsoDaIA } from "@/db/queries/uso-ia";
 
 /**
  * Interpreta uma frase como lançamento. Ver `lib/interpretar-lancamento.ts`.
@@ -21,15 +23,6 @@ import { MENSAGEM_DE_FALHA, perguntar, type Alvo } from "@/lib/perguntar-ia";
  * Não grava nada no razão: devolve a sugestão para a tela preencher o
  * formulário, e o salvar continua sendo `criarLancamento`.
  */
-
-/*
- * Dois tetos, e não um. O por pessoa impede que alguém use a chave como
- * se fosse dele; o total protege a conta do provedor quando várias pessoas
- * (ou várias contas criadas para isso) ficam abaixo do limite individual ao
- * mesmo tempo. A conta de demonstração é pública, então os dois importam.
- */
-const LIMITE_POR_PESSOA = 30;
-const LIMITE_TOTAL = 300;
 
 const entradaSchema = z
   .string()
@@ -54,27 +47,6 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
   const userId = await getCurrentUserId();
 
   try {
-    const [{ daPessoa, total } = { daPessoa: 0, total: 0 }] = await db
-      .select({
-        daPessoa: sql<number>`count(*) filter (where ${schema.iaUsos.userId} = ${userId})::int`,
-        total: sql<number>`count(*)::int`,
-      })
-      .from(schema.iaUsos)
-      .where(gte(schema.iaUsos.criadoEm, sql`now() - interval '24 hours'`));
-
-    if (daPessoa >= LIMITE_POR_PESSOA) {
-      return {
-        ok: false,
-        erro: `Você já usou a IA ${LIMITE_POR_PESSOA} vezes nas últimas 24 horas. O lançamento manual continua disponível.`,
-      };
-    }
-    if (total >= LIMITE_TOTAL) {
-      return {
-        ok: false,
-        erro: "A IA atingiu o limite de uso do dia. O lançamento manual continua disponível.",
-      };
-    }
-
     const ctx = { ...(await carregarContexto(userId)), frase: texto.data };
     if (ctx.projetos.length === 0 || ctx.contas.length === 0) {
       return {
@@ -83,13 +55,23 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
       };
     }
 
-    // Conta antes de chamar: pedido que falha também custa, e não contar
-    // deixaria um erro em laço gastar sem limite.
-    await db.insert(schema.iaUsos).values({ userId });
+    const recusa = await reservarUsoDaIA(userId);
+    if (recusa === "pessoa") {
+      return {
+        ok: false,
+        erro: `Você já usou a IA ${LIMITE_POR_PESSOA} vezes nas últimas 24 horas. O lançamento manual continua disponível.`,
+      };
+    }
+    if (recusa === "total") {
+      return {
+        ok: false,
+        erro: "A IA atingiu o limite de uso do dia. O lançamento manual continua disponível.",
+      };
+    }
 
     const desfecho = await perguntar({
       mensagens: montarMensagens(texto.data, ctx),
-      ctx,
+      interpretar: (json) => interpretarResposta(json, ctx),
       alvos: alvosConfigurados(),
     });
     if (desfecho.ok) {
@@ -99,7 +81,7 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
        * da tela travaria esperando ele fechar. Melhor dizer agora o porquê.
        */
       const semPrograma =
-        desfecho.sugestoes.some((s) => s.formulario === "pontos") &&
+        desfecho.resultado.some((s) => s.formulario === "pontos") &&
         !ctx.projetos.some((p) => p.pontos);
       if (semPrograma) {
         return {
@@ -107,7 +89,7 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
           erro: "Nenhum projeto seu tem programa de pontos cadastrado. Edite o projeto, informe o nome dos pontos e tente de novo.",
         };
       }
-      return { ok: true, sugestoes: desfecho.sugestoes };
+      return { ok: true, sugestoes: desfecho.resultado };
     }
     return { ok: false, erro: MENSAGEM_DE_FALHA[desfecho.motivo] };
   } catch (erro) {

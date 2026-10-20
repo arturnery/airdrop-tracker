@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowUpRight, ChartCandlestick } from "lucide-react";
 
 import { BotaoLixeira, ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
 import { NovoSinal } from "@/components/forms/sinal";
+import { SinalPorPrint } from "@/components/forms/sinal-por-print";
 import { useDados } from "@/components/data-provider";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { formatarQuando } from "@/lib/lives";
@@ -30,7 +31,14 @@ export function SinaisView({ sinais, ehAdmin }: { sinais: Sinal[]; ehAdmin: bool
         icon={ChartCandlestick}
         title="Sinais"
         description="Operações indicadas na área de trade: entrada, stop e alvos de cada uma."
-        actions={ehAdmin ? <NovoSinal /> : null}
+        actions={
+          ehAdmin ? (
+            <>
+              <SinalPorPrint />
+              <NovoSinal />
+            </>
+          ) : null
+        }
       />
 
       {sinais.length === 0 ? (

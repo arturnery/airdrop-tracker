@@ -1,11 +1,5 @@
 import { z } from "zod";
 
-import {
-  interpretarResposta,
-  type ContextoIA,
-  type Sugestao,
-} from "./interpretar-lancamento";
-
 /*
  * Sem prazo, uma API lenta prende a requisição até a Vercel derrubá-la, e a
  * pessoa fica olhando um botão girando sem mensagem nenhuma.
@@ -50,7 +44,14 @@ class FalhaDaIA extends Error {
   }
 }
 
-type Mensagens = { role: string; content: string }[];
+/**
+ * Mensagens no formato de chat da OpenAI. O conteúdo é texto ou, para ler
+ * imagem, uma lista de partes (texto e `image_url` com data URL).
+ */
+export type Parte =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+export type Mensagens = { role: "system" | "user"; content: string | Parte[] }[];
 
 /**
  * Um modelo num provedor. Cada um com endereço e chave próprios, porque o
@@ -59,9 +60,14 @@ type Mensagens = { role: string; content: string }[];
  */
 export type Alvo = { modelo: string; baseUrl: string; chave: string };
 
-export type Pedido = {
+export type Pedido<T> = {
   mensagens: Mensagens;
-  ctx: ContextoIA;
+  /**
+   * Confere o JSON devolvido pelo modelo e devolve o que se aproveita, ou
+   * `null`. Quem pergunta decide o que é uma resposta utilizável: lançamento
+   * e sinal de trade têm conferências diferentes, a disputa é a mesma.
+   */
+  interpretar: (json: unknown) => T | null;
   /** Consultados ao mesmo tempo. Os repetidos contam uma vez só. */
   alvos: Alvo[];
   prazoMs?: number;
@@ -70,14 +76,14 @@ export type Pedido = {
   buscar?: typeof fetch;
 };
 
-export async function perguntar({
+export async function perguntar<T>({
   mensagens,
-  ctx,
+  interpretar,
   alvos: configurados,
   prazoMs = PRAZO_TOTAL_MS,
   pausaMs = PAUSA_ENTRE_RODADAS_MS,
   buscar = fetch,
-}: Pedido): Promise<{ ok: true; sugestoes: Sugestao[] } | { ok: false; motivo: Motivo }> {
+}: Pedido<T>): Promise<{ ok: true; resultado: T } | { ok: false; motivo: Motivo }> {
   const total = AbortSignal.timeout(prazoMs);
   let alvos = configurados.filter(
     (a, i) =>
@@ -94,10 +100,10 @@ export async function perguntar({
     const cancelar = new AbortController();
     const sinal = AbortSignal.any([total, cancelar.signal]);
     try {
-      const sugestoes = await Promise.any(
-        alvos.map((alvo) => perguntarAoModelo(alvo, buscar, mensagens, ctx, sinal)),
+      const resultado = await Promise.any(
+        alvos.map((alvo) => perguntarAoModelo(alvo, buscar, mensagens, interpretar, sinal)),
       );
-      return { ok: true, sugestoes };
+      return { ok: true, resultado };
     } catch (agregado) {
       ultimas = (agregado as AggregateError).errors.map((e) =>
         e instanceof FalhaDaIA ? e : new FalhaDaIA("passageira", String(e)),
@@ -135,13 +141,13 @@ function pausa(ms: number, sinal: AbortSignal): Promise<void> {
  * modelo que devolve texto solto em vez de JSON não pode vencer a corrida e
  * deixar a resposta boa do outro ser cancelada.
  */
-async function perguntarAoModelo(
+async function perguntarAoModelo<T>(
   { modelo, baseUrl, chave }: Alvo,
   buscar: typeof fetch,
   mensagens: Mensagens,
-  ctx: ContextoIA,
+  interpretar: (json: unknown) => T | null,
   sinal: AbortSignal,
-): Promise<Sugestao[]> {
+): Promise<T> {
   let resposta: Response;
   try {
     resposta = await buscar(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
@@ -192,9 +198,9 @@ async function perguntarAoModelo(
     throw new FalhaDaIA("resposta", `não é JSON: ${conteudo.slice(0, 300)}`);
   }
 
-  const sugestoes = interpretarResposta(json, ctx);
-  if (!sugestoes) {
+  const resultado = interpretar(json);
+  if (resultado === null) {
     throw new FalhaDaIA("resposta", `fora do formato: ${conteudo.slice(0, 300)}`);
   }
-  return sugestoes;
+  return resultado;
 }

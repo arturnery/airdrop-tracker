@@ -29,6 +29,21 @@ export type Sinal = {
 };
 
 /**
+ * Os campos do formulário de sinal, como texto digitado. É o formato que a IA
+ * preenche e o que o formulário edita; `sinalSchema` transforma em `Sinal`.
+ */
+export type ValoresSinal = {
+  ativo: string;
+  direcao: Direcao;
+  entrada: string;
+  entradaAte: string;
+  stop: string;
+  alvos: [string, string, string, string];
+  timeframe: string;
+  observacao: string;
+};
+
+/**
  * Preço digitado (ou lido pela IA) para texto decimal normalizado.
  *
  * Preço de cripto vai de 0,00000123 a 100.000, então não dá para tratar

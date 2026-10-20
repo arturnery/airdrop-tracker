@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { ContextoIA } from "@/lib/interpretar-lancamento";
+import { interpretarResposta, type ContextoIA } from "@/lib/interpretar-lancamento";
 import { perguntar } from "@/lib/perguntar-ia";
 
 const ctx: ContextoIA = {
@@ -65,7 +65,7 @@ const alvo = (modelo: string, baseUrl = "https://ia.exemplo") => ({ modelo, base
 const base = (buscar: typeof fetch, modelos: string[], prazoMs = 2_000) =>
   perguntar({
     mensagens: [],
-    ctx,
+    interpretar: (json) => interpretarResposta(json, ctx),
     alvos: modelos.map((m) => alvo(m)),
     prazoMs,
     pausaMs: 10,
@@ -83,7 +83,7 @@ describe("perguntar", () => {
       b: { tipo: "responde", conteudo: BOA },
     });
     const r = await base(buscar, ["a", "b"]);
-    expect(r.ok && r.sugestoes.map((s) => (s.formulario === "lancamento" ? s.type : null))).toEqual(["withdrawal", "deposit"]);
+    expect(r.ok && r.resultado.map((s) => (s.formulario === "lancamento" ? s.type : null))).toEqual(["withdrawal", "deposit"]);
   });
 
   it("um travado não segura o outro: o rápido vence sem esperar o prazo", async () => {
@@ -157,7 +157,12 @@ describe("perguntar", () => {
 
   it("o mesmo modelo no mesmo provedor é consultado uma vez só", async () => {
     const { buscar, chamadas } = simular({ a: { tipo: "responde", conteudo: BOA } });
-    await perguntar({ mensagens: [], ctx, alvos: [alvo("a"), alvo("a")], buscar });
+    await perguntar({
+      mensagens: [],
+      interpretar: (json) => interpretarResposta(json, ctx),
+      alvos: [alvo("a"), alvo("a")],
+      buscar,
+    });
     expect(chamadas).toEqual(["a"]);
   });
 
@@ -170,7 +175,7 @@ describe("perguntar", () => {
     }) as unknown as typeof fetch;
     await perguntar({
       mensagens: [],
-      ctx,
+      interpretar: (json) => interpretarResposta(json, ctx),
       alvos: [
         { modelo: "g", baseUrl: "https://google.exemplo/", chave: "chave-g" },
         { modelo: "o", baseUrl: "https://openrouter.exemplo", chave: "chave-o" },

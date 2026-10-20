@@ -5,7 +5,7 @@ import { useState } from "react";
 import { BotaoNovo, Formulario } from "@/components/forms/dialogs";
 import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
 import { useDados } from "@/components/data-provider";
-import { formatarPreco, lerPreco, riscoRetorno } from "@/lib/sinais";
+import { formatarPreco, lerPreco, riscoRetorno, type ValoresSinal } from "@/lib/sinais";
 import { erros, sinalSchema } from "@/lib/validators";
 
 /**
@@ -21,17 +21,6 @@ import { erros, sinalSchema } from "@/lib/validators";
 type Erros = Record<string, string>;
 
 const texto = (dados: FormData, campo: string) => String(dados.get(campo) ?? "");
-
-export type ValoresSinal = {
-  ativo: string;
-  direcao: "compra" | "venda";
-  entrada: string;
-  entradaAte: string;
-  stop: string;
-  alvos: [string, string, string, string];
-  timeframe: string;
-  observacao: string;
-};
 
 const VAZIO: ValoresSinal = {
   ativo: "",
@@ -62,6 +51,13 @@ function CampoPreco({
   extra?: string | null;
 }) {
   const lido = valor.trim() ? lerPreco(valor) : null;
+  /*
+   * "64.200": ponto com três dígitos depois. Em cripto pode ser 64,2 ou 64 mil
+   * escrito no padrão brasileiro, e a leitura escolhe decimal. O aviso diz
+   * como foi lido e como escrever o milhar, porque um preço mil vezes menor
+   * continua coerente com os outros e passaria por todas as conferências.
+   */
+  const ambiguo = /^\d{1,3}\.\d{3}$/.test(valor.trim());
   return (
     <div>
       <CampoTexto
@@ -78,6 +74,11 @@ function CampoPreco({
         <p className="text-muted-foreground mt-1 text-xs tabular-nums" aria-live="polite">
           {formatarPreco(lido)}
           {extra ? <span className="text-foreground/80"> · {extra}</span> : null}
+        </p>
+      ) : null}
+      {lido && !erro && ambiguo ? (
+        <p className="text-caution mt-0.5 text-xs">
+          Lido como {formatarPreco(lido)}. Se for milhar, digite sem o ponto.
         </p>
       ) : null}
     </div>
