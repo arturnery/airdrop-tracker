@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-391%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-428%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -138,6 +138,11 @@ senhas temporárias, mas não vê o farming de ninguém.
   para divulgar a programação: cadastrado por quem administra, com lives semanais e
   quinzenais calculadas na leitura (sem cron), data final opcional, evento em destaque e
   horário de Brasília.
+- **Trade: sinais lidos de print por IA.** Quem publica cola o print da operação, um modelo
+  com visão (Gemini) devolve ativo, direção, entrada, stop e alvos, e o formulário abre para
+  conferência. A validação recusa sinal incoerente (numa compra, stop abaixo da entrada e
+  alvos acima) e mostra o risco/retorno de cada alvo. Sinal novo acende um sininho no menu
+  e é avisado num canal do Discord por webhook, com o envio confirmado e reenviável.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o
@@ -197,7 +202,7 @@ flowchart TB
         L["lib/<br/>funções puras"]
     end
 
-    DB[("PostgreSQL<br/>20 tabelas")]
+    DB[("PostgreSQL<br/>21 tabelas")]
     IA["Provedores de LLM<br/>Gemini e OpenRouter"]
 
     P -->|Dataset pronto| V
@@ -546,6 +551,7 @@ cp .env.example .env.local
 | `IA_BASE_URL`, `IA_MODELO` | Endereço e modelo, no formato da OpenAI | Ex.: `https://generativelanguage.googleapis.com/v1beta/openai` e `gemini-3.5-flash-lite` |
 | `IA_MODELO_RESERVA` | Opcional: outro modelo do mesmo provedor, consultado junto | Ex.: `gemini-3.1-flash-lite` |
 | `IA2_API_KEY`, `IA2_BASE_URL`, `IA2_MODELO` | Opcional: um segundo provedor, consultado junto | Ex.: OpenRouter, `https://openrouter.ai/api/v1` |
+| `DISCORD_WEBHOOK_SINAIS` | Opcional: canal do Discord avisado a cada sinal de trade | Discord → configurações do canal → Integrações → Webhooks |
 
 Sem as variáveis de IA, o sistema sobe normalmente e só o botão "Lançar com IA" responde que
 o recurso não está configurado.
@@ -553,7 +559,7 @@ o recurso não está configurado.
 ### Banco e primeiro acesso
 
 ```bash
-npm run db:migrate      # cria as 20 tabelas
+npm run db:migrate      # cria as 21 tabelas
 npm run db:seed-demo    # opcional: dados fictícios para explorar
 npm run dev             # http://localhost:3000
 ```
@@ -595,7 +601,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 391 testes
+npm test              # 428 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -626,7 +632,7 @@ app/              Rotas. Server Components por padrão
   entrar/         Login, cadastro, recuperação, espera por aprovação
 actions/          Server Actions: toda escrita passa por aqui
 db/
-  schema.ts       20 tabelas (Drizzle), com cascatas e FK composta
+  schema.ts       21 tabelas (Drizzle), com cascatas e FK composta
   queries/        Toda leitura e agregação
 lib/              Funções puras, testáveis sem banco
   money.ts        Aritmética monetária em centavos

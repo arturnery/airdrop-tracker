@@ -1,6 +1,6 @@
 import "server-only";
 
-import { desc, sql } from "drizzle-orm";
+import { count, desc, gt, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -28,10 +28,29 @@ export async function listarSinais(): Promise<Sinal[]> {
       observacao: schema.sinaisTrade.observacao,
       status: schema.sinaisTrade.status,
       publicadoEm: schema.sinaisTrade.publicadoEm,
+      discordEnviadoEm: schema.sinaisTrade.discordEnviadoEm,
     })
     .from(schema.sinaisTrade)
     .orderBy(desc(schema.sinaisTrade.publicadoEm))
     .limit(200);
 
-  return linhas.map((l) => ({ ...l, publicadoEm: l.publicadoEm.toISOString() }));
+  return linhas.map(({ discordEnviadoEm, ...l }) => ({
+    ...l,
+    publicadoEm: l.publicadoEm.toISOString(),
+    discordEnviado: discordEnviadoEm !== null,
+  }));
+}
+
+/**
+ * Quantos sinais saíram desde que a pessoa abriu a página pela última vez: é
+ * o número do sininho no menu. Quem nunca abriu conta só a última semana,
+ * para uma conta nova não estrear com o histórico inteiro "não lido".
+ */
+export async function contarSinaisNovos(vistosEm: Date | null): Promise<number> {
+  const desde = vistosEm ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const [linha] = await db
+    .select({ total: count() })
+    .from(schema.sinaisTrade)
+    .where(gt(schema.sinaisTrade.publicadoEm, desde));
+  return linha?.total ?? 0;
 }

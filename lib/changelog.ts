@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.16",
+    data: "2026-10-19",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Nova área Trade no menu, com os sinais de operação em cards: ativo, compra ou venda, entrada (ou zona de entrada), stop e alvos, com o risco/retorno de cada alvo. Quem publica pode colar o print da operação e a IA preenche o sinal para conferência. Sinal novo acende um sininho no item Sinais do menu e é avisado no canal do Discord.",
+      },
+    ],
+  },
+  {
     versao: "1.15",
     data: "2026-10-19",
     mudancas: [

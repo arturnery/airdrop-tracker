@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bell,
   ChevronDown,
   History,
   UserCheck,
@@ -141,11 +142,14 @@ const tons: Record<string, string> = {
 export function Nav({
   ehAdmin = false,
   feedbackNaoLido = 0,
+  sinaisNovos = 0,
   recolhida = false,
 }: {
   ehAdmin?: boolean;
   /** Só chega preenchido para quem administra: ver o layout. */
   feedbackNaoLido?: number;
+  /** Sinais de trade publicados desde a última visita à página de sinais. */
+  sinaisNovos?: number;
   /** Barra estreita: sobram os ícones, os rótulos viram texto acessível. */
   recolhida?: boolean;
 }) {
@@ -158,7 +162,16 @@ export function Nav({
   // A contagem de membros pendentes não entra aqui: ela vive em `users` e é
   // dado de administração, que não deve ser carregado em toda navegação.
   const contagem = (href: string) =>
-    href === "/tarefas" ? urgentes : href === "/suporte" ? feedbackNaoLido : 0;
+    href === "/tarefas"
+      ? urgentes
+      : href === "/suporte"
+        ? feedbackNaoLido
+        : href === "/trade/sinais"
+          ? sinaisNovos
+          : 0;
+
+  // Sinal é aviso de algo novo, não pendência: o selo leva um sininho.
+  const comSino = (href: string) => href === "/trade/sinais";
 
   const estaAtivo = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -194,7 +207,20 @@ export function Nav({
                 recolhida && "lg:sr-only",
               )}
             >
-              {grupo.titulo}
+              <span className="flex items-center gap-1.5">
+                {grupo.titulo}
+                {/*
+                  Recolhido, o grupo esconde os itens e os números deles: o
+                  total vai para o título, senão um sinal novo sumiria junto.
+                */}
+                {recolhidos.includes(grupo.titulo) &&
+                grupo.itens.some((i) => !estaAtivo(i.href) && contagem(i.href) > 0) ? (
+                  <span
+                    className="bg-caution size-1.5 rounded-full"
+                    aria-label="há novidades neste grupo"
+                  />
+                ) : null}
+              </span>
               <ChevronDown
                 aria-hidden="true"
                 className={cn(
@@ -269,8 +295,12 @@ export function Nav({
                             className="bg-caution absolute top-1.5 right-1.5 hidden size-1.5 rounded-full lg:block"
                           />
                         ) : (
-                          <span className="bg-caution/15 text-caution tabular ml-auto hidden rounded px-1.5 py-0.5 text-xs font-medium lg:inline">
-                            {contagem(item.href)}
+                          <span
+                            className="bg-caution/15 text-caution tabular ml-auto hidden items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium lg:inline-flex"
+                            aria-label={comSino(item.href) ? `${contagem(item.href)} sinais novos` : undefined}
+                          >
+                            {comSino(item.href) ? <Bell className="size-3" aria-hidden="true" /> : null}
+                            {contagem(item.href) > 9 && comSino(item.href) ? "9+" : contagem(item.href)}
                           </span>
                         )
                       ) : null}

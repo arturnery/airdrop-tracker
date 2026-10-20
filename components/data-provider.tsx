@@ -88,6 +88,7 @@ type Acoes = {
   excluirLive: Acao<[string]>;
   publicarSinal: Acao<[unknown]>;
   excluirSinal: Acao<[string]>;
+  reenviarSinalDiscord: Acao<[string]>;
 };
 
 type Contexto = {
@@ -246,6 +247,7 @@ export function DataProvider({
       excluirLive: envolver(Comunidade.excluirLive),
       publicarSinal: envolver(Trade.publicarSinal),
       excluirSinal: envolver(Trade.excluirSinal),
+      reenviarSinalDiscord: envolver(Trade.reenviarSinalDiscord),
     }),
     [envolver, alternarTarefa],
   );

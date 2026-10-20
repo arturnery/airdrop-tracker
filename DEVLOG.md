@@ -3517,3 +3517,58 @@ projeto, com o botão de vincular ali mesmo. Sem nenhuma conta cadastrada, o bot
 de exemplo ganharam um projeto sem conta (Lumen Restake), que é o caso que o aviso existe
 para mostrar. Impedir o cadastro de projeto sem conta, pedindo a conta já no formulário de
 criação, continua no roadmap.
+
+## Marco 52: Área Trade
+
+O pedido: uma área de trade em que o professor manda o print da operação e uma LLM, como a
+do lançamento por frase, interpreta e publica o sinal com entrada, stop e direção, avisando
+no site com um sininho e no Discord. As decisões dele, antes de qualquer código: aviso no
+site e no Discord; o professor ganha permissão depois (por enquanto publica quem
+administra); o print não é guardado, só a operação montada, em card, que depois vai servir
+para acompanhar PnL; aviso legal fica para depois.
+
+Junto veio a seta para recolher os grupos do menu, guardada no navegador de cada pessoa
+(`useSyncExternalStore`, para não divergir na hidratação), mostrando a página atual mesmo
+com o grupo recolhido.
+
+### A conferência que o print exige
+
+Um stop lido errado vira prejuízo de quem seguir o sinal, então a coerência entre direção
+e preços é regra do schema, não só da tela: numa compra, stop abaixo da entrada e alvos
+acima, e com zona de entrada o stop é comparado à ponta mais desfavorável. O formulário
+mostra como cada preço foi entendido e o risco/retorno de cada alvo enquanto se digita;
+um risco/retorno absurdo é o jeito mais rápido de ver um número trocado.
+
+### "64.200"
+
+Os prints de teste foram gerados no padrão brasileiro, e foi isso que salvou. "64.200" é 64
+mil, mas o leitor de preço trata um ponto sozinho como decimal (em cripto, "0.123" é muito
+mais comum que milhar com ponto). Lidos como texto, os preços do print virariam 64,2, 63,45,
+65,8: todos mil vezes menores, e por isso **coerentes entre si**. Nenhuma conferência
+reclamaria. A correção foi na origem: os preços são pedidos ao modelo como número JSON, que
+não tem separador de milhar, e o modelo, que vê o gráfico, decide a escala. Na digitação à
+mão, o campo avisa quando a forma é ambígua. Virou item do catálogo de erros: erro de escala
+proporcional passa por qualquer conferência que só compara os números entre si.
+
+### O que a disputa entre modelos precisou mudar
+
+A disputa do §18 tinha a conferência do lançamento embutida. Ficou genérica (recebe a função
+que decide se a resposta serve), e as mensagens passaram a aceitar imagem. Só os Gemini
+entram na leitura de print: o modelo do OpenRouter é só texto. O limite de uso da IA, que
+estava dentro da ação de lançamento, virou um só para os dois usos, porque é a mesma chave
+pagando. Os dois prints de teste (long de BTC, short de ETH com zona) foram lidos certos em
+4 a 6 segundos.
+
+### Discord sem presumir
+
+O sinal é publicado no site mesmo se o Discord falhar, mas a falha não é presumida como
+sucesso: `?wait=true` faz o Discord só responder depois de publicar, e `discord_enviado_em`
+só é gravado com essa confirmação. Testado com um webhook inexistente: o sinal saiu no site,
+o card avisou "não enviado" e o reenvio explicou o motivo. A observação é texto livre, então
+as menções vão desligadas: um "@everyone" escrito nela aparece como texto.
+
+### Um detalhe do driver
+
+Os alvos, em `numeric[]`, voltaram do banco como números, enquanto as colunas `numeric`
+simples vinham como texto. Para preço de memecoin isso arredondaria. Lidos com `::text[]`,
+e registrado no catálogo de erros.

@@ -51,6 +51,22 @@ const envSchema = z.object({
   IA2_API_KEY: z.preprocess(vazioComoAusente, z.string().optional()),
   IA2_BASE_URL: z.preprocess(vazioComoAusente, z.url().optional()),
   IA2_MODELO: z.preprocess(vazioComoAusente, z.string().optional()),
+  /*
+   * Webhook do canal do Discord onde os sinais de trade são avisados.
+   * Opcional: sem ele, o sinal é publicado só no site. Só o endereço de
+   * webhook do Discord é aceito, para um erro de cópia não mandar os sinais
+   * para outro lugar.
+   */
+  DISCORD_WEBHOOK_SINAIS: z.preprocess(
+    vazioComoAusente,
+    z
+      .url()
+      .refine(
+        (u) => /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\//.test(u),
+        "DISCORD_WEBHOOK_SINAIS precisa ser um webhook do Discord (https://discord.com/api/webhooks/...)",
+      )
+      .optional(),
+  ),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),

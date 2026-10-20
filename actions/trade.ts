@@ -1,7 +1,9 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
+
+import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -9,11 +11,13 @@ import { reservarUsoDaIA } from "@/db/queries/uso-ia";
 import { getCurrentUserId } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { interpretarSinal, montarMensagensSinal, type SugestaoSinal } from "@/lib/interpretar-sinal";
+import type { Sinal } from "@/lib/sinais";
+import { montarMensagemDiscord } from "@/lib/sinais-discord";
 import { perguntar, type Alvo, type Motivo } from "@/lib/perguntar-ia";
 import { sinalSchema } from "@/lib/validators";
 
 import { exigirAdministrador } from "./index";
-import { executar, type ResultadoAcao } from "./_core";
+import { executar, falha, sucesso, type ResultadoAcao } from "./_core";
 
 /**
  * Escrita dos sinais de trade. Por enquanto só quem administra publica; a
@@ -28,7 +32,7 @@ const ROTAS: { caminho: string; tipo: "page" | "layout" }[] = [
 export async function publicarSinal(entrada: unknown): Promise<ResultadoAcao> {
   return executar(sinalSchema, entrada, async (dados, userId) => {
     await exigirAdministrador(userId);
-    await db.insert(schema.sinaisTrade).values({
+    const [criado] = await db.insert(schema.sinaisTrade).values({
       ativo: dados.ativo,
       direcao: dados.direcao,
       entrada: dados.entrada,
@@ -38,8 +42,106 @@ export async function publicarSinal(entrada: unknown): Promise<ResultadoAcao> {
       timeframe: dados.timeframe,
       observacao: dados.observacao,
       publicadoPor: userId,
-    });
+    }).returning({ id: schema.sinaisTrade.id, publicadoEm: schema.sinaisTrade.publicadoEm });
+
+    /*
+     * O aviso no Discord não desfaz a publicação se falhar: o sinal já está
+     * no site, que é a fonte. Mas a falha fica registrada (sem
+     * `discordEnviadoEm`) e aparece no card para quem publica, com o botão
+     * de reenviar, em vez de ser presumido que saiu.
+     */
+    if (criado) {
+      await avisarNoDiscord({
+        id: criado.id,
+        ...dados,
+        status: "aberto",
+        publicadoEm: criado.publicadoEm.toISOString(),
+        discordEnviado: false,
+      });
+    }
   }, ROTAS);
+}
+
+/**
+ * Reenvia ao Discord um sinal cujo aviso não saiu. Não passa por `executar`
+ * porque a falha aqui não é de banco: a mensagem precisa dizer que foi o
+ * Discord, e o que conferir.
+ */
+export async function reenviarSinalDiscord(id: string): Promise<ResultadoAcao> {
+  if (!z.uuid().safeParse(id).success) return falha("geral", "Sinal inválido.");
+  if (!env.DISCORD_WEBHOOK_SINAIS) {
+    return falha("geral", "O Discord não está configurado neste servidor (DISCORD_WEBHOOK_SINAIS).");
+  }
+  const userId = await getCurrentUserId();
+  try {
+    await exigirAdministrador(userId);
+  } catch {
+    return falha("geral", "Só quem publica sinais pode reenviar.");
+  }
+
+  const [linha] = await db
+    .select({
+      id: schema.sinaisTrade.id,
+      ativo: schema.sinaisTrade.ativo,
+      direcao: schema.sinaisTrade.direcao,
+      entrada: schema.sinaisTrade.entrada,
+      entradaAte: schema.sinaisTrade.entradaAte,
+      stop: schema.sinaisTrade.stop,
+      alvos: sql<string[]>`${schema.sinaisTrade.alvos}::text[]`,
+      timeframe: schema.sinaisTrade.timeframe,
+      observacao: schema.sinaisTrade.observacao,
+      status: schema.sinaisTrade.status,
+      publicadoEm: schema.sinaisTrade.publicadoEm,
+    })
+    .from(schema.sinaisTrade)
+    .where(eq(schema.sinaisTrade.id, id))
+    .limit(1);
+  if (!linha) return falha("geral", "Esse sinal não existe mais.");
+
+  const enviado = await avisarNoDiscord({
+    ...linha,
+    publicadoEm: linha.publicadoEm.toISOString(),
+    discordEnviado: false,
+  });
+  if (!enviado) {
+    return falha(
+      "geral",
+      "O Discord não confirmou o envio. Confira se o webhook do canal ainda existe e tente de novo.",
+    );
+  }
+  for (const rota of ROTAS) revalidatePath(rota.caminho, rota.tipo);
+  return sucesso();
+}
+
+/**
+ * Manda o sinal ao canal e, se o Discord confirmar, grava `discordEnviadoEm`.
+ * Devolve se saiu. `?wait=true` faz o Discord só responder depois de publicar
+ * a mensagem, então um 200 aqui é confirmação de verdade, não "recebido".
+ */
+async function avisarNoDiscord(sinal: Sinal): Promise<boolean> {
+  const webhook = env.DISCORD_WEBHOOK_SINAIS;
+  if (!webhook) return false;
+  const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  try {
+    const resposta = await fetch(`${webhook}?wait=true`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(montarMensagemDiscord(sinal, host ? `https://${host}` : null)),
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!resposta.ok) {
+      console.error("[discord] status", resposta.status, (await resposta.text().catch(() => "")).slice(0, 300));
+      return false;
+    }
+    await db
+      .update(schema.sinaisTrade)
+      .set({ discordEnviadoEm: new Date() })
+      .where(eq(schema.sinaisTrade.id, sinal.id));
+    return true;
+  } catch (erro) {
+    console.error("[discord]", erro);
+    return false;
+  }
 }
 
 export async function excluirSinal(id: string): Promise<ResultadoAcao> {
@@ -125,4 +227,19 @@ export async function interpretarPrint(imagem: unknown): Promise<ResultadoPrint>
     console.error("[ia-print]", erro);
     return { ok: false, erro: MENSAGEM_DO_PRINT.erro };
   }
+}
+
+// ------------------------------------------------------------------ sininho
+
+/**
+ * Marca os sinais como vistos, ao abrir a página de sinais: zera o sininho do
+ * menu. O instante vem do servidor, nunca do navegador.
+ */
+export async function marcarSinaisVistos(): Promise<void> {
+  const userId = await getCurrentUserId();
+  await db
+    .update(schema.users)
+    .set({ sinaisVistosEm: new Date() })
+    .where(eq(schema.users.id, userId));
+  revalidatePath("/", "layout");
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight, ChartCandlestick } from "lucide-react";
+import { useState } from "react";
+import { ArrowDownRight, ArrowUpRight, ChartCandlestick, Send } from "lucide-react";
 
 import { BotaoLixeira, ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
 import { NovoSinal } from "@/components/forms/sinal";
@@ -24,7 +25,16 @@ const ROTULO_STATUS: Record<Sinal["status"], string> = {
  * marcar o PnL do sinal quando o acompanhamento entrar. Um sinal de venda em
  * vermelho pareceria prejuízo antes de existir resultado.
  */
-export function SinaisView({ sinais, ehAdmin }: { sinais: Sinal[]; ehAdmin: boolean }) {
+export function SinaisView({
+  sinais,
+  ehAdmin,
+  discordConfigurado = false,
+}: {
+  sinais: Sinal[];
+  ehAdmin: boolean;
+  /** Só com o webhook configurado faz sentido avisar de envio que não saiu. */
+  discordConfigurado?: boolean;
+}) {
   return (
     <>
       <PageHeader
@@ -54,7 +64,7 @@ export function SinaisView({ sinais, ehAdmin }: { sinais: Sinal[]; ehAdmin: bool
         <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {sinais.map((sinal) => (
             <li key={sinal.id}>
-              <CardSinal sinal={sinal} ehAdmin={ehAdmin} />
+              <CardSinal sinal={sinal} ehAdmin={ehAdmin} discordConfigurado={discordConfigurado} />
             </li>
           ))}
         </ul>
@@ -63,8 +73,18 @@ export function SinaisView({ sinais, ehAdmin }: { sinais: Sinal[]; ehAdmin: bool
   );
 }
 
-function CardSinal({ sinal, ehAdmin }: { sinal: Sinal; ehAdmin: boolean }) {
+function CardSinal({
+  sinal,
+  ehAdmin,
+  discordConfigurado,
+}: {
+  sinal: Sinal;
+  ehAdmin: boolean;
+  discordConfigurado: boolean;
+}) {
   const { acoes } = useDados();
+  const [reenviando, setReenviando] = useState(false);
+  const [erroDiscord, setErroDiscord] = useState<string | null>(null);
   const compra = sinal.direcao === "compra";
   const Seta = compra ? ArrowUpRight : ArrowDownRight;
 
@@ -124,6 +144,31 @@ function CardSinal({ sinal, ehAdmin }: { sinal: Sinal; ehAdmin: boolean }) {
 
       {sinal.observacao ? (
         <p className="text-muted-foreground mt-3 text-sm whitespace-pre-line">{sinal.observacao}</p>
+      ) : null}
+
+      {/*
+        Só para quem publica: o aviso no Discord que não saiu. O sinal já está
+        no site; o que falta é a comunidade ser avisada, e isso não pode ficar
+        presumido.
+      */}
+      {ehAdmin && discordConfigurado && !sinal.discordEnviado ? (
+        <div className="border-caution/40 bg-caution/10 mt-3 flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs">
+          <span>{erroDiscord ?? "Aviso no Discord não enviado."}</span>
+          <button
+            type="button"
+            disabled={reenviando}
+            onClick={async () => {
+              setReenviando(true);
+              const falha = await acoes.reenviarSinalDiscord(sinal.id);
+              setErroDiscord(falha ? (Object.values(falha)[0] ?? "Não foi possível reenviar.") : null);
+              setReenviando(false);
+            }}
+            className="hover:bg-caution/20 focus-visible:ring-ring inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60"
+          >
+            <Send className="size-3" aria-hidden="true" />
+            {reenviando ? "Reenviando…" : "Reenviar"}
+          </button>
+        </div>
       ) : null}
 
       <p className="border-border text-muted-foreground mt-auto border-t pt-2.5 text-xs">

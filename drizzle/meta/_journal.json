@@ -113,6 +113,13 @@
       "when": 1792461101646,
       "tag": "0015_sinais_trade",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792461829992,
+      "tag": "0016_sinais_vistos",
+      "breakpoints": true
     }
   ]
 }

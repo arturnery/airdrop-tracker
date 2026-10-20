@@ -1909,3 +1909,44 @@ celular, onde sete colunas não cabem, a grade vira uma lista dos dias que têm 
   vezes ao dia, a IA separa só as críticas (hack, exploit, regulação, quebra) e resume, e
   quem administra aprova. Depois, publicação automática. O nome não pode ser "Novidades",
   que já é o histórico de mudanças do sistema.
+
+## 20. Trade
+
+Terceira área do site, separada das outras duas (ver §19): conteúdo igual para todos,
+publicado por quem tem permissão. Por enquanto, quem administra; a permissão própria do
+professor entra depois, no lugar de `exigirAdministrador` em `actions/trade.ts`.
+
+### 20.1. Sinais
+
+| Peça | Papel |
+|---|---|
+| `sinais_trade` | Ativo, direção, entrada (e fim da zona), stop, `alvos numeric[]`, timeframe, observação, status, `discord_enviado_em` |
+| `lib/sinais.ts` | Puro: leitura de preço, coerência entre direção e preços, risco/retorno, formatação |
+| `lib/interpretar-sinal.ts` | Instruções ao modelo com o print e conferência da resposta |
+| `lib/sinais-discord.ts` | Mensagem do webhook |
+| `actions/trade.ts` | Publicar, excluir, ler print, reenviar ao Discord, marcar como visto |
+
+- **Coerência antes de publicar.** Numa compra, stop abaixo da entrada (da ponta mais
+  desfavorável da zona) e alvos acima; numa venda, o espelho. Conferida no `sinalSchema`,
+  então vale para a tela e para a Server Action.
+- **Preço não é dinheiro.** Vai de 0,00000123 a 100 mil: `numeric` sem escala, lido e
+  mostrado como texto. `numeric[]` volta do driver como número de ponto flutuante, então
+  os alvos são lidos com `::text[]`.
+- **Print por IA, sem guardar o print.** O navegador reduz a imagem (até 1600 px, JPEG,
+  abaixo do 1 MB das Server Actions, que não foi aumentado para o site inteiro); os dois
+  modelos Gemini, os que leem imagem, disputam a leitura como no §18. Os preços são pedidos
+  como **número JSON**: num print brasileiro "64.200" é 64 mil, e lido como texto viraria
+  64,2. Com todos os preços errados na mesma proporção o sinal continuaria coerente, e
+  nenhuma conferência relativa pegaria.
+- **Sininho.** `users.sinais_vistos_em`; o menu conta os publicados depois disso (na
+  primeira vez, só a última semana) e a página de sinais zera ao abrir.
+- **Discord.** Webhook com `?wait=true`, então 200 é confirmação de que a mensagem saiu;
+  só aí `discord_enviado_em` é gravado. Falha não desfaz a publicação, mas aparece no card
+  para quem publica, com reenvio. Menções desligadas (`allowed_mentions` vazio): a
+  observação é texto livre, e um "@everyone" nela notificaria o servidor inteiro.
+
+### 20.2. Próximas etapas
+
+- Permissão do professor para publicar.
+- Acompanhamento de cada sinal (alvo atingido, stop) e PnL.
+- Aviso legal fixo nos sinais.

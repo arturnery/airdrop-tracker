@@ -28,12 +28,14 @@ export function CascaApp({
   ehAdmin,
   feedbackNaoLido,
   novidadesNaoVistas,
+  sinaisNovos,
   children,
 }: {
   nome: string;
   ehAdmin: boolean;
   feedbackNaoLido: number;
   novidadesNaoVistas: number;
+  sinaisNovos: number;
   children: ReactNode;
 }) {
   const recolhida = useBarraRecolhida();
@@ -124,6 +126,7 @@ export function CascaApp({
             <Nav
               ehAdmin={ehAdmin}
               feedbackNaoLido={feedbackNaoLido}
+              sinaisNovos={sinaisNovos}
               recolhida={recolhida}
             />
           </div>

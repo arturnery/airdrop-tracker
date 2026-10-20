@@ -156,6 +156,11 @@ export const users = pgTable("users", {
    * nesse estado qualquer versão já conta como não vista.
    */
   novidadesVistasVersao: text("novidades_vistas_versao"),
+  /**
+   * Até quando a pessoa já viu os sinais de trade: o sininho do menu conta os
+   * publicados depois disso. Nulo para quem nunca abriu a página de sinais.
+   */
+  sinaisVistosEm: timestamp("sinais_vistos_em", { withTimezone: true }),
   /** Quando o acesso foi liberado ou recusado; nulo enquanto pendente. */
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   /** Por que foi recusado. Visível só para quem administra. */

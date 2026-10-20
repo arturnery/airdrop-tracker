@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "sinais_vistos_em" timestamp with time zone;

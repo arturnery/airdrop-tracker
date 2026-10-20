@@ -2,6 +2,7 @@ import { CascaApp } from "@/components/casca-app";
 import { TrocaObrigatoria } from "@/components/views/troca-obrigatoria";
 import { carregarUsuario } from "@/db/queries/usuario";
 import { contarNaoLidos } from "@/actions/feedback";
+import { contarSinaisNovos } from "@/db/queries/trade";
 import { exigirSessao } from "@/lib/auth";
 import { contarNovidadesNaoVistas } from "@/lib/changelog";
 
@@ -41,6 +42,9 @@ export default async function AppLayout({
     usuario?.novidadesVistasVersao ?? null,
   );
 
+  // O sininho da área de trade: sinais publicados desde a última visita.
+  const sinaisNovos = await contarSinaisNovos(usuario?.sinaisVistosEm ?? null);
+
   /*
    * Senha temporária trava o sistema na própria troca.
    *
@@ -66,6 +70,7 @@ export default async function AppLayout({
       ehAdmin={sessao.papel === "admin"}
       feedbackNaoLido={naoLidos}
       novidadesNaoVistas={novidadesNaoVistas}
+      sinaisNovos={sinaisNovos}
     >
       {children}
     </CascaApp>

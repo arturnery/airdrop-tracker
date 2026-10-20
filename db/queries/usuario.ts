@@ -26,6 +26,7 @@ export async function carregarUsuario(userId: string) {
       isDemo: schema.users.isDemo,
       precisaTrocarSenha: schema.users.mustChangePassword,
       novidadesVistasVersao: schema.users.novidadesVistasVersao,
+      sinaisVistosEm: schema.users.sinaisVistosEm,
     })
     .from(schema.users)
     .where(eq(schema.users.id, userId))

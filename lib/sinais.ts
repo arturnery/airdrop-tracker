@@ -26,6 +26,8 @@ export type Sinal = {
   status: "aberto" | "encerrado" | "cancelado";
   /** ISO 8601. */
   publicadoEm: string;
+  /** Se o aviso no Discord saiu. Falso também quando o Discord não está configurado. */
+  discordEnviado: boolean;
 };
 
 /**
