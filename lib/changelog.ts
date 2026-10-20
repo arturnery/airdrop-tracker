@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.15",
+    data: "2026-10-19",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Os grupos do menu lateral (Airdrops, Comunidade) podem ser recolhidos pela setinha ao lado do título. O site lembra a sua escolha, e um grupo recolhido continua mostrando a página em que você está.",
+      },
+    ],
+  },
+  {
     versao: "1.14",
     data: "2026-10-15",
     mudancas: [

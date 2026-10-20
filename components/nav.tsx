@@ -1,8 +1,10 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ChevronDown,
   History,
   UserCheck,
   LayoutDashboard,
@@ -42,6 +44,59 @@ const grupos: { titulo: string; itens: Item[] }[] = [
     itens: [{ href: "/comunidade/calendario", label: "Calendário", icon: CalendarDays }],
   },
 ];
+
+/*
+ * Quais grupos cada pessoa deixou recolhidos, guardado no próprio navegador:
+ * é conforto de tela, não dado, e não precisa ir ao banco nem seguir a
+ * pessoa para outro aparelho.
+ *
+ * `useSyncExternalStore`, e não um estado lido num efeito: o servidor não
+ * conhece o `localStorage`, então renderiza tudo aberto
+ * (`getServerSnapshot`), e o navegador troca para o que estiver guardado logo
+ * depois, sem divergência de hidratação. O acesso fica em try/catch porque o
+ * armazenamento pode estar bloqueado (aba anônima, cookies desligados), e aí
+ * o menu simplesmente fica todo aberto.
+ */
+const CHAVE_RECOLHIDOS = "menu-grupos-recolhidos";
+const EVENTO_RECOLHIDOS = "menu-grupos-recolhidos-mudou";
+
+function lerRecolhidos(): string {
+  try {
+    return localStorage.getItem(CHAVE_RECOLHIDOS) ?? "[]";
+  } catch {
+    return "[]";
+  }
+}
+
+function assinarRecolhidos(avisar: () => void) {
+  window.addEventListener(EVENTO_RECOLHIDOS, avisar);
+  window.addEventListener("storage", avisar);
+  return () => {
+    window.removeEventListener(EVENTO_RECOLHIDOS, avisar);
+    window.removeEventListener("storage", avisar);
+  };
+}
+
+function alternarRecolhido(titulo: string, atuais: string[]) {
+  const novos = atuais.includes(titulo)
+    ? atuais.filter((t) => t !== titulo)
+    : [...atuais, titulo];
+  try {
+    localStorage.setItem(CHAVE_RECOLHIDOS, JSON.stringify(novos));
+  } catch {
+    // Sem armazenamento, a escolha vale só até recarregar: não há o que fazer.
+  }
+  window.dispatchEvent(new Event(EVENTO_RECOLHIDOS));
+}
+
+function lerLista(bruto: string): string[] {
+  try {
+    const valor: unknown = JSON.parse(bruto);
+    return Array.isArray(valor) ? valor.filter((v) => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+}
 
 const grupoAdministracao = {
   titulo: "Administração",
@@ -102,6 +157,7 @@ export function Nav({
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   const visiveis = ehAdmin ? [...grupos, grupoAdministracao] : grupos;
+  const recolhidos = lerLista(useSyncExternalStore(assinarRecolhidos, lerRecolhidos, () => "[]"));
 
   /*
    * No celular o menu é uma fileira de ícones, sem espaço para títulos: os
@@ -114,15 +170,32 @@ export function Nav({
       <div className="flex gap-1 lg:flex-col lg:gap-4">
         {visiveis.map((grupo, indiceGrupo) => (
           <div key={grupo.titulo} className="contents lg:block">
-            <p
+            {/*
+              O título é um botão que recolhe o grupo. Some na barra estreita
+              (vira só a linha divisória) e no celular, que não têm títulos;
+              nesses dois casos os itens aparecem sempre.
+            */}
+            <button
+              type="button"
               id={`menu-${grupo.titulo}`}
+              aria-expanded={!recolhidos.includes(grupo.titulo)}
+              aria-controls={`itens-${grupo.titulo}`}
+              onClick={() => alternarRecolhido(grupo.titulo, recolhidos)}
+              title={recolhidos.includes(grupo.titulo) ? `Expandir ${grupo.titulo}` : `Recolher ${grupo.titulo}`}
               className={cn(
-                "text-muted-foreground mb-1 hidden px-3 text-[11px] font-medium tracking-wider uppercase lg:block",
+                "text-muted-foreground hover:text-foreground focus-visible:ring-ring mb-1 hidden w-full items-center justify-between rounded-sm px-3 text-[11px] font-medium tracking-wider uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none lg:flex",
                 recolhida && "lg:sr-only",
               )}
             >
               {grupo.titulo}
-            </p>
+              <ChevronDown
+                aria-hidden="true"
+                className={cn(
+                  "size-3.5 transition-transform motion-reduce:transition-none",
+                  recolhidos.includes(grupo.titulo) && "-rotate-90",
+                )}
+              />
+            </button>
             {recolhida && indiceGrupo > 0 ? (
               <hr
                 className="border-sidebar-border mx-2 mb-2 hidden lg:block"
@@ -130,14 +203,22 @@ export function Nav({
               />
             ) : null}
             <ul
+              id={`itens-${grupo.titulo}`}
               aria-labelledby={`menu-${grupo.titulo}`}
               className="contents lg:flex lg:flex-col lg:gap-1"
             >
               {grupo.itens.map((item) => {
                 const ativo = estaAtivo(item.href);
                 const Icon = item.icon;
+                /*
+                 * Recolhido, o grupo ainda mostra a página em que se está:
+                 * esconder o item ativo tiraria do menu o "você está aqui".
+                 * Só vale na barra larga; estreita ou no celular, tudo aparece.
+                 */
+                const escondido =
+                  !recolhida && recolhidos.includes(grupo.titulo) && !ativo;
                 return (
-                  <li key={item.href} className="flex-1 lg:flex-none">
+                  <li key={item.href} className={cn("flex-1 lg:flex-none", escondido && "lg:hidden")}>
                     <Link
                       href={item.href}
                       aria-current={ativo ? "page" : undefined}
