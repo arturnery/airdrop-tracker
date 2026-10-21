@@ -141,6 +141,13 @@
       "when": 1792616619232,
       "tag": "0019_ranking",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792621416988,
+      "tag": "0020_entradas_trade",
+      "breakpoints": true
     }
   ]
 }

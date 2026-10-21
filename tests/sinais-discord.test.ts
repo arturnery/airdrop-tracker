@@ -21,9 +21,9 @@ const sinal: Sinal = {
 describe("montarMensagemDiscord", () => {
   it("monta título, campos e alvos com risco/retorno", () => {
     const m = montarMensagemDiscord(sinal, "https://lvl-airdrop.vercel.app");
-    expect(m.content).toBe("Novo sinal: COMPRA BTC/USDT");
+    expect(m.content).toBe("Nova operação: COMPRA BTC/USDT");
     expect(m.embeds[0]!.title).toBe("COMPRA (long) BTC/USDT");
-    expect(m.embeds[0]!.url).toBe("https://lvl-airdrop.vercel.app/trade/sinais");
+    expect(m.embeds[0]!.url).toBe("https://lvl-airdrop.vercel.app/trade/operacoes");
     expect(m.embeds[0]!.fields).toEqual([
       { name: "Entrada", value: "64,200", inline: true },
       { name: "Stop", value: "63,450", inline: true },

@@ -49,6 +49,21 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.20",
+    data: "2026-10-21",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto: "Na área Trade, Sinais agora se chama Operações.",
+      },
+      {
+        tipo: "novidade",
+        texto:
+          "Você pode entrar numa operação aberta informando o valor em dólar. Quando ela fechar, o seu resultado em dólar aparece no card e em Resultados, somado com o das outras operações em que você entrou.",
+      },
+    ],
+  },
+  {
     versao: "1.19",
     data: "2026-10-21",
     mudancas: [

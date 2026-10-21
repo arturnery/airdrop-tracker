@@ -33,13 +33,13 @@ export function montarMensagemDiscord(sinal: Sinal, siteUrl: string | null) {
   ];
 
   return {
-    username: "Sinais de trade",
-    content: `Novo sinal: ${compra ? "COMPRA" : "VENDA"} ${sinal.ativo}`,
+    username: "Operações de trade",
+    content: `Nova operação: ${compra ? "COMPRA" : "VENDA"} ${sinal.ativo}`,
     allowed_mentions: { parse: [] as string[] },
     embeds: [
       {
         title: `${compra ? "COMPRA (long)" : "VENDA (short)"} ${sinal.ativo}`.slice(0, 256),
-        ...(siteUrl ? { url: `${siteUrl}/trade/sinais` } : {}),
+        ...(siteUrl ? { url: `${siteUrl}/trade/operacoes` } : {}),
         color: compra ? 0x26a69a : 0xef5350,
         ...(sinal.observacao ? { description: sinal.observacao.slice(0, 1000) } : {}),
         fields: campos,

@@ -33,7 +33,7 @@ export const PAGINAS: PaginaInfo[] = [
   { padrao: "/comunidade/calendario", rotulo: "Calendário", icon: CalendarDays },
   { padrao: "/ranking/pontos", rotulo: "Ranking de pontos", icon: Medal },
   { padrao: "/ranking", rotulo: "Ranking de resultados", icon: Trophy },
-  { padrao: "/trade/sinais", rotulo: "Sinais", icon: ChartCandlestick },
+  { padrao: "/trade/operacoes", rotulo: "Operações", icon: ChartCandlestick },
   { padrao: "/tarefas", rotulo: "Tarefas", icon: ListChecks },
   { padrao: "/projetos", rotulo: "Projetos", icon: Layers },
   { padrao: "/contas", rotulo: "Contas", icon: Wallet },

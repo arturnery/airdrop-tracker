@@ -6,6 +6,8 @@ import {
   formatarR,
   incoerencias,
   lerPreco,
+  meuPlacar,
+  resultadoDaEntrada,
   placarDosSinais,
   precoDaSaida,
   resultadoDoSinal,
@@ -277,5 +279,43 @@ describe("simulação em dólar", () => {
     const sim = { modo: "risco" as const, valor: 50 };
     const sinais = [fechado(compra, "130"), fechado(venda, "110"), { ...compra, id: "x", status: "cancelado" as const }];
     expect(totalEmDolar(sinais, sim)).toBe(100);
+  });
+});
+
+describe("entrada em dólar", () => {
+  const fechado = (s: Sinal, preco: string, entrada: string | null): Sinal => ({
+    ...s,
+    status: "encerrado",
+    saida: "manual",
+    precoSaida: preco,
+    minhaEntradaUsd: entrada,
+  });
+
+  it("entrou com US$ 200 numa compra que subiu 30%: ganhou US$ 60", () => {
+    expect(resultadoDaEntrada(fechado(compra, "130", "200"), 200)).toBeCloseTo(60, 9);
+  });
+
+  it("numa venda que stopou (-10%), perdeu 10% do que entrou", () => {
+    expect(resultadoDaEntrada(fechado(venda, "110", "500"), 500)).toBeCloseTo(-50, 9);
+  });
+
+  it("aberta ou não acionada não tem resultado", () => {
+    expect(resultadoDaEntrada({ ...compra, minhaEntradaUsd: "100" }, 100)).toBeNull();
+    expect(resultadoDaEntrada({ ...compra, status: "cancelado" }, 100)).toBeNull();
+  });
+
+  it("o placar soma só as operações fechadas em que a pessoa entrou", () => {
+    const placar = meuPlacar([
+      fechado(compra, "130", "200"),
+      fechado(venda, "110", "500"),
+      fechado({ ...compra, id: "x" }, "120", null),
+      { ...compra, id: "y", minhaEntradaUsd: "999" },
+    ]);
+    expect(placar).toMatchObject({ operacoes: 2, totalEntrado: 700 });
+    expect(placar!.resultadoUsd).toBeCloseTo(10, 9);
+  });
+
+  it("sem nenhuma entrada fechada, não há placar pessoal", () => {
+    expect(meuPlacar([compra])).toBeNull();
   });
 });

@@ -33,6 +33,10 @@ export type Sinal = {
   precoSaida?: string | null;
   /** ISO 8601. Também no cancelado: é quando ele saiu da lista. */
   encerradoEm?: string | null;
+  /** Quantas pessoas entraram na operação. */
+  participantes?: number;
+  /** Com quanto quem está vendo entrou, em dólar ("200.00"); null se não entrou. */
+  minhaEntradaUsd?: string | null;
 };
 
 export type Saida = "alvo1" | "alvo2" | "alvo3" | "alvo4" | "stop" | "manual";
@@ -279,4 +283,44 @@ export function totalEmDolar(sinais: Sinal[], simulacao: SimulacaoDolar): number
     if (dolar !== null) total += dolar;
   }
   return total;
+}
+
+/**
+ * O resultado em dólar de quem entrou numa operação fechada: o valor de
+ * entrada vezes a variação da operação, a mesma de `resultadoDoSinal`.
+ * Operação aberta ou não acionada não tem resultado (null): quem entrou numa
+ * que não acionou não ganhou nem perdeu.
+ */
+export function resultadoDaEntrada(sinal: Sinal, valorUsd: number): number | null {
+  if (sinal.status !== "encerrado" || !sinal.precoSaida) return null;
+  const r = resultadoDoSinal(sinal, sinal.precoSaida);
+  return r ? (r.percentual / 100) * valorUsd : null;
+}
+
+export type MeuPlacar = {
+  /** Operações fechadas em que a pessoa entrou. */
+  operacoes: number;
+  totalEntrado: number;
+  resultadoUsd: number;
+};
+
+/**
+ * O placar de quem está vendo, só com as operações em que entrou. Soma o
+ * mesmo `resultadoDaEntrada` que cada card mostra. `null` se não entrou em
+ * nenhuma operação fechada.
+ */
+export function meuPlacar(sinais: Sinal[]): MeuPlacar | null {
+  let operacoes = 0;
+  let totalEntrado = 0;
+  let resultadoUsd = 0;
+  for (const sinal of sinais) {
+    if (!sinal.minhaEntradaUsd) continue;
+    const valor = Number(sinal.minhaEntradaUsd);
+    const resultado = resultadoDaEntrada(sinal, valor);
+    if (resultado === null) continue;
+    operacoes += 1;
+    totalEntrado += valor;
+    resultadoUsd += resultado;
+  }
+  return operacoes > 0 ? { operacoes, totalEntrado, resultadoUsd } : null;
 }

@@ -94,6 +94,8 @@ type Acoes = {
   fecharSinal: Acao<[unknown]>;
   reabrirSinal: Acao<[string]>;
   reenviarSinalDiscord: Acao<[string]>;
+  entrarNaOperacao: Acao<[unknown]>;
+  sairDaOperacao: Acao<[string]>;
 };
 
 type Contexto = {
@@ -258,6 +260,8 @@ export function DataProvider({
       fecharSinal: envolver(Trade.fecharSinal),
       reabrirSinal: envolver(Trade.reabrirSinal),
       reenviarSinalDiscord: envolver(Trade.reenviarSinalDiscord),
+      entrarNaOperacao: envolver(Trade.entrarNaOperacao),
+      sairDaOperacao: envolver(Trade.sairDaOperacao),
     }),
     [envolver, alternarTarefa],
   );

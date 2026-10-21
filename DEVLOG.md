@@ -3681,3 +3681,18 @@ passa pelos selectors de sempre. Os testes conferem que a linha de cada membro �
 A leitura é uma consulta por tabela para todos os membros, separadas por dono depois, e não
 o carregamento completo de cada um: tarefas, metas e volume não entram, e o Dataset fica no
 servidor. O navegador recebe só as linhas prontas.
+
+## Marco 56: Operações, e entrar nelas
+
+Dois pedidos. O primeiro, trocar "Sinais" por "Operações": mudou tudo o que se lê na tela,
+o endereço (`/trade/operacoes`) e a mensagem do Discord. O nome interno ficou `sinal`, porque
+renomear tabela e tipos não muda nada para quem usa e encarece qualquer diff de agora em diante.
+
+O segundo, um botão para entrar na operação com o valor em dólar, para o resultado contar.
+A conta já existia: a variação da operação é a mesma para todos, e o resultado de cada um é
+o valor de entrada vezes ela. O cuidado foi no momento da entrada. Se a operação fechar entre
+abrir a tela e clicar, aceitar a entrada deixaria escolher o valor sabendo o resultado. A
+conferência de "ainda aberta" fica dentro do próprio comando (`INSERT ... SELECT` filtrado pelo
+status), e não numa leitura anterior que pode envelhecer. Testado com as duas contas: entrar,
+corrigir o valor, sair, entrar de novo; o admin fechou no alvo 1 e o membro viu +US$ 5,83
+sobre US$ 250,50, o 2,33% da operação.

@@ -1971,7 +1971,25 @@ depois esconderia abertos atrás de fechados mais novos.
 - **Reabrir** desfaz um fechamento por engano, apagando a saída com `null` explícito em cada
   campo.
 
-### 20.3. Próximas etapas
+### 20.3. Nome na tela e entradas dos membros
+
+Na tela, sinal virou **operação** (menu "Operações", em `/trade/operacoes`). No código e no
+banco o nome continua `sinal` / `sinais_trade`: trocar o nome da tabela seria migração sem
+ganho para quem usa.
+
+**Entrar numa operação.** `entradas_trade` guarda quem entrou em qual operação e com quanto
+em dólar, uma linha por pessoa por operação (entrar de novo corrige o valor). O resultado de
+cada um é o valor de entrada vezes a variação da operação (`resultadoDaEntrada`, a mesma
+conta de `resultadoDoSinal`), e "Seu resultado" em Resultados soma o mesmo número que cada
+card mostra. Não acionada não dá resultado.
+
+Só se entra, ou se sai, com a operação aberta, e isso é conferido no próprio comando: a
+inserção é um `INSERT ... SELECT` que só acha a operação se ela ainda estiver aberta, e a
+saída só apaga se ela estiver aberta. Entrar numa operação que fechou entre abrir a tela e
+clicar seria escolher a entrada depois de saber o resultado. O valor das outras pessoas não
+sai do servidor: o card mostra só quantas entraram.
+
+### 20.4. Próximas etapas
 
 - Permissão do professor para publicar.
 - Saída parcial (metade no alvo 1, metade no alvo 2) e aviso do fechamento no Discord.

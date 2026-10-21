@@ -126,13 +126,13 @@ export function NovoSinal({
 
   return (
     <Formulario
-      titulo={inicial ? "Confira o sinal" : "Novo sinal"}
+      titulo={inicial ? "Confira a operação" : "Nova operação"}
       descricao={
         inicial
           ? "Preenchido pela IA a partir do print. Nada foi publicado ainda: confira cada preço e publique."
           : "Aparece para toda a comunidade na área de trade."
       }
-      gatilho={abertoAoMontar ? undefined : <BotaoNovo>Novo sinal</BotaoNovo>}
+      gatilho={abertoAoMontar ? undefined : <BotaoNovo>Nova operação</BotaoNovo>}
       abertoAoMontar={abertoAoMontar}
       aoFechar={() => {
         if (publicou.current) {
@@ -141,7 +141,7 @@ export function NovoSinal({
         }
         aoFechar?.();
       }}
-      rotuloEnvio="Publicar sinal"
+      rotuloEnvio="Publicar operação"
       aoEnviar={(dados) => {
         const bruto = {
           ativo: texto(dados, "ativo"),

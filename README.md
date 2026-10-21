@@ -145,6 +145,8 @@ senhas temporárias, mas não vê o farming de ninguém.
   e é avisado num canal do Discord por webhook, com o envio confirmado e reenviável. Ao
   fechar, escolhe-se por onde o sinal saiu (um alvo, o stop, outro preço, ou não acionou); o
   resultado em % e em R sai do preço, nunca é digitado, e a aba Resultados soma o placar, com simulação opcional em dólar.
+  Cada membro pode **entrar** numa operação aberta informando o valor em dólar, e o resultado
+  dele em dólar aparece quando ela fecha.
 - **Todos os projetos e Farmando agora.** Duas abas: os destaques ativos do admin para
   adicionar e os projetos fora do farm, por status; e a carteira do que se está farmando, com
   depositado, exposição, resultado e ROI em cada card. Sair do farm exige o motivo, que vira

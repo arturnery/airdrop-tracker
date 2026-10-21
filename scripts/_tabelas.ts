@@ -40,6 +40,7 @@ export const TABELAS = [
   "password_reset_requests",
   "lives",
   "sinais_trade",
+  "entradas_trade",
 ] as const;
 
 /**

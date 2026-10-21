@@ -1,6 +1,6 @@
 import "server-only";
 
-import { count, desc, eq, gt, ne, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -67,4 +67,32 @@ export async function contarSinaisNovos(vistosEm: Date | null): Promise<number> 
     .from(schema.sinaisTrade)
     .where(gt(schema.sinaisTrade.publicadoEm, desde));
   return linha?.total ?? 0;
+}
+
+/**
+ * Junta às operações o que depende de quem está vendo: com quanto ela
+ * entrou em cada uma, e quantas pessoas entraram. O valor das outras
+ * pessoas não sai daqui, só a contagem.
+ */
+export async function comEntradas(sinais: Sinal[], userId: string): Promise<Sinal[]> {
+  if (sinais.length === 0) return sinais;
+  const ids = sinais.map((s) => s.id);
+  const [minhas, contagens] = await Promise.all([
+    db
+      .select({ sinalId: schema.entradasTrade.sinalId, valor: schema.entradasTrade.valorUsd })
+      .from(schema.entradasTrade)
+      .where(and(eq(schema.entradasTrade.userId, userId), inArray(schema.entradasTrade.sinalId, ids))),
+    db
+      .select({ sinalId: schema.entradasTrade.sinalId, total: count() })
+      .from(schema.entradasTrade)
+      .where(inArray(schema.entradasTrade.sinalId, ids))
+      .groupBy(schema.entradasTrade.sinalId),
+  ]);
+  const minha = new Map(minhas.map((m) => [m.sinalId, m.valor]));
+  const total = new Map(contagens.map((c) => [c.sinalId, c.total]));
+  return sinais.map((s) => ({
+    ...s,
+    minhaEntradaUsd: minha.get(s.id) ?? null,
+    participantes: total.get(s.id) ?? 0,
+  }));
 }

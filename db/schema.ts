@@ -929,3 +929,29 @@ export const sinaisTrade = pgTable(
   },
   (t) => [index("sinais_publicado_idx").on(t.publicadoEm)],
 );
+
+/**
+ * Quem entrou em qual operação, e com quanto em dólar. É o que transforma o
+ * resultado da operação (em %, igual para todos) no resultado de cada um:
+ * entrou com US$ 200 numa operação de +5%, ganhou US$ 10.
+ *
+ * Uma entrada por pessoa por operação: entrar de novo corrige o valor. Só
+ * se entra (ou se sai) com a operação aberta; depois de fechada, a entrada
+ * vira registro. Dado pessoal da área de trade: não alcança nada da área de
+ * airdrops.
+ */
+export const entradasTrade = pgTable(
+  "entradas_trade",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sinalId: uuid("sinal_id")
+      .notNull()
+      .references(() => sinaisTrade.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    valorUsd: numeric("valor_usd", { precision: 14, scale: 2 }).notNull(),
+    entrouEm: timestamp("entrou_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("entradas_sinal_usuario_unq").on(t.sinalId, t.userId)],
+);

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { revalidatePath } from "next/cache";
@@ -14,10 +14,11 @@ import { interpretarSinal, montarMensagensSinal, type SugestaoSinal } from "@/li
 import { precoDaSaida, type Sinal } from "@/lib/sinais";
 import { montarMensagemDiscord } from "@/lib/sinais-discord";
 import { perguntar, type Alvo, type Motivo } from "@/lib/perguntar-ia";
-import { erros, fecharSinalSchema, sinalSchema } from "@/lib/validators";
+import { entradaTradeSchema, erros, fecharSinalSchema, sinalSchema } from "@/lib/validators";
+import { toDbNumeric } from "@/lib/money";
 
 import { exigirAdministrador } from "./index";
-import { executar, falha, sucesso, type ResultadoAcao } from "./_core";
+import { ErroDeRegra, executar, falha, sucesso, type ResultadoAcao } from "./_core";
 
 /**
  * Escrita dos sinais de trade. Por enquanto só quem administra publica; a
@@ -26,7 +27,7 @@ import { executar, falha, sucesso, type ResultadoAcao } from "./_core";
  */
 
 const ROTAS: { caminho: string; tipo: "page" | "layout" }[] = [
-  { caminho: "/trade/sinais", tipo: "page" },
+  { caminho: "/trade/operacoes", tipo: "page" },
   { caminho: "/trade/resultados", tipo: "page" },
 ];
 
@@ -69,7 +70,7 @@ export async function publicarSinal(entrada: unknown): Promise<ResultadoAcao> {
  * Discord, e o que conferir.
  */
 export async function reenviarSinalDiscord(id: string): Promise<ResultadoAcao> {
-  if (!z.uuid().safeParse(id).success) return falha("geral", "Sinal inválido.");
+  if (!z.uuid().safeParse(id).success) return falha("geral", "Operação inválida.");
   if (!env.DISCORD_WEBHOOK_SINAIS) {
     return falha("geral", "O Discord não está configurado neste servidor (DISCORD_WEBHOOK_SINAIS).");
   }
@@ -77,7 +78,7 @@ export async function reenviarSinalDiscord(id: string): Promise<ResultadoAcao> {
   try {
     await exigirAdministrador(userId);
   } catch {
-    return falha("geral", "Só quem publica sinais pode reenviar.");
+    return falha("geral", "Só quem publica operações pode reenviar.");
   }
 
   const [linha] = await db
@@ -97,7 +98,7 @@ export async function reenviarSinalDiscord(id: string): Promise<ResultadoAcao> {
     .from(schema.sinaisTrade)
     .where(eq(schema.sinaisTrade.id, id))
     .limit(1);
-  if (!linha) return falha("geral", "Esse sinal não existe mais.");
+  if (!linha) return falha("geral", "Essa operação não existe mais.");
 
   const enviado = await avisarNoDiscord({
     ...linha,
@@ -163,7 +164,7 @@ export async function fecharSinal(entrada: unknown): Promise<ResultadoAcao> {
   try {
     await exigirAdministrador(userId);
   } catch {
-    return falha("geral", "Só quem publica sinais pode fechá-los.");
+    return falha("geral", "Só quem publica operações pode fechá-las.");
   }
 
   const [sinal] = await db
@@ -175,15 +176,15 @@ export async function fecharSinal(entrada: unknown): Promise<ResultadoAcao> {
     .from(schema.sinaisTrade)
     .where(eq(schema.sinaisTrade.id, id))
     .limit(1);
-  if (!sinal) return falha("geral", "Esse sinal não existe mais.");
-  if (sinal.status !== "aberto") return falha("geral", "Esse sinal já foi fechado.");
+  if (!sinal) return falha("geral", "Essa operação não existe mais.");
+  if (sinal.status !== "aberto") return falha("geral", "Essa operação já foi fechada.");
 
   let valores: Partial<typeof schema.sinaisTrade.$inferInsert>;
   if (fechamento === "cancelado") {
     valores = { status: "cancelado", saida: null, precoSaida: null };
   } else {
     const preco = precoDaSaida(sinal, fechamento, precoManual);
-    if (!preco) return falha("fechamento", "Esse alvo não existe neste sinal.");
+    if (!preco) return falha("fechamento", "Esse alvo não existe nesta operação.");
     valores = { status: "encerrado", saida: fechamento, precoSaida: preco };
   }
 
@@ -192,7 +193,7 @@ export async function fecharSinal(entrada: unknown): Promise<ResultadoAcao> {
     .set({ ...valores, encerradoEm: new Date() })
     .where(and(eq(schema.sinaisTrade.id, id), eq(schema.sinaisTrade.status, "aberto")))
     .returning({ id: schema.sinaisTrade.id });
-  if (fechados.length === 0) return falha("geral", "Esse sinal já foi fechado.");
+  if (fechados.length === 0) return falha("geral", "Essa operação já foi fechada.");
 
   for (const rota of ROTAS) revalidatePath(rota.caminho, rota.tipo);
   return sucesso();
@@ -204,7 +205,7 @@ export async function fecharSinal(entrada: unknown): Promise<ResultadoAcao> {
  * ausente seria preservado, e o sinal reaberto carregaria o resultado velho).
  */
 export async function reabrirSinal(id: string): Promise<ResultadoAcao> {
-  return executar(z.object({ id: z.uuid("Sinal inválido.") }), { id }, async (dados, userId) => {
+  return executar(z.object({ id: z.uuid("Operação inválida.") }), { id }, async (dados, userId) => {
     await exigirAdministrador(userId);
     await db
       .update(schema.sinaisTrade)
@@ -213,8 +214,71 @@ export async function reabrirSinal(id: string): Promise<ResultadoAcao> {
   }, ROTAS);
 }
 
+// ------------------------------------------------------------- entrar na operação
+
+/**
+ * Entra numa operação aberta com um valor em dólar, ou corrige o valor de
+ * quem já entrou. Qualquer membro pode: é registro pessoal, e o resultado
+ * em dólar sai dele quando a operação fechar.
+ *
+ * A operação precisa estar aberta no momento da escrita, conferido no
+ * próprio comando (a inserção só acontece se o `select` achar a operação
+ * aberta): entrar numa operação que fechou entre abrir a tela e clicar
+ * escolheria o resultado depois de sabê-lo.
+ */
+export async function entrarNaOperacao(entrada: unknown): Promise<ResultadoAcao> {
+  return executar(entradaTradeSchema, entrada, async (dados, userId) => {
+    const valorUsd = toDbNumeric(dados.valor);
+    const inseridos = await db
+      .insert(schema.entradasTrade)
+      .select(
+        db
+          .select({
+            id: sql`gen_random_uuid()`.as("id"),
+            sinalId: schema.sinaisTrade.id,
+            userId: sql`${userId}::uuid`.as("user_id"),
+            valorUsd: sql`${valorUsd}::numeric`.as("valor_usd"),
+            entrouEm: sql`now()`.as("entrou_em"),
+          })
+          .from(schema.sinaisTrade)
+          .where(and(eq(schema.sinaisTrade.id, dados.sinalId), eq(schema.sinaisTrade.status, "aberto"))),
+      )
+      .onConflictDoUpdate({
+        target: [schema.entradasTrade.sinalId, schema.entradasTrade.userId],
+        set: { valorUsd },
+      })
+      .returning({ id: schema.entradasTrade.id });
+    if (inseridos.length === 0) {
+      throw new ErroDeRegra("geral", "Essa operação já foi fechada: não dá mais para entrar.");
+    }
+  }, ROTAS);
+}
+
+/** Sai de uma operação ainda aberta. Depois de fechada, a entrada é registro. */
+export async function sairDaOperacao(sinalId: string): Promise<ResultadoAcao> {
+  return executar(z.object({ id: z.uuid("Operação inválida.") }), { id: sinalId }, async (dados, userId) => {
+    const aberta = db
+      .select({ id: schema.sinaisTrade.id })
+      .from(schema.sinaisTrade)
+      .where(and(eq(schema.sinaisTrade.id, dados.id), eq(schema.sinaisTrade.status, "aberto")));
+    const removidos = await db
+      .delete(schema.entradasTrade)
+      .where(
+        and(
+          eq(schema.entradasTrade.sinalId, dados.id),
+          eq(schema.entradasTrade.userId, userId),
+          inArray(schema.entradasTrade.sinalId, aberta),
+        ),
+      )
+      .returning({ id: schema.entradasTrade.id });
+    if (removidos.length === 0) {
+      throw new ErroDeRegra("geral", "Essa operação já foi fechada: a sua entrada ficou registrada.");
+    }
+  }, ROTAS);
+}
+
 export async function excluirSinal(id: string): Promise<ResultadoAcao> {
-  return executar(z.object({ id: z.uuid("Sinal inválido.") }), { id }, async (dados, userId) => {
+  return executar(z.object({ id: z.uuid("Operação inválida.") }), { id }, async (dados, userId) => {
     await exigirAdministrador(userId);
     await db.delete(schema.sinaisTrade).where(eq(schema.sinaisTrade.id, dados.id));
   }, ROTAS);
@@ -237,7 +301,7 @@ const imagemSchema = z
 const MENSAGEM_DO_PRINT: Record<Motivo, string> = {
   prazo: "A IA não respondeu a tempo. Tente de novo em instantes.",
   sobrecarga:
-    "A IA gratuita do Google está sobrecarregada agora. Tente de novo em alguns minutos, ou preencha o sinal à mão.",
+    "A IA gratuita do Google está sobrecarregada agora. Tente de novo em alguns minutos, ou preencha a operação à mão.",
   resposta:
     "Não consegui ler uma operação neste print. Confira se ele mostra a entrada, o stop e os alvos.",
   erro: "Não foi possível falar com a IA agora. Tente de novo.",
@@ -265,7 +329,7 @@ export async function interpretarPrint(imagem: unknown): Promise<ResultadoPrint>
   try {
     await exigirAdministrador(userId);
   } catch {
-    return { ok: false, erro: "Só quem publica sinais pode usar a leitura de print." };
+    return { ok: false, erro: "Só quem publica operações pode usar a leitura de print." };
   }
 
   try {
@@ -275,8 +339,8 @@ export async function interpretarPrint(imagem: unknown): Promise<ResultadoPrint>
         ok: false,
         erro:
           recusa === "pessoa"
-            ? "Você atingiu o limite de uso da IA nas últimas 24 horas. O sinal pode ser preenchido à mão."
-            : "A IA atingiu o limite de uso do dia. O sinal pode ser preenchido à mão.",
+            ? "Você atingiu o limite de uso da IA nas últimas 24 horas. A operação pode ser preenchida à mão."
+            : "A IA atingiu o limite de uso do dia. A operação pode ser preenchida à mão.",
       };
     }
 

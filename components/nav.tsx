@@ -76,7 +76,7 @@ const grupos: { titulo: string; itens: Item[] }[] = [
   {
     titulo: "Trade",
     itens: [
-      { href: "/trade/sinais", label: "Sinais", icon: ChartCandlestick },
+      { href: "/trade/operacoes", label: "Operações", icon: ChartCandlestick },
       { href: "/trade/resultados", label: "Resultados", icon: ChartLine },
     ],
   },
@@ -157,7 +157,7 @@ const tons: Record<string, string> = {
   "/comunidade/calendario": "bg-chart-5/15 text-chart-5",
   "/ranking": "bg-chart-4/15 text-chart-4",
   "/ranking/pontos": "bg-chart-3/15 text-chart-3",
-  "/trade/sinais": "bg-chart-4/15 text-chart-4",
+  "/trade/operacoes": "bg-chart-4/15 text-chart-4",
   "/trade/resultados": "bg-chart-2/15 text-chart-2",
   "/tarefas": "bg-chart-4/15 text-chart-4",
   "/projetos": "bg-chart-3/15 text-chart-3",
@@ -200,12 +200,12 @@ export function Nav({
       ? urgentes
       : href === "/suporte"
         ? feedbackNaoLido
-        : href === "/trade/sinais"
+        : href === "/trade/operacoes"
           ? sinaisNovos
           : 0;
 
   // Sinal é aviso de algo novo, não pendência: o selo leva um sininho.
-  const comSino = (href: string) => href === "/trade/sinais";
+  const comSino = (href: string) => href === "/trade/operacoes";
 
   const casa = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -269,7 +269,7 @@ export function Nav({
           ) : (
             <span
               className="bg-caution/15 text-caution tabular ml-auto hidden items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium lg:inline-flex"
-              aria-label={comSino(item.href) ? `${contagem(item.href)} sinais novos` : undefined}
+              aria-label={comSino(item.href) ? `${contagem(item.href)} operações novas` : undefined}
             >
               {comSino(item.href) ? <Bell className="size-3" aria-hidden="true" /> : null}
               {contagem(item.href) > 9 && comSino(item.href) ? "9+" : contagem(item.href)}

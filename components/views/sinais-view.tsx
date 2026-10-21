@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowDownRight, ArrowUpRight, ChartCandlestick, RotateCcw, Send } from "lucide-react";
 
 import { BotaoLixeira, ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
+import { EntrarNaOperacao } from "@/components/forms/entrar-operacao";
 import { FecharSinal } from "@/components/forms/fechar-sinal";
 import { NovoSinal } from "@/components/forms/sinal";
 import { SinalPorPrint } from "@/components/forms/sinal-por-print";
@@ -16,6 +17,7 @@ import {
   formatarR,
   resultadoDoSinal,
   riscoRetorno,
+  resultadoDaEntrada,
   resultadoEmDolar,
   rotuloSaida,
   type Sinal,
@@ -53,7 +55,7 @@ export function SinaisView({
     <>
       <PageHeader
         icon={ChartCandlestick}
-        title="Sinais"
+        title="Operações"
         description="Operações em aberto na área de trade: entrada, stop e alvos de cada uma. As fechadas ficam em Resultados."
         actions={
           ehAdmin ? (
@@ -67,10 +69,10 @@ export function SinaisView({
 
       {sinais.length === 0 ? (
         <EmptyState
-          title="Nenhum sinal aberto."
+          title="Nenhuma operação aberta."
           description={
             ehAdmin
-              ? "Publique o primeiro em Novo sinal."
+              ? "Publique a primeira em Nova operação."
               : "Quando uma operação for publicada, ela aparece aqui."
           }
         />
@@ -132,17 +134,17 @@ export function CardSinal({
                 type="button"
                 onClick={() => acoes.reabrirSinal(sinal.id)}
                 className="text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:ring-ring inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                title="Desfaz o fechamento: o sinal volta para a lista de abertos"
+                title="Desfaz o fechamento: a operação volta para a lista de abertas"
               >
                 <RotateCcw className="size-3.5" aria-hidden="true" />
                 Reabrir
               </button>
             )}
             <ConfirmarExclusao
-              titulo="Excluir sinal"
+              titulo="Excluir operação"
               alvo={`${compra ? "Compra" : "Venda"} de ${sinal.ativo}`}
               aoConfirmar={() => acoes.excluirSinal(sinal.id)}
-              gatilho={<BotaoLixeira rotulo={`Excluir sinal de ${sinal.ativo}`} />}
+              gatilho={<BotaoLixeira rotulo={`Excluir operação de ${sinal.ativo}`} />}
             />
           </div>
         ) : null}
@@ -185,6 +187,8 @@ export function CardSinal({
         no site; o que falta é a comunidade ser avisada, e isso não pode ficar
         presumido.
       */}
+      {sinal.status === "aberto" ? <EntrarNaOperacao sinal={sinal} /> : null}
+
       {ehAdmin && discordConfigurado && !sinal.discordEnviado && sinal.status === "aberto" ? (
         <div className="border-caution/40 bg-caution/10 mt-3 flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs">
           <span>{erroDiscord ?? "Aviso no Discord não enviado."}</span>
@@ -208,6 +212,7 @@ export function CardSinal({
       <p className="border-border text-muted-foreground mt-auto border-t pt-2.5 text-xs">
         Publicado {formatarQuando(sinal.publicadoEm)}
         {sinal.encerradoEm ? ` · fechado ${formatarQuando(sinal.encerradoEm)}` : ""}
+        {sinal.participantes ? ` · ${sinal.participantes} ${sinal.participantes === 1 ? "entrou" : "entraram"}` : ""}
       </p>
     </article>
   );
@@ -225,7 +230,12 @@ function ResultadoDoCard({ sinal, simulacao }: { sinal: Sinal; simulacao: Simula
   if (sinal.status !== "encerrado" || !sinal.saida || !sinal.precoSaida) return null;
   const r = resultadoDoSinal(sinal, sinal.precoSaida);
   if (!r) return null;
-  const dolar = simulacao ? resultadoEmDolar(r, simulacao) : null;
+  /*
+   * Quem entrou na operação vê o resultado da entrada dele, que é real. A
+   * simulação em dólar fica para as operações em que não entrou.
+   */
+  const minha = sinal.minhaEntradaUsd ? resultadoDaEntrada(sinal, Number(sinal.minhaEntradaUsd)) : null;
+  const dolar = minha ?? (simulacao ? resultadoEmDolar(r, simulacao) : null);
   return (
     <div
       className={cn(
@@ -249,6 +259,7 @@ function ResultadoDoCard({ sinal, simulacao }: { sinal: Sinal; simulacao: Simula
         {r.r !== null ? <span className="ml-1.5 text-xs font-medium">{formatarR(r.r)}</span> : null}
         {dolar !== null ? (
           <span className="block text-right text-xs font-medium">
+            {minha !== null ? "Você: " : ""}
             {formatUsd(cents(Math.round(dolar * 100)), { signDisplay: "exceptZero" })}
           </span>
         ) : null}

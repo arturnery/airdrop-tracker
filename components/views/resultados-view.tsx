@@ -7,6 +7,7 @@ import { EmptyState, PageHeader } from "@/components/page-header";
 import { CardSinal } from "@/components/views/sinais-view";
 import { cents, formatUsd, parseUserInput } from "@/lib/money";
 import {
+  meuPlacar,
   formatarPercentual,
   formatarR,
   placarDosSinais,
@@ -30,6 +31,7 @@ export function ResultadosView({ sinais, ehAdmin }: { sinais: Sinal[]; ehAdmin: 
   const placar = placarDosSinais(sinais);
   const [bruto, modo, simulacao] = useSimulacao();
   const totalDolar = simulacao ? totalEmDolar(sinais, simulacao) : null;
+  const meu = meuPlacar(sinais);
   const tom = (valor: number) => (valor > 0 ? "text-positive" : valor < 0 ? "text-negative" : undefined);
 
   return (
@@ -37,16 +39,29 @@ export function ResultadosView({ sinais, ehAdmin }: { sinais: Sinal[]; ehAdmin: 
       <PageHeader
         icon={ChartLine}
         title="Resultados"
-        description="Sinais fechados e o placar: quantos deram lucro, quantos deram prejuízo e quanto somaram."
+        description="Operações fechadas e o placar: quantos deram lucro, quantos deram prejuízo e quanto somaram."
       />
 
       {sinais.length === 0 ? (
         <EmptyState
-          title="Nenhum sinal fechado ainda."
-          description="Quando um sinal for fechado em Sinais, ele aparece aqui com o resultado."
+          title="Nenhuma operação fechada ainda."
+          description="Quando uma operação for fechada em Operações, ela aparece aqui com o resultado."
         />
       ) : (
         <>
+          {meu ? (
+            <div className="bg-card border-border mb-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 rounded-lg border px-4 py-3">
+              <span className="text-sm font-medium">Seu resultado nas operações em que entrou</span>
+              <span className="text-muted-foreground text-xs">
+                {meu.operacoes} {meu.operacoes === 1 ? "operação" : "operações"}, com{" "}
+                {formatUsd(cents(Math.round(meu.totalEntrado * 100)))} de entrada
+              </span>
+              <span className={cn("text-2xl font-semibold tabular-nums", tom(meu.resultadoUsd))}>
+                {formatUsd(cents(Math.round(meu.resultadoUsd * 100)), { signDisplay: "exceptZero" })}
+              </span>
+            </div>
+          ) : null}
+
           <SimularEmDolar bruto={bruto} modo={modo} />
 
           <dl

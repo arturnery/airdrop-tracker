@@ -540,10 +540,10 @@ export const trocaSenhaSchema = z
  */
 export const fecharSinalSchema = z
   .object({
-    id: z.uuid("Sinal inválido."),
+    id: z.uuid("Operação inválida."),
     fechamento: z.enum(
       ["alvo1", "alvo2", "alvo3", "alvo4", "stop", "manual", "cancelado"],
-      "Escolha como o sinal fechou.",
+      "Escolha como a operação fechou.",
     ),
     precoManual: z.string().default(""),
   })
@@ -573,4 +573,20 @@ export const saidaDoFarmSchema = z.object({
 export const respostaDestaqueSchema = z.object({
   id: z.uuid("Projeto inválido."),
   aceitar: z.boolean(),
+});
+
+/**
+ * Entrada numa operação: o valor em dólar, lido como todo valor em dólar do
+ * site ("1.000" é mil, "250,50" é duzentos e cinquenta e cinquenta).
+ */
+export const entradaTradeSchema = z.object({
+  sinalId: z.uuid("Operação inválida."),
+  valor: z.string().transform((v, ctx) => {
+    const lido = parseUserInput(v);
+    if (!lido.ok || lido.value <= 0) {
+      ctx.addIssue({ code: "custom", message: "Informe com quanto você entrou, em dólar." });
+      return z.NEVER;
+    }
+    return lido.value;
+  }),
 });

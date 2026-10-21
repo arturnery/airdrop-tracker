@@ -47,14 +47,14 @@ export function FecharSinal({ sinal }: { sinal: Sinal }) {
   return (
     <Formulario
       titulo={`Fechar ${sinal.direcao === "compra" ? "compra" : "venda"} de ${sinal.ativo}`}
-      descricao="O sinal sai da lista e vai para Resultados, com o lucro ou prejuízo calculado do preço de saída."
+      descricao="A operação sai da lista e vai para Resultados, com o lucro ou prejuízo calculado do preço de saída."
       gatilho={
         <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs">
           <CircleCheckBig className="size-3.5" aria-hidden="true" />
           Fechar
         </Button>
       }
-      rotuloEnvio={fechamento === "cancelado" ? "Cancelar sinal" : "Fechar sinal"}
+      rotuloEnvio={fechamento === "cancelado" ? "Cancelar operação" : "Fechar operação"}
       aoEnviar={() => {
         const bruto = { id: sinal.id, fechamento, precoManual: manual };
         const validado = fecharSinalSchema.safeParse(bruto);
