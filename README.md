@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-481%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-491%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -156,6 +156,9 @@ senhas temporárias, mas não vê o farming de ninguém.
   calculado pelos mesmos selectors) e pontos por projeto, com o feed dos últimos airdrops.
   Todos entram, e quem não quer expor os números sai pelo perfil; conta de demonstração
   nunca aparece em produção.
+- **Compartilhar no X.** Em pontos, volume e resultado de cada projeto, um botão abre o X
+  com o post pronto: a evolução do período, o @ do projeto e a divulgação da comunidade
+  Level Cripto Pro. Sem API do X: é o link de publicação, e quem publica é a pessoa.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o
@@ -625,7 +628,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 481 testes
+npm test              # 491 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -706,9 +709,6 @@ tests/            Vitest
 - [ ] **Medir o acerto da IA.** Quantas sugestões são salvas sem nenhuma edição, por tipo
       de lançamento. É o número que diria se uma troca de modelo melhorou ou piorou, em vez
       de impressão
-- [ ] **Compartilhar no X.** Botão em pontos, volume e resultado de um projeto que monta um
-      post pronto (o projeto marcado, a evolução da semana, a divulgação da comunidade) e
-      abre o X para publicar
 - [ ] **Permissão do professor** para publicar operações, no lugar da exigência de admin
 - [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
 - [ ] Alternância entre tema claro e escuro (o tema claro já existe, falta o controle)

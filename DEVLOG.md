@@ -3739,3 +3739,25 @@ problemas apareceram, todos corrigidos neste marco:
 As classes dos defeitos 1, 2 e 3 entraram no catálogo de erros, porque se repetem em qualquer
 tela: prévia e validação com leitores diferentes, contêiner escondido que guarda o próprio botão
 de encher, e conteúdo invisível escapando de um quadro que rola.
+
+## Marco 58: Compartilhar no X
+
+O pedido: um botão nos pontos, no volume e no resultado de um projeto que publique no X um post
+formatado, marcando o projeto, com a evolução da semana e a divulgação da comunidade Level
+Cripto Pro, já que o acesso à ferramenta é pela comunidade.
+
+A primeira decisão foi não integrar com a API do X. Publicar pela API exigiria que cada membro
+autorizasse o sistema na conta dele, e o plano gratuito da API mal permite escrever. O link de
+publicação (`/intent/post`) resolve o pedido inteiro: abre o X com o texto pronto, e a pessoa
+publica. Isso também resolve a questão de privacidade, porque o número só vai para o post
+depois de a pessoa ver o texto e clicar em publicar.
+
+O modelo de texto é fixo, por escolha dele, e o que precisou de cuidado foi o que muda: o @ do
+projeto só quando o endereço cadastrado é mesmo um perfil (os dados de teste tinham buscas do
+X, que viraram "nome do projeto"), "nesta semana" só quando há mesmo uma semana entre as
+medições, e nenhum artigo antes do nome ("na Lighter" ou "no Lighter"?), resolvido com "em".
+Os pontos usam a escala inteira de 10⁴ do sistema, e o primeiro teste pegou o texto formatando
+o valor cru; o post usa o mesmo `formatPoints` da tela.
+
+Ficou anotado para depois: medição de volume e de pontos aceita data futura, o que o teste
+expôs ao simular uma semana.

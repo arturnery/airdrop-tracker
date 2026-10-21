@@ -1,5 +1,7 @@
 "use client";
 
+import { BotaoCompartilharX } from "@/components/compartilhar-x";
+import { descreverPeriodo, perfilDoX, postDePontos, postDeResultado, postDeVolume } from "@/lib/compartilhar-x";
 import { formatarValorDaMeta } from "@/lib/metas";
 import { useState } from "react";
 
@@ -79,6 +81,18 @@ const tipoLabels: Record<TransactionRow["tipo"], string> = {
   other: "Outro",
 };
 
+/**
+ * Desde quando conta a variação: a medição anterior mais antiga entre as
+ * contas que têm variação. É o começo do período que o post do X descreve.
+ */
+function desdeQuando(contas: { variacao: number | null; desdeEm: string | null }[]): string | null {
+  const datas = contas
+    .filter((c) => c.variacao !== null && c.desdeEm)
+    .map((c) => c.desdeEm!)
+    .sort();
+  return datas[0] ?? null;
+}
+
 export function ProjetoView({ slug }: { slug: string }) {
   /*
    * Filtro do histórico por tipo. Nasceu de um pedido para dar aba própria ao
@@ -114,6 +128,8 @@ export function ProjetoView({ slug }: { slug: string }) {
   const tarefas = selectTasksByProject(dataset, projeto.id, hoje);
   const programa = selectProgramaDePontos(dataset, projeto.id);
   const volume = selectVolumeDoProjeto(dataset, projeto.id);
+  // Para o "Compartilhar no X": o @ do projeto, quando o endereço do X dele é um perfil.
+  const noPost = { nome: projeto.nome, perfil: perfilDoX(projeto.links.twitter) };
   const historicoPontos = programa
     ? selectHistoricoDePontos(dataset, projeto.id)
     : [];
@@ -179,6 +195,18 @@ export function ProjetoView({ slug }: { slug: string }) {
             <ProjectStatusBadge status={projeto.status} />
             <EditarProjeto projectId={projeto.id} />
             <NovoLancamento projectId={projeto.id} rotulo="Lançamento" />
+            {/* Só com resultado positivo: ninguém quer um botão de postar prejuízo. */}
+            {projeto.resultado > 0 ? (
+              <BotaoCompartilharX
+                rotulo="Compartilhar resultado"
+                texto={postDeResultado({
+                  projeto: noPost,
+                  resultado: projeto.resultado,
+                  roi: projeto.roi,
+                  airdropRecebido: projeto.recebimentos.length > 0,
+                })}
+              />
+            ) : null}
           </div>
         }
       />
@@ -612,7 +640,20 @@ export function ProjetoView({ slug }: { slug: string }) {
                   </p>
                 )}
               </div>
-              <RegistrarPontos projectId={projeto.id} />
+              <div className="flex flex-wrap items-center gap-2">
+                {programa.atualizadoEm ? (
+                  <BotaoCompartilharX
+                    texto={postDePontos({
+                      projeto: noPost,
+                      rotulo: programa.rotulo,
+                      total: programa.total,
+                      variacao: programa.variacao,
+                      periodo: descreverPeriodo(desdeQuando(programa.contas), programa.atualizadoEm),
+                    })}
+                  />
+                ) : null}
+                <RegistrarPontos projectId={projeto.id} />
+              </div>
             </div>
 
             <h3 className="mb-3 text-sm font-medium">Por conta</h3>
@@ -869,7 +910,19 @@ export function ProjetoView({ slug }: { slug: string }) {
               que a plataforma mostra, não o quanto rodou desde a última vez: a
               diferença o sistema calcula.
             </p>
-            <RegistrarVolume projectId={projeto.id} />
+            <div className="flex flex-wrap items-center gap-2">
+              {volume.atualizadoEm ? (
+                <BotaoCompartilharX
+                  texto={postDeVolume({
+                    projeto: noPost,
+                    total: volume.total,
+                    variacao: volume.variacao,
+                    periodo: descreverPeriodo(desdeQuando(volume.contas), volume.atualizadoEm),
+                  })}
+                />
+              ) : null}
+              <RegistrarVolume projectId={projeto.id} />
+            </div>
           </div>
 
           {volume.atualizadoEm === null ? (

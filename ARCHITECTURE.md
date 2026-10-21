@@ -2076,3 +2076,23 @@ as duas coisas diretamente.
   dois. A ordem padrão é por pontos quando o projeto tem programa, senão por volume, e com os
   dois dá para escolher. Quem não mede a grandeza escolhida fica no fim, sem posição.
 - O feed junta os recebimentos do mesmo membro, projeto e dia numa linha.
+
+## 23. Compartilhar no X
+
+Na página do projeto, as abas Pontos e Volume e o topo (quando o resultado é positivo) têm um
+botão que abre o X com o post pronto. Não há integração com a API do X: o botão é um link para
+`https://x.com/intent/post?text=...`, e a pessoa confere e publica na própria conta. Sem chave,
+sem custo, e nenhum número sai do sistema sem o clique dela.
+
+`lib/compartilhar-x.ts` monta o texto, puro e testado:
+
+- **O @ do projeto** sai do endereço do X cadastrado nele (`perfilDoX`), só quando é um perfil;
+  um endereço de busca ou de outro site faz o post usar o nome do projeto.
+- **O período** sai das duas últimas medições: "nesta semana" só quando há de 6 a 8 dias entre
+  elas, senão "nos últimos N dias". Sem medição anterior, o post fala só do total.
+- **Rodapé fixo** com a comunidade (@LevelCripto) e o site, que são constantes no módulo.
+- **Cabe no X:** um teste monta os três posts com os maiores números e nomes possíveis e confere
+  que ficam abaixo de 280, contando o link como 23 caracteres, como o X conta.
+- **Sem artigo antes do projeto** ("em @Polymarket", nunca "na"): o nome pode ser de qualquer
+  gênero.
+- Resultado só com valor positivo: o botão não aparece em projeto no prejuízo.
