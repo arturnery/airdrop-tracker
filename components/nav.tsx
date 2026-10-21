@@ -56,24 +56,22 @@ const grupos: { titulo: string; itens: Item[] }[] = [
         ],
       },
       { href: "/contas", label: "Contas", icon: Wallet },
+      {
+        href: "/ranking",
+        label: "Ranking",
+        icon: Trophy,
+        filhos: [
+          { href: "/ranking", label: "Resultados", icon: Trophy },
+          { href: "/ranking/pontos", label: "Pontos", icon: Medal },
+        ],
+      },
       { href: "/historico", label: "Histórico", icon: History },
       { href: "/importar", label: "Importar", icon: Upload },
     ],
   },
   {
     titulo: "Comunidade",
-    itens: [
-      { href: "/comunidade/calendario", label: "Calendário", icon: CalendarDays },
-      {
-        href: "/comunidade/ranking",
-        label: "Ranking",
-        icon: Trophy,
-        filhos: [
-          { href: "/comunidade/ranking", label: "Resultados", icon: Trophy },
-          { href: "/comunidade/ranking/pontos", label: "Pontos", icon: Medal },
-        ],
-      },
-    ],
+    itens: [{ href: "/comunidade/calendario", label: "Calendário", icon: CalendarDays }],
   },
   {
     titulo: "Trade",
@@ -157,8 +155,8 @@ const grupoAdministracao: { titulo: string; itens: Item[] } = {
 const tons: Record<string, string> = {
   "/": "bg-chart-1/15 text-chart-1",
   "/comunidade/calendario": "bg-chart-5/15 text-chart-5",
-  "/comunidade/ranking": "bg-chart-4/15 text-chart-4",
-  "/comunidade/ranking/pontos": "bg-chart-3/15 text-chart-3",
+  "/ranking": "bg-chart-4/15 text-chart-4",
+  "/ranking/pontos": "bg-chart-3/15 text-chart-3",
   "/trade/sinais": "bg-chart-4/15 text-chart-4",
   "/trade/resultados": "bg-chart-2/15 text-chart-2",
   "/tarefas": "bg-chart-4/15 text-chart-4",

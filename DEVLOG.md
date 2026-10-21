@@ -3656,8 +3656,9 @@ projeto da pessoa agora não aparece.
 
 ## Marco 55: Ranking da comunidade
 
-O pedido: uma área com o resultado de cada membro, para todos verem, virando um ranking, e
-outra igual com os pontos por projeto.
+O pedido: um ranking com o resultado de cada membro, para todos verem, e outro igual com os
+pontos por projeto. Os dois ficam na área Airdrops: a primeira versão os pôs em Comunidade, e
+a correção foi que são números de airdrop, e as áreas não se misturam.
 
 ### A decisão antes do código
 

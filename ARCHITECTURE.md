@@ -2023,8 +2023,9 @@ que ela cadastrou à mão.
 
 ## 22. Ranking da comunidade
 
-Primeira tela que mostra números de uma pessoa para as outras. Fica em Comunidade, com duas
-sub-abas: **Resultados** (`/comunidade/ranking`) e **Pontos** (`/comunidade/ranking/pontos`).
+Primeira tela que mostra números de uma pessoa para as outras. Fica na área Airdrops (é sobre
+os números dela, e as áreas não se misturam), com dois rankings separados, como sub-abas:
+**Resultados** (`/ranking`) e **Pontos** (`/ranking/pontos`).
 
 **Quem aparece.** Conta aprovada com `users.aparecer_no_ranking` ligado. A coluna nasce
 ligada, por decisão de produto (todos entram, quem não quer sai pelo Perfil). Conta de

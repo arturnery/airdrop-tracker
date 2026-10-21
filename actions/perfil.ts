@@ -86,7 +86,7 @@ export async function definirParticipacaoNoRanking(aparecer: boolean): Promise<R
       .update(schema.users)
       .set({ aparecerNoRanking: aparecer })
       .where(eq(schema.users.id, userId));
-    revalidatePath("/comunidade/ranking", "layout");
+    revalidatePath("/ranking", "layout");
     return {
       ok: true,
       aviso: aparecer
