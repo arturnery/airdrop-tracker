@@ -14,6 +14,7 @@ import {
   ListChecks,
   CalendarDays,
   ChartCandlestick,
+  ChartLine,
   Upload,
   Wallet,
 } from "lucide-react";
@@ -48,7 +49,10 @@ const grupos: { titulo: string; itens: Item[] }[] = [
   },
   {
     titulo: "Trade",
-    itens: [{ href: "/trade/sinais", label: "Sinais", icon: ChartCandlestick }],
+    itens: [
+      { href: "/trade/sinais", label: "Sinais", icon: ChartCandlestick },
+      { href: "/trade/resultados", label: "Resultados", icon: ChartLine },
+    ],
   },
 ];
 
@@ -126,6 +130,7 @@ const tons: Record<string, string> = {
   "/": "bg-chart-1/15 text-chart-1",
   "/comunidade/calendario": "bg-chart-5/15 text-chart-5",
   "/trade/sinais": "bg-chart-4/15 text-chart-4",
+  "/trade/resultados": "bg-chart-2/15 text-chart-2",
   "/tarefas": "bg-chart-4/15 text-chart-4",
   "/projetos": "bg-chart-3/15 text-chart-3",
   "/contas": "bg-chart-2/15 text-chart-2",

@@ -3572,3 +3572,35 @@ as menções vão desligadas: um "@everyone" escrito nela aparece como texto.
 Os alvos, em `numeric[]`, voltaram do banco como números, enquanto as colunas `numeric`
 simples vinham como texto. Para preço de memecoin isso arredondaria. Lidos com `::text[]`,
 e registrado no catálogo de erros.
+
+## Marco 53: Fechar sinal e aba Resultados
+
+O pedido: um botão para fechar o sinal registrando se deu lucro ou prejuízo, e uma aba
+Resultados dentro de Trade com os fechados.
+
+### Lucro ou prejuízo não é um campo
+
+A forma mais direta seria um seletor "lucro / prejuízo" e um campo de porcentagem. Ficou de
+fora porque o resultado já está determinado pelo preço de saída, e um número digitado pode
+discordar dele. Fechar é escolher **por onde** o sinal saiu (alvo 1 a 4, stop, outro preço,
+ou não acionou), e o lucro ou prejuízo é calculado e mostrado antes de confirmar. Para alvo e
+stop, o servidor usa o preço gravado no sinal, não um que venha da tela.
+
+O placar soma R em vez de dinheiro: o sistema não sabe com quanto cada pessoa entrou, nem com
+que alavancagem. +2,5R diz o mesmo para quem entrou com 100 ou com 10 mil. Sinal que não
+acionou fica registrado mas fora da taxa de acerto.
+
+### O teste de guarda
+
+O teste de venda foi conferido reinstalando o defeito: com a inversão da venda removida, dois
+testes falharam (o da venda e o do placar). Outro teste compara o total do placar com a soma
+dos resultados que os cards mostram, para os dois nunca divergirem.
+
+### Um defeito antigo achado no caminho
+
+O teste no navegador publicou quatro sinais seguidos e o segundo não saiu. O formulário de
+"Novo sinal" usa campos controlados (para mostrar o risco/retorno enquanto se digita), e o
+estado sobrevivia ao diálogo fechar: depois de publicar, o próximo "Novo sinal" abria com os
+preços do anterior. No teste, o alvo 2 de uma compra sobrou num sinal de venda e a coerência
+recusou. Na mão, o risco era pior: publicar o mesmo sinal de novo, ou um sinal com preços de
+dois. Agora o formulário volta vazio depois de publicar; cancelar mantém o rascunho.

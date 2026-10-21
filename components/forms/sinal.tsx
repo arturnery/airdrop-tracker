@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { BotaoNovo, Formulario } from "@/components/forms/dialogs";
 import { CampoArea, CampoSelecao, CampoTexto } from "@/components/forms/fields";
@@ -99,6 +99,13 @@ export function NovoSinal({
 }) {
   const { acoes } = useDados();
   const [v, setV] = useState<ValoresSinal>({ ...VAZIO, ...inicial });
+  /*
+   * Os campos são controlados, então o estado sobrevive ao diálogo fechar.
+   * Depois de publicar, ele volta vazio: senão o próximo "Novo sinal" abria
+   * com os preços do anterior, a um clique de publicar o mesmo sinal de novo
+   * ou de misturar preços de dois. Cancelar mantém o rascunho.
+   */
+  const publicou = useRef(false);
   const mudar = <K extends keyof ValoresSinal>(campo: K, valor: ValoresSinal[K]) =>
     setV((atual) => ({ ...atual, [campo]: valor }));
   const mudarAlvo = (i: number, valor: string) =>
@@ -127,7 +134,13 @@ export function NovoSinal({
       }
       gatilho={abertoAoMontar ? undefined : <BotaoNovo>Novo sinal</BotaoNovo>}
       abertoAoMontar={abertoAoMontar}
-      aoFechar={aoFechar}
+      aoFechar={() => {
+        if (publicou.current) {
+          publicou.current = false;
+          setV({ ...VAZIO });
+        }
+        aoFechar?.();
+      }}
       rotuloEnvio="Publicar sinal"
       aoEnviar={(dados) => {
         const bruto = {
@@ -146,7 +159,10 @@ export function NovoSinal({
         const resultado = sinalSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
         // Objeto bruto para o servidor, que valida de novo com o mesmo schema.
-        return acoes.publicarSinal(bruto);
+        return acoes.publicarSinal(bruto).then((falha) => {
+          if (!falha) publicou.current = true;
+          return falha;
+        });
       }}
     >
       {({ erros: e }: { erros: Erros }) => (

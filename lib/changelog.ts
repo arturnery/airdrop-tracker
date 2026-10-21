@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.17",
+    data: "2026-10-20",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Sinais de trade agora podem ser fechados: escolha se bateu um alvo, stopou, saiu em outro preço ou não acionou, e o lucro ou prejuízo é calculado sozinho. Os fechados vão para a nova aba Resultados, com a taxa de acerto e o resultado somado em R.",
+      },
+    ],
+  },
+  {
     versao: "1.16",
     data: "2026-10-19",
     mudancas: [

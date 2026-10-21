@@ -1920,11 +1920,11 @@ professor entra depois, no lugar de `exigirAdministrador` em `actions/trade.ts`.
 
 | Peça | Papel |
 |---|---|
-| `sinais_trade` | Ativo, direção, entrada (e fim da zona), stop, `alvos numeric[]`, timeframe, observação, status, `discord_enviado_em` |
-| `lib/sinais.ts` | Puro: leitura de preço, coerência entre direção e preços, risco/retorno, formatação |
+| `sinais_trade` | Ativo, direção, entrada (e fim da zona), stop, `alvos numeric[]`, timeframe, observação, status, `discord_enviado_em`, e no fechamento `saida`, `preco_saida`, `encerrado_em` |
+| `lib/sinais.ts` | Puro: leitura de preço, coerência entre direção e preços, risco/retorno, resultado e placar, formatação |
 | `lib/interpretar-sinal.ts` | Instruções ao modelo com o print e conferência da resposta |
 | `lib/sinais-discord.ts` | Mensagem do webhook |
-| `actions/trade.ts` | Publicar, excluir, ler print, reenviar ao Discord, marcar como visto |
+| `actions/trade.ts` | Publicar, fechar, reabrir, excluir, ler print, reenviar ao Discord, marcar como visto |
 
 - **Coerência antes de publicar.** Numa compra, stop abaixo da entrada (da ponta mais
   desfavorável da zona) e alvos acima; numa venda, o espelho. Conferida no `sinalSchema`,
@@ -1945,8 +1945,29 @@ professor entra depois, no lugar de `exigirAdministrador` em `actions/trade.ts`.
   para quem publica, com reenvio. Menções desligadas (`allowed_mentions` vazio): a
   observação é texto livre, e um "@everyone" nela notificaria o servidor inteiro.
 
-### 20.2. Próximas etapas
+### 20.2. Fechamento e resultados
+
+Sinais abertos ficam em **Sinais**; fechados (inclusive os que não acionaram) vão para
+**Resultados**. O filtro é na consulta, não na página: com o limite de linhas, filtrar
+depois esconderia abertos atrás de fechados mais novos.
+
+- **O resultado sai do preço, não é digitado.** Fechar é escolher por onde saiu: um alvo, o
+  stop, outro preço (digitado) ou "não acionou". Para alvo e stop, o preço vem do sinal
+  gravado no servidor, então o resultado não pode ser escolhido na tela. `resultadoDoSinal`
+  mede do meio da zona de entrada (como o risco/retorno) e inverte o sinal na venda.
+- **R, não dinheiro.** O sistema não sabe tamanho de posição, alavancagem nem taxa. O placar
+  soma R (riscos ganhos menos perdidos), que vale para qualquer tamanho, e mostra a variação
+  em % como informação.
+- **Placar e cards da mesma conta.** `placarDosSinais` soma o mesmo `resultadoDoSinal` que
+  cada card mostra, e um teste compara o total com a soma das linhas. "Não acionou" aparece
+  na lista e fica fora do placar: um sinal que não entrou não acertou nem errou.
+- **Fechar duas vezes não sobrescreve.** O `update` exige `status = 'aberto'` no próprio
+  `where`; o segundo clique (ou a segunda aba) recebe "já foi fechado".
+- **Reabrir** desfaz um fechamento por engano, apagando a saída com `null` explícito em cada
+  campo.
+
+### 20.3. Próximas etapas
 
 - Permissão do professor para publicar.
-- Acompanhamento de cada sinal (alvo atingido, stop) e PnL.
+- Saída parcial (metade no alvo 1, metade no alvo 2) e aviso do fechamento no Discord.
 - Aviso legal fixo nos sinais.

@@ -142,7 +142,9 @@ senhas temporárias, mas não vê o farming de ninguém.
   com visão (Gemini) devolve ativo, direção, entrada, stop e alvos, e o formulário abre para
   conferência. A validação recusa sinal incoerente (numa compra, stop abaixo da entrada e
   alvos acima) e mostra o risco/retorno de cada alvo. Sinal novo acende um sininho no menu
-  e é avisado num canal do Discord por webhook, com o envio confirmado e reenviável.
+  e é avisado num canal do Discord por webhook, com o envio confirmado e reenviável. Ao
+  fechar, escolhe-se por onde o sinal saiu (um alvo, o stop, outro preço, ou não acionou); o
+  resultado em % e em R sai do preço, nunca é digitado, e a aba Resultados soma o placar.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o

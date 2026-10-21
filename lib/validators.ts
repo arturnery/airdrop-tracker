@@ -532,3 +532,27 @@ export const trocaSenhaSchema = z
     message: "A senha nova precisa ser diferente da atual.",
     path: ["nova"],
   });
+
+/**
+ * Fechamento de um sinal: por onde saiu (um alvo, o stop, um preço digitado)
+ * ou "cancelado", quando não chegou a acionar. O preço só é pedido na saída
+ * manual; nas outras ele vem do próprio sinal, no servidor.
+ */
+export const fecharSinalSchema = z
+  .object({
+    id: z.uuid("Sinal inválido."),
+    fechamento: z.enum(
+      ["alvo1", "alvo2", "alvo3", "alvo4", "stop", "manual", "cancelado"],
+      "Escolha como o sinal fechou.",
+    ),
+    precoManual: z.string().default(""),
+  })
+  .transform((dados, ctx) => {
+    if (dados.fechamento !== "manual") return { ...dados, precoManual: null };
+    const preco = lerPreco(dados.precoManual);
+    if (!preco) {
+      ctx.addIssue({ code: "custom", path: ["precoManual"], message: "Informe o preço de saída." });
+      return z.NEVER;
+    }
+    return { ...dados, precoManual: preco };
+  });

@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { revalidatePath } from "next/cache";
@@ -11,10 +11,10 @@ import { reservarUsoDaIA } from "@/db/queries/uso-ia";
 import { getCurrentUserId } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { interpretarSinal, montarMensagensSinal, type SugestaoSinal } from "@/lib/interpretar-sinal";
-import type { Sinal } from "@/lib/sinais";
+import { precoDaSaida, type Sinal } from "@/lib/sinais";
 import { montarMensagemDiscord } from "@/lib/sinais-discord";
 import { perguntar, type Alvo, type Motivo } from "@/lib/perguntar-ia";
-import { sinalSchema } from "@/lib/validators";
+import { erros, fecharSinalSchema, sinalSchema } from "@/lib/validators";
 
 import { exigirAdministrador } from "./index";
 import { executar, falha, sucesso, type ResultadoAcao } from "./_core";
@@ -27,6 +27,7 @@ import { executar, falha, sucesso, type ResultadoAcao } from "./_core";
 
 const ROTAS: { caminho: string; tipo: "page" | "layout" }[] = [
   { caminho: "/trade/sinais", tipo: "page" },
+  { caminho: "/trade/resultados", tipo: "page" },
 ];
 
 export async function publicarSinal(entrada: unknown): Promise<ResultadoAcao> {
@@ -142,6 +143,74 @@ async function avisarNoDiscord(sinal: Sinal): Promise<boolean> {
     console.error("[discord]", erro);
     return false;
   }
+}
+
+/**
+ * Fecha um sinal aberto: grava por onde saiu e a que preço, e ele passa da
+ * lista de sinais para a de resultados. O preço de alvo e de stop vem do
+ * sinal gravado, nunca da tela, para o resultado não poder ser escolhido.
+ *
+ * O `where` exige o sinal ainda aberto, e não só a leitura de antes: dois
+ * cliques (ou duas abas) não fecham o mesmo sinal duas vezes com preços
+ * diferentes. O segundo recebe a mensagem de que ele já foi fechado.
+ */
+export async function fecharSinal(entrada: unknown): Promise<ResultadoAcao> {
+  const analisado = fecharSinalSchema.safeParse(entrada);
+  if (!analisado.success) return { ok: false, erros: erros(analisado) };
+  const { id, fechamento, precoManual } = analisado.data;
+
+  const userId = await getCurrentUserId();
+  try {
+    await exigirAdministrador(userId);
+  } catch {
+    return falha("geral", "Só quem publica sinais pode fechá-los.");
+  }
+
+  const [sinal] = await db
+    .select({
+      status: schema.sinaisTrade.status,
+      stop: schema.sinaisTrade.stop,
+      alvos: sql<string[]>`${schema.sinaisTrade.alvos}::text[]`,
+    })
+    .from(schema.sinaisTrade)
+    .where(eq(schema.sinaisTrade.id, id))
+    .limit(1);
+  if (!sinal) return falha("geral", "Esse sinal não existe mais.");
+  if (sinal.status !== "aberto") return falha("geral", "Esse sinal já foi fechado.");
+
+  let valores: Partial<typeof schema.sinaisTrade.$inferInsert>;
+  if (fechamento === "cancelado") {
+    valores = { status: "cancelado", saida: null, precoSaida: null };
+  } else {
+    const preco = precoDaSaida(sinal, fechamento, precoManual);
+    if (!preco) return falha("fechamento", "Esse alvo não existe neste sinal.");
+    valores = { status: "encerrado", saida: fechamento, precoSaida: preco };
+  }
+
+  const fechados = await db
+    .update(schema.sinaisTrade)
+    .set({ ...valores, encerradoEm: new Date() })
+    .where(and(eq(schema.sinaisTrade.id, id), eq(schema.sinaisTrade.status, "aberto")))
+    .returning({ id: schema.sinaisTrade.id });
+  if (fechados.length === 0) return falha("geral", "Esse sinal já foi fechado.");
+
+  for (const rota of ROTAS) revalidatePath(rota.caminho, rota.tipo);
+  return sucesso();
+}
+
+/**
+ * Desfaz um fechamento feito por engano: o sinal volta a aberto, e a saída
+ * é apagada com `null` explícito em cada campo (no `update`, um campo
+ * ausente seria preservado, e o sinal reaberto carregaria o resultado velho).
+ */
+export async function reabrirSinal(id: string): Promise<ResultadoAcao> {
+  return executar(z.object({ id: z.uuid("Sinal inválido.") }), { id }, async (dados, userId) => {
+    await exigirAdministrador(userId);
+    await db
+      .update(schema.sinaisTrade)
+      .set({ status: "aberto", saida: null, precoSaida: null, encerradoEm: null })
+      .where(eq(schema.sinaisTrade.id, dados.id));
+  }, ROTAS);
 }
 
 export async function excluirSinal(id: string): Promise<ResultadoAcao> {

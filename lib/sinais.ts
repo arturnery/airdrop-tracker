@@ -28,7 +28,116 @@ export type Sinal = {
   publicadoEm: string;
   /** Se o aviso no Discord saiu. Falso também quando o Discord não está configurado. */
   discordEnviado: boolean;
+  /** Por onde saiu, a que preço e quando. Só no sinal encerrado. */
+  saida?: Saida | null;
+  precoSaida?: string | null;
+  /** ISO 8601. Também no cancelado: é quando ele saiu da lista. */
+  encerradoEm?: string | null;
 };
+
+export type Saida = "alvo1" | "alvo2" | "alvo3" | "alvo4" | "stop" | "manual";
+
+/** Como o sinal foi fechado na tela: uma saída, ou "não acionou". */
+export type Fechamento = Saida | "cancelado";
+
+/** Rótulo da saída, para o card e o placar. */
+export function rotuloSaida(saida: Saida): string {
+  if (saida === "stop") return "Stop";
+  if (saida === "manual") return "Saída manual";
+  return `Alvo ${saida.slice(-1)}`;
+}
+
+/**
+ * O preço de saída que um fechamento implica: o do alvo ou o do stop, ou o
+ * digitado na saída manual. `null` quando o alvo não existe no sinal ou o
+ * preço manual não é válido.
+ */
+export function precoDaSaida(
+  sinal: Pick<Sinal, "stop" | "alvos">,
+  saida: Saida,
+  manual: string | null,
+): string | null {
+  if (saida === "stop") return sinal.stop;
+  if (saida === "manual") return manual;
+  return sinal.alvos[Number(saida.slice(-1)) - 1] ?? null;
+}
+
+export type Resultado = {
+  desfecho: "lucro" | "prejuizo" | "empate";
+  /** Variação do preço a favor da operação, em % sobre a entrada. */
+  percentual: number;
+  /** Quantos riscos (distância até o stop) a operação ganhou ou perdeu. */
+  r: number | null;
+};
+
+/**
+ * O resultado de um sinal a partir do preço de saída, do mesmo jeito que o
+ * risco/retorno: medido do meio da zona de entrada. Numa venda o sinal se
+ * inverte, porque ganha quem vendeu acima de onde saiu.
+ *
+ * É o resultado da operação, não de uma conta: não sabe tamanho de posição,
+ * alavancagem nem taxa. Por isso o placar soma R, que vale para qualquer
+ * tamanho, e não dinheiro.
+ */
+export function resultadoDoSinal(
+  sinal: Pick<Sinal, "direcao" | "entrada" | "entradaAte" | "stop">,
+  precoSaida: string,
+): Resultado | null {
+  const entrada = (Number(sinal.entrada) + Number(sinal.entradaAte ?? sinal.entrada)) / 2;
+  const saida = Number(precoSaida);
+  if (!(entrada > 0) || !(saida > 0)) return null;
+  const lado = sinal.direcao === "compra" ? 1 : -1;
+  const movimento = (saida - entrada) * lado;
+  const risco = Math.abs(entrada - Number(sinal.stop));
+  // Arredonda o ruído de ponto flutuante: sair exatamente na entrada é empate.
+  const percentual = Math.round((movimento / entrada) * 100 * 1e6) / 1e6;
+  return {
+    desfecho: percentual > 0 ? "lucro" : percentual < 0 ? "prejuizo" : "empate",
+    percentual,
+    r: risco > 0 ? Math.round((movimento / risco) * 1e6) / 1e6 : null,
+  };
+}
+
+export type Placar = {
+  /** Sinais encerrados com resultado (os cancelados não entram). */
+  fechados: number;
+  lucros: number;
+  prejuizos: number;
+  empates: number;
+  /** Lucros sobre fechados, em %. `null` sem nenhum fechado. */
+  taxaDeAcerto: number | null;
+  somaR: number;
+  somaPercentual: number;
+};
+
+/**
+ * O placar da aba de resultados. Soma o mesmo `resultadoDoSinal` que cada
+ * card mostra, para o total nunca discordar das linhas.
+ */
+export function placarDosSinais(sinais: Sinal[]): Placar {
+  const placar: Placar = {
+    fechados: 0,
+    lucros: 0,
+    prejuizos: 0,
+    empates: 0,
+    taxaDeAcerto: null,
+    somaR: 0,
+    somaPercentual: 0,
+  };
+  for (const sinal of sinais) {
+    if (sinal.status !== "encerrado" || !sinal.precoSaida) continue;
+    const r = resultadoDoSinal(sinal, sinal.precoSaida);
+    if (!r) continue;
+    placar.fechados += 1;
+    if (r.desfecho === "lucro") placar.lucros += 1;
+    else if (r.desfecho === "prejuizo") placar.prejuizos += 1;
+    else placar.empates += 1;
+    placar.somaR += r.r ?? 0;
+    placar.somaPercentual += r.percentual;
+  }
+  if (placar.fechados > 0) placar.taxaDeAcerto = (placar.lucros / placar.fechados) * 100;
+  return placar;
+}
 
 /**
  * Os campos do formulário de sinal, como texto digitado. É o formato que a IA
@@ -125,4 +234,16 @@ export function formatarPreco(preco: string): string {
   const [inteiro, decimais] = preco.split(".");
   const comMilhar = Number(inteiro).toLocaleString("en-US");
   return decimais ? `${comMilhar}.${decimais}` : comMilhar;
+}
+
+/** "+2,49%" ou "-1,2%": com sinal sempre, para lucro e prejuízo não se confundirem. */
+export function formatarPercentual(valor: number): string {
+  const texto = Math.abs(valor).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  return `${valor > 0 ? "+" : valor < 0 ? "-" : ""}${texto}%`;
+}
+
+/** "+2,1R" ou "-1R": a medida que vale para qualquer tamanho de posição. */
+export function formatarR(valor: number): string {
+  const texto = Math.abs(valor).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+  return `${valor > 0 ? "+" : valor < 0 ? "-" : ""}${texto}R`;
 }

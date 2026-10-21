@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { formatarPreco, incoerencias, lerPreco, riscoRetorno } from "@/lib/sinais";
-import { sinalSchema } from "@/lib/validators";
+import {
+  formatarPercentual,
+  formatarPreco,
+  formatarR,
+  incoerencias,
+  lerPreco,
+  placarDosSinais,
+  precoDaSaida,
+  resultadoDoSinal,
+  riscoRetorno,
+  type Sinal,
+} from "@/lib/sinais";
+import { fecharSinalSchema, sinalSchema } from "@/lib/validators";
 
 describe("lerPreco", () => {
   it("aceita ponto ou vírgula como decimal", () => {
@@ -135,5 +146,112 @@ describe("sinalSchema", () => {
       alvo4,
     });
     expect(segunda).toEqual(primeira);
+  });
+});
+
+const compra: Sinal = {
+  id: "s1",
+  ativo: "BTC/USDT",
+  direcao: "compra",
+  entrada: "100",
+  entradaAte: null,
+  stop: "90",
+  alvos: ["120", "130"],
+  timeframe: null,
+  observacao: null,
+  status: "aberto",
+  publicadoEm: "2026-10-20T12:00:00.000Z",
+  discordEnviado: false,
+};
+const venda: Sinal = { ...compra, id: "s2", direcao: "venda", stop: "110", alvos: ["80"] };
+
+describe("resultadoDoSinal", () => {
+  it("compra que bate o alvo dá lucro, em % e em R", () => {
+    expect(resultadoDoSinal(compra, "120")).toEqual({ desfecho: "lucro", percentual: 20, r: 2 });
+  });
+
+  it("compra que stopa perde exatamente 1R", () => {
+    expect(resultadoDoSinal(compra, "90")).toEqual({ desfecho: "prejuizo", percentual: -10, r: -1 });
+  });
+
+  it("na venda o sinal se inverte: cair é lucro, subir é prejuízo", () => {
+    expect(resultadoDoSinal(venda, "80")).toEqual({ desfecho: "lucro", percentual: 20, r: 2 });
+    expect(resultadoDoSinal(venda, "110")).toEqual({ desfecho: "prejuizo", percentual: -10, r: -1 });
+  });
+
+  it("sair na entrada é empate, sem ruído de ponto flutuante", () => {
+    expect(resultadoDoSinal({ ...compra, entrada: "0.1", stop: "0.09" }, "0.1")?.desfecho).toBe("empate");
+  });
+
+  it("com zona de entrada, mede do meio da zona, como o risco/retorno", () => {
+    const zona = { ...compra, entrada: "95", entradaAte: "105" };
+    expect(resultadoDoSinal(zona, "120")?.percentual).toBe(20);
+  });
+});
+
+describe("precoDaSaida", () => {
+  it("alvo e stop vêm do sinal; o manual, do que foi digitado", () => {
+    expect(precoDaSaida(compra, "alvo2", null)).toBe("130");
+    expect(precoDaSaida(compra, "stop", "999")).toBe("90");
+    expect(precoDaSaida(compra, "manual", "115")).toBe("115");
+  });
+
+  it("alvo que o sinal não tem não vira preço", () => {
+    expect(precoDaSaida(compra, "alvo3", null)).toBeNull();
+  });
+});
+
+describe("placarDosSinais", () => {
+  const fechado = (s: Sinal, preco: string): Sinal => ({ ...s, status: "encerrado", saida: "manual", precoSaida: preco });
+
+  it("conta acertos e soma R e %, ignorando abertos e não acionados", () => {
+    const placar = placarDosSinais([
+      fechado(compra, "120"),
+      fechado(venda, "110"),
+      fechado({ ...compra, id: "s3" }, "100"),
+      { ...compra, id: "s4", status: "cancelado" },
+      { ...compra, id: "s5" },
+    ]);
+    expect(placar).toMatchObject({ fechados: 3, lucros: 1, prejuizos: 1, empates: 1, somaR: 1, somaPercentual: 10 });
+    expect(placar.taxaDeAcerto).toBeCloseTo(33.33, 1);
+  });
+
+  it("o total é a soma das linhas que os cards mostram", () => {
+    const sinais = [fechado(compra, "113.7"), fechado(venda, "93.1"), fechado(compra, "91.2")];
+    const linhas = sinais.map((s) => resultadoDoSinal(s, s.precoSaida!)!);
+    const placar = placarDosSinais(sinais);
+    expect(placar.somaR).toBeCloseTo(linhas.reduce((t, l) => t + l.r!, 0), 9);
+    expect(placar.somaPercentual).toBeCloseTo(linhas.reduce((t, l) => t + l.percentual, 0), 9);
+  });
+
+  it("sem fechado, a taxa de acerto não é 0%, é ausente", () => {
+    expect(placarDosSinais([compra]).taxaDeAcerto).toBeNull();
+  });
+});
+
+describe("fecharSinalSchema", () => {
+  const id = "0b9f6a4e-6a8d-4f62-9d3c-1d2a3b4c5d6e";
+
+  it("saída manual exige preço", () => {
+    const r = fecharSinalSchema.safeParse({ id, fechamento: "manual", precoManual: "" });
+    expect(r.error?.issues[0]?.path).toEqual(["precoManual"]);
+  });
+
+  it("nas outras saídas, o preço digitado é descartado: vem do sinal", () => {
+    expect(fecharSinalSchema.parse({ id, fechamento: "alvo1", precoManual: "999" }).precoManual).toBeNull();
+  });
+
+  it("normaliza o preço manual", () => {
+    expect(fecharSinalSchema.parse({ id, fechamento: "manual", precoManual: "64.300,5" }).precoManual).toBe("64300.5");
+  });
+});
+
+describe("formatação do resultado", () => {
+  it("leva sinal sempre, para lucro e prejuízo não se confundirem", () => {
+    expect(formatarPercentual(2.4867)).toBe("+2,49%");
+    expect(formatarPercentual(-10)).toBe("-10%");
+    expect(formatarR(2.14)).toBe("+2,1R");
+    expect(formatarR(-1)).toBe("-1R");
+    expect(formatarR(0)).toBe("0R");
   });
 });

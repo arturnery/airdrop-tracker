@@ -1,6 +1,6 @@
 import "server-only";
 
-import { count, desc, gt, sql } from "drizzle-orm";
+import { count, desc, eq, gt, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -10,8 +10,13 @@ import type { Sinal } from "@/lib/sinais";
  * Sinais publicados, do mais recente ao mais antigo. Conteúdo da área de
  * trade, igual para todos e fora do Dataset pessoal de airdrops: as áreas não
  * se misturam.
+ *
+ * Abertos vão para a página de sinais e fechados (inclusive os não
+ * acionados) para a de resultados. O filtro é no banco, e não na página:
+ * com o limite de linhas, filtrar depois deixaria sinais abertos de fora
+ * quando houvesse muitos fechados mais novos.
  */
-export async function listarSinais(): Promise<Sinal[]> {
+export async function listarSinais(quais: "abertos" | "fechados"): Promise<Sinal[]> {
   const linhas = await db
     .select({
       id: schema.sinaisTrade.id,
@@ -29,14 +34,23 @@ export async function listarSinais(): Promise<Sinal[]> {
       status: schema.sinaisTrade.status,
       publicadoEm: schema.sinaisTrade.publicadoEm,
       discordEnviadoEm: schema.sinaisTrade.discordEnviadoEm,
+      saida: schema.sinaisTrade.saida,
+      precoSaida: schema.sinaisTrade.precoSaida,
+      encerradoEm: schema.sinaisTrade.encerradoEm,
     })
     .from(schema.sinaisTrade)
-    .orderBy(desc(schema.sinaisTrade.publicadoEm))
+    .where(
+      quais === "abertos"
+        ? eq(schema.sinaisTrade.status, "aberto")
+        : ne(schema.sinaisTrade.status, "aberto"),
+    )
+    .orderBy(desc(quais === "abertos" ? schema.sinaisTrade.publicadoEm : schema.sinaisTrade.encerradoEm))
     .limit(200);
 
   return linhas.map(({ discordEnviadoEm, ...l }) => ({
     ...l,
     publicadoEm: l.publicadoEm.toISOString(),
+    encerradoEm: l.encerradoEm?.toISOString() ?? null,
     discordEnviado: discordEnviadoEm !== null,
   }));
 }

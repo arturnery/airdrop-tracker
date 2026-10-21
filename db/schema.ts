@@ -857,6 +857,8 @@ export const lives = pgTable(
 
 export const direcaoSinalEnum = pgEnum("direcao_sinal", ["compra", "venda"]);
 export const statusSinalEnum = pgEnum("status_sinal", ["aberto", "encerrado", "cancelado"]);
+/** Por onde o sinal saiu: num dos alvos, no stop ou num preço escolhido. */
+export const saidaSinalEnum = pgEnum("saida_sinal", ["alvo1", "alvo2", "alvo3", "alvo4", "stop", "manual"]);
 
 /**
  * Sinais de trade publicados para a comunidade: a operação montada (ativo,
@@ -868,7 +870,10 @@ export const statusSinalEnum = pgEnum("status_sinal", ["aberto", "encerrado", "c
  * flutuante. A coerência entre direção e preços é conferida em
  * `lib/sinais.ts` antes de gravar.
  *
- * `status` existe desde já para o acompanhamento de PnL que vem depois.
+ * Fechar o sinal grava por onde ele saiu (`saida`) e a que preço
+ * (`precoSaida`); o resultado em % e em R é calculado desse preço, em
+ * `lib/sinais.ts`, e não digitado. "Cancelado" é o sinal que não chegou a
+ * acionar: sai da lista sem entrar no placar.
  * `discordEnviadoEm` registra se o aviso no Discord saiu: um envio que falhou
  * fica visível em vez de presumido.
  */
@@ -888,6 +893,9 @@ export const sinaisTrade = pgTable(
     publicadoPor: uuid("publicado_por").references(() => users.id, { onDelete: "set null" }),
     publicadoEm: timestamp("publicado_em", { withTimezone: true }).notNull().defaultNow(),
     discordEnviadoEm: timestamp("discord_enviado_em", { withTimezone: true }),
+    saida: saidaSinalEnum("saida"),
+    precoSaida: numeric("preco_saida"),
+    encerradoEm: timestamp("encerrado_em", { withTimezone: true }),
   },
   (t) => [index("sinais_publicado_idx").on(t.publicadoEm)],
 );

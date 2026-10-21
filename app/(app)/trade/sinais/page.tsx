@@ -10,7 +10,7 @@ import { env } from "@/lib/env";
  */
 export default async function SinaisPage() {
   const sessao = await exigirSessao();
-  const sinais = await listarSinais();
+  const sinais = await listarSinais("abertos");
   return (
     <>
       <MarcarSinaisVistos />

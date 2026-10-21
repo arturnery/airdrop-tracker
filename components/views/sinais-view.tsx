@@ -1,29 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDownRight, ArrowUpRight, ChartCandlestick, Send } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ChartCandlestick, RotateCcw, Send } from "lucide-react";
 
 import { BotaoLixeira, ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
+import { FecharSinal } from "@/components/forms/fechar-sinal";
 import { NovoSinal } from "@/components/forms/sinal";
 import { SinalPorPrint } from "@/components/forms/sinal-por-print";
 import { useDados } from "@/components/data-provider";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { formatarQuando } from "@/lib/lives";
-import { formatarPreco, riscoRetorno, type Sinal } from "@/lib/sinais";
+import {
+  formatarPercentual,
+  formatarPreco,
+  formatarR,
+  resultadoDoSinal,
+  riscoRetorno,
+  rotuloSaida,
+  type Sinal,
+} from "@/lib/sinais";
+import { cn } from "@/lib/utils";
 
 const ROTULO_STATUS: Record<Sinal["status"], string> = {
   aberto: "Aberto",
-  encerrado: "Encerrado",
-  cancelado: "Cancelado",
+  encerrado: "Fechado",
+  cancelado: "Não acionado",
 };
 
 /**
- * Sinais de trade, um card por operação, do mais recente ao mais antigo.
+ * Sinais de trade abertos, um card por operação, do mais recente ao mais
+ * antigo. Os fechados vão para Resultados (`resultados-view`).
  *
  * A direção vai em selo neutro, com seta, e não em verde e vermelho: aqui
- * essas duas cores são de lucro e prejuízo (ARCHITECTURE §14.8), e vão
- * marcar o PnL do sinal quando o acompanhamento entrar. Um sinal de venda em
- * vermelho pareceria prejuízo antes de existir resultado.
+ * essas duas cores são de lucro e prejuízo (ARCHITECTURE §14.8), e marcam o
+ * resultado do sinal fechado. Um sinal de venda em vermelho pareceria
+ * prejuízo antes de existir resultado.
  */
 export function SinaisView({
   sinais,
@@ -40,7 +51,7 @@ export function SinaisView({
       <PageHeader
         icon={ChartCandlestick}
         title="Sinais"
-        description="Operações indicadas na área de trade: entrada, stop e alvos de cada uma."
+        description="Operações em aberto na área de trade: entrada, stop e alvos de cada uma. As fechadas ficam em Resultados."
         actions={
           ehAdmin ? (
             <>
@@ -53,7 +64,7 @@ export function SinaisView({
 
       {sinais.length === 0 ? (
         <EmptyState
-          title="Nenhum sinal publicado ainda."
+          title="Nenhum sinal aberto."
           description={
             ehAdmin
               ? "Publique o primeiro em Novo sinal."
@@ -73,7 +84,7 @@ export function SinaisView({
   );
 }
 
-function CardSinal({
+export function CardSinal({
   sinal,
   ehAdmin,
   discordConfigurado,
@@ -107,12 +118,27 @@ function CardSinal({
           </div>
         </div>
         {ehAdmin ? (
-          <ConfirmarExclusao
-            titulo="Excluir sinal"
-            alvo={`${compra ? "Compra" : "Venda"} de ${sinal.ativo}`}
-            aoConfirmar={() => acoes.excluirSinal(sinal.id)}
-            gatilho={<BotaoLixeira rotulo={`Excluir sinal de ${sinal.ativo}`} />}
-          />
+          <div className="flex shrink-0 items-center gap-1">
+            {sinal.status === "aberto" ? (
+              <FecharSinal sinal={sinal} />
+            ) : (
+              <button
+                type="button"
+                onClick={() => acoes.reabrirSinal(sinal.id)}
+                className="text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:ring-ring inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                title="Desfaz o fechamento: o sinal volta para a lista de abertos"
+              >
+                <RotateCcw className="size-3.5" aria-hidden="true" />
+                Reabrir
+              </button>
+            )}
+            <ConfirmarExclusao
+              titulo="Excluir sinal"
+              alvo={`${compra ? "Compra" : "Venda"} de ${sinal.ativo}`}
+              aoConfirmar={() => acoes.excluirSinal(sinal.id)}
+              gatilho={<BotaoLixeira rotulo={`Excluir sinal de ${sinal.ativo}`} />}
+            />
+          </div>
         ) : null}
       </div>
 
@@ -142,6 +168,8 @@ function CardSinal({
         })}
       </dl>
 
+      <ResultadoDoCard sinal={sinal} />
+
       {sinal.observacao ? (
         <p className="text-muted-foreground mt-3 text-sm whitespace-pre-line">{sinal.observacao}</p>
       ) : null}
@@ -151,7 +179,7 @@ function CardSinal({
         no site; o que falta é a comunidade ser avisada, e isso não pode ficar
         presumido.
       */}
-      {ehAdmin && discordConfigurado && !sinal.discordEnviado ? (
+      {ehAdmin && discordConfigurado && !sinal.discordEnviado && sinal.status === "aberto" ? (
         <div className="border-caution/40 bg-caution/10 mt-3 flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs">
           <span>{erroDiscord ?? "Aviso no Discord não enviado."}</span>
           <button
@@ -173,7 +201,46 @@ function CardSinal({
 
       <p className="border-border text-muted-foreground mt-auto border-t pt-2.5 text-xs">
         Publicado {formatarQuando(sinal.publicadoEm)}
+        {sinal.encerradoEm ? ` · fechado ${formatarQuando(sinal.encerradoEm)}` : ""}
       </p>
     </article>
+  );
+}
+
+/** O resultado do sinal fechado: por onde saiu, a que preço, e quanto deu. */
+function ResultadoDoCard({ sinal }: { sinal: Sinal }) {
+  if (sinal.status === "cancelado") {
+    return (
+      <p className="border-border text-muted-foreground mt-3 rounded-md border px-3 py-2 text-sm">
+        Não acionou: o preço não chegou na entrada.
+      </p>
+    );
+  }
+  if (sinal.status !== "encerrado" || !sinal.saida || !sinal.precoSaida) return null;
+  const r = resultadoDoSinal(sinal, sinal.precoSaida);
+  if (!r) return null;
+  return (
+    <div
+      className={cn(
+        "mt-3 flex items-baseline justify-between gap-3 rounded-md border px-3 py-2 text-sm tabular-nums",
+        r.desfecho === "lucro" && "border-positive/40 bg-positive/10",
+        r.desfecho === "prejuizo" && "border-negative/40 bg-negative/10",
+        r.desfecho === "empate" && "border-border",
+      )}
+    >
+      <span className="text-muted-foreground">
+        {rotuloSaida(sinal.saida)} · {formatarPreco(sinal.precoSaida)}
+      </span>
+      <span
+        className={cn(
+          "font-semibold",
+          r.desfecho === "lucro" && "text-positive",
+          r.desfecho === "prejuizo" && "text-negative",
+        )}
+      >
+        {formatarPercentual(r.percentual)}
+        {r.r !== null ? <span className="ml-1.5 text-xs font-medium">{formatarR(r.r)}</span> : null}
+      </span>
+    </div>
   );
 }
