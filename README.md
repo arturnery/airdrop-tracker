@@ -150,6 +150,10 @@ senhas temporárias, mas não vê o farming de ninguém.
   depositado, exposição, resultado e ROI em cada card. Sair do farm exige o motivo, que vira
   o status do projeto. Quando o admin muda o status de um destaque, quem o adicionou é
   avisado no card e decide se atualiza o seu.
+- **Ranking da comunidade.** Resultado de cada membro (o mesmo número da Visão geral dele,
+  calculado pelos mesmos selectors) e pontos por projeto, com o feed dos últimos airdrops.
+  Todos entram, e quem não quer expor os números sai pelo perfil; conta de demonstração
+  nunca aparece em produção.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o

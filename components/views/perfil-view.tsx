@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Loader2, UserRound } from "lucide-react";
 
-import { atualizarPerfil, trocarSenha } from "@/actions/perfil";
+import { atualizarPerfil, definirParticipacaoNoRanking, trocarSenha } from "@/actions/perfil";
 import { CampoTexto } from "@/components/forms/fields";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -113,9 +113,11 @@ function Secao({
 export function PerfilView({
   sessao,
   isDemo = false,
+  aparecerNoRanking = true,
 }: {
   sessao: Sessao;
   isDemo?: boolean;
+  aparecerNoRanking?: boolean;
 }) {
   return (
     <>
@@ -169,6 +171,30 @@ export function PerfilView({
                 ajuda="É com ele que você entra. Para trocar, fale com quem administra."
               />
             </>
+          )}
+        </Secao>
+
+        <Secao
+          titulo="Ranking da comunidade"
+          descricao="O ranking mostra o seu nome, o seu resultado em dólar e os seus pontos para toda a comunidade. Desligue para os seus números ficarem só com você."
+          rotuloEnvio="Salvar"
+          aoEnviar={(dados) => definirParticipacaoNoRanking(dados.get("ranking") === "on")}
+        >
+          {() => (
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                name="ranking"
+                defaultChecked={aparecerNoRanking}
+                className="accent-brand mt-0.5 size-4"
+              />
+              <span>
+                Aparecer no ranking
+                <span className="text-muted-foreground block text-xs">
+                  Resultado completo (airdrops, rendimentos e trades, menos taxas) e pontos por projeto.
+                </span>
+              </span>
+            </label>
           )}
         </Secao>
 

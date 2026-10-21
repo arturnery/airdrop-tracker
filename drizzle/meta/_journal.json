@@ -134,6 +134,13 @@
       "when": 1792606211408,
       "tag": "0018_farmando_agora",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792616619232,
+      "tag": "0019_ranking",
+      "breakpoints": true
     }
   ]
 }

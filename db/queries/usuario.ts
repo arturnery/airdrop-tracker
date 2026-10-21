@@ -24,6 +24,7 @@ export async function carregarUsuario(userId: string) {
       email: schema.users.email,
       papel: schema.users.role,
       isDemo: schema.users.isDemo,
+      aparecerNoRanking: schema.users.aparecerNoRanking,
       precisaTrocarSenha: schema.users.mustChangePassword,
       novidadesVistasVersao: schema.users.novidadesVistasVersao,
       sinaisVistosEm: schema.users.sinaisVistosEm,

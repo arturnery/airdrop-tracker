@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "aparecer_no_ranking" boolean DEFAULT true NOT NULL;

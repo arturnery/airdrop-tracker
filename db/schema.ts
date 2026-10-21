@@ -161,6 +161,13 @@ export const users = pgTable("users", {
    * publicados depois disso. Nulo para quem nunca abriu a página de sinais.
    */
   sinaisVistosEm: timestamp("sinais_vistos_em", { withTimezone: true }),
+  /**
+   * Aparece no ranking da comunidade (resultado e pontos). Começa ligado,
+   * por decisão de produto: todos entram, e quem não quiser expor os números
+   * sai pelo perfil. Conta de demonstração nunca entra em produção, liga ou
+   * não (ver `db/queries/ranking.ts`).
+   */
+  aparecerNoRanking: boolean("aparecer_no_ranking").notNull().default(true),
   /** Quando o acesso foi liberado ou recusado; nulo enquanto pendente. */
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   /** Por que foi recusado. Visível só para quem administra. */

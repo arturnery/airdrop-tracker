@@ -3653,3 +3653,30 @@ No primeiro teste, a aba de destaques da conta demo oferecia projetos que ela j�
 cadastrados à mão com o mesmo nome, com o botão desativado e o aviso "você já tem". Com o
 projeto dela logo abaixo, o card duplicado só confundia: destaque com nome igual a um
 projeto da pessoa agora não aparece.
+
+## Marco 55: Ranking da comunidade
+
+O pedido: uma área com o resultado de cada membro, para todos verem, virando um ranking, e
+outra igual com os pontos por projeto.
+
+### A decisão antes do código
+
+Até aqui, nenhuma tela mostrava o número de uma pessoa para outra; o isolamento por dono é
+regra de todo SELECT. O ranking inverte isso, então três perguntas foram feitas antes de
+qualquer código: quem aparece, o que conta e se o valor é exato. As respostas: todos
+aparecem com opção de sair, conta o resultado completo (o mesmo da Visão geral), e o valor
+é exato em dólar. Uma regra foi acrescentada sem precisar perguntar: conta de demonstração
+não entra no ranking de produção, porque um "Visitante" com números de exemplo no topo
+seria mentira para a comunidade.
+
+### Não existe "conta do ranking"
+
+O risco de um ranking é ele virar uma segunda implementação do resultado, que diverge da
+Visão geral na primeira mudança de regra. Aqui ele não calcula nada: monta o Dataset de
+cada membro com a mesma conversão do carregamento normal (extraída para `montarDataset`) e
+passa pelos selectors de sempre. Os testes conferem que a linha de cada membro é igual ao
+"Resultado" da Visão geral dele e ao total da página do projeto.
+
+A leitura é uma consulta por tabela para todos os membros, separadas por dono depois, e não
+o carregamento completo de cada um: tarefas, metas e volume não entram, e o Dataset fica no
+servidor. O navegador recebe só as linhas prontas.

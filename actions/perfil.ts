@@ -74,6 +74,32 @@ export async function atualizarPerfil(
 }
 
 /**
+ * Entrar ou sair do ranking da comunidade. Vale também para a conta de
+ * demonstração: ela nunca aparece no ranking de produção de qualquer jeito
+ * (ver `db/queries/ranking.ts`), então a escolha não expõe nada.
+ */
+export async function definirParticipacaoNoRanking(aparecer: boolean): Promise<ResultadoPerfil> {
+  if (typeof aparecer !== "boolean") return { ok: false, erros: { geral: "Escolha inválida." } };
+  try {
+    const userId = await getCurrentUserId();
+    await db
+      .update(schema.users)
+      .set({ aparecerNoRanking: aparecer })
+      .where(eq(schema.users.id, userId));
+    revalidatePath("/comunidade/ranking", "layout");
+    return {
+      ok: true,
+      aviso: aparecer
+        ? "Você aparece no ranking da comunidade."
+        : "Você saiu do ranking. Os seus números ficam só com você.",
+    };
+  } catch (erro) {
+    console.error("[perfil]", erro);
+    return { ok: false, erros: { geral: "Não foi possível salvar. Tente de novo." } };
+  }
+}
+
+/**
  * Troca da própria senha.
  *
  * A senha atual é conferida no servidor antes de qualquer escrita. Um erro aqui

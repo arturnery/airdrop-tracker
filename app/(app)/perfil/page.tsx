@@ -15,6 +15,7 @@ export default async function PerfilPage() {
         email: usuario?.email ?? sessao.email,
       }}
       isDemo={usuario?.isDemo ?? false}
+      aparecerNoRanking={usuario?.aparecerNoRanking ?? true}
     />
   );
 }

@@ -126,6 +126,60 @@ export async function carregarDataset(
       : Promise.resolve([]),
   ]);
 
+  return montarDataset({
+    contas,
+    projetos,
+    lancamentos,
+    pontos,
+    volume,
+    tarefas,
+    metas,
+    recebimentos,
+    catalogo,
+    pares,
+    ocorrencias,
+    lancamentosDeMeta,
+  });
+}
+
+type Linha<T extends { $inferSelect: unknown }> = T["$inferSelect"];
+
+/** As linhas do banco que formam um Dataset, já filtradas por dono. */
+export type LinhasDoDataset = {
+  contas: Linha<typeof schema.accounts>[];
+  projetos: Linha<typeof schema.projects>[];
+  lancamentos: Linha<typeof schema.transactions>[];
+  pontos: Linha<typeof schema.pointsSnapshots>[];
+  volume: Linha<typeof schema.volumeSnapshots>[];
+  tarefas: Linha<typeof schema.tasks>[];
+  metas: Linha<typeof schema.goals>[];
+  recebimentos: Linha<typeof schema.airdropClaims>[];
+  catalogo: Linha<typeof schema.catalogProjects>[];
+  pares: Linha<typeof schema.projectAccounts>[];
+  ocorrencias: Linha<typeof schema.taskOccurrences>[];
+  lancamentosDeMeta: Linha<typeof schema.goalEntries>[];
+};
+
+/**
+ * Linhas do banco para o Dataset. Separado de `carregarDataset` para o
+ * ranking da comunidade (`db/queries/ranking.ts`) montar o Dataset de cada
+ * membro com a **mesma** conversão, e os mesmos selectors darem ao ranking o
+ * mesmo número que a pessoa vê na própria Visão geral.
+ */
+export function montarDataset({
+  contas,
+  projetos,
+  lancamentos,
+  pontos,
+  volume,
+  tarefas,
+  metas,
+  recebimentos,
+  catalogo,
+  pares,
+  ocorrencias,
+  lancamentosDeMeta,
+}: LinhasDoDataset): Dataset {
   return {
     accounts: contas.map((c) => ({
       id: c.id,

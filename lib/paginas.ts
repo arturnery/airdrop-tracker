@@ -7,6 +7,8 @@ import {
   ListChecks,
   CalendarDays,
   ChartCandlestick,
+  Medal,
+  Trophy,
   Sparkles,
   Upload,
   UserCheck,
@@ -29,6 +31,8 @@ export type PaginaInfo = { padrao: string; rotulo: string; icon: LucideIcon };
 
 export const PAGINAS: PaginaInfo[] = [
   { padrao: "/comunidade/calendario", rotulo: "Calendário", icon: CalendarDays },
+  { padrao: "/comunidade/ranking/pontos", rotulo: "Ranking de pontos", icon: Medal },
+  { padrao: "/comunidade/ranking", rotulo: "Ranking de resultados", icon: Trophy },
   { padrao: "/trade/sinais", rotulo: "Sinais", icon: ChartCandlestick },
   { padrao: "/tarefas", rotulo: "Tarefas", icon: ListChecks },
   { padrao: "/projetos", rotulo: "Projetos", icon: Layers },

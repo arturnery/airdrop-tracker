@@ -2020,3 +2020,32 @@ do farm, com o motivo registrado como vindo do destaque.
 Os destaques oferecidos são só os ativos, e só os que a pessoa não tem: nem adotado, nem
 dela (o admin vê os próprios projetos entre os dele), nem com o mesmo nome de um projeto
 que ela cadastrou à mão.
+
+## 22. Ranking da comunidade
+
+Primeira tela que mostra números de uma pessoa para as outras. Fica em Comunidade, com duas
+sub-abas: **Resultados** (`/comunidade/ranking`) e **Pontos** (`/comunidade/ranking/pontos`).
+
+**Quem aparece.** Conta aprovada com `users.aparecer_no_ranking` ligado. A coluna nasce
+ligada, por decisão de produto (todos entram, quem não quer sai pelo Perfil). Conta de
+demonstração fica de fora em produção, ligada ou não: os números dela são de exemplo. Em
+desenvolvimento ela entra, porque as contas de teste são demonstração.
+
+**O mesmo número, não uma segunda conta.** `db/queries/ranking.ts` lê, numa consulta por
+tabela para todos os membros, só o que o ranking usa (contas, projetos, pares, lançamentos,
+pontos, recebimentos), separa por dono e monta o Dataset de cada um com `montarDataset`, a
+mesma conversão de `carregarDataset`. `lib/ranking.ts` passa cada Dataset pelos selectors
+de sempre: o resultado é o de `selectDashboardSummary` (o "Resultado" da Visão geral) e os
+pontos são o total de `selectProgramasDePontos` (o da página do projeto). Testes comparam
+as duas coisas diretamente.
+
+**O que chega ao navegador.** Só as linhas prontas (nome, posição, resultado, pontos,
+último airdrop). O Dataset dos membros não sai do servidor.
+
+**Regras de exibição** (`lib/ranking.ts`):
+- Quem não tem lançamento nem airdrop fica fora do ranking de resultado: zero de quem
+  acabou de chegar não é "último lugar".
+- Empate divide a posição (1º, 2º, 2º, 4º).
+- Pontos: cada membro tem a sua cópia do projeto (§13), então o mesmo projeto é achado pelo
+  nome normalizado. Quem nunca mediu fica de fora.
+- O feed junta os recebimentos do mesmo membro, projeto e dia numa linha.
