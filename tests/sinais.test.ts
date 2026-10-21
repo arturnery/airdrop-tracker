@@ -9,7 +9,9 @@ import {
   placarDosSinais,
   precoDaSaida,
   resultadoDoSinal,
+  resultadoEmDolar,
   riscoRetorno,
+  totalEmDolar,
   type Sinal,
 } from "@/lib/sinais";
 import { fecharSinalSchema, sinalSchema } from "@/lib/validators";
@@ -253,5 +255,27 @@ describe("formatação do resultado", () => {
     expect(formatarR(2.14)).toBe("+2,1R");
     expect(formatarR(-1)).toBe("-1R");
     expect(formatarR(0)).toBe("0R");
+  });
+});
+
+describe("simulação em dólar", () => {
+  const fechado = (s: Sinal, preco: string): Sinal => ({ ...s, status: "encerrado", saida: "manual", precoSaida: preco });
+
+  it("arriscando US$ 100: 3R vira US$ 300 e o stop, -US$ 100", () => {
+    const sim = { modo: "risco" as const, valor: 100 };
+    expect(resultadoEmDolar(resultadoDoSinal(compra, "130")!, sim)).toBe(300);
+    expect(resultadoEmDolar(resultadoDoSinal(compra, "90")!, sim)).toBe(-100);
+  });
+
+  it("posição de US$ 1.000: +30% vira US$ 300; na venda que stopa, -US$ 100", () => {
+    const sim = { modo: "posicao" as const, valor: 1000 };
+    expect(resultadoEmDolar(resultadoDoSinal(compra, "130")!, sim)).toBe(300);
+    expect(resultadoEmDolar(resultadoDoSinal(venda, "110")!, sim)).toBe(-100);
+  });
+
+  it("o total é a soma dos cards, sem os não acionados", () => {
+    const sim = { modo: "risco" as const, valor: 50 };
+    const sinais = [fechado(compra, "130"), fechado(venda, "110"), { ...compra, id: "x", status: "cancelado" as const }];
+    expect(totalEmDolar(sinais, sim)).toBe(100);
   });
 });

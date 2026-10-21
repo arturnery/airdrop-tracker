@@ -247,3 +247,36 @@ export function formatarR(valor: number): string {
   const texto = Math.abs(valor).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
   return `${valor > 0 ? "+" : valor < 0 ? "-" : ""}${texto}R`;
 }
+
+/**
+ * Simulação em dólar que cada pessoa pode ligar na aba de resultados. O
+ * sistema não sabe com quanto ela entrou; ela informa um valor fixo por
+ * operação, de um destes jeitos:
+ *
+ * - `risco`: quanto perderia se o stop fosse atingido. O resultado é R × valor,
+ *   que é como quem segue gestão de risco pensa (arriscar US$ 100 por trade).
+ * - `posicao`: o tamanho da posição. O resultado é a variação % × valor, sem
+ *   alavancagem.
+ */
+export type SimulacaoDolar = { modo: "risco" | "posicao"; valor: number };
+
+/** O resultado de um sinal em dólar, na simulação. `null` se não der para calcular. */
+export function resultadoEmDolar(resultado: Resultado, simulacao: SimulacaoDolar): number | null {
+  if (simulacao.modo === "risco") return resultado.r === null ? null : resultado.r * simulacao.valor;
+  return (resultado.percentual / 100) * simulacao.valor;
+}
+
+/**
+ * Total em dólar dos sinais fechados, somando o mesmo `resultadoEmDolar` que
+ * cada card mostra.
+ */
+export function totalEmDolar(sinais: Sinal[], simulacao: SimulacaoDolar): number {
+  let total = 0;
+  for (const sinal of sinais) {
+    if (sinal.status !== "encerrado" || !sinal.precoSaida) continue;
+    const r = resultadoDoSinal(sinal, sinal.precoSaida);
+    const dolar = r ? resultadoEmDolar(r, simulacao) : null;
+    if (dolar !== null) total += dolar;
+  }
+  return total;
+}

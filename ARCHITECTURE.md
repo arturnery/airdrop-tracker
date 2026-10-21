@@ -1961,6 +1961,11 @@ depois esconderia abertos atrás de fechados mais novos.
 - **Placar e cards da mesma conta.** `placarDosSinais` soma o mesmo `resultadoDoSinal` que
   cada card mostra, e um teste compara o total com a soma das linhas. "Não acionou" aparece
   na lista e fica fora do placar: um sinal que não entrou não acertou nem errou.
+- **Dólar só como simulação de cada um.** Quem quiser informa um valor por operação, como
+  risco (resultado = R × valor) ou como posição (resultado = % × valor), e o placar e os
+  cards ganham o valor em dólar. Fica no `localStorage` da pessoa, não no banco: é
+  preferência de tela, e o valor é lido pelo mesmo `parseUserInput` do resto do site
+  ("1.000" é mil).
 - **Fechar duas vezes não sobrescreve.** O `update` exige `status = 'aberto'` no próprio
   `where`; o segundo clique (ou a segunda aba) recebe "já foi fechado".
 - **Reabrir** desfaz um fechamento por engano, apagando a saída com `null` explícito em cada

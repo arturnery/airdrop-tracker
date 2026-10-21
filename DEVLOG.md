@@ -3604,3 +3604,12 @@ estado sobrevivia ao diálogo fechar: depois de publicar, o próximo "Novo sinal
 preços do anterior. No teste, o alvo 2 de uma compra sobrou num sinal de venda e a coerência
 recusou. Na mão, o risco era pior: publicar o mesmo sinal de novo, ou um sinal com preços de
 dois. Agora o formulário volta vazio depois de publicar; cancelar mantém o rascunho.
+
+### Em dólar, se a pessoa quiser
+
+O placar em R não diz quanto alguém ganhou, e nem tem como: cada um entra com um valor. A
+solução foi deixar cada pessoa informar o seu, de um de dois jeitos: quanto arrisca por
+operação (cada R vale esse valor, que é como pensa quem segue gestão de risco) ou o tamanho
+da posição (a variação em % sobre ele). O valor fica no navegador dela, não no banco, e
+vazio esconde tudo. O campo usa o leitor de dinheiro do site, e não o de preço: em dólar,
+"1.000" é mil, enquanto num preço de cripto o ponto sozinho é decimal.

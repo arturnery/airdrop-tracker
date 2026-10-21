@@ -55,7 +55,7 @@ export const changelog: Versao[] = [
       {
         tipo: "novidade",
         texto:
-          "Sinais de trade agora podem ser fechados: escolha se bateu um alvo, stopou, saiu em outro preço ou não acionou, e o lucro ou prejuízo é calculado sozinho. Os fechados vão para a nova aba Resultados, com a taxa de acerto e o resultado somado em R.",
+          "Sinais de trade agora podem ser fechados: escolha se bateu um alvo, stopou, saiu em outro preço ou não acionou, e o lucro ou prejuízo é calculado sozinho. Os fechados vão para a nova aba Resultados, com a taxa de acerto e o resultado somado em R. Quem quiser pode ver também em dólar, informando quanto arrisca por operação ou o tamanho da posição.",
       },
     ],
   },

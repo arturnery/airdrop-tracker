@@ -16,9 +16,12 @@ import {
   formatarR,
   resultadoDoSinal,
   riscoRetorno,
+  resultadoEmDolar,
   rotuloSaida,
   type Sinal,
+  type SimulacaoDolar,
 } from "@/lib/sinais";
+import { cents, formatUsd } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 const ROTULO_STATUS: Record<Sinal["status"], string> = {
@@ -88,10 +91,13 @@ export function CardSinal({
   sinal,
   ehAdmin,
   discordConfigurado,
+  simulacao = null,
 }: {
   sinal: Sinal;
   ehAdmin: boolean;
   discordConfigurado: boolean;
+  /** Na aba de resultados, quando a pessoa pediu para ver em dólar. */
+  simulacao?: SimulacaoDolar | null;
 }) {
   const { acoes } = useDados();
   const [reenviando, setReenviando] = useState(false);
@@ -168,7 +174,7 @@ export function CardSinal({
         })}
       </dl>
 
-      <ResultadoDoCard sinal={sinal} />
+      <ResultadoDoCard sinal={sinal} simulacao={simulacao} />
 
       {sinal.observacao ? (
         <p className="text-muted-foreground mt-3 text-sm whitespace-pre-line">{sinal.observacao}</p>
@@ -208,7 +214,7 @@ export function CardSinal({
 }
 
 /** O resultado do sinal fechado: por onde saiu, a que preço, e quanto deu. */
-function ResultadoDoCard({ sinal }: { sinal: Sinal }) {
+function ResultadoDoCard({ sinal, simulacao }: { sinal: Sinal; simulacao: SimulacaoDolar | null }) {
   if (sinal.status === "cancelado") {
     return (
       <p className="border-border text-muted-foreground mt-3 rounded-md border px-3 py-2 text-sm">
@@ -219,6 +225,7 @@ function ResultadoDoCard({ sinal }: { sinal: Sinal }) {
   if (sinal.status !== "encerrado" || !sinal.saida || !sinal.precoSaida) return null;
   const r = resultadoDoSinal(sinal, sinal.precoSaida);
   if (!r) return null;
+  const dolar = simulacao ? resultadoEmDolar(r, simulacao) : null;
   return (
     <div
       className={cn(
@@ -240,6 +247,11 @@ function ResultadoDoCard({ sinal }: { sinal: Sinal }) {
       >
         {formatarPercentual(r.percentual)}
         {r.r !== null ? <span className="ml-1.5 text-xs font-medium">{formatarR(r.r)}</span> : null}
+        {dolar !== null ? (
+          <span className="block text-right text-xs font-medium">
+            {formatUsd(cents(Math.round(dolar * 100)), { signDisplay: "exceptZero" })}
+          </span>
+        ) : null}
       </span>
     </div>
   );

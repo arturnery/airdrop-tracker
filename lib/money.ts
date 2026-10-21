@@ -201,7 +201,7 @@ export function parseUserInput(raw: string): ParseResult {
 /** Formata para exibição: 2000 -> "$20.00". */
 export function formatUsd(
   value: Cents,
-  options: { signDisplay?: "auto" | "always" | "never" } = {},
+  options: { signDisplay?: "auto" | "always" | "never" | "exceptZero" } = {},
 ): string {
   const formatter = new Intl.NumberFormat("en-US", {
     style: "currency",
