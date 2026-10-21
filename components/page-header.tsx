@@ -81,7 +81,9 @@ export function PageHeader({
             <p className="text-muted-foreground mt-2 text-sm">{description}</p>
           ) : null}
         </div>
-        {actions ? <div className="flex shrink-0 gap-2">{actions}</div> : null}
+        {/* Quebra de linha nos botões: no celular, três ações lado a lado não
+            cabem e empurravam a página para o lado. */}
+        {actions ? <div className="flex max-w-full flex-wrap gap-2">{actions}</div> : null}
       </div>
     </header>
   );

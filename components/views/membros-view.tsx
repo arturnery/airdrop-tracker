@@ -446,7 +446,7 @@ export function MembrosView({
             </span>
           </h2>
 
-          <div className="border-border overflow-x-auto rounded-lg border">
+          <div className="border-border relative overflow-x-auto rounded-lg border">
             <table className="w-full min-w-160 text-sm">
               <caption className="sr-only">Membros com acesso liberado</caption>
               <thead>

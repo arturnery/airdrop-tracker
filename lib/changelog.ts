@@ -49,6 +49,38 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.21",
+    data: "2026-10-21",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto: "No celular, as páginas não rolam mais para o lado, e os botões do topo cabem na tela.",
+      },
+      {
+        tipo: "correcao",
+        texto:
+          "Registrar airdrop aceita vírgula no preço e na quantidade (1,25), e preço de token com muitas casas não é mais arredondado.",
+      },
+      {
+        tipo: "correcao",
+        texto: "A aba Volume aparece em todo projeto, então já dá para registrar o primeiro volume.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "Uma retirada que deixaria a conta negativa no projeto agora avisa antes de salvar, com o saldo atual.",
+      },
+      {
+        tipo: "melhoria",
+        texto: "O site do projeto pode ser colado sem https:// (ex.: lighter.xyz).",
+      },
+      {
+        tipo: "novidade",
+        texto: "Metas de pontos. E cada meta aparece na unidade dela: só as de volume e saldo em dólar.",
+      },
+    ],
+  },
+  {
     versao: "1.20",
     data: "2026-10-21",
     mudancas: [

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatarValorDaMeta } from "@/lib/metas";
 import { useState } from "react";
 
 import Link from "next/link";
@@ -264,8 +265,12 @@ export function ProjetoView({ slug }: { slug: string }) {
         />
       </section>
 
-      <Tabs defaultValue="contas" className="mt-10">
-        <TabsList>
+      {/*
+        `min-w-0` e a fileira de abas rolando dentro dela mesma: no celular, as
+        oito abas e as tabelas largas empurravam a página para o lado.
+      */}
+      <Tabs defaultValue="contas" className="mt-10 min-w-0">
+        <TabsList className="max-w-full justify-start relative overflow-x-auto">
           <TabsTrigger value="contas">Contas</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
           <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
@@ -273,10 +278,13 @@ export function ProjetoView({ slug }: { slug: string }) {
           {programa ? (
             <TabsTrigger value="pontos">{programa.rotulo}</TabsTrigger>
           ) : null}
-          {/* Só existe se houver volume: aba vazia é promessa não cumprida. */}
-          {volume.total > 0 ? (
-            <TabsTrigger value="volume">Volume</TabsTrigger>
-          ) : null}
+          {/*
+            Sempre presente. Já foi escondida enquanto o projeto não tinha
+            volume, e o botão de registrar mora dentro dela: num projeto novo,
+            não havia como registrar o primeiro volume. Vazia, ela explica o
+            que é e oferece o botão.
+          */}
+          <TabsTrigger value="volume">Volume</TabsTrigger>
           <TabsTrigger value="airdrop">Airdrop</TabsTrigger>
           <TabsTrigger value="info">Informações</TabsTrigger>
         </TabsList>
@@ -321,7 +329,7 @@ export function ProjetoView({ slug }: { slug: string }) {
               description="Vincule as contas que estão farmando este projeto para acompanhar cada uma separadamente."
             />
           ) : (
-            <div className="border-border overflow-x-auto rounded-lg border">
+            <div className="border-border relative overflow-x-auto rounded-lg border">
               <table className="w-full min-w-160 text-sm">
                 <caption className="sr-only">
                   Situação de cada conta neste projeto
@@ -448,7 +456,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                   ]}
                 />
               </div>
-              <div className="border-border overflow-x-auto rounded-lg border">
+              <div className="border-border relative overflow-x-auto rounded-lg border">
                 <table className="w-full min-w-160 text-sm">
                   <caption className="sr-only">
                     Histórico de lançamentos do projeto
@@ -608,7 +616,7 @@ export function ProjetoView({ slug }: { slug: string }) {
             </div>
 
             <h3 className="mb-3 text-sm font-medium">Por conta</h3>
-            <div className="border-border overflow-x-auto rounded-lg border">
+            <div className="border-border relative overflow-x-auto rounded-lg border">
               <table className="w-full min-w-160 text-sm">
                 <caption className="sr-only">
                   Pontos acumulados por conta neste projeto
@@ -673,7 +681,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                 description="Registre o total acumulado periodicamente; o ganho do período sai da diferença entre duas medições."
               />
             ) : (
-              <div className="border-border overflow-x-auto rounded-lg border">
+              <div className="border-border relative overflow-x-auto rounded-lg border">
                 <table className="w-full min-w-160 text-sm">
                   <caption className="sr-only">Medições de pontos ao longo do tempo</caption>
                   <thead>
@@ -772,13 +780,13 @@ export function ProjetoView({ slug }: { slug: string }) {
                       </span>
                       <span className="flex items-center gap-2">
                         <span className="tabular text-sm">
-                          {formatUsd(meta.atual)}
+                          {formatarValorDaMeta(meta.metrica, meta.atual)}
                           <span className="text-muted-foreground">
                             {" / "}
-                            {formatUsd(meta.alvo)}
+                            {formatarValorDaMeta(meta.metrica, meta.alvo)}
                           </span>
                         </span>
-                        <LancarProgressoMeta goalId={meta.id} titulo={meta.titulo} />
+                        <LancarProgressoMeta goalId={meta.id} titulo={meta.titulo} metrica={meta.metrica} />
                         <EditarMeta goalId={meta.id} />
                         <ConfirmarExclusao
                           titulo="Excluir meta"
@@ -826,7 +834,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                                 {formatDateBr(entrada.data)}
                               </span>
                               <span className="tabular shrink-0 font-medium">
-                                {formatUsd(entrada.valor)}
+                                {formatarValorDaMeta(meta.metrica, entrada.valor)}
                               </span>
                               <span className="text-muted-foreground min-w-0 flex-1 truncate">
                                 {entrada.nota}
@@ -834,7 +842,7 @@ export function ProjetoView({ slug }: { slug: string }) {
                               <EditarProgressoMeta entryId={entrada.id} />
                               <ConfirmarExclusao
                                 titulo="Excluir lançamento"
-                                alvo={`${formatUsd(entrada.valor)} em ${meta.titulo}`}
+                                alvo={`${formatarValorDaMeta(meta.metrica, entrada.valor)} em ${meta.titulo}`}
                                 aoConfirmar={() =>
                                   acoes.excluirProgressoMeta(entrada.id)
                                 }
@@ -904,7 +912,7 @@ export function ProjetoView({ slug }: { slug: string }) {
               </div>
 
               <h3 className="mb-3 text-sm font-medium">Por conta</h3>
-              <div className="border-border mb-8 overflow-x-auto rounded-lg border">
+              <div className="border-border mb-8 relative overflow-x-auto rounded-lg border">
                 <table className="w-full min-w-160 text-sm">
                   <caption className="sr-only">
                     Volume acumulado por conta neste projeto
@@ -949,7 +957,7 @@ export function ProjetoView({ slug }: { slug: string }) {
               </div>
 
               <h3 className="mb-3 text-sm font-medium">Medições</h3>
-              <div className="border-border overflow-x-auto rounded-lg border">
+              <div className="border-border relative overflow-x-auto rounded-lg border">
                 <table className="w-full min-w-160 text-sm">
                   <caption className="sr-only">Histórico de medições de volume</caption>
                   <thead>
@@ -1039,7 +1047,7 @@ export function ProjetoView({ slug }: { slug: string }) {
               />
             )
           ) : (
-            <div className="border-border overflow-x-auto rounded-lg border">
+            <div className="border-border relative overflow-x-auto rounded-lg border">
               <table className="w-full min-w-160 text-sm">
                 <caption className="sr-only">Tokens recebidos por conta</caption>
                 <thead>

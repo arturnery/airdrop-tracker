@@ -148,6 +148,13 @@
       "when": 1792621416988,
       "tag": "0020_entradas_trade",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792622935356,
+      "tag": "0021_meta_de_pontos",
+      "breakpoints": true
     }
   ]
 }

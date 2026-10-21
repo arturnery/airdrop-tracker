@@ -11,6 +11,8 @@ import { useDados } from "@/components/data-provider";
 import { cents, formatUsd, fromDbNumeric, parseUserInput } from "@/lib/money";
 import {
   direcaoDoTipo,
+  netFlowByPair,
+  pairKey,
   efeitoDoTipo,
   rotuloDoTipo,
   TIPOS_LANCAMENTO,
@@ -21,6 +23,8 @@ import type {
   SugestaoRecebimento,
 } from "@/lib/interpretar-lancamento";
 import { contasDisponiveisNoProjeto } from "@/lib/tarefas";
+import { formatoDoCampo, METRICAS_DE_META } from "@/lib/metas";
+import type { GoalMetric } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -537,6 +541,14 @@ export function NovoLancamento({
    */
   const [tipoSel, setTipoSel] = useState(tipoInicial ?? "deposit");
   const direcao = direcaoDoTipo(tipoSel);
+  const { dataset } = useDados();
+  /*
+   * Saída que deixaria a conta negativa no projeto: um zero a mais digitado
+   * virava exposição de -US$ 98 mil, e o aviso só aparecia depois de salvo.
+   * Agora o primeiro clique avisa, com o saldo de hoje; clicar de novo com o
+   * mesmo valor confirma (pode ser real: um depósito que ainda falta lançar).
+   */
+  const confirmado = useRef<string | null>(null);
 
   return (
     <Formulario
@@ -570,6 +582,20 @@ export function NovoLancamento({
         };
         const resultado = lancamentoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
+        const { projectId: p, accountId: c, amount } = resultado.data;
+        if (amount < 0) {
+          const saldo = netFlowByPair(dataset.transactions).get(pairKey(p, c)) ?? 0;
+          const depois = saldo + amount;
+          const chave = `${p}|${c}|${amount}`;
+          if (depois < 0 && confirmado.current !== chave) {
+            confirmado.current = chave;
+            return {
+              amount:
+                `Isso deixa o saldo desta conta no projeto em ${formatUsd(cents(depois))} ` +
+                `(hoje: ${formatUsd(cents(saldo))}). Confira o valor. Se estiver certo, salve de novo.`,
+            };
+          }
+        }
         return acoes.criarLancamento(bruto);
       }}
     >
@@ -870,6 +896,7 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
   const { acoes } = useDados();
   const { projetos } = useOpcoes();
   const [alvo, setAlvo] = useState("");
+  const [metrica, setMetrica] = useState<GoalMetric>("volume_usd");
   const [projetoSel, setProjetoSel] = useState(projectId ?? projetos[0]?.valor ?? "");
   const contas = useContasDoProjeto(projetoSel);
 
@@ -929,12 +956,8 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
               name="metric"
               defaultValue="volume_usd"
               erro={e.metric}
-              opcoes={[
-                { valor: "volume_usd", rotulo: "Volume (USD)" },
-                { valor: "balance_usd", rotulo: "Saldo (USD)" },
-                { valor: "tx_count", rotulo: "Nº de transações" },
-                { valor: "days_active", rotulo: "Dias ativos" },
-              ]}
+              onChange={(ev) => setMetrica(ev.target.value as GoalMetric)}
+              opcoes={METRICAS_DE_META}
             />
             <CampoValor
               label="Alvo"
@@ -944,6 +967,7 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
               aoMudar={setAlvo}
               erro={e.target}
               placeholder="10000"
+              formato={formatoDoCampo(metrica)}
             />
             <CampoData label="Prazo" name="deadline" erro={e.deadline} />
           </div>
@@ -968,9 +992,12 @@ export function NovaMeta({ projectId }: { projectId?: string }) {
 export function LancarProgressoMeta({
   goalId,
   titulo,
+  metrica = "volume_usd",
 }: {
   goalId: string;
   titulo: string;
+  /** Define se o valor é dinheiro ou contagem (pontos, transações, dias). */
+  metrica?: GoalMetric;
 }) {
   const { acoes, hoje } = useDados();
   const [valor, setValor] = useState("");
@@ -1007,6 +1034,7 @@ export function LancarProgressoMeta({
               valor={valor}
               aoMudar={setValor}
               erro={e.value}
+              formato={formatoDoCampo(metrica)}
               ajuda="Use o sinal de menos para corrigir um lançamento a mais."
               placeholder="1500.00"
             />
@@ -1152,6 +1180,7 @@ export function RegistrarRecebimento({
                 aoMudar={setPrecoToken}
                 erro={e.priceUsd}
                 placeholder="0.42"
+                formato="preco"
               />
             </div>
           ) : (

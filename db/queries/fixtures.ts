@@ -774,7 +774,7 @@ export type RawGoal = {
   projectId: string;
   accountId: string | null;
   title: string;
-  metric: "volume_usd" | "balance_usd" | "tx_count" | "days_active";
+  metric: "volume_usd" | "balance_usd" | "points" | "tx_count" | "days_active";
   targetValue: string;
   deadline: string | null;
   achievedAt: string | null;

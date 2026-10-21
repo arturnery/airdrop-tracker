@@ -39,7 +39,7 @@ export type Recurrence =
   | "monthly"
   | "every_n_days";
 
-export type GoalMetric = "volume_usd" | "balance_usd" | "tx_count" | "days_active";
+export type GoalMetric = "volume_usd" | "balance_usd" | "points" | "tx_count" | "days_active";
 
 /** Datas trafegam como "YYYY-MM-DD": sem timezone, ver ARCHITECTURE.md §5. */
 export type IsoDate = string;

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."goal_metric" ADD VALUE 'points' BEFORE 'tx_count';

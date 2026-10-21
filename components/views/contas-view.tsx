@@ -97,7 +97,7 @@ export function ContasView() {
             />
           </section>
 
-          <div className="border-border mt-8 overflow-x-auto rounded-lg border">
+          <div className="border-border mt-8 relative overflow-x-auto rounded-lg border">
             <table className="w-full min-w-160 text-sm">
               <caption className="sr-only">Posição consolidada de cada conta</caption>
               <thead>

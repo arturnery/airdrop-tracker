@@ -26,14 +26,24 @@ const dataIso = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Informe uma data válida.");
 
+/*
+ * Endereço colado sem o protocolo ("lighter.xyz", "x.com/lighter") ganha
+ * `https://`, que é como quase todo site responde hoje. Qualquer outro
+ * protocolo escrito ("javascript:", "ftp:") continua recusado: o endereço vira
+ * link clicável na tela, e só http(s) é seguro de abrir.
+ */
 const urlOpcional = z
   .string()
   .trim()
-  .transform((v) => (v === "" ? null : v))
+  .transform((v) => {
+    if (v === "") return null;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return v;
+    return `https://${v.replace(/^\/+/, "")}`;
+  })
   .nullable()
   .refine(
-    (v) => v === null || /^https?:\/\/.+/.test(v),
-    "O endereço precisa começar com http:// ou https://",
+    (v) => v === null || /^https?:\/\/[^\s/]+\.[^\s]+/.test(v),
+    "Endereço inválido. Ex.: lighter.xyz ou https://lighter.xyz",
   );
 
 const textoOpcional = z
@@ -128,15 +138,19 @@ export const lancamentoSchema = z.object({
       (v) => v === null || /^[A-Z0-9]{1,12}$/.test(v),
       "Use só letras e números, até 12 caracteres.",
     ),
+  // Aceita vírgula, como a prévia do campo: "1,5" é 1.5 (ver `decimalPositivo`).
   tokenAmount: z
     .string()
-    .trim()
-    .transform((v) => (v === "" ? null : v))
     .nullable()
-    .refine(
-      (v) => v === null || /^\d+(\.\d+)?$/.test(v),
-      "Quantidade inválida.",
-    ),
+    .transform((v, ctx) => {
+      if (v === null || v.trim() === "") return null;
+      const lido = lerPreco(v);
+      if (!lido) {
+        ctx.addIssue({ code: "custom", message: "Quantidade inválida." });
+        return z.NEVER;
+      }
+      return lido;
+    }),
   description: textoOpcional,
 })
   /*
@@ -351,7 +365,7 @@ export const metaSchema = z.object({
   projectId: z.string().min(1, "Escolha o projeto."),
   accountId: z.string().nullable(),
   title: z.string().trim().min(1, "Descreva a meta.").max(100),
-  metric: z.enum(["volume_usd", "balance_usd", "tx_count", "days_active"]),
+  metric: z.enum(["volume_usd", "balance_usd", "points", "tx_count", "days_active"]),
   target: valorUsd,
   deadline: dataIso.nullable().or(z.literal("").transform(() => null)),
 });
@@ -375,11 +389,37 @@ export const progressoMetaSchema = z.object({
     .or(z.literal("").transform(() => null)),
 });
 
-const numeroPositivo = (mensagem: string) =>
-  z
-    .string()
-    .trim()
-    .refine((v) => /^\d+(\.\d+)?$/.test(v), mensagem);
+/*
+ * Os campos do recebimento são lidos pelo mesmo leitor que a prévia do campo
+ * usa, e saem normalizados ("1,25" vira "1.25"). Antes o formulário mostrava
+ * "$1.25" embaixo do campo e a validação recusava a vírgula: a tela dizia uma
+ * coisa e a regra fazia outra.
+ *
+ * Quantidade e preço: decimal com todas as casas (preço de token pode ser
+ * 0,000123), lidos como preço de cripto (`lerPreco`). Total em dólar: o leitor
+ * de dinheiro do site, onde "1.000" é mil.
+ */
+const decimalPositivo = (mensagem: string) =>
+  z.string().transform((v, ctx) => {
+    if (v.trim() === "") return "";
+    const lido = lerPreco(v);
+    if (!lido) {
+      ctx.addIssue({ code: "custom", message: mensagem });
+      return z.NEVER;
+    }
+    return lido;
+  });
+
+const dolarPositivo = (mensagem: string) =>
+  z.string().transform((v, ctx) => {
+    if (v.trim() === "") return "";
+    const lido = parseUserInput(v);
+    if (!lido.ok || lido.value <= 0) {
+      ctx.addIssue({ code: "custom", message: mensagem });
+      return z.NEVER;
+    }
+    return (lido.value / 100).toFixed(2);
+  });
 
 /**
  * Recebimento de airdrop, em duas formas de dizer a mesma coisa.
@@ -402,9 +442,9 @@ export const recebimentoSchema = z
     receivedAt: dataIso,
     tokenSymbol: z.string().trim().min(1, "Informe o símbolo do token.").max(20),
     modo: z.enum(["token", "total"]).default("token"),
-    tokenAmount: numeroPositivo("Quantidade inválida.").optional().or(z.literal("")),
-    priceUsd: numeroPositivo("Preço inválido.").optional().or(z.literal("")),
-    valueUsd: numeroPositivo("Valor inválido.").optional().or(z.literal("")),
+    tokenAmount: decimalPositivo("Quantidade inválida.").optional(),
+    priceUsd: decimalPositivo("Preço inválido.").optional(),
+    valueUsd: dolarPositivo("Valor inválido.").optional(),
   })
   .superRefine((dados, ctx) => {
     const exigir = (campo: "tokenAmount" | "priceUsd" | "valueUsd", msg: string) => {

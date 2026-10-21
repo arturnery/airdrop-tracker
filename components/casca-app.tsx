@@ -56,7 +56,10 @@ export function CascaApp({
         )}
       >
         <aside className="bg-sidebar border-border sticky top-0 z-40 border-b lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
-          <div className="flex items-center justify-between gap-2 lg:block">
+          {/* `min-w-0` aqui e no menu: no celular, a fileira de ícones rola
+              dentro dela mesma. Sem isso, cada área nova no menu alargava a
+              página inteira e a tela rolava para o lado. */}
+          <div className="flex min-w-0 items-center justify-between gap-2 lg:block">
             <div className="min-w-0 shrink-0 px-3 py-4 lg:px-3">
               <div
                 className={cn(

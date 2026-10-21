@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-428%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-481%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -138,12 +138,12 @@ senhas temporárias, mas não vê o farming de ninguém.
   para divulgar a programação: cadastrado por quem administra, com lives semanais e
   quinzenais calculadas na leitura (sem cron), data final opcional, evento em destaque e
   horário de Brasília.
-- **Trade: sinais lidos de print por IA.** Quem publica cola o print da operação, um modelo
+- **Trade: operações lidas de print por IA.** Quem publica cola o print da operação, um modelo
   com visão (Gemini) devolve ativo, direção, entrada, stop e alvos, e o formulário abre para
-  conferência. A validação recusa sinal incoerente (numa compra, stop abaixo da entrada e
-  alvos acima) e mostra o risco/retorno de cada alvo. Sinal novo acende um sininho no menu
-  e é avisado num canal do Discord por webhook, com o envio confirmado e reenviável. Ao
-  fechar, escolhe-se por onde o sinal saiu (um alvo, o stop, outro preço, ou não acionou); o
+  conferência. A validação recusa operação incoerente (numa compra, stop abaixo da entrada e
+  alvos acima) e mostra o risco/retorno de cada alvo. Operação nova acende um sininho no menu
+  e é avisada num canal do Discord por webhook, com o envio confirmado e reenviável. Ao
+  fechar, escolhe-se por onde a operação saiu (um alvo, o stop, outro preço, ou não acionou); o
   resultado em % e em R sai do preço, nunca é digitado, e a aba Resultados soma o placar, com simulação opcional em dólar.
   Cada membro pode **entrar** numa operação aberta informando o valor em dólar, e o resultado
   dele em dólar aparece quando ela fecha.
@@ -342,6 +342,17 @@ em token.
 **Trade-offs assumidos.** No plano gratuito, o pior caso ainda chega perto de meio minuto, e
 o provedor pode usar o que recebe para treinar modelos; por isso a tela diz o que é
 enviado. O plano pago resolveria os dois por centavos ao mês, e trocar é configuração.
+
+### O ranking não tem conta própria
+
+O ranking da comunidade mostra o resultado e os pontos de cada membro. O jeito fácil seria uma
+consulta SQL somando lançamentos por pessoa, e ela divergiria da Visão geral na primeira mudança
+de regra (o resultado tem detalhes: taxas, rendimento, airdrop em token). Em vez disso, o
+ranking monta o `Dataset` de cada membro com a **mesma** conversão do carregamento normal e
+passa pelos **mesmos** selectors. Os testes comparam a linha de cada membro com a Visão geral
+dele. Custo aceito: uma leitura por tabela para todos os membros, em vez de uma soma no banco,
+o que serve à escala de uma comunidade e fica no servidor (o navegador recebe só as linhas
+prontas).
 
 ### Dinheiro em inteiros, nunca em ponto flutuante
 
@@ -614,7 +625,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 428 testes
+npm test              # 481 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
@@ -695,6 +706,10 @@ tests/            Vitest
 - [ ] **Medir o acerto da IA.** Quantas sugestões são salvas sem nenhuma edição, por tipo
       de lançamento. É o número que diria se uma troca de modelo melhorou ou piorou, em vez
       de impressão
+- [ ] **Compartilhar no X.** Botão em pontos, volume e resultado de um projeto que monta um
+      post pronto (o projeto marcado, a evolução da semana, a divulgação da comunidade) e
+      abre o X para publicar
+- [ ] **Permissão do professor** para publicar operações, no lugar da exigência de admin
 - [ ] Testes de componente e um teste de ponta a ponta do fluxo de lançamento
 - [ ] Alternância entre tema claro e escuro (o tema claro já existe, falta o controle)
 - [ ] Criar o vínculo projeto×conta junto com o projeto, em vez de no primeiro lançamento

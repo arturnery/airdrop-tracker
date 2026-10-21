@@ -278,7 +278,7 @@ id            uuid PK
 user_id       uuid FK -> users
 project_id    uuid FK -> projects
 account_id    uuid FK -> accounts NULL
-metric        enum   -- volume_usd | balance_usd | tx_count | days_active
+metric        enum   -- volume_usd | balance_usd | points | tx_count | days_active
 target_value  numeric(18,2)
 deadline      date NULL
 achieved_at   timestamptz NULL
@@ -359,9 +359,14 @@ pronta (ver §14.9-B).
 | `balance_usd` | `balance_snapshots` | `goal_entries`; a tabela nunca existiu |
 | `tx_count` | `transactions` | `goal_entries` (§14.10) |
 | `days_active` | `transactions` | `goal_entries` (§14.10) |
+| `points` | (entrou em 2026-10) | `goal_entries` |
 
 Hoje **toda** meta soma os próprios lançamentos, qualquer que seja a métrica. O motivo está
 em §14.10.
+
+O valor é guardado do mesmo jeito em todas (centésimos), mas só `volume_usd` e `balance_usd`
+são dinheiro: as outras são contagens e aparecem sem "$" (`lib/metas.ts`). Até a meta de
+pontos entrar, toda meta era mostrada em dólar, inclusive "Nº de transações".
 
 ### 4.4. Programas de pontos
 

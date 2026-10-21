@@ -290,7 +290,7 @@ export function Nav({
    * divisória, que ainda separa as áreas sem ocupar largura.
    */
   return (
-    <nav aria-label="Navegação principal" className="p-3">
+    <nav aria-label="Navegação principal" className="min-w-0 overflow-x-auto p-3 lg:overflow-visible">
       <div className="flex gap-1 lg:flex-col lg:gap-4">
         {visiveis.map((grupo, indiceGrupo) => (
           <div key={grupo.titulo} className="contents lg:block">

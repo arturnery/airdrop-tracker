@@ -1,5 +1,7 @@
 "use client";
 
+import { formatoDoCampo, METRICAS_DE_META } from "@/lib/metas";
+import type { GoalMetric } from "@/lib/types";
 import { useState, type ReactNode } from "react";
 import { Loader2, Pencil } from "lucide-react";
 
@@ -694,6 +696,7 @@ export function EditarMeta({ goalId }: { goalId: string }) {
   const [alvo, setAlvo] = useState(
     meta ? toDbNumeric(fromDbNumeric(meta.targetValue)) : "",
   );
+  const [metrica, setMetrica] = useState<GoalMetric>(meta?.metric ?? "volume_usd");
   if (!meta) return null;
 
   const contas: { valor: string; rotulo: string }[] = [
@@ -740,12 +743,8 @@ export function EditarMeta({ goalId }: { goalId: string }) {
               name="metric"
               defaultValue={meta.metric}
               erro={e.metric}
-              opcoes={[
-                { valor: "volume_usd", rotulo: "Volume (USD)" },
-                { valor: "balance_usd", rotulo: "Saldo (USD)" },
-                { valor: "tx_count", rotulo: "Nº de transações" },
-                { valor: "days_active", rotulo: "Dias ativos" },
-              ]}
+              onChange={(ev) => setMetrica(ev.target.value as GoalMetric)}
+              opcoes={METRICAS_DE_META}
             />
             <CampoValor
               label="Alvo"
@@ -754,6 +753,7 @@ export function EditarMeta({ goalId }: { goalId: string }) {
               valor={alvo}
               aoMudar={setAlvo}
               erro={e.target}
+              formato={formatoDoCampo(metrica)}
             />
             <CampoData
               label="Prazo"
@@ -990,6 +990,7 @@ export function EditarProgressoMeta({ entryId }: { entryId: string }) {
               valor={valor}
               aoMudar={setValor}
               erro={e.value}
+              formato={formatoDoCampo(meta?.metric ?? "volume_usd")}
               ajuda="Use o sinal de menos para corrigir um lançamento a mais."
             />
             <CampoData

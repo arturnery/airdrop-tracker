@@ -89,6 +89,7 @@ export const recurrenceEnum = pgEnum("recurrence", [
 export const goalMetricEnum = pgEnum("goal_metric", [
   "volume_usd",
   "balance_usd",
+  "points",
   "tx_count",
   "days_active",
 ]);

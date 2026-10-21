@@ -3705,3 +3705,37 @@ volume (comum em perps, sem programa de pontos) entra do mesmo jeito. Testar iss
 buraco nos dados de teste: as fixtures tinham medições de volume, mas o script que monta as
 contas de teste nunca as gravava, e as duas contas nasciam sem volume nenhum. Corrigido no
 `seed-demo`.
+
+## Marco 57: Os erros de quem chega
+
+Antes de publicar, uma conta nova (`explorador@teste.local`) foi criada pelo cadastro normal,
+aprovada pelo admin de teste e usada como um membro usaria: contas, projetos, lançamentos,
+pontos, volume, tarefas, metas, airdrop, IA, rankings, trade, perfil, e o celular. Oito
+problemas apareceram, todos corrigidos neste marco:
+
+1. **O site quebrava no celular.** Cada área nova somou ícones à fileira do menu, que não tinha
+   limite, e a página inteira rolava para o lado. A fileira passou a rolar dentro dela mesma, e
+   os botões do topo das páginas quebram linha. Restava a página de projeto e a de contas: um
+   texto só para leitor de tela (`sr-only`, absoluto) no cabeçalho das tabelas escapava do
+   quadro que rola, porque o quadro não era posicionado. Os quadros ganharam `relative`, e as
+   16 páginas foram conferidas a 390px.
+2. **O recebimento recusava vírgula.** A prévia mostrava "$1.25" para "1,25" e a validação
+   recusava; a prévia do preço também arredondava a centavos. Prévia e validação passaram a
+   usar a mesma leitura, e a validação devolve o número normalizado. O lançamento em token
+   tinha o mesmo defeito na quantidade.
+3. **Não dava para registrar o primeiro volume.** O botão morava na aba Volume, escondida
+   enquanto o projeto não tinha volume. A aba agora aparece sempre.
+4. **Uma retirada maior que o saldo passava sem aviso** (um zero a mais virou -US$ 98 mil). O
+   primeiro clique agora avisa com o saldo de hoje; clicar de novo com o mesmo valor confirma,
+   porque pode ser real (um depósito que ainda falta lançar).
+5. **A tela de espera prometia um e-mail** que o sistema não envia. O texto agora diz o que
+   acontece de fato.
+6. **Dois títulos errados na barra superior** (Resultados de trade e Farmando agora).
+7. **"lighter.xyz" era recusado** como site. Endereço sem protocolo ganha `https://`; outro
+   protocolo escrito continua recusado.
+8. **Meta de pontos não existia**, e toda meta aparecia em dólar, até "Nº de transações". Entrou
+   a métrica Pontos, e cada meta aparece na unidade dela.
+
+As classes dos defeitos 1, 2 e 3 entraram no catálogo de erros, porque se repetem em qualquer
+tela: prévia e validação com leitores diferentes, contêiner escondido que guarda o próprio botão
+de encher, e conteúdo invisível escapando de um quadro que rola.

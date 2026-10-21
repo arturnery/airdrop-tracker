@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MailCheck } from "lucide-react";
+import { Hourglass } from "lucide-react";
 
 /**
  * Tela de espera após o cadastro.
@@ -15,22 +15,23 @@ export default function AguardandoAprovacaoPage() {
         className="bg-brand/10 text-brand-legivel mx-auto flex size-12 items-center justify-center rounded-full"
         aria-hidden="true"
       >
-        <MailCheck className="size-6" />
+        <Hourglass className="size-6" />
       </span>
 
       <h1 className="mt-5 text-2xl font-semibold tracking-tight">
         Cadastro recebido
       </h1>
       <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
-        Sua conta será liberada assim que o acesso for confirmado. Você recebe um
-        e-mail quando isso acontecer, e não precisa cadastrar de novo.
+        Sua conta será liberada assim que o acesso for confirmado. O sistema não
+        manda e-mail: depois da liberação, é só entrar com o e-mail e a senha do
+        cadastro. Não precisa cadastrar de novo.
       </p>
 
       <div className="border-border mt-8 rounded-lg border p-4 text-left">
         <h2 className="text-sm font-medium">Enquanto isso</h2>
         <ul className="text-muted-foreground mt-2 space-y-1.5 text-sm">
           <li>Confira se o e-mail do cadastro é o mesmo da sua assinatura.</li>
-          <li>Procure na caixa de spam quando a confirmação chegar.</li>
+          <li>Se demorar, avise na comunidade que você já se cadastrou.</li>
         </ul>
       </div>
 

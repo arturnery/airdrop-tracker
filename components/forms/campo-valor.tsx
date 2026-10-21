@@ -3,6 +3,7 @@
 import { CampoTexto } from "@/components/forms/fields";
 import { formatUsd, parseUserInput } from "@/lib/money";
 import { formatPoints, parsePointsInput } from "@/lib/points";
+import { formatarPreco, lerPreco } from "@/lib/sinais";
 
 /**
  * Campo numérico que mostra como o valor digitado foi entendido.
@@ -22,12 +23,14 @@ import { formatPoints, parsePointsInput } from "@/lib/points";
  * token, que não é nem uma nem outra. Usar o formatador errado exibiria um
  * número plausível e falso, que é pior que nenhum.
  */
-export type FormatoValor = "dinheiro" | "pontos" | "quantidade";
+export type FormatoValor = "dinheiro" | "pontos" | "quantidade" | "preco";
 
 /** Quantidade de token: separador de milhar, casas decimais preservadas. */
 function formatarQuantidade(bruto: string): string | null {
-  const limpo = bruto.trim().replace(/\s/g, "").replace(",", ".");
-  if (limpo === "" || !/^\d+(\.\d+)?$/.test(limpo)) return null;
+  // O mesmo leitor da validação (`lerPreco`), para a prévia nunca mostrar
+  // um número que a validação depois recusa.
+  const limpo = lerPreco(bruto);
+  if (!limpo) return null;
 
   const numero = Number(limpo);
   if (!Number.isFinite(numero)) return null;
@@ -42,6 +45,15 @@ function interpretar(valor: string, formato: FormatoValor): string | null {
   if (valor.trim() === "") return null;
 
   if (formato === "quantidade") return formatarQuantidade(valor);
+
+  /*
+   * Preço de token em dólar: todas as casas, sem arredondar para centavos
+   * ("0,000123" é um preço comum). Lido como a validação lê (`lerPreco`).
+   */
+  if (formato === "preco") {
+    const lido = lerPreco(valor);
+    return lido ? `$${formatarPreco(lido)}` : null;
+  }
 
   if (formato === "pontos") {
     const analisado = parsePointsInput(valor);
