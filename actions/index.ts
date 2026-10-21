@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { uniqueSlug } from "@/lib/dataset";
+import { MOTIVOS_DE_SAIDA, podeFarmar } from "@/lib/farm";
 import { toDbNumeric } from "@/lib/money";
 import { toDbPoints } from "@/lib/points";
 import { dataDeHoje } from "@/lib/dates";
@@ -14,6 +15,8 @@ import {
   adocaoSchema,
   contaSchema,
   destaqueSchema,
+  respostaDestaqueSchema,
+  saidaDoFarmSchema,
   lancamentoSchema,
   metaSchema,
   pontosSchema,
@@ -31,7 +34,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUserId } from "@/lib/auth";
 import { gerarHash } from "@/lib/senha";
 
-import { executar, ROTAS_DADOS, type ResultadoAcao } from "./_core";
+import { ErroDeRegra, executar, ROTAS_DADOS, type ResultadoAcao } from "./_core";
 
 /**
  * Server Actions.
@@ -74,6 +77,8 @@ export async function criarProjeto(entrada: unknown): Promise<ResultadoAcao> {
       tutorialUrl: dados.tutorialUrl,
       expectedTgeDate: dados.expectedTgeDate,
       notes: dados.notes,
+      // Cadastrar à mão um projeto ativo já é escolher farmá-lo.
+      farmando: podeFarmar(dados.status),
     });
   }, ROTAS_DADOS);
 }
@@ -83,6 +88,22 @@ export async function atualizarProjeto(
   entrada: unknown,
 ): Promise<ResultadoAcao> {
   return executar(projetoSchema, entrada, async (dados, userId) => {
+    const [atual] = await db
+      .select({ farmando: schema.projects.farmando })
+      .from(schema.projects)
+      .where(and(eq(schema.projects.id, id), eq(schema.projects.userId, userId)))
+      .limit(1);
+    /*
+     * Sair do farm exige motivo (§21): mudar o status para pausado pelo
+     * formulário de edição seria o atalho que pula essa pergunta.
+     */
+    if (atual?.farmando && !podeFarmar(dados.status)) {
+      throw new ErroDeRegra(
+        "status",
+        "Este projeto está em Farmando agora. Para pausar, encerrar ou descartar, use \"Tirar do farm\", que registra o motivo.",
+      );
+    }
+
     // O slug não muda: está na URL e em links já compartilhados.
     await db
       .update(schema.projects)
@@ -104,6 +125,126 @@ export async function atualizarProjeto(
       .where(
         and(eq(schema.projects.id, id), eq(schema.projects.userId, userId)),
       );
+    await sincronizarStatusDoDestaque(id, userId, dados.status);
+  }, ROTAS_DADOS);
+}
+
+/**
+ * Leva o status do projeto ao destaque dele no catálogo, se for um projeto
+ * destacado. É o que faz quem adotou ser avisado quando quem administra pausa
+ * ou encerra o projeto. Filtra por quem criou a entrada: só o status do
+ * próprio projeto de quem publicou alcança o catálogo.
+ */
+async function sincronizarStatusDoDestaque(
+  projectId: string,
+  userId: string,
+  status: (typeof schema.projectStatusEnum.enumValues)[number],
+) {
+  await db
+    .update(schema.catalogProjects)
+    .set({ status, updatedAt: sql`now()` })
+    .where(
+      and(
+        eq(schema.catalogProjects.sourceProjectId, projectId),
+        eq(schema.catalogProjects.createdBy, userId),
+      ),
+    );
+}
+
+// ---------------------------------------------------------- farmando agora
+
+/** Põe em "Farmando agora" um projeto ativo que a pessoa já tem. */
+export async function farmarProjeto(id: string): Promise<ResultadoAcao> {
+  return executar(idSchema, { id }, async (dados, userId) => {
+    const [projeto] = await db
+      .select({ status: schema.projects.status })
+      .from(schema.projects)
+      .where(and(eq(schema.projects.id, dados.id), eq(schema.projects.userId, userId)))
+      .limit(1);
+    if (!projeto) throw new ErroDeRegra("geral", "Esse projeto não existe mais.");
+    if (!podeFarmar(projeto.status)) {
+      throw new ErroDeRegra("geral", "Só projeto ativo entra em Farmando agora. Mude o status dele primeiro.");
+    }
+    await db
+      .update(schema.projects)
+      .set({ farmando: true, saidaDoFarmMotivo: null, saidaDoFarmEm: null })
+      .where(and(eq(schema.projects.id, dados.id), eq(schema.projects.userId, userId)));
+  }, ROTAS_DADOS);
+}
+
+/**
+ * Tira do farm com o motivo, que vira o status do projeto: não existe sair e
+ * continuar "ativo". O texto do motivo fica gravado para aparecer no card.
+ */
+export async function tirarDoFarm(entrada: unknown): Promise<ResultadoAcao> {
+  return executar(saidaDoFarmSchema, entrada, async (dados, userId) => {
+    const rotulo = MOTIVOS_DE_SAIDA.find((m) => m.status === dados.status)!.rotulo;
+    const alterados = await db
+      .update(schema.projects)
+      .set({
+        farmando: false,
+        status: dados.status,
+        saidaDoFarmMotivo: dados.observacao ? `${rotulo}: ${dados.observacao}` : rotulo,
+        saidaDoFarmEm: new Date(),
+      })
+      .where(
+        and(
+          eq(schema.projects.id, dados.id),
+          eq(schema.projects.userId, userId),
+          eq(schema.projects.farmando, true),
+        ),
+      )
+      .returning({ id: schema.projects.id });
+    if (alterados.length === 0) throw new ErroDeRegra("geral", "Esse projeto já não está em Farmando agora.");
+    await sincronizarStatusDoDestaque(dados.id, userId, dados.status);
+  }, ROTAS_DADOS);
+}
+
+/**
+ * Responde ao aviso "o admin mudou o status deste projeto": atualizar o
+ * próprio status para o do destaque, ou manter o seu. Nos dois casos o aviso
+ * some, porque o status atual do destaque passa a contar como visto.
+ *
+ * Atualizar para um status que não é de farm tira o projeto do farm, com o
+ * motivo registrado como vindo do destaque.
+ */
+export async function responderMudancaDoDestaque(entrada: unknown): Promise<ResultadoAcao> {
+  return executar(respostaDestaqueSchema, entrada, async (dados, userId) => {
+    const [linha] = await db
+      .select({
+        farmando: schema.projects.farmando,
+        statusDoDestaque: schema.catalogProjects.status,
+      })
+      .from(schema.projects)
+      .innerJoin(schema.catalogProjects, eq(schema.catalogProjects.id, schema.projects.adoptedFromId))
+      .where(and(eq(schema.projects.id, dados.id), eq(schema.projects.userId, userId)))
+      .limit(1);
+    if (!linha) throw new ErroDeRegra("geral", "Esse projeto não veio de um destaque.");
+
+    if (!dados.aceitar) {
+      await db
+        .update(schema.projects)
+        .set({ statusDoDestaqueVisto: linha.statusDoDestaque })
+        .where(and(eq(schema.projects.id, dados.id), eq(schema.projects.userId, userId)));
+      return;
+    }
+
+    const saiDoFarm = linha.farmando && !podeFarmar(linha.statusDoDestaque);
+    const rotulo = MOTIVOS_DE_SAIDA.find((m) => m.status === linha.statusDoDestaque)?.rotulo;
+    await db
+      .update(schema.projects)
+      .set({
+        status: linha.statusDoDestaque,
+        statusDoDestaqueVisto: linha.statusDoDestaque,
+        ...(saiDoFarm
+          ? {
+              farmando: false,
+              saidaDoFarmMotivo: `Atualizado pelo destaque${rotulo ? `: ${rotulo}` : ""}`,
+              saidaDoFarmEm: new Date(),
+            }
+          : {}),
+      })
+      .where(and(eq(schema.projects.id, dados.id), eq(schema.projects.userId, userId)));
   }, ROTAS_DADOS);
 }
 
@@ -165,6 +306,7 @@ export async function destacarProjeto(
       twitterUrl: projeto.twitterUrl,
       docsUrl: projeto.docsUrl,
       expectedTgeDate: projeto.expectedTgeDate,
+      status: projeto.status,
       summary: dados.summary,
       publishedAt: sql`now()`,
       updatedAt: sql`now()`,
@@ -266,6 +408,9 @@ export async function adotarDoCatalogo(entrada: unknown): Promise<ResultadoAcao>
         "Esta entrada não existe mais, ou foi retirada do catálogo.",
       );
     }
+    if (!podeFarmar(item.status)) {
+      throw new ErroDeRegra("geral", "Este projeto não está mais ativo no destaque.");
+    }
 
     const doUsuario = await db
       .select({ slug: schema.projects.slug })
@@ -292,6 +437,9 @@ export async function adotarDoCatalogo(entrada: unknown): Promise<ResultadoAcao>
       docsUrl: item.docsUrl,
       expectedTgeDate: item.expectedTgeDate,
       adoptedFromId: item.id,
+      // Adicionar um destaque é escolher farmá-lo (§21).
+      farmando: true,
+      statusDoDestaqueVisto: item.status,
     });
   }, ROTAS_DADOS);
 }

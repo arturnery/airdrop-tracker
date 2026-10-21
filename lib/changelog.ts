@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.18",
+    data: "2026-10-21",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Projetos agora tem duas abas no menu: Todos os projetos, com os farms atuais para adicionar e os seus projetos pausados, em estudo ou já distribuídos; e Farmando agora, só com o que você está farmando, mostrando depositado, exposição, resultado e ROI em cada card. Para tirar um projeto do farm, você diz o motivo. Quando um farm atual muda de status (por exemplo, foi distribuído), o seu card avisa e você decide se atualiza.",
+      },
+    ],
+  },
+  {
     versao: "1.17",
     data: "2026-10-20",
     mudancas: [

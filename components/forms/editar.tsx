@@ -255,6 +255,12 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
               name="status"
               defaultValue={projeto.status}
               erro={e.status}
+              /*
+               * Em farm, só os status de farm: pausar ou encerrar daqui
+               * pularia o motivo que "Tirar do farm" pede (§21). O servidor
+               * recusa do mesmo jeito; isto só evita oferecer o que vai falhar.
+               */
+              ajuda={projeto.farmando ? "Para pausar ou encerrar, use Tirar do farm." : undefined}
               opcoes={[
                 { valor: "pesquisando", rotulo: "Pesquisando" },
                 { valor: "ativo", rotulo: "Ativo" },
@@ -262,7 +268,7 @@ export function EditarProjeto({ projectId }: { projectId: string }) {
                 { valor: "tge_anunciado", rotulo: "TGE anunciado" },
                 { valor: "distribuido", rotulo: "Distribuído" },
                 { valor: "descartado", rotulo: "Descartado" },
-              ]}
+              ].filter((o) => !projeto.farmando || o.valor === "ativo" || o.valor === "tge_anunciado")}
             />
             <CampoSelecao
               label="Categoria"

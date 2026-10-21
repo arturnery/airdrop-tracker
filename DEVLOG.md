@@ -3613,3 +3613,43 @@ operação (cada R vale esse valor, que é como pensa quem segue gestão de risc
 da posição (a variação em % sobre ele). O valor fica no navegador dela, não no banco, e
 vazio esconde tudo. O campo usa o leitor de dinheiro do site, e não o de preço: em dólar,
 "1.000" é mil, enquanto num preço de cripto o ponto sozinho é decimal.
+
+## Marco 54: Todos os projetos e Farmando agora
+
+O pedido: dividir Projetos em duas abas, uma com tudo e outra só com o que se está farmando,
+com mais números nos cards dessa segunda. No caminho, três decisões de produto mudaram o
+desenho inicial:
+
+- **Farmando é escolha, não status**, e só projeto ativo entra. A primeira proposta era um
+  botão de farmar em qualquer card; ficou só nos ativos. Pausado e distribuído aparecem em
+  "Todos" porque foram cadastrados assim ou porque saíram do farm.
+- **Ninguém estreia com a aba cheia por suposição.** A proposta inicial punha em farm todo
+  projeto ativo de cada pessoa. A resposta foi que cada um escolhe, respeitando o que já
+  tinha adicionado dos destaques. A migração seguiu isso.
+- **Sair do farm pede o motivo**, e o status do admin passa a avisar quem adotou o destaque.
+
+### O motivo é o status
+
+Pedir motivo num campo de texto livre deixaria o projeto "ativo" fora do farm, um estado
+sem sentido. O motivo virou a escolha do status novo (pausei, foi distribuído, desisti,
+voltei a estudar), com um detalhe opcional. O formulário de edição não oferece mais esses
+status a um projeto em farm, e o servidor recusa do mesmo jeito: senão a edição seria o
+atalho que pula a pergunta. Para essa recusa chegar à tela como frase, e não como "não foi
+possível salvar", as Server Actions ganharam `ErroDeRegra`.
+
+### Avisar sem mexer no dado de ninguém
+
+O catálogo foi desenhado para nunca ler o projeto pessoal de quem publicou (§13). Para o
+status do admin chegar a quem adotou sem abrir essa porta, ele é copiado para o catálogo a
+cada mudança, como a prioridade já era. Cada projeto adotado guarda o último status do
+destaque que a pessoa viu; a diferença é o aviso, e responder (atualizar ou manter) grava o
+status atual como visto. Testado com as duas contas: o admin de teste tirou do farm como
+distribuído o destaque "Astra Points", e a conta demo viu o aviso e atualizou, com o projeto
+saindo do farm e o motivo "Atualizado pelo destaque".
+
+### O destaque que já existia com outro dono
+
+No primeiro teste, a aba de destaques da conta demo oferecia projetos que ela já tinha,
+cadastrados à mão com o mesmo nome, com o botão desativado e o aviso "você já tem". Com o
+projeto dela logo abaixo, o card duplicado só confundia: destaque com nome igual a um
+projeto da pessoa agora não aparece.

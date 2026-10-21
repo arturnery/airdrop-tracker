@@ -145,6 +145,11 @@ senhas temporárias, mas não vê o farming de ninguém.
   e é avisado num canal do Discord por webhook, com o envio confirmado e reenviável. Ao
   fechar, escolhe-se por onde o sinal saiu (um alvo, o stop, outro preço, ou não acionou); o
   resultado em % e em R sai do preço, nunca é digitado, e a aba Resultados soma o placar, com simulação opcional em dólar.
+- **Todos os projetos e Farmando agora.** Duas abas: os destaques ativos do admin para
+  adicionar e os projetos fora do farm, por status; e a carteira do que se está farmando, com
+  depositado, exposição, resultado e ROI em cada card. Sair do farm exige o motivo, que vira
+  o status do projeto. Quando o admin muda o status de um destaque, quem o adicionou é
+  avisado no card e decide se atualiza o seu.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o

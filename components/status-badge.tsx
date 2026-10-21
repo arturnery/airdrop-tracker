@@ -7,7 +7,7 @@ import type {
   TaskUrgency,
 } from "@/lib/types";
 
-const projectLabels: Record<ProjectStatus, string> = {
+export const projectLabels: Record<ProjectStatus, string> = {
   pesquisando: "Pesquisando",
   ativo: "Ativo",
   pausado: "Pausado",

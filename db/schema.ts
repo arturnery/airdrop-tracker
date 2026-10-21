@@ -250,6 +250,21 @@ export const projects = pgTable(
       (): AnyPgColumn => catalogProjects.id,
       { onDelete: "set null" },
     ),
+    /**
+     * Na aba "Farmando agora". Escolha da pessoa, separada do status: entra
+     * só projeto ativo, e sair exige dizer o motivo, que vira o status novo
+     * e fica registrado em `saidaDoFarmMotivo` (ARCHITECTURE §21).
+     */
+    farmando: boolean("farmando").notNull().default(false),
+    saidaDoFarmMotivo: text("saida_do_farm_motivo"),
+    saidaDoFarmEm: timestamp("saida_do_farm_em", { withTimezone: true }),
+    /**
+     * Último status do destaque (catálogo) que a pessoa já viu. Quando quem
+     * administra muda o status do projeto destacado, o do catálogo muda junto
+     * e fica diferente deste: é o aviso "o admin marcou como distribuído",
+     * até a pessoa atualizar o dela ou decidir manter.
+     */
+    statusDoDestaqueVisto: projectStatusEnum("status_do_destaque_visto"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -306,6 +321,14 @@ export const catalogProjects = pgTable(
      * o próprio valor depois sem afetar o do catálogo.
      */
     priority: smallint("priority").notNull().default(2),
+    /**
+     * Status do projeto de quem publicou, copiado a cada mudança dele. Segunda
+     * exceção à divisão editorial/pessoal, pelo mesmo motivo da prioridade:
+     * "esse projeto ainda está ativo?" é a informação que a comunidade precisa
+     * do curador. Copiado, e não lido do projeto de origem, para nenhuma
+     * leitura de outra pessoa atravessar até a linha pessoal de quem publicou.
+     */
+    status: projectStatusEnum("status").notNull().default("ativo"),
     websiteUrl: text("website_url"),
     discordUrl: text("discord_url"),
     twitterUrl: text("twitter_url"),

@@ -15,6 +15,7 @@ import {
   CalendarDays,
   ChartCandlestick,
   ChartLine,
+  Sprout,
   Upload,
   Wallet,
 } from "lucide-react";
@@ -23,7 +24,13 @@ import { useDados } from "@/components/data-provider";
 import { selectPendingTasks } from "@/lib/selectors";
 import { cn } from "@/lib/utils";
 
-type Item = { href: string; label: string; icon: typeof LayoutDashboard };
+type Item = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  /** Sub-abas: o item vira um título que recolhe, como os grupos. */
+  filhos?: Item[];
+};
 
 /**
  * O menu é dividido em áreas que não se misturam: o que é a carteira de cada
@@ -37,7 +44,15 @@ const grupos: { titulo: string; itens: Item[] }[] = [
     itens: [
       { href: "/", label: "Visão geral", icon: LayoutDashboard },
       { href: "/tarefas", label: "Tarefas", icon: ListChecks },
-      { href: "/projetos", label: "Projetos", icon: Layers },
+      {
+        href: "/projetos",
+        label: "Projetos",
+        icon: Layers,
+        filhos: [
+          { href: "/projetos", label: "Todos os projetos", icon: Layers },
+          { href: "/projetos/farmando", label: "Farmando agora", icon: Sprout },
+        ],
+      },
       { href: "/contas", label: "Contas", icon: Wallet },
       { href: "/historico", label: "Histórico", icon: History },
       { href: "/importar", label: "Importar", icon: Upload },
@@ -109,7 +124,7 @@ function lerLista(bruto: string): string[] {
   }
 }
 
-const grupoAdministracao = {
+const grupoAdministracao: { titulo: string; itens: Item[] } = {
   titulo: "Administração",
   itens: [
     { href: "/membros", label: "Membros", icon: UserCheck },
@@ -133,6 +148,7 @@ const tons: Record<string, string> = {
   "/trade/resultados": "bg-chart-2/15 text-chart-2",
   "/tarefas": "bg-chart-4/15 text-chart-4",
   "/projetos": "bg-chart-3/15 text-chart-3",
+  "/projetos/farmando": "bg-chart-2/15 text-chart-2",
   "/contas": "bg-chart-2/15 text-chart-2",
   "/historico": "bg-brand/15 text-brand-legivel",
   "/importar": "bg-chart-1/15 text-chart-1",
@@ -178,8 +194,78 @@ export function Nav({
   // Sinal é aviso de algo novo, não pendência: o selo leva um sininho.
   const comSino = (href: string) => href === "/trade/sinais";
 
+  const casa = (href: string) =>
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  /*
+   * Ativo é o item cujo endereço casa, a menos que outro mais específico
+   * também case: em `/projetos/farmando` acende "Farmando agora", e não
+   * "Todos os projetos", que é o prefixo dele. A página de um projeto
+   * (`/projetos/slug`) fica com "Todos os projetos".
+   */
+  const todosOsHrefs = grupos.flatMap((g) => g.itens.flatMap((i) => [i.href, ...(i.filhos ?? []).map((f) => f.href)]));
   const estaAtivo = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    casa(href) && !todosOsHrefs.some((outro) => outro.length > href.length && outro.startsWith(href) && casa(outro));
+  const itemAtivo = (item: Item) => (item.filhos ? item.filhos.some((f) => estaAtivo(f.href)) : estaAtivo(item.href));
+
+  /** O link de um item (ou de uma sub-aba), com ícone, rótulo e contagem. */
+  const linkDoItem = (item: Item, ativo: boolean) => {
+    const Icon = item.icon;
+    return (
+      <Link
+        href={item.href}
+        aria-current={ativo ? "page" : undefined}
+        title={recolhida ? item.label : undefined}
+        className={cn(
+          "relative flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm transition-colors lg:justify-start",
+          recolhida && "lg:justify-center lg:px-0",
+          "focus-visible:ring-ring focus-visible:ring-offset-sidebar focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+          ativo
+            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+            : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+        )}
+      >
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex size-7 shrink-0 items-center justify-center rounded-md",
+            tons[item.href] ??
+              "bg-secondary text-muted-foreground",
+          )}
+        >
+          <Icon className="size-4" />
+        </span>
+        {/* Recolhida, o rótulo sai da tela e permanece no DOM: leitor
+      de tela e busca da página continuam encontrando a palavra. */}
+        <span
+          className={cn(
+            "hidden sm:inline",
+            recolhida && "lg:sr-only",
+          )}
+        >
+          {item.label}
+        </span>
+        {contagem(item.href) > 0 ? (
+          /* Recolhida, o número vira um ponto: dizer "3" em 68px
+       empurraria o ícone, e o que importa ali é saber que há
+       algo esperando. */
+          recolhida ? (
+            <span
+              aria-label={`${contagem(item.href)} pendente(s)`}
+              className="bg-caution absolute top-1.5 right-1.5 hidden size-1.5 rounded-full lg:block"
+            />
+          ) : (
+            <span
+              className="bg-caution/15 text-caution tabular ml-auto hidden items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium lg:inline-flex"
+              aria-label={comSino(item.href) ? `${contagem(item.href)} sinais novos` : undefined}
+            >
+              {comSino(item.href) ? <Bell className="size-3" aria-hidden="true" /> : null}
+              {contagem(item.href) > 9 && comSino(item.href) ? "9+" : contagem(item.href)}
+            </span>
+          )
+        ) : null}
+      </Link>
+    );
+  };
 
   const visiveis = ehAdmin ? [...grupos, grupoAdministracao] : grupos;
   const recolhidos = lerLista(useSyncExternalStore(assinarRecolhidos, lerRecolhidos, () => "[]"));
@@ -219,7 +305,7 @@ export function Nav({
                   total vai para o título, senão um sinal novo sumiria junto.
                 */}
                 {recolhidos.includes(grupo.titulo) &&
-                grupo.itens.some((i) => !estaAtivo(i.href) && contagem(i.href) > 0) ? (
+                grupo.itens.some((i) => !itemAtivo(i) && contagem(i.href) > 0) ? (
                   <span
                     className="bg-caution size-1.5 rounded-full"
                     aria-label="há novidades neste grupo"
@@ -246,8 +332,7 @@ export function Nav({
               className="contents lg:flex lg:flex-col lg:gap-1"
             >
               {grupo.itens.map((item) => {
-                const ativo = estaAtivo(item.href);
-                const Icon = item.icon;
+                const ativo = itemAtivo(item);
                 /*
                  * Recolhido, o grupo ainda mostra a página em que se está:
                  * esconder o item ativo tiraria do menu o "você está aqui".
@@ -255,61 +340,69 @@ export function Nav({
                  */
                 const escondido =
                   !recolhida && recolhidos.includes(grupo.titulo) && !ativo;
+
+                /*
+                 * Item com sub-abas: na barra larga, o título recolhe pela
+                 * seta como os grupos (guardado na mesma lista, com o prefixo
+                 * `item:`); as sub-abas vêm recuadas embaixo. No celular e na
+                 * barra estreita não há título, e as sub-abas viram itens
+                 * comuns.
+                 */
+                if (item.filhos) {
+                  const chave = `item:${item.label}`;
+                  const fechado = recolhidos.includes(chave);
+                  return (
+                    <li key={item.href} className={cn("contents", escondido && "lg:hidden")}>
+                      <button
+                        type="button"
+                        aria-expanded={!fechado}
+                        aria-controls={`subitens-${item.label}`}
+                        onClick={() => alternarRecolhido(chave, recolhidos)}
+                        className={cn(
+                          "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground focus-visible:ring-ring hidden w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none lg:flex",
+                          recolhida && "lg:hidden",
+                          ativo && "text-sidebar-accent-foreground",
+                        )}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            "flex size-7 shrink-0 items-center justify-center rounded-md",
+                            tons[item.href] ?? "bg-secondary text-muted-foreground",
+                          )}
+                        >
+                          <item.icon className="size-4" />
+                        </span>
+                        <span>{item.label}</span>
+                        <ChevronDown
+                          aria-hidden="true"
+                          className={cn(
+                            "ml-auto size-3.5 transition-transform motion-reduce:transition-none",
+                            fechado && "-rotate-90",
+                          )}
+                        />
+                      </button>
+                      <ul
+                        id={`subitens-${item.label}`}
+                        className={cn("contents lg:flex lg:flex-col lg:gap-1", !recolhida && "lg:ml-4 lg:border-l lg:border-sidebar-border lg:pl-2")}
+                      >
+                        {item.filhos.map((filho) => {
+                          const filhoAtivo = estaAtivo(filho.href);
+                          const filhoEscondido = !recolhida && fechado && !filhoAtivo;
+                          return (
+                            <li key={filho.href} className={cn("flex-1 lg:flex-none", filhoEscondido && "lg:hidden")}>
+                              {linkDoItem(filho, filhoAtivo)}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  );
+                }
+
                 return (
                   <li key={item.href} className={cn("flex-1 lg:flex-none", escondido && "lg:hidden")}>
-                    <Link
-                      href={item.href}
-                      aria-current={ativo ? "page" : undefined}
-                      title={recolhida ? item.label : undefined}
-                      className={cn(
-                        "relative flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm transition-colors lg:justify-start",
-                        recolhida && "lg:justify-center lg:px-0",
-                        "focus-visible:ring-ring focus-visible:ring-offset-sidebar focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-                        ativo
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-                      )}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          "flex size-7 shrink-0 items-center justify-center rounded-md",
-                          tons[item.href] ??
-                            "bg-secondary text-muted-foreground",
-                        )}
-                      >
-                        <Icon className="size-4" />
-                      </span>
-                      {/* Recolhida, o rótulo sai da tela e permanece no DOM: leitor
-                    de tela e busca da página continuam encontrando a palavra. */}
-                      <span
-                        className={cn(
-                          "hidden sm:inline",
-                          recolhida && "lg:sr-only",
-                        )}
-                      >
-                        {item.label}
-                      </span>
-                      {contagem(item.href) > 0 ? (
-                        /* Recolhida, o número vira um ponto: dizer "3" em 68px
-                     empurraria o ícone, e o que importa ali é saber que há
-                     algo esperando. */
-                        recolhida ? (
-                          <span
-                            aria-label={`${contagem(item.href)} pendente(s)`}
-                            className="bg-caution absolute top-1.5 right-1.5 hidden size-1.5 rounded-full lg:block"
-                          />
-                        ) : (
-                          <span
-                            className="bg-caution/15 text-caution tabular ml-auto hidden items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium lg:inline-flex"
-                            aria-label={comSino(item.href) ? `${contagem(item.href)} sinais novos` : undefined}
-                          >
-                            {comSino(item.href) ? <Bell className="size-3" aria-hidden="true" /> : null}
-                            {contagem(item.href) > 9 && comSino(item.href) ? "9+" : contagem(item.href)}
-                          </span>
-                        )
-                      ) : null}
-                    </Link>
+                    {linkDoItem(item, ativo)}
                   </li>
                 );
               })}

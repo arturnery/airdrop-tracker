@@ -556,3 +556,21 @@ export const fecharSinalSchema = z
     }
     return { ...dados, precoManual: preco };
   });
+
+/** Tirar um projeto do farm: o motivo é o status que ele passa a ter. */
+export const saidaDoFarmSchema = z.object({
+  id: z.uuid("Projeto inválido."),
+  status: z.enum(["pausado", "distribuido", "descartado", "pesquisando"], "Escolha o motivo."),
+  observacao: z
+    .string()
+    .trim()
+    .max(200, "Até 200 caracteres.")
+    .default("")
+    .transform((v) => (v === "" ? null : v)),
+});
+
+/** Resposta ao aviso de mudança no destaque: atualizar o próprio status, ou manter. */
+export const respostaDestaqueSchema = z.object({
+  id: z.uuid("Projeto inválido."),
+  aceitar: z.boolean(),
+});

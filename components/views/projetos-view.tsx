@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Layers, Search } from "lucide-react";
+import { Layers, Search, Sprout } from "lucide-react";
 
 import { useDados } from "@/components/data-provider";
 import { SugestoesDoCatalogo } from "@/components/catalogo-sugestoes";
@@ -15,7 +15,8 @@ import {
 import { NovoProjeto } from "@/components/forms/dialogs";
 import { EditarProjeto } from "@/components/forms/editar";
 import { EmptyState, PageHeader } from "@/components/page-header";
-import { Money } from "@/components/money";
+import { Money, Percent } from "@/components/money";
+import { AvisoMudancaDoDestaque, BotaoFarmar, TirarDoFarm } from "@/components/forms/farm";
 import {
   CategoryBadge,
   categoryDescriptions,
@@ -28,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDateShort, relativeLabel } from "@/lib/dates";
 import { normalizar } from "@/lib/dataset";
+import { podeFarmar } from "@/lib/farm";
 import { cn } from "@/lib/utils";
 import { LinksDoProjeto } from "@/components/links-do-projeto";
 import { AvisoSemContaCompacto } from "@/components/aviso-sem-conta";
@@ -39,16 +41,18 @@ import {
 import type { ProjectCategory, ProjectStatus, ProjectSummary } from "@/lib/types";
 
 /**
- * Rótulos de status para o filtro. Só o texto: quem decide título de seção
- * agora é `ordemCategoria`, este serve só para nomear os chips.
+ * Seções de "Todos os projetos": por status, porque ali o que a pessoa
+ * procura é o estado de cada projeto que ela não está farmando (em estudo,
+ * pausado, já distribuído). Os ativos aparecem primeiro: são os únicos que
+ * ainda podem entrar no farm.
  */
-const statusFiltro: { valor: ProjectStatus; rotulo: string }[] = [
-  { valor: "ativo", rotulo: "Ativos" },
-  { valor: "tge_anunciado", rotulo: "TGE anunciado" },
-  { valor: "pesquisando", rotulo: "Pesquisando" },
-  { valor: "pausado", rotulo: "Pausados" },
-  { valor: "distribuido", rotulo: "Distribuídos" },
-  { valor: "descartado", rotulo: "Descartados" },
+const ordemStatus: { chave: ProjectStatus; titulo: string; nota?: string }[] = [
+  { chave: "ativo", titulo: "Ativos fora do farm", nota: "Podem entrar em Farmando agora." },
+  { chave: "tge_anunciado", titulo: "TGE anunciado", nota: "Podem entrar em Farmando agora." },
+  { chave: "pesquisando", titulo: "Em estudo" },
+  { chave: "pausado", titulo: "Pausados" },
+  { chave: "distribuido", titulo: "Distribuídos" },
+  { chave: "descartado", titulo: "Descartados" },
 ];
 
 const categorias: { valor: ProjectCategory; rotulo: string }[] = [
@@ -58,7 +62,7 @@ const categorias: { valor: ProjectCategory; rotulo: string }[] = [
 ];
 
 /**
- * Ordem das seções da grade: categoria, não status.
+ * Ordem das seções de "Farmando agora": categoria, não status.
  *
  * A nota de cada seção reaproveita `categoryDescriptions`, a mesma frase que
  * já explica a categoria no selo do card e no formulário: descrição
@@ -79,21 +83,16 @@ const ordemCategoria: { chave: ProjectCategory | null; titulo: string; nota?: st
 
 /**
  * Card de projeto: identidade, os três filtros como selo, e o que precisa de
- * ação.
+ * ação. Dois modos, um por aba:
  *
- * Deliberadamente sem números financeiros. Resultado, exposição e capital
- * saíram daqui: a lista virou um painel de "o que farmar hoje e em que
- * estado cada coisa está", e quem quer o valor em dólar abre o projeto — a
- * aba dele continua com o painel de indicadores inteiro. Cabe registrar o
- * custo aceito: comparar resultado entre projetos não dá mais para fazer só
- * de olho na lista.
- *
- * Uma exceção: projeto distribuído. Ali o resultado já fechou, o airdrop já
- * caiu, e não vai mudar de novo só de olhar o card. Mostrar o valor de cara
- * poupa o clique, e não reabre a porta para os outros números: exposição e
- * capital continuam de fora, mesmo aqui.
+ * - **todos**: sem números financeiros, é a lista de estado de cada projeto.
+ *   A exceção é o distribuído, cujo resultado já fechou. Ativo fora do farm
+ *   ganha o botão Farmar; quem saiu do farm mostra o motivo.
+ * - **farm**: os números voltam (depositado, exposição, resultado com ROI),
+ *   porque é a carteira do que se está farmando e é ali que se compara um
+ *   projeto com outro. O botão é o de tirar do farm.
  */
-function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
+function CardProjeto({ projeto, modo }: { projeto: ProjectSummary; modo: "todos" | "farm" }) {
   const { dataset, hoje, acoes } = useDados();
 
   return (
@@ -172,9 +171,44 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         para ser cortado.
       */}
       <div className="mt-3 flex min-h-10 flex-col justify-center gap-2">
+        {projeto.mudancaDoDestaque ? (
+          <AvisoMudancaDoDestaque projeto={projeto} novo={projeto.mudancaDoDestaque} />
+        ) : null}
         {projeto.contas === 0 ? <AvisoSemContaCompacto /> : null}
         {projeto.alerta ? <AvisoSaldo alerta={projeto.alerta} /> : null}
-        {projeto.status === "distribuido" ? (
+        {modo === "farm" ? (
+          <dl className="bg-secondary/40 grid grid-cols-3 gap-2 rounded-md px-3 py-2 text-xs">
+            <div>
+              <dt className="text-muted-foreground">Depositado</dt>
+              <dd className="mt-0.5 text-sm font-semibold">
+                <Money value={projeto.capitalNoPico} compact />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Exposição</dt>
+              <dd className="mt-0.5 text-sm font-semibold">
+                <Money value={projeto.exposicao} compact />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Resultado</dt>
+              <dd className="mt-0.5 text-sm font-semibold">
+                <Money value={projeto.resultado} tone="auto" signed compact />
+              </dd>
+              {projeto.roi !== null ? (
+                <dd className="text-muted-foreground mt-0.5">
+                  ROI <Percent value={projeto.roi} />
+                </dd>
+              ) : null}
+            </div>
+          </dl>
+        ) : null}
+        {modo === "todos" && projeto.saidaDoFarmMotivo ? (
+          <p className="text-muted-foreground text-xs">
+            Saiu do farm: {projeto.saidaDoFarmMotivo}
+          </p>
+        ) : null}
+        {modo === "todos" && projeto.status === "distribuido" ? (
           <div className="bg-secondary/40 flex h-10 items-center justify-between rounded-md px-3">
             <span className="text-muted-foreground text-xs font-medium">Resultado</span>
             <span className="text-sm font-semibold">
@@ -208,6 +242,13 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
         <CategoryBadge category={projeto.categoria} />
         <ProjectStatusBadge status={projeto.status} />
         <PriorityBadge value={projeto.prioridade} />
+        <div className="ml-auto">
+          {modo === "farm" ? (
+            <TirarDoFarm projeto={projeto} />
+          ) : !projeto.farmando && podeFarmar(projeto.status) ? (
+            <BotaoFarmar projeto={projeto} />
+          ) : null}
+        </div>
       </div>
 
       <div className="border-border mt-3 flex min-h-10 items-center justify-between gap-3 border-t pt-2.5 text-xs">
@@ -219,6 +260,11 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
           />
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {modo === "farm" && projeto.contas > 0 ? (
+            <span className="text-muted-foreground">
+              {projeto.contas} {projeto.contas === 1 ? "conta" : "contas"}
+            </span>
+          ) : null}
           {projeto.tarefasAtrasadas > 0 ? (
             <span className="bg-negative/15 text-negative inline-flex items-center rounded-full px-2.5 py-0.5 font-medium">
               {projeto.tarefasAtrasadas} atrasada
@@ -239,20 +285,23 @@ function CardProjeto({ projeto }: { projeto: ProjectSummary }) {
   );
 }
 
-export function ProjetosView() {
+/**
+ * As duas abas de Projetos (ARCHITECTURE §21):
+ *
+ * - **Todos os projetos**: no topo, os destaques ativos que a pessoa ainda
+ *   não tem; embaixo, os projetos dela que não estão em farm, por status.
+ * - **Farmando agora**: só os que ela escolheu farmar, por categoria, com os
+ *   números de cada um.
+ */
+export function ProjetosView({ aba }: { aba: "todos" | "farm" }) {
   const { dataset, hoje } = useDados();
   const [categoria, setCategoria] = useState<ProjectCategory | null>(null);
   const [prioridade, setPrioridade] = useState<string | null>(null);
-  /*
-   * Começa em "ativo", não em "todos". A tela principal é para "o que estou
-   * farmando agora": pausado e distribuído só entram quando a pessoa pede,
-   * clicando no chip ou em "Todos". Categoria e prioridade filtram dentro
-   * disso, e não do total, pelo mesmo motivo.
-   */
-  const [status, setStatus] = useState<ProjectStatus | null>("ativo");
   const [busca, setBusca] = useState("");
 
-  const todos = selectProjects(dataset, hoje);
+  const daAba = selectProjects(dataset, hoje).filter((p) =>
+    aba === "farm" ? p.farmando : !p.farmando,
+  );
 
   /*
    * Busca sem acento e sem caixa: "solstice" acha "Solstïce", e "unit" acha
@@ -261,54 +310,68 @@ export function ProjetosView() {
    */
   const termo = normalizar(busca);
 
-  const filtrados = todos.filter(
+  const filtrados = daAba.filter(
     (p) =>
       (categoria === null || p.categoria === categoria) &&
       (prioridade === null || String(p.prioridade) === prioridade) &&
-      (status === null || p.status === status) &&
       (termo === "" || normalizar(p.nome).includes(termo)),
   );
 
-  // Contagens vêm do conjunto completo: um filtro que zera a própria contagem
+  // Contagens vêm do conjunto da aba: um filtro que zera a própria contagem
   // esconderia a saída para desfazê-lo.
   const contarCategoria = (valor: ProjectCategory) =>
-    todos.filter((p) => p.categoria === valor).length;
+    daAba.filter((p) => p.categoria === valor).length;
   const contarPrioridade = (valor: number) =>
-    todos.filter((p) => p.prioridade === valor).length;
-  const contarStatus = (valor: ProjectStatus) =>
-    todos.filter((p) => p.status === valor).length;
+    daAba.filter((p) => p.prioridade === valor).length;
 
-  const grupos = ordemCategoria
-    .map((secao) => ({
-      ...secao,
-      projetos: filtrados
-        .filter((p) => p.categoria === secao.chave)
-        // Dentro da categoria, prioridade manda; empate desempata por capital.
-        .sort((a, b) => b.prioridade - a.prioridade || b.aportado - a.aportado),
-    }))
-    .filter((grupo) => grupo.projetos.length > 0);
+  // Dentro da seção, prioridade manda; empate desempata por capital.
+  const ordenar = (lista: ProjectSummary[]) =>
+    [...lista].sort((a, b) => b.prioridade - a.prioridade || b.aportado - a.aportado);
 
-  const temFiltro =
-    categoria !== null || prioridade !== null || status !== null || termo !== "";
+  const grupos =
+    aba === "farm"
+      ? ordemCategoria.map((secao) => ({
+          chave: secao.chave ?? "sem-categoria",
+          cabecalho: <CategoryBadge category={secao.chave} />,
+          nota: secao.nota,
+          projetos: ordenar(filtrados.filter((p) => p.categoria === secao.chave)),
+        }))
+      : ordemStatus.map((secao) => ({
+          chave: secao.chave,
+          cabecalho: <span>{secao.titulo}</span>,
+          nota: secao.nota,
+          projetos: ordenar(filtrados.filter((p) => p.status === secao.chave)),
+        }));
+  const visiveis = grupos.filter((g) => g.projetos.length > 0);
+
+  const temFiltro = categoria !== null || prioridade !== null || termo !== "";
+  const limpar = () => {
+    setCategoria(null);
+    setPrioridade(null);
+    setBusca("");
+  };
 
   return (
     <>
       <PageHeader
-        icon={Layers}
-        title="Projetos"
-        description="Agrupados por categoria; dentro de cada grupo, os de maior prioridade primeiro."
+        icon={aba === "farm" ? Sprout : Layers}
+        title={aba === "farm" ? "Farmando agora" : "Todos os projetos"}
+        description={
+          aba === "farm"
+            ? "Os projetos que você escolheu farmar, com os números de cada um. Para sair, diga o motivo em Tirar do farm."
+            : "Os farms atuais para adicionar e os seus projetos fora do farm, por status."
+        }
         actions={<NovoProjeto />}
       />
 
-      <SugestoesDoCatalogo />
+      {aba === "todos" ? <SugestoesDoCatalogo /> : null}
 
-      {todos.length > 0 ? (
+      {daAba.length > 0 ? (
         <div className="border-border mb-8 flex flex-col gap-3 rounded-lg border p-4">
           {/*
             A busca vem antes dos chips porque é o caminho mais curto quando se
             sabe o nome: os filtros servem para explorar, e a busca para ir
-            direto. Filtra ao digitar, sem botão de confirmar, porque com o
-            resultado mudando a cada letra o botão só adicionaria um passo.
+            direto. Filtra ao digitar, sem botão de confirmar.
           */}
           <div className="flex items-center gap-2">
             <label htmlFor="busca-projeto" className="text-muted-foreground text-xs">
@@ -329,50 +392,23 @@ export function ProjetosView() {
               />
             </div>
             {busca ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => setBusca("")}
-              >
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setBusca("")}>
                 Limpar
               </Button>
             ) : null}
           </div>
 
-          {/*
-            Categoria primeiro da lista porque é o eixo em que a tela já se
-            organiza: os grupos são as categorias. Filtrar por uma delas não
-            muda a estrutura, reduz a página a uma seção só.
-          */}
           <FiltroChips
             legenda="Categoria"
             selecionado={categoria}
             aoSelecionar={setCategoria}
             opcoes={[
-              { valor: null, rotulo: "Todas", contagem: todos.length },
+              { valor: null, rotulo: "Todas", contagem: daAba.length },
               ...categorias.map((c) => ({
                 valor: c.valor,
                 rotulo: c.rotulo,
                 contagem: contarCategoria(c.valor),
               })),
-            ]}
-          />
-          <FiltroChips
-            legenda="Status"
-            selecionado={status}
-            aoSelecionar={setStatus}
-            opcoes={[
-              { valor: null, rotulo: "Todos", contagem: todos.length },
-              ...statusFiltro
-                .map((s) => ({
-                  valor: s.valor,
-                  rotulo: s.rotulo,
-                  contagem: contarStatus(s.valor),
-                }))
-                // Status sem projeto nenhum não vira chip: a lista tem seis, e
-                // oferecer os vazios enche a barra de opção que não leva a nada.
-                .filter((s) => s.contagem > 0),
             ]}
           />
           <FiltroChips
@@ -387,28 +423,16 @@ export function ProjetosView() {
                   rotulo: priorityLabels[n],
                   contagem: contarPrioridade(n),
                 }))
-                // Não oferece filtro que não devolveria nada. As categorias
-                // continuam todas visíveis por serem um conjunto fixo e curto.
+                // Não oferece filtro que não devolveria nada.
                 .filter((p) => p.contagem > 0),
             ]}
           />
           {temFiltro ? (
             <div className="border-border flex items-center justify-between gap-3 border-t pt-3">
               <p className="text-muted-foreground text-xs">
-                {filtrados.length} de {todos.length}{" "}
-                {todos.length === 1 ? "projeto" : "projetos"}
+                {filtrados.length} de {daAba.length} {daAba.length === 1 ? "projeto" : "projetos"}
               </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => {
-                  setCategoria(null);
-                  setPrioridade(null);
-                  setStatus(null);
-                  setBusca("");
-                }}
-              >
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={limpar}>
                 Limpar filtros
               </Button>
             </div>
@@ -416,67 +440,55 @@ export function ProjetosView() {
         </div>
       ) : null}
 
-      {todos.length === 0 ? (
-        <EmptyState
-          title="Nenhum projeto cadastrado"
-          description="Adicione um dos farms atuais acima, ou cadastre o que você está farmando para começar a acompanhar capital e tarefas."
-        />
-      ) : grupos.length === 0 ? (
+      {daAba.length === 0 ? (
+        aba === "farm" ? (
+          <EmptyState
+            title="Você ainda não está farmando nenhum projeto"
+            description="Escolha um dos farms atuais em Todos os projetos, ou cadastre um projeto ativo seu."
+            action={
+              <Button asChild variant="outline" size="sm">
+                <Link href="/projetos">Ver todos os projetos</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="Nenhum projeto fora do farm"
+            description="Os projetos que você pausar, encerrar ou cadastrar sem farmar aparecem aqui."
+          />
+        )
+      ) : visiveis.length === 0 ? (
         /*
          * O vazio diz o que foi procurado, e não só que não achou. Quem digitou
-         * um nome quase certo precisa ver o que digitou para perceber o engano,
-         * e o botão devolve a lista inteira sem obrigar a apagar campo a campo.
+         * um nome quase certo precisa ver o que digitou para perceber o engano.
          */
         <EmptyState
-          title={
-            termo
-              ? `Nenhum projeto com "${busca.trim()}"`
-              : "Nenhum projeto com esses filtros"
-          }
+          title={termo ? `Nenhum projeto com "${busca.trim()}"` : "Nenhum projeto com esses filtros"}
           description={
             termo
               ? "Confira a escrita, ou limpe os filtros para ver todos de novo."
-              : "Ajuste o status, a categoria ou a prioridade para ver outros projetos."
+              : "Ajuste a categoria ou a prioridade para ver outros projetos."
           }
           action={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setCategoria(null);
-                setPrioridade(null);
-                setStatus(null);
-                setBusca("");
-              }}
-            >
+            <Button variant="outline" size="sm" onClick={limpar}>
               Limpar filtros
             </Button>
           }
         />
       ) : (
         <div className="space-y-10">
-          {grupos.map((grupo) => (
-            <section
-              key={grupo.chave ?? "sem-categoria"}
-              aria-labelledby={`grupo-${grupo.chave ?? "sem-categoria"}`}
-            >
+          {visiveis.map((grupo) => (
+            <section key={grupo.chave} aria-labelledby={`grupo-${grupo.chave}`}>
               <div className="mb-4 flex items-baseline gap-3">
-                <h2
-                  id={`grupo-${grupo.chave ?? "sem-categoria"}`}
-                  className="flex items-center gap-2 text-base font-medium"
-                >
-                  <CategoryBadge category={grupo.chave} />
-                  <span className="text-muted-foreground tabular text-sm">
-                    {grupo.projetos.length}
-                  </span>
+                <h2 id={`grupo-${grupo.chave}`} className="flex items-center gap-2 text-base font-medium">
+                  {grupo.cabecalho}
+                  <span className="text-muted-foreground tabular text-sm">{grupo.projetos.length}</span>
                 </h2>
-                {grupo.nota ? (
-                  <span className="text-muted-foreground text-xs">{grupo.nota}</span>
-                ) : null}
+                {grupo.nota ? <span className="text-muted-foreground text-xs">{grupo.nota}</span> : null}
               </div>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {grupo.projetos.map((projeto) => (
-                  <CardProjeto key={projeto.id} projeto={projeto} />
+                  <CardProjeto key={projeto.id} projeto={projeto} modo={aba} />
                 ))}
               </div>
             </section>

@@ -74,6 +74,13 @@ export type RawProject = {
   notes: string | null;
   /** De qual entrada do catálogo da comunidade este projeto veio; null = cadastrado à mão. */
   adoptedFromId: string | null;
+  /** Na aba "Farmando agora" (ver `projects.farmando` no schema). */
+  farmando: boolean;
+  /** Por que saiu do farm, quando saiu. */
+  saidaDoFarmMotivo: string | null;
+  saidaDoFarmEm: string | null;
+  /** Último status do destaque que a pessoa já viu; ver o schema. */
+  statusDoDestaqueVisto: RawProject["status"] | null;
 };
 
 export const rawProjects: RawProject[] = [
@@ -94,6 +101,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: "Conta de e-mail é a principal. Perfis de navegador entraram depois.",
     adoptedFromId: null,
+    farmando: true,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-solstice",
@@ -112,6 +123,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: true,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-vertex",
@@ -130,6 +145,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: "2026-10-01",
     notes: "Maior alocação e mais contas. Volume é o critério que importa aqui.",
     adoptedFromId: null,
+    farmando: true,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-prisma",
@@ -148,6 +167,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-nebula",
@@ -166,6 +189,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: "Aporte mais alto até agora. Saldo ainda não conferido.",
     adoptedFromId: null,
+    farmando: true,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
 
   // ---------------------------------------------------- distribuídos (airdrop já caiu)
@@ -186,6 +213,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: "Já foi distribuído: recebido e vendido no TGE",
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-zenith",
@@ -204,6 +235,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-quasar",
@@ -222,6 +257,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-fathom",
@@ -240,6 +279,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-driftwood",
@@ -258,6 +301,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-ledger",
@@ -276,6 +323,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-comet",
@@ -294,6 +345,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: "Airdrop bem acima do esperado para o tamanho do aporte.",
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-tundra",
@@ -312,6 +367,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-vantage",
@@ -330,6 +389,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-solace",
@@ -348,6 +411,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
 
   // -------------------------------------------------------- farmando atualmente
@@ -368,6 +435,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: "2026-10-15",
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-kepler",
@@ -386,6 +457,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: "2026-09-20",
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     id: "prj-aurora",
@@ -404,6 +479,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
   {
     // Sem nenhuma conta vinculada, de propósito: é o caso que o aviso de
@@ -424,6 +503,10 @@ export const rawProjects: RawProject[] = [
     expectedTgeDate: null,
     notes: null,
     adoptedFromId: null,
+    farmando: false,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: null,
   },
 ];
 
@@ -895,6 +978,8 @@ export type RawCatalogProject = {
   pointsLabel: string | null;
   chain: string | null;
   priority: number;
+  /** Status do projeto de quem publicou, copiado a cada mudança. */
+  status: RawProject["status"];
   websiteUrl: string | null;
   discordUrl: string | null;
   twitterUrl: string | null;

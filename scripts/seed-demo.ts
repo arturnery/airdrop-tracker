@@ -156,6 +156,9 @@ async function main() {
         tutorialUrl: projeto.tutorialUrl,
         expectedTgeDate: projeto.expectedTgeDate,
         notes: projeto.notes,
+        farmando: projeto.farmando,
+        saidaDoFarmMotivo: projeto.saidaDoFarmMotivo,
+        saidaDoFarmEm: projeto.saidaDoFarmEm ? new Date(projeto.saidaDoFarmEm) : null,
       })
       .returning({ id: schema.projects.id });
     idsProjeto.set(projeto.id, criado!.id);

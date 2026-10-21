@@ -7,6 +7,7 @@ import { useDados } from "@/components/data-provider";
 import { CategoryBadge, PriorityBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { normalizar } from "@/lib/dataset";
+import { destaquesParaAdicionar } from "@/lib/farm";
 import type { ProjectCategory } from "@/lib/types";
 
 /**
@@ -47,12 +48,9 @@ function useSugestoes(): Sugestao[] {
   const { dataset } = useDados();
 
   const nomesJaCadastrados = new Set(dataset.projects.map((p) => normalizar(p.name)));
-  const idsJaAdotados = new Set(
-    dataset.projects.map((p) => p.adoptedFromId).filter((id): id is string => id !== null),
-  );
 
-  return dataset.catalogProjects
-    .filter((c) => c.publishedAt !== null && !idsJaAdotados.has(c.id))
+  // Só os destaques ativos que a pessoa ainda não tem (ver `lib/farm`).
+  return destaquesParaAdicionar(dataset)
     .map((c) => ({
       id: c.id,
       nome: c.name,
@@ -109,7 +107,7 @@ function CardSugestao({ sugestao }: { sugestao: Sugestao }) {
           }}
         >
           <Plus className="size-3.5" aria-hidden="true" />
-          Adicionar ao meu portfólio
+          Adicionar ao farm
         </Button>
         {sugestao.colideComNome ? (
           <p className="text-muted-foreground text-xs">
@@ -137,7 +135,7 @@ export function SugestoesDoCatalogo() {
           Farms atuais
         </h2>
         <p className="text-muted-foreground mt-0.5 text-sm">
-          Projetos que já estão sendo farmados.
+          Projetos ativos destacados para a comunidade. Ao adicionar, ele vai para Farmando agora.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

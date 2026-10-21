@@ -1,3 +1,4 @@
+import { podeFarmar } from "./farm";
 import { novoId, uniqueSlug, type Dataset } from "./dataset";
 import { toDbNumeric, type Cents } from "./money";
 import { valorDoRecebimento } from "./validators";
@@ -23,7 +24,10 @@ type Tarefa = Dataset["tasks"][number];
 
 export function criarProjeto(
   ds: Dataset,
-  dados: Omit<Projeto, "id" | "slug" | "adoptedFromId">,
+  dados: Omit<
+    Projeto,
+    "id" | "slug" | "adoptedFromId" | "farmando" | "saidaDoFarmMotivo" | "saidaDoFarmEm" | "statusDoDestaqueVisto"
+  >,
 ): { dataset: Dataset; id: string } {
   const id = novoId("prj");
   const slug = uniqueSlug(
@@ -36,7 +40,23 @@ export function criarProjeto(
       // Nasce sem origem: criação manual, por definição, não veio do
       // catálogo. `adotarDoCatalogo`, mais abaixo, é o único outro lugar que
       // grava este campo.
-      projects: [...ds.projects, { ...dados, id, slug, adoptedFromId: null }],
+      //
+      // Criado ativo, entra direto em "Farmando agora": cadastrar à mão um
+      // projeto que se está farmando já é a escolha. Criado pausado ou em
+      // estudo, fica só em "Todos os projetos".
+      projects: [
+        ...ds.projects,
+        {
+          ...dados,
+          id,
+          slug,
+          adoptedFromId: null,
+          farmando: podeFarmar(dados.status),
+          saidaDoFarmMotivo: null,
+          saidaDoFarmEm: null,
+          statusDoDestaqueVisto: null,
+        },
+      ],
     },
     id,
   };
@@ -502,6 +522,7 @@ export function destacarProjeto(
     pointsLabel: projeto.pointsLabel,
     chain: projeto.chain,
     priority: projeto.priority,
+    status: projeto.status,
     websiteUrl: projeto.websiteUrl,
     discordUrl: projeto.discordUrl,
     twitterUrl: projeto.twitterUrl,
@@ -608,6 +629,11 @@ export function adotarDoCatalogo(
     expectedTgeDate: entrada.expectedTgeDate,
     notes: null,
     adoptedFromId: entrada.id,
+    // Adicionar um destaque é escolher farmá-lo.
+    farmando: true,
+    saidaDoFarmMotivo: null,
+    saidaDoFarmEm: null,
+    statusDoDestaqueVisto: entrada.status,
   };
 
   return {

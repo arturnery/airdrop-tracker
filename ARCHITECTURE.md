@@ -1976,3 +1976,47 @@ depois esconderia abertos atrás de fechados mais novos.
 - Permissão do professor para publicar.
 - Saída parcial (metade no alvo 1, metade no alvo 2) e aviso do fechamento no Discord.
 - Aviso legal fixo nos sinais.
+
+## 21. Projetos: Todos e Farmando agora
+
+A página de Projetos virou duas abas, sub-itens de "Projetos" no menu (com a mesma seta
+que recolhe os grupos):
+
+| Aba | Mostra |
+|---|---|
+| **Todos os projetos** (`/projetos`) | Destaques ativos que a pessoa ainda não tem, e os projetos dela fora do farm, por status |
+| **Farmando agora** (`/projetos/farmando`) | Só os projetos em farm, por categoria, com depositado, exposição, resultado e ROI |
+
+`farmando` é uma coluna própria de `projects`, e não um status, mas as regras amarram os
+dois (`lib/farm.ts`):
+
+- **Só entra projeto ativo** (ativo ou TGE anunciado). Pausado, distribuído e descartado
+  ficam em "Todos" como registro, sem botão de farmar.
+- **Entrar:** adicionar um destaque já entra no farm; cadastrar à mão um projeto ativo
+  também. Um ativo fora do farm tem o botão Farmar.
+- **Sair exige motivo, e o motivo é o status novo** (pausei, distribuído, desisti, voltei a
+  estudar), gravado em `saida_do_farm_motivo`. Para o formulário de edição não ser o atalho
+  que pula a pergunta, ele só oferece status de farm a um projeto em farm, e a Server Action
+  recusa o resto com `ErroDeRegra` (mensagem escrita para a pessoa, que chega à tela como
+  está).
+- **Estreia:** a migração pôs em farm só o que cada pessoa já tinha escolhido, os
+  destaques adotados e os projetos que o admin destacou, desde que ativos. O resto ela
+  escolhe.
+
+### 21.1. O status do destaque segue o do admin
+
+O catálogo (§13) ganhou `status`, copiado do projeto de origem sempre que quem publicou muda
+o status dele. É a segunda exceção à divisão editorial/pessoal, depois da prioridade, e pelo
+mesmo motivo: "esse projeto ainda está ativo?" é o que a comunidade precisa do curador.
+Copiado, e não lido do projeto de origem, para nenhuma leitura atravessar até a linha
+pessoal de quem publicou.
+
+Quem adotou guarda o último status do destaque que já viu (`status_do_destaque_visto`).
+Quando o do catálogo muda e fica diferente do dela, o card mostra "O admin marcou este
+projeto como Distribuído", com **Atualizar o meu** ou **Manter**. Nada muda sozinho: o
+status continua sendo de cada um. Atualizar para um status que não é de farm tira o projeto
+do farm, com o motivo registrado como vindo do destaque.
+
+Os destaques oferecidos são só os ativos, e só os que a pessoa não tem: nem adotado, nem
+dela (o admin vê os próprios projetos entre os dele), nem com o mesmo nome de um projeto
+que ela cadastrou à mão.

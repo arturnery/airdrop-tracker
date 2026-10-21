@@ -45,6 +45,7 @@ import type {
   TransactionRow,
 } from "./types";
 import { urlExterna } from "./links";
+import { mudancaDoDestaque } from "./farm";
 
 /**
  * Agregação do domínio. Toda função é pura: `(Dataset, hoje) -> view model`.
@@ -480,6 +481,9 @@ export function selectProjects(ds: Dataset, hoje: string): ProjectSummary[] {
           lancamentos: doProjetoMov,
         }),
         links: linksDoProjeto(projeto),
+        farmando: projeto.farmando,
+        saidaDoFarmMotivo: projeto.saidaDoFarmMotivo,
+        mudancaDoDestaque: mudancaDoDestaque(projeto, ds.catalogProjects),
       } satisfies ProjectSummary;
     })
     .sort((a, b) => b.prioridade - a.prioridade || b.aportado - a.aportado);
@@ -658,6 +662,9 @@ export function selectProjectBySlug(
     ultimaAtividade: ultimaAtividade(ds, (r) => r.projectId === projeto.id),
     tgePrevisto: projeto.expectedTgeDate,
     links: linksDoProjeto(projeto),
+    farmando: projeto.farmando,
+    saidaDoFarmMotivo: projeto.saidaDoFarmMotivo,
+    mudancaDoDestaque: mudancaDoDestaque(projeto, ds.catalogProjects),
     notas: projeto.notes,
     posicoesToken,
     contasDetalhe,

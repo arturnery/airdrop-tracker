@@ -140,6 +140,12 @@ export type ProjectSummary = {
   alerta: AlertaProjeto | null;
   /** Já filtrados: só endereços `http(s)` (ver `linksDoProjeto`). */
   links: ProjectLinks;
+  /** Na aba "Farmando agora". */
+  farmando: boolean;
+  /** Por que saiu do farm, quando saiu. */
+  saidaDoFarmMotivo: string | null;
+  /** Status novo do destaque, ainda não respondido (ver `lib/farm`). */
+  mudancaDoDestaque: ProjectStatus | null;
 };
 
 export type ProjectLinks = {

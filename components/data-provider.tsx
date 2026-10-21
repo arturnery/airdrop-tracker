@@ -83,6 +83,9 @@ type Acoes = {
   destacarProjeto: Acao<[string, unknown]>;
   removerDestaque: Acao<[string]>;
   adotarDoCatalogo: Acao<[unknown]>;
+  farmarProjeto: Acao<[string]>;
+  tirarDoFarm: Acao<[unknown]>;
+  responderMudancaDoDestaque: Acao<[unknown]>;
   criarLive: Acao<[unknown]>;
   atualizarLive: Acao<[string, unknown]>;
   excluirLive: Acao<[string]>;
@@ -244,6 +247,9 @@ export function DataProvider({
       destacarProjeto: envolver(A.destacarProjeto),
       removerDestaque: envolver(A.removerDestaque),
       adotarDoCatalogo: envolver(A.adotarDoCatalogo),
+      farmarProjeto: envolver(A.farmarProjeto),
+      tirarDoFarm: envolver(A.tirarDoFarm),
+      responderMudancaDoDestaque: envolver(A.responderMudancaDoDestaque),
       criarLive: envolver(Comunidade.criarLive),
       atualizarLive: envolver(Comunidade.atualizarLive),
       excluirLive: envolver(Comunidade.excluirLive),

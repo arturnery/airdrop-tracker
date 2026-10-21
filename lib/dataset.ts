@@ -69,9 +69,16 @@ export function slugify(nome: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/**
+ * Endereços de `/projetos/...` que são páginas, e não projetos: um projeto
+ * chamado "Farmando" ficaria escondido atrás da aba de mesmo endereço.
+ */
+const SLUGS_RESERVADOS = ["farmando"];
+
 /** Slug único dentro do dataset, sufixando quando já existe. */
 export function uniqueSlug(nome: string, existentes: string[]): string {
   const base = slugify(nome) || "projeto";
+  existentes = [...existentes, ...SLUGS_RESERVADOS];
   if (!existentes.includes(base)) return base;
   let n = 2;
   while (existentes.includes(`${base}-${n}`)) n += 1;

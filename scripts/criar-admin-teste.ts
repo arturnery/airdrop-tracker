@@ -28,7 +28,7 @@ import { execFileSync } from "node:child_process";
 
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 import * as schema from "../db/schema";
@@ -79,6 +79,64 @@ async function main() {
   execFileSync("npx", ["tsx", "scripts/seed-demo.ts", "--email", ADMIN_TESTE_EMAIL], {
     stdio: "inherit",
   });
+  await criarDestaqueDeTeste(db, existente?.id ?? (await idDaConta(db)));
+}
+
+async function idDaConta(db: ReturnType<typeof drizzle<typeof schema>>) {
+  const [conta] = await db
+    .select({ id: schema.users.id })
+    .from(schema.users)
+    .where(eq(schema.users.email, ADMIN_TESTE_EMAIL))
+    .limit(1);
+  return conta!.id;
+}
+
+/**
+ * Um destaque que só a conta de admin de teste tem: a conta demo não tem
+ * projeto com esse nome, então ele aparece para ela como farm a adicionar, e
+ * mudar o status dele aqui exercita o aviso "o admin marcou como…" do lado
+ * de lá. Recriado do zero a cada execução, para o teste partir sempre do
+ * mesmo ponto.
+ */
+const DESTAQUE_TESTE = "Astra Points";
+
+async function criarDestaqueDeTeste(db: ReturnType<typeof drizzle<typeof schema>>, userId: string) {
+  await db
+    .delete(schema.catalogProjects)
+    .where(and(eq(schema.catalogProjects.name, DESTAQUE_TESTE), eq(schema.catalogProjects.createdBy, userId)));
+  await db
+    .delete(schema.projects)
+    .where(and(eq(schema.projects.name, DESTAQUE_TESTE), eq(schema.projects.userId, userId)));
+
+  const [projeto] = await db
+    .insert(schema.projects)
+    .values({
+      userId,
+      slug: "astra-points",
+      name: DESTAQUE_TESTE,
+      status: "ativo",
+      category: "interacoes",
+      pointsLabel: "Pontos",
+      priority: 3,
+      websiteUrl: "https://example.com/astra",
+      farmando: true,
+    })
+    .returning({ id: schema.projects.id });
+
+  await db.insert(schema.catalogProjects).values({
+    slug: `astra-points-teste-${userId.slice(0, 8)}`,
+    name: DESTAQUE_TESTE,
+    category: "interacoes",
+    pointsLabel: "Pontos",
+    priority: 3,
+    status: "ativo",
+    websiteUrl: "https://example.com/astra",
+    summary: "Destaque de teste.",
+    createdBy: userId,
+    sourceProjectId: projeto!.id,
+    publishedAt: new Date(),
+  });
+  console.log(`destaque de teste: ${DESTAQUE_TESTE}`);
 }
 
 main().then(() => process.exit(0));

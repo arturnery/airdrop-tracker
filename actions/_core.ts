@@ -35,6 +35,20 @@ export type ResultadoAcao =
 
 export const sucesso = (): ResultadoAcao => ({ ok: true });
 
+/**
+ * Recusa por regra de negócio, lançada de dentro da operação: a mensagem é
+ * escrita para a pessoa e chega à tela como está, no campo indicado. Erro de
+ * banco continua passando pela tradução, e qualquer outro vira o genérico.
+ */
+export class ErroDeRegra extends Error {
+  constructor(
+    readonly campo: string,
+    mensagem: string,
+  ) {
+    super(mensagem);
+  }
+}
+
 export const falha = (campo: string, mensagem: string): ResultadoAcao => ({
   ok: false,
   erros: { [campo]: mensagem },
@@ -74,6 +88,7 @@ export async function executar<S extends z.ZodType>(
   try {
     await operacao(analisado.data, userId);
   } catch (erro) {
+    if (erro instanceof ErroDeRegra) return falha(erro.campo, erro.message);
     console.error("[action]", erro);
     const traduzido = traduzirErroDeBanco(erro);
     return falha(traduzido.campo, traduzido.mensagem);

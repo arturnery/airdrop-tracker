@@ -151,6 +151,10 @@ export async function carregarDataset(
       expectedTgeDate: p.expectedTgeDate,
       notes: p.notes,
       adoptedFromId: p.adoptedFromId,
+      farmando: p.farmando,
+      saidaDoFarmMotivo: p.saidaDoFarmMotivo,
+      saidaDoFarmEm: p.saidaDoFarmEm ? p.saidaDoFarmEm.toISOString() : null,
+      statusDoDestaqueVisto: p.statusDoDestaqueVisto,
     })),
     projectAccounts: pares.map((p) => ({
       projectId: p.projectId,
@@ -241,6 +245,7 @@ export async function carregarDataset(
       pointsLabel: c.pointsLabel,
       chain: c.chain,
       priority: c.priority,
+      status: c.status,
       websiteUrl: c.websiteUrl,
       discordUrl: c.discordUrl,
       twitterUrl: c.twitterUrl,
