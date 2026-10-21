@@ -64,8 +64,13 @@ export function dolar(valor: Cents): string {
 
 const pontos = (valor: Points) => formatPoints(valor);
 
+/**
+ * Fixo em todo post: de onde vem a ferramenta, e o convite para quem quiser
+ * entrar na comunidade, que é o único caminho de acesso a ela.
+ */
 const rodape = () =>
-  `Acompanho meus airdrops pela ferramenta exclusiva da comunidade Level Cripto Pro (@${PERFIL_DA_COMUNIDADE}).\n${SITE_DA_COMUNIDADE}`;
+  `Acompanho meus airdrops pela ferramenta da comunidade Level Cripto Pro (@${PERFIL_DA_COMUNIDADE}).\n` +
+  `Quer fazer parte? Entra aqui: ${SITE_DA_COMUNIDADE}`;
 
 /**
  * Como o projeto aparece no post: o @ quando houver, senão o nome. As frases

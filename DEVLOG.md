@@ -3761,3 +3761,11 @@ o valor cru; o post usa o mesmo `formatPoints` da tela.
 
 Ficou anotado para depois: medição de volume e de pontos aceita data futura, o que o teste
 expôs ao simular uma semana.
+
+### O convite e a foto
+
+Na revisão, dois acréscimos. O rodapé ganhou o convite para a comunidade ("Quer fazer parte?
+Entra aqui:"), e o teste de limite pegou o post de pontos com rótulo longo passando de 280 por
+dois caracteres: saiu a palavra "exclusiva". E a foto: o link de publicação não anexa imagem,
+então o botão passou a abrir uma janela com a prévia do post e o lembrete de anexar o print
+antes de abrir o X.

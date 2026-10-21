@@ -199,6 +199,7 @@ export function ProjetoView({ slug }: { slug: string }) {
             {projeto.resultado > 0 ? (
               <BotaoCompartilharX
                 rotulo="Compartilhar resultado"
+                doQue="do seu resultado (a Visão geral do projeto)"
                 texto={postDeResultado({
                   projeto: noPost,
                   resultado: projeto.resultado,
@@ -643,6 +644,7 @@ export function ProjetoView({ slug }: { slug: string }) {
               <div className="flex flex-wrap items-center gap-2">
                 {programa.atualizadoEm ? (
                   <BotaoCompartilharX
+                    doQue="dos seus pontos (a tela da plataforma ou esta aba)"
                     texto={postDePontos({
                       projeto: noPost,
                       rotulo: programa.rotulo,
@@ -913,6 +915,7 @@ export function ProjetoView({ slug }: { slug: string }) {
             <div className="flex flex-wrap items-center gap-2">
               {volume.atualizadoEm ? (
                 <BotaoCompartilharX
+                  doQue="do seu volume (a tela da plataforma ou esta aba)"
                   texto={postDeVolume({
                     projeto: noPost,
                     total: volume.total,

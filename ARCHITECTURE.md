@@ -2090,9 +2090,16 @@ sem custo, e nenhum número sai do sistema sem o clique dela.
   um endereço de busca ou de outro site faz o post usar o nome do projeto.
 - **O período** sai das duas últimas medições: "nesta semana" só quando há de 6 a 8 dias entre
   elas, senão "nos últimos N dias". Sem medição anterior, o post fala só do total.
-- **Rodapé fixo** com a comunidade (@LevelCripto) e o site, que são constantes no módulo.
+- **Rodapé fixo** com a comunidade (@LevelCripto) e o convite "Quer fazer parte? Entra aqui:"
+  com o site, que são constantes no módulo. O acesso à ferramenta é pela comunidade, então cada
+  post também é a porta de entrada dela.
 - **Cabe no X:** um teste monta os três posts com os maiores números e nomes possíveis e confere
   que ficam abaixo de 280, contando o link como 23 caracteres, como o X conta.
 - **Sem artigo antes do projeto** ("em @Polymarket", nunca "na"): o nome pode ser de qualquer
   gênero.
 - Resultado só com valor positivo: o botão não aparece em projeto no prejuízo.
+
+**Dois passos, por causa da foto.** O link de publicação do X só leva texto; não há como
+anexar imagem por ele. Por isso o botão abre antes uma janela com a prévia do post e o lembrete
+de anexar o print (dos pontos, do volume ou do resultado), e só então o botão "Abrir o X".
+Lembrar antes de abrir o X, e não depois, é o que faz o lembrete servir para alguma coisa.

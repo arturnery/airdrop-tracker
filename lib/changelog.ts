@@ -55,7 +55,7 @@ export const changelog: Versao[] = [
       {
         tipo: "novidade",
         texto:
-          "Compartilhe no X: nas abas Pontos e Volume de cada projeto, e no resultado quando ele é positivo, um botão abre o X com o post pronto, marcando o projeto e mostrando a sua evolução no período. Você confere o texto e publica.",
+          "Compartilhe no X: nas abas Pontos e Volume de cada projeto, e no resultado quando ele é positivo, um botão abre o X com o post pronto, marcando o projeto e mostrando a sua evolução no período e o convite para a comunidade. Antes de abrir o X, você vê a prévia do post e o lembrete de anexar o print dos seus números.",
       },
     ],
   },

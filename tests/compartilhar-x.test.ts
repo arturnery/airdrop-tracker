@@ -46,7 +46,7 @@ describe("posts", () => {
     expect(texto).toContain("📈 +US$ 5.000 de volume em @Polymarket nesta semana.");
     expect(texto).toContain("Total acumulado: US$ 42.300.");
     expect(texto).toContain("@LevelCripto");
-    expect(texto).toContain("https://www.levelcripto.com.br/");
+    expect(texto).toContain("Quer fazer parte? Entra aqui: https://www.levelcripto.com.br/");
     expect(texto.startsWith("@")).toBe(false);
   });
 
