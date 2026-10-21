@@ -2,7 +2,7 @@ import { normalizar, type Dataset } from "./dataset";
 import type { Cents } from "./money";
 import { fromDbNumeric } from "./money";
 import type { Points } from "./points";
-import { selectDashboardSummary, selectProgramasDePontos } from "./selectors";
+import { selectDashboardSummary, selectProgramasDePontos, selectVolumeDoProjeto } from "./selectors";
 
 /**
  * Ranking da comunidade (ARCHITECTURE §22): resultado e pontos de cada
@@ -96,59 +96,99 @@ export type LinhaDePontos = {
   userId: string;
   nome: string;
   posicao: number;
-  pontos: Points;
-  /** aaaa-mm-dd da medição mais recente do membro neste projeto. */
+  /** null quando o membro não mede pontos neste projeto (ou ele não tem programa). */
+  pontos: Points | null;
+  /** Volume acumulado, em centavos; null quando o membro não mede volume aqui. */
+  volume: Cents | null;
+  /** aaaa-mm-dd da medição mais recente do membro neste projeto, de pontos ou volume. */
   atualizadoEm: string | null;
 };
+
+export type OrdemDoRanking = "pontos" | "volume";
 
 export type RankingDoProjeto = {
   /** Nome normalizado: é o que junta o mesmo projeto entre membros. */
   chave: string;
   nome: string;
-  rotulo: string;
+  /** Rótulo do programa de pontos ("Pontos", "XP"); null se ninguém mede pontos aqui. */
+  rotulo: string | null;
+  temPontos: boolean;
+  temVolume: boolean;
+  /** Já ordenadas pela ordem padrão: pontos quando existem, senão volume. */
   linhas: LinhaDePontos[];
 };
 
 /**
- * Um ranking por projeto com programa de pontos.
+ * Um ranking por projeto, com pontos e volume lado a lado.
  *
  * Cada membro tem a própria cópia do projeto (§13), então o "mesmo projeto"
  * entre membros é achado pelo nome normalizado: "Lighter" e "lighter" são um
- * só. O total de cada membro é o total do programa na página do projeto dele
- * (soma da última medição de cada conta). Quem nunca mediu fica de fora.
- * Projetos com mais participantes primeiro.
+ * só. Os números são os mesmos da página do projeto de cada um: o total do
+ * programa de pontos (`selectProgramasDePontos`) e o volume acumulado
+ * (`selectVolumeDoProjeto`), soma da última medição de cada conta. Entra quem
+ * mediu pelo menos um dos dois. Projetos com mais participantes primeiro.
  */
 export function rankingDePontos(membros: Membro[]): RankingDoProjeto[] {
   const porProjeto = new Map<string, RankingDoProjeto>();
   for (const m of membros) {
-    for (const programa of selectProgramasDePontos(m.ds)) {
-      if (programa.atualizadoEm === null) continue;
-      const chave = normalizar(programa.projetoNome);
+    const programas = new Map(selectProgramasDePontos(m.ds).map((p) => [p.projetoId, p]));
+    for (const projeto of m.ds.projects) {
+      const programa = programas.get(projeto.id);
+      const pontos = programa && programa.atualizadoEm !== null ? programa.total : null;
+      const vol = selectVolumeDoProjeto(m.ds, projeto.id);
+      const volume = vol.atualizadoEm !== null ? vol.total : null;
+      if (pontos === null && volume === null) continue;
+
+      const chave = normalizar(projeto.name);
       const ranking = porProjeto.get(chave) ?? {
         chave,
-        nome: programa.projetoNome,
-        rotulo: programa.rotulo,
+        nome: projeto.name,
+        rotulo: null,
+        temPontos: false,
+        temVolume: false,
         linhas: [],
       };
+      if (pontos !== null) {
+        ranking.temPontos = true;
+        ranking.rotulo ??= programa!.rotulo;
+      }
+      if (volume !== null) ranking.temVolume = true;
+      const datas = [programa?.atualizadoEm, vol.atualizadoEm].filter((d): d is string => Boolean(d)).sort();
       ranking.linhas.push({
         userId: m.userId,
         nome: m.nome,
         posicao: 0,
-        pontos: programa.total,
-        atualizadoEm: programa.atualizadoEm,
+        pontos,
+        volume,
+        atualizadoEm: datas.at(-1) ?? null,
       });
       porProjeto.set(chave, ranking);
     }
   }
   return [...porProjeto.values()]
-    .map((r) => ({
-      ...r,
-      linhas: comPosicao(
-        [...r.linhas].sort((a, b) => b.pontos - a.pontos || a.nome.localeCompare(b.nome, "pt-BR")),
-        (l) => l.pontos,
-      ),
-    }))
+    .map((r) => ({ ...r, linhas: ordenarRanking(r.linhas, r.temPontos ? "pontos" : "volume") }))
     .sort((a, b) => b.linhas.length - a.linhas.length || a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+/**
+ * Ordena (e numera) as linhas por pontos ou por volume. Quem não mede a
+ * grandeza escolhida vai para o fim, sem posição própria: não está em último,
+ * só não participa daquela régua.
+ */
+export function ordenarRanking(linhas: LinhaDePontos[], por: OrdemDoRanking): LinhaDePontos[] {
+  const valor = (l: LinhaDePontos) => (por === "pontos" ? l.pontos : l.volume);
+  const com = linhas.filter((l) => valor(l) !== null);
+  const sem = linhas.filter((l) => valor(l) === null);
+  const ordenadas = comPosicao(
+    [...com]
+      .map((l) => ({ ...l }))
+      .sort((a, b) => valor(b)! - valor(a)! || a.nome.localeCompare(b.nome, "pt-BR")),
+    (l) => valor(l)!,
+  );
+  return [
+    ...ordenadas,
+    ...[...sem].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((l) => ({ ...l, posicao: 0 })),
+  ];
 }
 
 /** Posição com empate dividido: [10, 8, 8, 5] dá 1º, 2º, 2º, 4º. */

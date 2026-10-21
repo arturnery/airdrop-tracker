@@ -205,6 +205,21 @@ async function main() {
   }
   console.log(`  ${ds.pointsSnapshots.length} medições de pontos`);
 
+  // ----------------------------------------------------------------- volume
+  // Faltava: as fixtures tinham volume, e as contas de teste nasciam sem
+  // nenhum. A aba Volume e o ranking de volume ficavam sem o que mostrar.
+  for (const v of ds.volumeSnapshots) {
+    await db.insert(schema.volumeSnapshots).values({
+      userId: userId,
+      projectId: idsProjeto.get(v.projectId)!,
+      accountId: idsConta.get(v.accountId)!,
+      takenAt: v.takenAt,
+      volumeUsd: v.volumeUsd,
+      note: v.note,
+    });
+  }
+  console.log(`  ${ds.volumeSnapshots.length} medições de volume`);
+
   // ---------------------------------------------------------------- tarefas
   for (const tarefa of ds.tasks) {
     const [criada] = await db

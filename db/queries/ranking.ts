@@ -17,7 +17,7 @@ import type { Membro } from "@/lib/ranking";
  * ranking precisa ter o que mostrar para ser testado.
  *
  * Só as tabelas que o ranking usa são lidas (contas, projetos, pares,
- * lançamentos, pontos, recebimentos), e cada uma numa consulta só para todos
+ * lançamentos, pontos, volume, recebimentos), e cada uma numa consulta só para todos
  * os membros, separadas depois por dono. Nenhum dado sai daqui para a tela:
  * quem chama recebe o Dataset para passar aos selectors, e a página entrega
  * ao navegador só as linhas prontas do ranking (`lib/ranking.ts`).
@@ -32,11 +32,12 @@ export async function carregarMembrosDoRanking(): Promise<Membro[]> {
   if (elegiveis.length === 0) return [];
   const ids = elegiveis.map((u) => u.id);
 
-  const [contas, projetos, lancamentos, pontos, recebimentos] = await Promise.all([
+  const [contas, projetos, lancamentos, pontos, volume, recebimentos] = await Promise.all([
     db.select().from(schema.accounts).where(inArray(schema.accounts.userId, ids)),
     db.select().from(schema.projects).where(inArray(schema.projects.userId, ids)),
     db.select().from(schema.transactions).where(inArray(schema.transactions.userId, ids)),
     db.select().from(schema.pointsSnapshots).where(inArray(schema.pointsSnapshots.userId, ids)),
+    db.select().from(schema.volumeSnapshots).where(inArray(schema.volumeSnapshots.userId, ids)),
     db.select().from(schema.airdropClaims).where(inArray(schema.airdropClaims.userId, ids)),
   ]);
   const idsProjeto = projetos.map((p) => p.id);
@@ -59,7 +60,7 @@ export async function carregarMembrosDoRanking(): Promise<Membro[]> {
       pontos: de(pontos, u.id),
       recebimentos: de(recebimentos, u.id),
       pares: pares.filter((p) => donoDoProjeto.get(p.projectId) === u.id),
-      volume: [],
+      volume: de(volume, u.id),
       tarefas: [],
       metas: [],
       catalogo: [],

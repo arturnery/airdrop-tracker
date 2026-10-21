@@ -2043,7 +2043,7 @@ que ela cadastrou à mão.
 
 Primeira tela que mostra números de uma pessoa para as outras. Fica na área Airdrops (é sobre
 os números dela, e as áreas não se misturam), com dois rankings separados, como sub-abas:
-**Resultados** (`/ranking`) e **Pontos** (`/ranking/pontos`).
+**Resultados** (`/ranking`) e **Pontos / Volume** (`/ranking/pontos`).
 
 **Quem aparece.** Conta aprovada com `users.aparecer_no_ranking` ligado. A coluna nasce
 ligada, por decisão de produto (todos entram, quem não quer sai pelo Perfil). Conta de
@@ -2065,6 +2065,9 @@ as duas coisas diretamente.
 - Quem não tem lançamento nem airdrop fica fora do ranking de resultado: zero de quem
   acabou de chegar não é "último lugar".
 - Empate divide a posição (1º, 2º, 2º, 4º).
-- Pontos: cada membro tem a sua cópia do projeto (§13), então o mesmo projeto é achado pelo
-  nome normalizado. Quem nunca mediu fica de fora.
+- Pontos e volume: cada membro tem a sua cópia do projeto (§13), então o mesmo projeto é
+  achado pelo nome normalizado. As duas colunas são os totais da página do projeto
+  (`selectProgramasDePontos` e `selectVolumeDoProjeto`); entra quem mediu pelo menos um dos
+  dois. A ordem padrão é por pontos quando o projeto tem programa, senão por volume, e com os
+  dois dá para escolher. Quem não mede a grandeza escolhida fica no fim, sem posição.
 - O feed junta os recebimentos do mesmo membro, projeto e dia numa linha.

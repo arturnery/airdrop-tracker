@@ -62,7 +62,7 @@ const grupos: { titulo: string; itens: Item[] }[] = [
         icon: Trophy,
         filhos: [
           { href: "/ranking", label: "Resultados", icon: Trophy },
-          { href: "/ranking/pontos", label: "Pontos", icon: Medal },
+          { href: "/ranking/pontos", label: "Pontos / Volume", icon: Medal },
         ],
       },
       { href: "/historico", label: "Histórico", icon: History },

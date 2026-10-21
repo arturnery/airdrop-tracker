@@ -3696,3 +3696,12 @@ conferência de "ainda aberta" fica dentro do próprio comando (`INSERT ... SELE
 status), e não numa leitura anterior que pode envelhecer. Testado com as duas contas: entrar,
 corrigir o valor, sair, entrar de novo; o admin fechou no alvo 1 e o membro viu +US$ 5,83
 sobre US$ 250,50, o 2,33% da operação.
+
+### Pontos e volume no mesmo ranking
+
+O ranking de pontos virou "Pontos / Volume": cada linha mostra os dois totais do membro no
+projeto, e dá para ordenar por um ou pelo outro quando o projeto tem os dois. Quem só mede
+volume (comum em perps, sem programa de pontos) entra do mesmo jeito. Testar isso revelou um
+buraco nos dados de teste: as fixtures tinham medições de volume, mas o script que monta as
+contas de teste nunca as gravava, e as duas contas nasciam sem volume nenhum. Corrigido no
+`seed-demo`.

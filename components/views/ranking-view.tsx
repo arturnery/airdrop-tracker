@@ -8,7 +8,7 @@ import { EmptyState, PageHeader } from "@/components/page-header";
 import { Money } from "@/components/money";
 import { formatDateShort } from "@/lib/dates";
 import { formatPoints } from "@/lib/points";
-import type { AirdropRecente, LinhaDeResultado, RankingDoProjeto } from "@/lib/ranking";
+import { ordenarRanking, type AirdropRecente, type LinhaDeResultado, type OrdemDoRanking, type RankingDoProjeto } from "@/lib/ranking";
 import { cn } from "@/lib/utils";
 
 /**
@@ -167,21 +167,33 @@ export function RankingPontosView({
   euApareco: boolean;
 }) {
   const [chave, setChave] = useState(projetos[0]?.chave ?? null);
+  const [escolha, setEscolha] = useState<OrdemDoRanking | null>(null);
   const atual = projetos.find((p) => p.chave === chave) ?? projetos[0] ?? null;
+  // A ordem escolhida só vale se o projeto tiver aquela grandeza.
+  const ordem: OrdemDoRanking | null = !atual
+    ? null
+    : escolha === "volume" && atual.temVolume
+      ? "volume"
+      : escolha === "pontos" && atual.temPontos
+        ? "pontos"
+        : atual.temPontos
+          ? "pontos"
+          : "volume";
+  const linhas = atual && ordem ? ordenarRanking(atual.linhas, ordem) : [];
 
   return (
     <>
       <PageHeader
         icon={Medal}
-        title="Ranking de pontos"
-        description="Os pontos de cada membro por projeto: a soma da última medição de cada conta."
+        title="Ranking de pontos e volume"
+        description="Os pontos e o volume de cada membro por projeto: a soma da última medição de cada conta, como na página do projeto."
       />
       <AvisoDeParticipacao euApareco={euApareco} />
 
       {!atual ? (
         <EmptyState
-          title="Nenhum ponto registrado ainda."
-          description="Quando os membros registrarem pontos nos projetos, o ranking de cada projeto aparece aqui."
+          title="Nenhum ponto ou volume registrado ainda."
+          description="Quando os membros registrarem pontos ou volume nos projetos, o ranking de cada projeto aparece aqui."
         />
       ) : (
         <>
@@ -206,28 +218,56 @@ export function RankingPontosView({
             ))}
           </div>
 
+          {atual.temPontos && atual.temVolume ? (
+            <div className="mb-3 flex items-center gap-2 text-sm" role="group" aria-label="Ordenar por">
+              <span className="text-muted-foreground text-xs">Ordenar por</span>
+              {(["pontos", "volume"] as const).map((o) => (
+                <button
+                  key={o}
+                  type="button"
+                  aria-pressed={ordem === o}
+                  onClick={() => setEscolha(o)}
+                  className={cn(
+                    "focus-visible:ring-ring rounded-md border px-2.5 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                    ordem === o ? "border-brand/50 bg-brand/15 font-medium" : "border-border text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {o === "pontos" ? atual.rotulo ?? "Pontos" : "Volume"}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           <section aria-label={`Ranking de ${atual.nome}`} className="bg-card border-border rounded-lg border">
-            <div className="text-muted-foreground border-border grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b px-4 py-2 text-xs sm:grid-cols-[2rem_minmax(0,1fr)_7rem_9rem]">
+            <div className="text-muted-foreground border-border grid grid-cols-[2rem_minmax(0,1fr)_5.5rem_6.5rem] items-center gap-3 border-b px-4 py-2 text-xs sm:grid-cols-[2rem_minmax(0,1fr)_6rem_8rem_8rem]">
               <span>#</span>
               <span>Membro</span>
               <span className="hidden text-right sm:block">Medido</span>
-              <span className="text-right">{atual.rotulo}</span>
+              <span className={cn("text-right", ordem === "pontos" && "text-foreground font-medium")}>
+                {atual.rotulo ?? "Pontos"}
+              </span>
+              <span className={cn("text-right", ordem === "volume" && "text-foreground font-medium")}>Volume</span>
             </div>
             <ol>
-              {atual.linhas.map((l) => (
+              {linhas.map((l) => (
                 <li
                   key={l.userId}
                   className={cn(
-                    "border-border grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b px-4 py-3 text-sm last:border-b-0 sm:grid-cols-[2rem_minmax(0,1fr)_7rem_9rem]",
+                    "border-border grid grid-cols-[2rem_minmax(0,1fr)_5.5rem_6.5rem] items-center gap-3 border-b px-4 py-3 text-sm last:border-b-0 sm:grid-cols-[2rem_minmax(0,1fr)_6rem_8rem_8rem]",
                     l.userId === meuId && "bg-secondary/40",
                   )}
                 >
-                  <Posicao n={l.posicao} />
+                  {l.posicao > 0 ? <Posicao n={l.posicao} /> : <span className="text-muted-foreground text-center text-xs">-</span>}
                   <Nome nome={l.nome} eu={l.userId === meuId} />
                   <span className="text-muted-foreground hidden text-right text-xs sm:block">
                     {l.atualizadoEm ? formatDateShort(l.atualizadoEm) : "-"}
                   </span>
-                  <span className="text-right font-semibold tabular-nums">{formatPoints(l.pontos)}</span>
+                  <span className={cn("text-right tabular-nums", ordem === "pontos" ? "font-semibold" : "text-muted-foreground")}>
+                    {l.pontos !== null ? formatPoints(l.pontos) : "-"}
+                  </span>
+                  <span className={cn("text-right tabular-nums", ordem === "volume" ? "font-semibold" : "text-muted-foreground")}>
+                    {l.volume !== null ? <Money value={l.volume} /> : "-"}
+                  </span>
                 </li>
               ))}
             </ol>

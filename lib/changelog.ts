@@ -70,7 +70,7 @@ export const changelog: Versao[] = [
       {
         tipo: "novidade",
         texto:
-          "Novo Ranking na área Airdrops, com dois rankings: o resultado de cada membro, com os últimos airdrops recebidos, e os pontos de cada um por projeto. Todos aparecem; quem preferir manter os números só para si pode sair em Perfil.",
+          "Novo Ranking na área Airdrops, com dois rankings: o resultado de cada membro, com os últimos airdrops recebidos, e os pontos e o volume de cada um por projeto. Todos aparecem; quem preferir manter os números só para si pode sair em Perfil.",
       },
     ],
   },

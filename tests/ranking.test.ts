@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { datasetInicial } from "@/db/queries/fixtures";
 import { emptyDataset, type Dataset } from "@/lib/dataset";
-import { airdropsRecentes, rankingDePontos, rankingDeResultado, type Membro } from "@/lib/ranking";
-import { selectDashboardSummary, selectProgramasDePontos } from "@/lib/selectors";
+import { airdropsRecentes, ordenarRanking, rankingDePontos, rankingDeResultado, type Membro } from "@/lib/ranking";
+import { selectDashboardSummary, selectProgramasDePontos, selectVolumeDoProjeto } from "@/lib/selectors";
 
 /** Um membro com um projeto, uma conta e o que se passar. */
 function membro(
@@ -15,6 +15,7 @@ function membro(
     lancamentos?: [type: Dataset["transactions"][number]["type"], valor: string][];
     airdrops?: [data: string, valor: string][];
     pontos?: [data: string, valor: string][];
+    volume?: [data: string, valor: string][];
   } = {},
 ): Membro {
   const ds = emptyDataset();
@@ -58,6 +59,14 @@ function membro(
     accountId: aid,
     takenAt,
     points,
+    note: null,
+  }));
+  ds.volumeSnapshots = (extra.volume ?? []).map(([takenAt, volumeUsd], i) => ({
+    id: `${userId}-v${i}`,
+    projectId: pid,
+    accountId: aid,
+    takenAt,
+    volumeUsd,
     note: null,
   }));
   return { userId, nome, ds };
@@ -122,6 +131,43 @@ describe("rankingDePontos", () => {
 
   it("quem nunca mediu, ou projeto sem programa de pontos, fica de fora", () => {
     expect(rankingDePontos([membro("ana", "Ana"), membro("bia", "Bia", { pontosLabel: null })])).toEqual([]);
+  });
+});
+
+describe("rankingDePontos com volume", () => {
+  it("mostra pontos e volume lado a lado, com o mesmo total da página do projeto", () => {
+    const ana = membro("ana", "Ana", { pontos: [["2026-03-01", "500"]], volume: [["2026-03-01", "12000"], ["2026-03-05", "15000"]] });
+    const [projeto] = rankingDePontos([ana]);
+    expect(projeto!.linhas[0]!.volume).toBe(selectVolumeDoProjeto(ana.ds, ana.ds.projects[0]!.id).total);
+    expect(projeto!.linhas[0]!.atualizadoEm).toBe("2026-03-05");
+    expect(projeto).toMatchObject({ temPontos: true, temVolume: true });
+  });
+
+  it("projeto só com volume entra, e é ordenado por volume", () => {
+    const [projeto] = rankingDePontos([
+      membro("ana", "Ana", { pontosLabel: null, volume: [["2026-03-01", "100"]] }),
+      membro("bia", "Bia", { pontosLabel: null, volume: [["2026-03-01", "900"]] }),
+    ]);
+    expect(projeto).toMatchObject({ temPontos: false, rotulo: null });
+    expect(projeto!.linhas.map((l) => [l.nome, l.posicao])).toEqual([
+      ["Bia", 1],
+      ["Ana", 2],
+    ]);
+  });
+
+  it("quem não mede a grandeza escolhida fica no fim, sem posição", () => {
+    const [projeto] = rankingDePontos([
+      membro("ana", "Ana", { pontos: [["2026-03-01", "500"]] }),
+      membro("bia", "Bia", { volume: [["2026-03-01", "900"]] }),
+    ]);
+    expect(ordenarRanking(projeto!.linhas, "pontos").map((l) => [l.nome, l.posicao])).toEqual([
+      ["Ana", 1],
+      ["Bia", 0],
+    ]);
+    expect(ordenarRanking(projeto!.linhas, "volume").map((l) => [l.nome, l.posicao])).toEqual([
+      ["Bia", 1],
+      ["Ana", 0],
+    ]);
   });
 });
 
