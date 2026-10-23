@@ -111,7 +111,7 @@ function CardAviso({ aviso, ehAdmin, destaque = false }: { aviso: Aviso; ehAdmin
   const nome = aviso.projeto ?? "Aviso";
 
   return (
-    <article className={cn("bg-card border-border flex flex-col rounded-xl border", destaque ? "p-6 sm:p-7" : "p-5")}>
+    <article className={cn("bg-card border-border flex min-w-0 flex-col rounded-xl border", destaque ? "p-5 sm:p-7" : "p-5")}>
       <header className="flex items-start gap-3">
         <span
           aria-hidden="true"
@@ -135,7 +135,12 @@ function CardAviso({ aviso, ehAdmin, destaque = false }: { aviso: Aviso; ehAdmin
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {aviso.prazo ? <Prazo prazo={aviso.prazo} /> : null}
+          {/* No celular o prazo ganha uma linha própria (abaixo), para não espremer o nome. */}
+          {aviso.prazo ? (
+            <span className="hidden sm:inline-flex">
+              <Prazo prazo={aviso.prazo} />
+            </span>
+          ) : null}
           {ehAdmin ? (
             <>
               <NovoAviso
@@ -166,7 +171,13 @@ function CardAviso({ aviso, ehAdmin, destaque = false }: { aviso: Aviso; ehAdmin
         </div>
       </header>
 
-      <h3 className={cn("mt-4 leading-snug font-semibold tracking-tight text-balance", destaque ? "text-2xl" : "text-lg")}>
+      {aviso.prazo ? (
+        <div className="mt-3 sm:hidden">
+          <Prazo prazo={aviso.prazo} />
+        </div>
+      ) : null}
+
+      <h3 className={cn("mt-4 leading-snug font-semibold tracking-tight text-balance", destaque ? "text-xl sm:text-2xl" : "text-lg")}>
         {aviso.titulo}
       </h3>
 
@@ -175,7 +186,7 @@ function CardAviso({ aviso, ehAdmin, destaque = false }: { aviso: Aviso; ehAdmin
           {destaques.map((d) => (
             <li key={d} className="flex gap-2.5">
               <ArrowRight className="text-brand-legivel mt-[0.3em] size-4 shrink-0" aria-hidden="true" />
-              <span className="leading-relaxed">{d}</span>
+              <span className="min-w-0 leading-relaxed [overflow-wrap:anywhere]">{d}</span>
             </li>
           ))}
         </ul>
@@ -184,11 +195,11 @@ function CardAviso({ aviso, ehAdmin, destaque = false }: { aviso: Aviso; ehAdmin
       {aviso.alerta ? (
         <p className="border-caution/40 bg-caution/10 mt-4 flex gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm">
           <ShieldAlert className="text-caution mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span>{aviso.alerta}</span>
+          <span className="min-w-0 [overflow-wrap:anywhere]">{aviso.alerta}</span>
         </p>
       ) : null}
 
-      <p className="text-muted-foreground mt-4 max-w-[70ch] text-sm leading-relaxed whitespace-pre-line">{aviso.resumo}</p>
+      <p className="text-muted-foreground mt-4 max-w-[70ch] text-sm leading-relaxed whitespace-pre-line [overflow-wrap:anywhere]">{aviso.resumo}</p>
 
       {passos.length > 0 ? (
         <div className="mt-4">
@@ -199,7 +210,7 @@ function CardAviso({ aviso, ehAdmin, destaque = false }: { aviso: Aviso; ehAdmin
                 <span className="bg-secondary flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums">
                   {i + 1}
                 </span>
-                <span className="leading-relaxed">{p}</span>
+                <span className="min-w-0 leading-relaxed [overflow-wrap:anywhere]">{p}</span>
               </li>
             ))}
           </ol>

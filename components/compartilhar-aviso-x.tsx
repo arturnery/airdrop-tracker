@@ -48,7 +48,7 @@ export function CompartilharAvisoX({ anuncio }: { anuncio: string }) {
         <ol className="space-y-5">
           <li>
             <Etapa n={1} titulo="Publique o anúncio" />
-            <p className="border-border bg-secondary/40 mt-2 rounded-md border px-4 py-3 text-sm whitespace-pre-line">{anuncio}</p>
+            <p className="border-border bg-secondary/40 mt-2 rounded-md border px-4 py-3 text-sm whitespace-pre-line [overflow-wrap:anywhere]">{anuncio}</p>
             <Button asChild className="mt-3 w-full gap-1.5">
               <a href={linkParaPostar(anuncio)} target="_blank" rel="noopener noreferrer">
                 <IconeX className="size-3.5" />
@@ -77,7 +77,7 @@ export function CompartilharAvisoX({ anuncio }: { anuncio: string }) {
             ) : null}
             <p className="border-border bg-secondary/40 mt-3 flex gap-2 rounded-md border px-4 py-3 text-sm whitespace-pre-line">
               <CornerDownRight className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              <span>{resposta}</span>
+              <span className="min-w-0 [overflow-wrap:anywhere]">{resposta}</span>
             </p>
             {id ? (
               <Button asChild variant="outline" className="mt-3 w-full gap-1.5">

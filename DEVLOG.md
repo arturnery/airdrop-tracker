@@ -3848,3 +3848,18 @@ promove ninguém, de propósito (uma sessão roubada de admin não pode criar ou
 entrou `scripts/promover-admin.ts`: confere a conta, só altera com `--confirmar`, e roda com
 backup antes. Como o papel vai no token da sessão, vale a partir do próximo login. A permissão
 só de trade ("professor"), mais estreita que admin, continua prevista.
+
+## Marco 62: Data futura nas medições e uma varredura no celular
+
+Duas correções feitas sem pedido novo, a partir do que os testes tinham mostrado.
+
+**Medição com data futura.** Ao simular uma semana para o post do X, uma medição de volume com
+data de amanhã foi aceita. Ela passava a ser a mais recente, e as medições reais seguintes
+apareciam como antigas: variação invertida, ranking e "nesta semana" errados. Pontos e volume
+agora recusam data depois de hoje (em Brasília), ao registrar e ao editar.
+
+**Varredura das telas novas.** As 16 páginas principais foram abertas com a conta de admin e
+com a de membro, no computador e a 390 px. Uma falha: o mural de Avisos, só para o admin, ficava
+com 422 px no celular. Duas causas somadas: o prazo e os botões de editar e excluir espremiam o
+cabeçalho do card, e um link colado nos passos ("O que fazer") não quebrava a linha. No
+celular o prazo ganhou uma linha própria, e textos longos quebram onde precisar.
