@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { formatarValorDaMeta, formatoDoCampo } from "@/lib/metas";
 import { cents } from "@/lib/money";
-import { lancamentoSchema, metaSchema, projetoSchema, recebimentoSchema } from "@/lib/validators";
+import { dataDeHoje } from "@/lib/dates";
+import { lancamentoSchema, metaSchema, pontosSchema, projetoSchema, recebimentoSchema, volumeSchema } from "@/lib/validators";
 
 /**
  * Os erros achados ao usar o sistema como um membro novo (DEVLOG, Marco 57).
@@ -88,5 +89,22 @@ describe("meta de pontos", () => {
     expect(formatarValorDaMeta("volume_usd", cents(5_000_000))).toBe("$50,000.00");
     expect(formatoDoCampo("points")).toBe("pontos");
     expect(formatoDoCampo("balance_usd")).toBe("dinheiro");
+  });
+});
+
+describe("medição não pode ser no futuro", () => {
+  const base = { projectId: "p", accountId: "a", note: "" };
+  const amanha = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+
+  it("pontos e volume de amanhã são recusados, com mensagem no campo da data", () => {
+    const p = pontosSchema.safeParse({ ...base, points: "100", takenAt: amanha });
+    expect(p.error?.issues[0]).toMatchObject({ path: ["takenAt"], message: "A data da medição não pode ser no futuro." });
+    const v = volumeSchema.safeParse({ ...base, volume: "100", takenAt: amanha });
+    expect(v.error?.issues[0]?.path).toEqual(["takenAt"]);
+  });
+
+  it("hoje e o passado continuam valendo", () => {
+    expect(pontosSchema.safeParse({ ...base, points: "100", takenAt: dataDeHoje() }).success).toBe(true);
+    expect(volumeSchema.safeParse({ ...base, volume: "100", takenAt: "2026-01-10" }).success).toBe(true);
   });
 });

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { aplicarSinalDoTipo } from "./finance";
 import { parseUserInput } from "./money";
 import { parsePointsInput } from "./points";
+import { dataDeHoje } from "./dates";
 import { incoerencias, lerPreco } from "./sinais";
 import { idDoPostX } from "./interpretar-aviso";
 
@@ -33,6 +34,15 @@ const dataIso = z
  * protocolo escrito ("javascript:", "ftp:") continua recusado: o endereço vira
  * link clicável na tela, e só http(s) é seguro de abrir.
  */
+/**
+ * Data de uma medição (pontos, volume): o dia em que o número foi visto na
+ * plataforma, então não pode ser depois de hoje (em Brasília). Uma medição
+ * no futuro passava a contar como a mais recente de todas, e as medições
+ * reais feitas depois apareciam como antigas, invertendo a variação, o
+ * ranking e o "nesta semana" do post do X.
+ */
+const dataDeMedicao = dataIso.refine((v) => v <= dataDeHoje(), "A data da medição não pode ser no futuro.");
+
 const urlOpcional = z
   .string()
   .trim()
@@ -329,7 +339,7 @@ const quantidadePontos = z.string().transform((raw, ctx) => {
 export const pontosSchema = z.object({
   projectId: z.string().min(1, "Escolha o projeto."),
   accountId: z.string().min(1, "Escolha a conta."),
-  takenAt: dataIso,
+  takenAt: dataDeMedicao,
   points: quantidadePontos,
   note: textoOpcional,
 });
@@ -344,7 +354,7 @@ export const pontosSchema = z.object({
 export const volumeSchema = z.object({
   projectId: z.string().min(1, "Escolha o projeto."),
   accountId: z.string().min(1, "Escolha a conta."),
-  takenAt: dataIso,
+  takenAt: dataDeMedicao,
   volume: valorUsd.refine(
     (v) => v >= 0,
     "O volume acumulado não diminui: informe o total que a plataforma mostra.",
