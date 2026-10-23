@@ -16,6 +16,7 @@ function membro(
     airdrops?: [data: string, valor: string][];
     pontos?: [data: string, valor: string][];
     volume?: [data: string, valor: string][];
+    farmando?: boolean;
   } = {},
 ): Membro {
   const ds = emptyDataset();
@@ -28,6 +29,7 @@ function membro(
       id: pid,
       slug: "p",
       name: extra.projeto ?? "Lighter",
+      farmando: extra.farmando ?? true,
       pointsLabel: extra.pontosLabel === undefined ? "Pontos" : extra.pontosLabel,
     },
   ];
@@ -168,6 +170,20 @@ describe("rankingDePontos com volume", () => {
       ["Bia", 1],
       ["Ana", 0],
     ]);
+  });
+});
+
+describe("rankingDePontos só com quem está farmando", () => {
+  it("projeto fora do farm do membro não entra no ranking", () => {
+    const projetos = rankingDePontos([
+      membro("ana", "Ana", { pontos: [["2026-03-01", "500"]] }),
+      membro("bia", "Bia", { pontos: [["2026-03-01", "900"]], farmando: false }),
+    ]);
+    expect(projetos[0]!.linhas.map((l) => l.nome)).toEqual(["Ana"]);
+  });
+
+  it("projeto que ninguém está farmando some da lista", () => {
+    expect(rankingDePontos([membro("ana", "Ana", { pontos: [["2026-03-01", "500"]], farmando: false })])).toEqual([]);
   });
 });
 

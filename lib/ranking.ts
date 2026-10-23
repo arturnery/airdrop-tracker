@@ -127,12 +127,17 @@ export type RankingDoProjeto = {
  * programa de pontos (`selectProgramasDePontos`) e o volume acumulado
  * (`selectVolumeDoProjeto`), soma da última medição de cada conta. Entra quem
  * mediu pelo menos um dos dois. Projetos com mais participantes primeiro.
+ *
+ * Só conta o projeto que o membro tem em "Farmando agora": o ranking é de quem
+ * está farmando. Quem pausou, já recebeu o airdrop ou nunca pôs no farm não
+ * aparece, e um projeto sem ninguém farmando some da lista.
  */
 export function rankingDePontos(membros: Membro[]): RankingDoProjeto[] {
   const porProjeto = new Map<string, RankingDoProjeto>();
   for (const m of membros) {
     const programas = new Map(selectProgramasDePontos(m.ds).map((p) => [p.projetoId, p]));
     for (const projeto of m.ds.projects) {
+      if (!projeto.farmando) continue;
       const programa = programas.get(projeto.id);
       const pontos = programa && programa.atualizadoEm !== null ? programa.total : null;
       const vol = selectVolumeDoProjeto(m.ds, projeto.id);

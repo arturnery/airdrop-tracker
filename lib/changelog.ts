@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.23",
+    data: "2026-10-23",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O ranking de pontos e volume mostra só os projetos em Farmando agora: quem pausou ou já recebeu o airdrop sai do ranking daquele projeto.",
+      },
+    ],
+  },
+  {
     versao: "1.22",
     data: "2026-10-21",
     mudancas: [

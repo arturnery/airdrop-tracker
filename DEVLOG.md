@@ -3769,3 +3769,9 @@ Entra aqui:"), e o teste de limite pegou o post de pontos com rótulo longo pass
 dois caracteres: saiu a palavra "exclusiva". E a foto: o link de publicação não anexa imagem,
 então o botão passou a abrir uma janela com a prévia do post e o lembrete de anexar o print
 antes de abrir o X.
+
+### Ranking só de quem está farmando
+
+O ranking de pontos e volume passou a considerar só os projetos em "Farmando agora" de cada
+membro. A regra é por pessoa, e não por projeto: quem tirou um projeto do farm sai do ranking
+dele, e quem continua farmando segue aparecendo. Projeto que ninguém farma mais some da lista.

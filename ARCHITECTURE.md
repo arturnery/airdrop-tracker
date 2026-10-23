@@ -2075,6 +2075,8 @@ as duas coisas diretamente.
   (`selectProgramasDePontos` e `selectVolumeDoProjeto`); entra quem mediu pelo menos um dos
   dois. A ordem padrão é por pontos quando o projeto tem programa, senão por volume, e com os
   dois dá para escolher. Quem não mede a grandeza escolhida fica no fim, sem posição.
+- Só entra o projeto que o membro tem em **Farmando agora** (§21): o ranking é de quem está
+  farmando. Quem pausou ou já recebeu sai daquele projeto, e projeto sem ninguém farmando some.
 - O feed junta os recebimentos do mesmo membro, projeto e dia numa linha.
 
 ## 23. Compartilhar no X
