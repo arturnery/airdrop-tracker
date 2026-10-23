@@ -1,4 +1,4 @@
-import { normalizar, type Dataset } from "./dataset";
+import type { Dataset } from "./dataset";
 import type { Cents } from "./money";
 import { fromDbNumeric } from "./money";
 import type { Points } from "./points";
@@ -107,7 +107,7 @@ export type LinhaDePontos = {
 export type OrdemDoRanking = "pontos" | "volume";
 
 export type RankingDoProjeto = {
-  /** Nome normalizado: é o que junta o mesmo projeto entre membros. */
+  /** O id do destaque: é o que junta o mesmo projeto entre membros. */
   chave: string;
   nome: string;
   /** Rótulo do programa de pontos ("Pontos", "XP"); null se ninguém mede pontos aqui. */
@@ -118,41 +118,54 @@ export type RankingDoProjeto = {
   linhas: LinhaDePontos[];
 };
 
+/** Um projeto ativo destacado por quem administra: os que entram no ranking. */
+export type DestaqueAtivo = {
+  id: string;
+  nome: string;
+  /** O projeto de quem publicou: é assim que o admin entra no ranking do próprio destaque. */
+  sourceProjectId: string | null;
+};
+
 /**
- * Um ranking por projeto, com pontos e volume lado a lado.
+ * Um ranking por projeto ativo, com pontos e volume lado a lado.
  *
- * Cada membro tem a própria cópia do projeto (§13), então o "mesmo projeto"
- * entre membros é achado pelo nome normalizado: "Lighter" e "lighter" são um
- * só. Os números são os mesmos da página do projeto de cada um: o total do
- * programa de pontos (`selectProgramasDePontos`) e o volume acumulado
- * (`selectVolumeDoProjeto`), soma da última medição de cada conta. Entra quem
- * mediu pelo menos um dos dois. Projetos com mais participantes primeiro.
+ * **Quais projetos:** só os destaques ativos, que quem administra controla
+ * (Farms atuais). Eles aparecem para todo mundo, mesmo antes de alguém medir.
+ * Projeto que um membro cadastrou por conta própria é pessoal e não entra.
  *
- * Só conta o projeto que o membro tem em "Farmando agora": o ranking é de quem
- * está farmando. Quem pausou, já recebeu o airdrop ou nunca pôs no farm não
- * aparece, e um projeto sem ninguém farmando some da lista.
+ * **Quem aparece em cada um:** o membro que adicionou aquele destaque
+ * (`adoptedFromId`), ou quem o publicou (o projeto de origem). A ligação é
+ * pelo destaque, e não pelo nome: dois projetos com o mesmo nome não se
+ * misturam. Entra quem mediu pontos ou volume nele.
+ *
+ * Os números são os da página do projeto de cada um: o total do programa de
+ * pontos (`selectProgramasDePontos`) e o volume acumulado
+ * (`selectVolumeDoProjeto`), soma da última medição de cada conta.
  */
-export function rankingDePontos(membros: Membro[]): RankingDoProjeto[] {
-  const porProjeto = new Map<string, RankingDoProjeto>();
+export function rankingDePontos(membros: Membro[], destaques: DestaqueAtivo[]): RankingDoProjeto[] {
+  const porProjeto = new Map<string, RankingDoProjeto>(
+    destaques.map((d) => [
+      d.id,
+      { chave: d.id, nome: d.nome, rotulo: null, temPontos: false, temVolume: false, linhas: [] },
+    ]),
+  );
+  const porOrigem = new Map(
+    destaques.filter((d) => d.sourceProjectId).map((d) => [d.sourceProjectId!, d.id]),
+  );
+
   for (const m of membros) {
     const programas = new Map(selectProgramasDePontos(m.ds).map((p) => [p.projetoId, p]));
     for (const projeto of m.ds.projects) {
-      if (!projeto.farmando) continue;
+      const destaqueId = projeto.adoptedFromId ?? porOrigem.get(projeto.id) ?? null;
+      const ranking = destaqueId ? porProjeto.get(destaqueId) : undefined;
+      if (!ranking) continue;
+
       const programa = programas.get(projeto.id);
       const pontos = programa && programa.atualizadoEm !== null ? programa.total : null;
       const vol = selectVolumeDoProjeto(m.ds, projeto.id);
       const volume = vol.atualizadoEm !== null ? vol.total : null;
       if (pontos === null && volume === null) continue;
 
-      const chave = normalizar(projeto.name);
-      const ranking = porProjeto.get(chave) ?? {
-        chave,
-        nome: projeto.name,
-        rotulo: null,
-        temPontos: false,
-        temVolume: false,
-        linhas: [],
-      };
       if (pontos !== null) {
         ranking.temPontos = true;
         ranking.rotulo ??= programa!.rotulo;
@@ -167,11 +180,10 @@ export function rankingDePontos(membros: Membro[]): RankingDoProjeto[] {
         volume,
         atualizadoEm: datas.at(-1) ?? null,
       });
-      porProjeto.set(chave, ranking);
     }
   }
   return [...porProjeto.values()]
-    .map((r) => ({ ...r, linhas: ordenarRanking(r.linhas, r.temPontos ? "pontos" : "volume") }))
+    .map((r) => ({ ...r, linhas: ordenarRanking(r.linhas, r.temPontos || !r.temVolume ? "pontos" : "volume") }))
     .sort((a, b) => b.linhas.length - a.linhas.length || a.nome.localeCompare(b.nome, "pt-BR"));
 }
 

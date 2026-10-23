@@ -1,11 +1,12 @@
 import "server-only";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { montarDataset } from "@/db/queries/dataset";
-import type { Membro } from "@/lib/ranking";
+import { STATUS_DE_FARM } from "@/lib/farm";
+import type { DestaqueAtivo, Membro } from "@/lib/ranking";
 
 /**
  * Os membros que entram no ranking, cada um com o próprio Dataset.
@@ -78,4 +79,26 @@ export async function aparecoNoRanking(userId: string): Promise<boolean> {
     .where(eq(schema.users.id, userId))
     .limit(1);
   return linha?.aparece ?? true;
+}
+
+/**
+ * Os projetos do ranking de pontos e volume: os destaques publicados que
+ * estão ativos, que é quem administra quem controla. Ficam na lista mesmo
+ * antes de alguém medir.
+ */
+export async function carregarDestaquesAtivos(): Promise<DestaqueAtivo[]> {
+  return db
+    .select({
+      id: schema.catalogProjects.id,
+      nome: schema.catalogProjects.name,
+      sourceProjectId: schema.catalogProjects.sourceProjectId,
+    })
+    .from(schema.catalogProjects)
+    .where(
+      and(
+        isNotNull(schema.catalogProjects.publishedAt),
+        inArray(schema.catalogProjects.status, [...STATUS_DE_FARM]),
+      ),
+    )
+    .orderBy(asc(schema.catalogProjects.name));
 }

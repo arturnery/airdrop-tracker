@@ -55,7 +55,7 @@ export const changelog: Versao[] = [
       {
         tipo: "melhoria",
         texto:
-          "O ranking de pontos e volume mostra só os projetos em Farmando agora: quem pausou ou já recebeu o airdrop sai do ranking daquele projeto.",
+          "O ranking de pontos e volume mostra só os projetos ativos da comunidade (os Farms atuais), para todo mundo. Os projetos que cada um cadastra por conta própria continuam só seus.",
       },
     ],
   },

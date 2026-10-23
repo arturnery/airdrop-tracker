@@ -123,7 +123,7 @@ async function criarDestaqueDeTeste(db: ReturnType<typeof drizzle<typeof schema>
     })
     .returning({ id: schema.projects.id });
 
-  await db.insert(schema.catalogProjects).values({
+  const [destaque] = await db.insert(schema.catalogProjects).values({
     slug: `astra-points-teste-${userId.slice(0, 8)}`,
     name: DESTAQUE_TESTE,
     category: "interacoes",
@@ -135,8 +135,68 @@ async function criarDestaqueDeTeste(db: ReturnType<typeof drizzle<typeof schema>
     createdBy: userId,
     sourceProjectId: projeto!.id,
     publishedAt: new Date(),
-  });
+  }).returning({ id: schema.catalogProjects.id });
   console.log(`destaque de teste: ${DESTAQUE_TESTE}`);
+
+  /*
+   * Medições no destaque, para o ranking de pontos e volume ter o que mostrar:
+   * o admin de teste mede no projeto de origem, e a conta demo adiciona o
+   * destaque e mede no dela. O ranking só junta projetos pelo destaque, então
+   * sem isso ele abriria com todos os projetos zerados.
+   */
+  await medirNoDestaque(db, userId, projeto!.id, ["18000", "21500"], ["9000", "14200"]);
+
+  const [demo] = await db
+    .select({ id: schema.users.id })
+    .from(schema.users)
+    .where(eq(schema.users.email, "demo@airdrop-tracker.app"))
+    .limit(1);
+  if (demo) {
+    await db
+      .delete(schema.projects)
+      .where(and(eq(schema.projects.userId, demo.id), eq(schema.projects.name, DESTAQUE_TESTE)));
+    const [adotado] = await db
+      .insert(schema.projects)
+      .values({
+        userId: demo.id,
+        slug: "astra-points",
+        name: DESTAQUE_TESTE,
+        status: "ativo",
+        category: "interacoes",
+        pointsLabel: "Pontos",
+        priority: 3,
+        websiteUrl: "https://example.com/astra",
+        farmando: true,
+        adoptedFromId: destaque!.id,
+        statusDoDestaqueVisto: "ativo",
+      })
+      .returning({ id: schema.projects.id });
+    await medirNoDestaque(db, demo.id, adotado!.id, ["12000", "19800"], ["15000", "22300"]);
+    console.log("conta demo adicionou o destaque de teste");
+  }
+}
+
+/** Duas medições de pontos e de volume, com uma semana entre elas, na primeira conta do dono. */
+async function medirNoDestaque(
+  db: ReturnType<typeof drizzle<typeof schema>>,
+  userId: string,
+  projectId: string,
+  pontos: [string, string],
+  volume: [string, string],
+) {
+  const [conta] = await db
+    .select({ id: schema.accounts.id })
+    .from(schema.accounts)
+    .where(eq(schema.accounts.userId, userId))
+    .limit(1);
+  if (!conta) return;
+  const hoje = new Date();
+  const dia = (atras: number) => new Date(hoje.getTime() - atras * 86_400_000).toISOString().slice(0, 10);
+  await db.insert(schema.projectAccounts).values({ projectId, accountId: conta.id, startedAt: dia(14) });
+  for (const [i, atras] of [14, 7].entries()) {
+    await db.insert(schema.pointsSnapshots).values({ userId, projectId, accountId: conta.id, takenAt: dia(atras), points: pontos[i]! });
+    await db.insert(schema.volumeSnapshots).values({ userId, projectId, accountId: conta.id, takenAt: dia(atras), volumeUsd: volume[i]! });
+  }
 }
 
 main().then(() => process.exit(0));

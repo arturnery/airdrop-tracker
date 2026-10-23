@@ -186,14 +186,14 @@ export function RankingPontosView({
       <PageHeader
         icon={Medal}
         title="Ranking de pontos e volume"
-        description="Os pontos e o volume de cada membro por projeto: a soma da última medição de cada conta, como na página do projeto."
+        description="Os projetos ativos da comunidade, com os pontos e o volume de cada membro: a soma da última medição de cada conta, como na página do projeto."
       />
       <AvisoDeParticipacao euApareco={euApareco} />
 
       {!atual ? (
         <EmptyState
-          title="Nenhum ponto ou volume registrado ainda."
-          description="Quando os membros registrarem pontos ou volume nos projetos, o ranking de cada projeto aparece aqui."
+          title="Nenhum projeto ativo no momento."
+          description="Quando houver farms atuais destacados, o ranking de cada um aparece aqui."
         />
       ) : (
         <>
@@ -248,6 +248,12 @@ export function RankingPontosView({
               </span>
               <span className={cn("text-right", ordem === "volume" && "text-foreground font-medium")}>Volume</span>
             </div>
+            {linhas.length === 0 ? (
+              <p className="text-muted-foreground px-4 py-6 text-center text-sm">
+                Ninguém mediu pontos ou volume neste projeto ainda. Registre os seus na página do
+                projeto para aparecer aqui.
+              </p>
+            ) : null}
             <ol>
               {linhas.map((l) => (
                 <li

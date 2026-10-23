@@ -2070,13 +2070,15 @@ as duas coisas diretamente.
 - Quem não tem lançamento nem airdrop fica fora do ranking de resultado: zero de quem
   acabou de chegar não é "último lugar".
 - Empate divide a posição (1º, 2º, 2º, 4º).
-- Pontos e volume: cada membro tem a sua cópia do projeto (§13), então o mesmo projeto é
-  achado pelo nome normalizado. As duas colunas são os totais da página do projeto
+- Pontos e volume: **os projetos são os destaques ativos**, que quem administra controla
+  (`carregarDestaquesAtivos`); aparecem para todo mundo, mesmo antes de alguém medir. Projeto
+  cadastrado à mão por um membro é pessoal e não entra. Cada membro tem a sua cópia do
+  projeto (§13), e ela é ligada ao destaque por `adoptedFromId` (ou, para quem publicou, pelo
+  projeto de origem), nunca pelo nome: dois projetos de mesmo nome não se misturam. As duas colunas são os totais da página do projeto
   (`selectProgramasDePontos` e `selectVolumeDoProjeto`); entra quem mediu pelo menos um dos
   dois. A ordem padrão é por pontos quando o projeto tem programa, senão por volume, e com os
   dois dá para escolher. Quem não mede a grandeza escolhida fica no fim, sem posição.
-- Só entra o projeto que o membro tem em **Farmando agora** (§21): o ranking é de quem está
-  farmando. Quem pausou ou já recebeu sai daquele projeto, e projeto sem ninguém farmando some.
+
 - O feed junta os recebimentos do mesmo membro, projeto e dia numa linha.
 
 ## 23. Compartilhar no X

@@ -16,7 +16,6 @@ function membro(
     airdrops?: [data: string, valor: string][];
     pontos?: [data: string, valor: string][];
     volume?: [data: string, valor: string][];
-    farmando?: boolean;
   } = {},
 ): Membro {
   const ds = emptyDataset();
@@ -29,7 +28,6 @@ function membro(
       id: pid,
       slug: "p",
       name: extra.projeto ?? "Lighter",
-      farmando: extra.farmando ?? true,
       pointsLabel: extra.pontosLabel === undefined ? "Pontos" : extra.pontosLabel,
     },
   ];
@@ -111,45 +109,72 @@ describe("rankingDeResultado", () => {
   });
 });
 
+/** Os destaques ativos dos testes: cada membro adota pelo id do catálogo. */
+const lighter = { id: "cat-lighter", nome: "Lighter", sourceProjectId: null };
+const monad = { id: "cat-monad", nome: "Monad", sourceProjectId: null };
+const adotou = (m: Membro, catalogId: string): Membro => ({
+  ...m,
+  ds: { ...m.ds, projects: m.ds.projects.map((p) => ({ ...p, adoptedFromId: catalogId })) },
+});
+
 describe("rankingDePontos", () => {
-  it("junta o mesmo projeto entre membros pelo nome, sem caixa nem acento", () => {
-    const projetos = rankingDePontos([
-      membro("ana", "Ana", { projeto: "Lighter", pontos: [["2026-03-01", "1200"]] }),
-      membro("bia", "Bia", { projeto: "lighter", pontos: [["2026-03-02", "3400"]] }),
-      membro("caio", "Caio", { projeto: "Monad", pontos: [["2026-03-02", "50"]] }),
-    ]);
-    expect(projetos.map((p) => [p.nome, p.linhas.length])).toEqual([
-      ["Lighter", 2],
-      ["Monad", 1],
-    ]);
+  it("só os projetos ativos destacados, ligados pelo destaque e não pelo nome", () => {
+    const projetos = rankingDePontos(
+      [
+        adotou(membro("ana", "Ana", { pontos: [["2026-03-01", "1200"]] }), "cat-lighter"),
+        adotou(membro("bia", "Bia", { pontos: [["2026-03-02", "3400"]] }), "cat-lighter"),
+        // Mesmo nome, mas cadastrado à mão: é pessoal e não entra.
+        membro("caio", "Caio", { projeto: "Lighter", pontos: [["2026-03-02", "9999"]] }),
+      ],
+      [lighter],
+    );
+    expect(projetos.map((p) => [p.nome, p.linhas.length])).toEqual([["Lighter", 2]]);
     expect(projetos[0]!.linhas.map((l) => l.nome)).toEqual(["Bia", "Ana"]);
   });
 
+  it("projeto ativo aparece mesmo antes de alguém medir", () => {
+    const projetos = rankingDePontos([adotou(membro("ana", "Ana", { pontos: [["2026-03-01", "10"]] }), "cat-lighter")], [lighter, monad]);
+    expect(projetos.map((p) => [p.nome, p.linhas.length])).toEqual([
+      ["Lighter", 1],
+      ["Monad", 0],
+    ]);
+  });
+
+  it("quem publicou entra pelo projeto de origem", () => {
+    const admin = membro("adm", "Admin", { pontos: [["2026-03-01", "70"]] });
+    const origem = { ...lighter, sourceProjectId: admin.ds.projects[0]!.id };
+    expect(rankingDePontos([admin], [origem])[0]!.linhas.map((l) => l.nome)).toEqual(["Admin"]);
+  });
+
   it("o total do membro é o mesmo da página do projeto dele", () => {
-    const ana = membro("ana", "Ana", { pontos: [["2026-03-01", "1000"], ["2026-03-08", "1800"]] });
-    const [projeto] = rankingDePontos([ana]);
+    const ana = adotou(membro("ana", "Ana", { pontos: [["2026-03-01", "1000"], ["2026-03-08", "1800"]] }), "cat-lighter");
+    const [projeto] = rankingDePontos([ana], [lighter]);
     expect(projeto!.linhas[0]!.pontos).toBe(selectProgramasDePontos(ana.ds)[0]!.total);
   });
 
-  it("quem nunca mediu, ou projeto sem programa de pontos, fica de fora", () => {
-    expect(rankingDePontos([membro("ana", "Ana"), membro("bia", "Bia", { pontosLabel: null })])).toEqual([]);
+  it("quem não mediu nada no projeto não aparece nele", () => {
+    const [projeto] = rankingDePontos([adotou(membro("ana", "Ana"), "cat-lighter")], [lighter]);
+    expect(projeto!.linhas).toEqual([]);
   });
 });
 
 describe("rankingDePontos com volume", () => {
   it("mostra pontos e volume lado a lado, com o mesmo total da página do projeto", () => {
-    const ana = membro("ana", "Ana", { pontos: [["2026-03-01", "500"]], volume: [["2026-03-01", "12000"], ["2026-03-05", "15000"]] });
-    const [projeto] = rankingDePontos([ana]);
+    const ana = adotou(membro("ana", "Ana", { pontos: [["2026-03-01", "500"]], volume: [["2026-03-01", "12000"], ["2026-03-05", "15000"]] }), "cat-lighter");
+    const [projeto] = rankingDePontos([ana], [lighter]);
     expect(projeto!.linhas[0]!.volume).toBe(selectVolumeDoProjeto(ana.ds, ana.ds.projects[0]!.id).total);
     expect(projeto!.linhas[0]!.atualizadoEm).toBe("2026-03-05");
     expect(projeto).toMatchObject({ temPontos: true, temVolume: true });
   });
 
-  it("projeto só com volume entra, e é ordenado por volume", () => {
-    const [projeto] = rankingDePontos([
-      membro("ana", "Ana", { pontosLabel: null, volume: [["2026-03-01", "100"]] }),
-      membro("bia", "Bia", { pontosLabel: null, volume: [["2026-03-01", "900"]] }),
-    ]);
+  it("projeto só com volume é ordenado por volume", () => {
+    const [projeto] = rankingDePontos(
+      [
+        adotou(membro("ana", "Ana", { pontosLabel: null, volume: [["2026-03-01", "100"]] }), "cat-lighter"),
+        adotou(membro("bia", "Bia", { pontosLabel: null, volume: [["2026-03-01", "900"]] }), "cat-lighter"),
+      ],
+      [lighter],
+    );
     expect(projeto).toMatchObject({ temPontos: false, rotulo: null });
     expect(projeto!.linhas.map((l) => [l.nome, l.posicao])).toEqual([
       ["Bia", 1],
@@ -158,10 +183,13 @@ describe("rankingDePontos com volume", () => {
   });
 
   it("quem não mede a grandeza escolhida fica no fim, sem posição", () => {
-    const [projeto] = rankingDePontos([
-      membro("ana", "Ana", { pontos: [["2026-03-01", "500"]] }),
-      membro("bia", "Bia", { volume: [["2026-03-01", "900"]] }),
-    ]);
+    const [projeto] = rankingDePontos(
+      [
+        adotou(membro("ana", "Ana", { pontos: [["2026-03-01", "500"]] }), "cat-lighter"),
+        adotou(membro("bia", "Bia", { volume: [["2026-03-01", "900"]] }), "cat-lighter"),
+      ],
+      [lighter],
+    );
     expect(ordenarRanking(projeto!.linhas, "pontos").map((l) => [l.nome, l.posicao])).toEqual([
       ["Ana", 1],
       ["Bia", 0],
@@ -170,20 +198,6 @@ describe("rankingDePontos com volume", () => {
       ["Bia", 1],
       ["Ana", 0],
     ]);
-  });
-});
-
-describe("rankingDePontos só com quem está farmando", () => {
-  it("projeto fora do farm do membro não entra no ranking", () => {
-    const projetos = rankingDePontos([
-      membro("ana", "Ana", { pontos: [["2026-03-01", "500"]] }),
-      membro("bia", "Bia", { pontos: [["2026-03-01", "900"]], farmando: false }),
-    ]);
-    expect(projetos[0]!.linhas.map((l) => l.nome)).toEqual(["Ana"]);
-  });
-
-  it("projeto que ninguém está farmando some da lista", () => {
-    expect(rankingDePontos([membro("ana", "Ana", { pontos: [["2026-03-01", "500"]], farmando: false })])).toEqual([]);
   });
 });
 

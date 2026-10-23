@@ -3770,8 +3770,16 @@ dois caracteres: saiu a palavra "exclusiva". E a foto: o link de publicação n�
 então o botão passou a abrir uma janela com a prévia do post e o lembrete de anexar o print
 antes de abrir o X.
 
-### Ranking só de quem está farmando
+### O ranking de pontos é dos projetos ativos
 
-O ranking de pontos e volume passou a considerar só os projetos em "Farmando agora" de cada
-membro. A regra é por pessoa, e não por projeto: quem tirou um projeto do farm sai do ranking
-dele, e quem continua farmando segue aparecendo. Projeto que ninguém farma mais some da lista.
+A primeira leitura do pedido "só os projetos farmando agora" filtrou pelo farm de cada membro.
+O que ele queria era outra coisa: os projetos ativos são os que ele controla (os destaques), e
+esses aparecem para todo mundo; o resto é pessoal de cada um. O ranking passou a listar os
+destaques ativos, mesmo os que ninguém mediu ainda, e a juntar cada membro pelo destaque que
+ele adicionou (`adoptedFromId`), e não mais pelo nome do projeto. A troca também fechou um
+buraco da versão por nome: dois projetos pessoais chamados "Lighter" de pessoas diferentes
+apareciam como o mesmo projeto.
+
+As contas de teste não tinham nenhum destaque adicionado com medição, e o ranking abria todo
+zerado. O script do admin de teste passou a deixar duas semanas de pontos e volume no
+destaque "Astra Points", no projeto de origem do admin e numa adoção pela conta demo.
