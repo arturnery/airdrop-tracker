@@ -2153,10 +2153,11 @@ resumo e os passos numerados. Quem administra edita o aviso pelo lápis do card
 (`atualizarAviso`, que grava `atualizado_em`; o card mostra "editado").
 
 **X, em duas partes** (`lib/compartilhar-x.ts`). A parte 1 (`postAnuncioDoAviso`) segue o
-formato que circula em cripto: título com 🪂, os tópicos com 👉, o alerta com ⚠️, as hashtags
-(`#TICKER #Airdrop`) e, no fim, o link do **post oficial** do projeto, que o X mostra como
-citação: o leitor vê que a notícia veio da fonte. Para caber nos 280, os tópicos saem do último
-para o primeiro. A parte 2 (`postRespostaDaComunidade`) é a divulgação da Level Cripto Pro, e vai
+formato definido pela comunidade: "Anúncio do airdrop da @projeto 🪂" e três setas com os dados
+que importam (o que será distribuído, a data prevista, e como chega com o cuidado contra golpe,
+que é o alerta), e no fim o link do **post oficial** do projeto, que o X mostra como citação: o
+leitor vê que a notícia veio da fonte. O título pode ser trocado no formulário. Para caber nos
+280, os tópicos saem antes do alerta. A parte 2 (`postRespostaDaComunidade`) é a divulgação da Level Cripto Pro, e vai
 como **resposta** ao anúncio. O link de publicação do X abre um post por vez, e a resposta
 precisa do id do post respondido (`in_reply_to`); por isso a janela de compartilhar pede o link
 do post recém-publicado antes de abrir a resposta. Todo membro pode compartilhar.

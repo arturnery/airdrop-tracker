@@ -16,7 +16,7 @@ const resposta = {
   link: "https://claim.extend.example/airdrop",
   projeto: "Extend",
   perfil_x: "ExtendFi",
-  chamada_x: "Airdrop EXT da Extend",
+  chamada_x: null,
   destaques: ["Claim aberto para usuários elegíveis.", "Prazo até 15/11/2026", "  👉 Sem custo  "],
   ticker: "$EXT",
   alerta: "Cuidado com sites e DMs falsos!",
@@ -81,43 +81,40 @@ describe("campos novos do aviso", () => {
 
 describe("post do X em duas partes", () => {
   const base = {
-    chamada: "Airdrop XTEN da Extended",
-    destaques: [
-      "30% do supply (300M XTEN) para quem participou do programa de pontos",
-      "Sem custo: o claim é na carteira Arc",
-      "White paper (MiCA) sai em 31/10",
-    ],
-    alerta: "O claim ainda não abriu. Cuidado com sites e DMs falsos!",
-    ticker: "XTEN",
+    chamada: null,
+    projeto: "Extended",
+    destaques: ["30% do supply será distribuído para a comunidade", "Data prevista para o mês de NOV"],
+    alerta: "Não terá página para claim: será dropado direto na sua wallet, então fiquem atentos a golpes",
     perfilProjeto: "extendedapp",
     postOficialX: "https://x.com/extendedapp/status/2113673873862582750",
     link: "https://extended.example/airdrop",
   };
 
-  it("parte 1 no formato do anúncio, citando o post oficial no fim", () => {
-    const post = postAnuncioDoAviso(base);
-    expect(post).toBe(
-      "Airdrop XTEN da Extended 🪂\n\n" +
-        "👉 30% do supply (300M XTEN) para quem participou do programa de pontos\n" +
-        "👉 Sem custo: o claim é na carteira Arc\n" +
-        "👉 White paper (MiCA) sai em 31/10\n\n" +
-        "⚠️ O claim ainda não abriu. Cuidado com sites e DMs falsos!\n" +
-        "#XTEN #Airdrop\n" +
+  it("parte 1 no formato da comunidade, com o alerta como último tópico e o post oficial citado", () => {
+    expect(postAnuncioDoAviso(base)).toBe(
+      "Anúncio do airdrop da @extendedapp 🪂\n\n" +
+        "-> 30% do supply será distribuído para a comunidade\n" +
+        "-> Data prevista para o mês de NOV\n" +
+        "-> Não terá página para claim: será dropado direto na sua wallet, então fiquem atentos a golpes\n\n" +
         "https://x.com/extendedapp/status/2113673873862582750",
     );
   });
 
-  it("sem post oficial, marca o @ do projeto e leva o link oficial", () => {
-    const post = postAnuncioDoAviso({ ...base, postOficialX: null });
-    expect(post.startsWith("Airdrop XTEN da Extended (@extendedapp) 🪂")).toBe(true);
+  it("sem @ do projeto usa o nome; sem post oficial, leva o link do anúncio", () => {
+    const post = postAnuncioDoAviso({ ...base, perfilProjeto: null, postOficialX: null });
+    expect(post.startsWith("Anúncio do airdrop de Extended 🪂")).toBe(true);
     expect(post.endsWith("https://extended.example/airdrop")).toBe(true);
   });
 
-  it("tópicos demais saem do último para o primeiro, para caber nos 280", () => {
+  it("o título pode ser trocado no formulário", () => {
+    expect(postAnuncioDoAviso({ ...base, chamada: "Saiu o airdrop da Extended" }).startsWith("Saiu o airdrop da Extended 🪂")).toBe(true);
+  });
+
+  it("tópicos demais saem para caber nos 280, e o alerta fica", () => {
     const longo = "x".repeat(110);
-    const post = postAnuncioDoAviso({ ...base, destaques: [longo, longo, longo, longo] });
+    const post = postAnuncioDoAviso({ ...base, destaques: [longo, longo, longo] });
     expect(tamanhoNoX(post)).toBeLessThanOrEqual(LIMITE_DO_X);
-    expect(post).toContain("⚠️");
+    expect(post).toContain("fiquem atentos a golpes");
     expect(post).toContain(base.postOficialX);
   });
 

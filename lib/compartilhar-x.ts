@@ -128,39 +128,38 @@ export function postDeResultado(dados: {
 }
 
 /**
- * Parte 1 do aviso no X: o anúncio, no formato que circula bem em cripto.
+ * Parte 1 do aviso no X: o anúncio, no formato definido pela comunidade.
  *
- *   Airdrop XTEN da Extended 🪂
+ *   Anúncio do airdrop da @extendedapp 🪂
  *
- *   👉 30% do supply (300M XTEN) para quem participou do programa de pontos
- *   👉 Sem custo: o claim é na carteira Arc
+ *   -> 30% do supply será distribuído para a comunidade
+ *   -> Data prevista para o mês de NOV
+ *   -> Não terá página para claim: será dropado direto na sua wallet, então fiquem atentos a golpes
  *
- *   ⚠️ O claim ainda não abriu. Cuidado com sites e DMs falsos!
- *   #XTEN #Airdrop
  *   https://x.com/extendedapp/status/...   ← vira a citação do post oficial
  *
- * Com o link do post oficial no fim, o X mostra o post do projeto citado logo
- * abaixo, o que dá a confiança de "veio da fonte". Sem ele, vai o @ do
- * projeto no título e o link oficial do anúncio. Para caber nos 280, os
- * tópicos saem do último para o primeiro; título, alerta e citação ficam.
+ * Três dados: o que será distribuído, quando, e como chega com o cuidado
+ * contra golpe (o alerta vira o último tópico). Com o link do post oficial no
+ * fim, o X mostra o post do projeto citado logo abaixo, o que dá a confiança
+ * de "veio da fonte"; sem ele, vai o link oficial do anúncio. O título pode
+ * ser trocado no formulário; em branco, usa o modelo. Para caber nos 280, os
+ * tópicos saem do penúltimo para trás, e o alerta fica.
  */
 export function postAnuncioDoAviso(aviso: {
-  chamada: string;
+  chamada: string | null;
+  projeto: string | null;
   destaques: string[];
   alerta: string | null;
-  ticker: string | null;
   perfilProjeto: string | null;
   postOficialX: string | null;
   link: string | null;
 }): string {
-  const titulo = aviso.chamada.trim() + (aviso.perfilProjeto && !aviso.postOficialX ? ` (@${aviso.perfilProjeto})` : "") + " 🪂";
-  const alerta = `⚠️ ${aviso.alerta?.trim() || "Cuidado com sites e DMs falsos!"}`;
-  const hashtags = [aviso.ticker ? `#${aviso.ticker}` : null, "#Airdrop"].filter(Boolean).join(" ");
+  const quem = aviso.perfilProjeto ? `da @${aviso.perfilProjeto}` : aviso.projeto ? `de ${aviso.projeto}` : "";
+  const titulo = `${aviso.chamada?.trim() || `Anúncio do airdrop ${quem}`.trim()} 🪂`;
+  const alerta = aviso.alerta?.trim() || "Fiquem atentos a sites e DMs falsos";
   const fim = aviso.postOficialX ?? aviso.link;
   const montar = (topicos: string[]) =>
-    [titulo, topicos.length ? "\n" + topicos.map((t) => `👉 ${t}`).join("\n") : null, `\n${alerta}`, hashtags, fim]
-      .filter((p) => p !== null && p !== "")
-      .join("\n");
+    [titulo, "", ...[...topicos, alerta].map((t) => `-> ${t}`), ...(fim ? ["", fim] : [])].join("\n");
   const topicos = [...aviso.destaques];
   while (topicos.length > 0 && tamanhoNoX(montar(topicos)) > LIMITE_DO_X) topicos.pop();
   return montar(topicos);

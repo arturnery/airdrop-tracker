@@ -3835,3 +3835,8 @@ No teste com a IA, a primeira versão repetia o alerta nos tópicos e tratava a 
 tokenomics como prazo. O prompt passou a separar as duas coisas, e a conferência tira o ponto
 final dos tópicos. O modelo grátis ainda escorrega no português às vezes, e o formulário de
 conferência existe para isso.
+
+O formato do post mudou mais uma vez, a pedido, para o padrão que a comunidade quer usar:
+"Anúncio do airdrop da @projeto 🪂" e três setas, com o que será distribuído, a data prevista e
+como o token chega junto do cuidado contra golpe. Saíram as hashtags e a linha de alerta
+separada: o alerta virou a terceira seta. O prompt pede exatamente esses dois tópicos e o alerta.

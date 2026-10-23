@@ -100,10 +100,10 @@ function CardAviso({ aviso, ehAdmin, destaque = false }: { aviso: Aviso; ehAdmin
   const destaques = linhas(aviso.destaques);
   const passos = linhas(aviso.acao);
   const anuncio = postAnuncioDoAviso({
-    chamada: aviso.chamadaX ?? aviso.titulo,
+    chamada: aviso.chamadaX,
+    projeto: aviso.projeto,
     destaques,
     alerta: aviso.alerta,
-    ticker: aviso.ticker,
     perfilProjeto: aviso.perfilX,
     postOficialX: postOficial,
     link,

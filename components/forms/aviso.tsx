@@ -117,14 +117,14 @@ export function NovoAviso({
             defaultValue={inicial?.destaques}
             erro={e.destaques}
             rows={4}
-            ajuda="Um por linha, até 4. Aparecem no card e viram os 👉 do post."
+            ajuda="Um por linha: o que será distribuído e a data. Aparecem no card e viram as setas do post."
           />
           <CampoTexto
             label="Alerta"
             name="alerta"
             defaultValue={inicial?.alerta}
             erro={e.alerta}
-            placeholder="O claim ainda não abriu. Cuidado com sites e DMs falsos!"
+            placeholder="Não terá página para claim: será dropado direto na wallet, então fiquem atentos a golpes"
           />
           <CampoArea label="Resumo" name="resumo" obrigatorio defaultValue={inicial?.resumo} erro={e.resumo} rows={3} />
           <CampoArea
@@ -150,12 +150,12 @@ export function NovoAviso({
               ajuda="O post da comunidade sai citando este, o que mostra que a notícia veio da fonte."
             />
             <CampoTexto
-              label="Título do post"
+              label="Título do post (opcional)"
               name="chamadaX"
               defaultValue={inicial?.chamadaX}
               erro={e.chamadaX}
-              placeholder="Airdrop XTEN da Extended"
-              ajuda="Curto, sem emoji: o 🪂 é colocado no fim."
+              placeholder="Anúncio do airdrop da @projeto"
+              ajuda="Em branco, o post usa 'Anúncio do airdrop da @projeto'. O 🪂 é colocado no fim."
             />
           </fieldset>
         </>
