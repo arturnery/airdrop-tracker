@@ -98,6 +98,7 @@ type Acoes = {
   entrarNaOperacao: Acao<[unknown]>;
   sairDaOperacao: Acao<[string]>;
   publicarAviso: Acao<[unknown]>;
+  atualizarAviso: Acao<[string, unknown]>;
   excluirAviso: Acao<[string]>;
 };
 
@@ -266,6 +267,7 @@ export function DataProvider({
       entrarNaOperacao: envolver(Trade.entrarNaOperacao),
       sairDaOperacao: envolver(Trade.sairDaOperacao),
       publicarAviso: envolver(Avisos.publicarAviso),
+      atualizarAviso: envolver(Avisos.atualizarAviso),
       excluirAviso: envolver(Avisos.excluirAviso),
     }),
     [envolver, alternarTarefa],

@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.25",
+    data: "2026-10-23",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "Avisos com novo visual: projeto e prazo no topo, os pontos principais em destaque, o alerta contra golpe e os passos numerados. E o compartilhar no X agora vai em duas partes: o anúncio, citando o post oficial do projeto, e logo abaixo a resposta com o convite da comunidade.",
+      },
+    ],
+  },
+  {
     versao: "1.24",
     data: "2026-10-23",
     mudancas: [

@@ -988,6 +988,15 @@ export const avisos = pgTable(
     projeto: text("projeto"),
     perfilX: text("perfil_x"),
     chamadaX: text("chamada_x"),
+    /** Os pontos principais do anúncio, um por linha: viram os "👉" do post e a lista do card. */
+    destaques: text("destaques"),
+    /** O ticker do token, sem o "$" (XTEN). Vira a hashtag do post. */
+    ticker: text("ticker"),
+    /** O alerta contra golpe, uma frase ("O claim ainda não abriu"). */
+    alerta: text("alerta"),
+    /** O post oficial do projeto no X: o post da comunidade sai citando ele. */
+    postOficialX: text("post_oficial_x"),
+    atualizadoEm: timestamp("atualizado_em", { withTimezone: true }),
     publicadoPor: uuid("publicado_por").references(() => users.id, { onDelete: "set null" }),
     publicadoEm: timestamp("publicado_em", { withTimezone: true }).notNull().defaultNow(),
   },

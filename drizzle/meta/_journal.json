@@ -162,6 +162,13 @@
       "when": 1792776698338,
       "tag": "0022_avisos",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792785632292,
+      "tag": "0023_avisos_formato_x",
+      "breakpoints": true
     }
   ]
 }

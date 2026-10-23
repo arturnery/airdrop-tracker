@@ -2146,5 +2146,22 @@ anúncio; o @ só se aparecer nele; o prazo só se o dia aparecer. O que não pa
 branco com um aviso na conferência. O motivo é concreto: um link plausível "completado" pela
 IA mandaria a comunidade para um site falso de claim.
 
-**X.** Todo membro pode compartilhar um aviso: `postDeAviso` junta a chamada, o @ do projeto,
-o link oficial e o rodapé da comunidade, cortando só a chamada se precisar caber nos 280.
+**Card.** O mais recente abre em destaque, na largura toda; os anteriores em duas colunas. A
+ordem dentro do card é a de leitura: de quem é a notícia (inicial, projeto, ticker) e até
+quando vale (prazo), o que aconteceu (título e tópicos), o alerta contra golpe, e só então o
+resumo e os passos numerados. Quem administra edita o aviso pelo lápis do card
+(`atualizarAviso`, que grava `atualizado_em`; o card mostra "editado").
+
+**X, em duas partes** (`lib/compartilhar-x.ts`). A parte 1 (`postAnuncioDoAviso`) segue o
+formato que circula em cripto: título com 🪂, os tópicos com 👉, o alerta com ⚠️, as hashtags
+(`#TICKER #Airdrop`) e, no fim, o link do **post oficial** do projeto, que o X mostra como
+citação: o leitor vê que a notícia veio da fonte. Para caber nos 280, os tópicos saem do último
+para o primeiro. A parte 2 (`postRespostaDaComunidade`) é a divulgação da Level Cripto Pro, e vai
+como **resposta** ao anúncio. O link de publicação do X abre um post por vez, e a resposta
+precisa do id do post respondido (`in_reply_to`); por isso a janela de compartilhar pede o link
+do post recém-publicado antes de abrir a resposta. Todo membro pode compartilhar.
+
+Campos que alimentam o post: `destaques` (um por linha), `ticker`, `alerta` e `post_oficial_x`.
+A IA preenche os quatro; o ticker e o post oficial passam pela mesma conferência contra
+invenção (precisam estar no texto colado), e o prompt separa prazo para agir de data de
+lançamento.

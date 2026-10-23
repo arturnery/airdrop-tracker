@@ -128,23 +128,60 @@ export function postDeResultado(dados: {
 }
 
 /**
- * Post de um aviso da comunidade: a chamada escrita para o X, o projeto
- * marcado e o link oficial do anúncio. A chamada é cortada se precisar, para
- * o post caber nos 280 com o rodapé: o rodapé e o link não são cortados.
+ * Parte 1 do aviso no X: o anúncio, no formato que circula bem em cripto.
+ *
+ *   Airdrop XTEN da Extended 🪂
+ *
+ *   👉 30% do supply (300M XTEN) para quem participou do programa de pontos
+ *   👉 Sem custo: o claim é na carteira Arc
+ *
+ *   ⚠️ O claim ainda não abriu. Cuidado com sites e DMs falsos!
+ *   #XTEN #Airdrop
+ *   https://x.com/extendedapp/status/...   ← vira a citação do post oficial
+ *
+ * Com o link do post oficial no fim, o X mostra o post do projeto citado logo
+ * abaixo, o que dá a confiança de "veio da fonte". Sem ele, vai o @ do
+ * projeto no título e o link oficial do anúncio. Para caber nos 280, os
+ * tópicos saem do último para o primeiro; título, alerta e citação ficam.
  */
-export function postDeAviso(dados: {
+export function postAnuncioDoAviso(aviso: {
   chamada: string;
-  projeto: ProjetoDoPost | null;
+  destaques: string[];
+  alerta: string | null;
+  ticker: string | null;
+  perfilProjeto: string | null;
+  postOficialX: string | null;
   link: string | null;
 }): string {
-  const marca = dados.projeto ? ` ${marcar(dados.projeto)}` : "";
-  const link = dados.link ? `\n${dados.link}` : "";
-  const montar = (chamada: string) => `📢${marca ? marca + ":" : ""} ${chamada}${link}\n\n${rodape()}`;
-  let chamada = dados.chamada.trim();
-  while (chamada.length > 0 && tamanhoNoX(montar(chamada)) > LIMITE_DO_X) {
-    chamada = chamada.slice(0, -2).trimEnd() + "…";
-  }
-  return montar(chamada);
+  const titulo = aviso.chamada.trim() + (aviso.perfilProjeto && !aviso.postOficialX ? ` (@${aviso.perfilProjeto})` : "") + " 🪂";
+  const alerta = `⚠️ ${aviso.alerta?.trim() || "Cuidado com sites e DMs falsos!"}`;
+  const hashtags = [aviso.ticker ? `#${aviso.ticker}` : null, "#Airdrop"].filter(Boolean).join(" ");
+  const fim = aviso.postOficialX ?? aviso.link;
+  const montar = (topicos: string[]) =>
+    [titulo, topicos.length ? "\n" + topicos.map((t) => `👉 ${t}`).join("\n") : null, `\n${alerta}`, hashtags, fim]
+      .filter((p) => p !== null && p !== "")
+      .join("\n");
+  const topicos = [...aviso.destaques];
+  while (topicos.length > 0 && tamanhoNoX(montar(topicos)) > LIMITE_DO_X) topicos.pop();
+  return montar(topicos);
+}
+
+/**
+ * Parte 2: a resposta logo abaixo do anúncio, com a divulgação da comunidade.
+ * Separada de propósito: o anúncio fica limpo, com cara de notícia, e quem se
+ * interessou encontra o convite em seguida.
+ */
+export function postRespostaDaComunidade(): string {
+  return (
+    "Quer receber avisos assim antes de todo mundo e organizar seus farms de airdrop? 🚀\n\n" +
+    `Na comunidade Level Cripto Pro (@${PERFIL_DA_COMUNIDADE}) você tem os avisos importantes, a ferramenta para acompanhar seus projetos e o ranking da galera.\n\n` +
+    `Entra aqui: ${SITE_DA_COMUNIDADE}`
+  );
+}
+
+/** Abre a tela de publicar já como resposta ao post de id `idDoPost`. */
+export function linkParaResponder(texto: string, idDoPost: string): string {
+  return `${linkParaPostar(texto)}&in_reply_to=${encodeURIComponent(idDoPost)}`;
 }
 
 /** Tamanho do post como o X conta: cada link vale 23 caracteres. */

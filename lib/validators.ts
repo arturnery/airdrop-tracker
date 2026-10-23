@@ -4,6 +4,7 @@ import { aplicarSinalDoTipo } from "./finance";
 import { parseUserInput } from "./money";
 import { parsePointsInput } from "./points";
 import { incoerencias, lerPreco } from "./sinais";
+import { idDoPostX } from "./interpretar-aviso";
 
 /**
  * Schemas de entrada dos formulários.
@@ -649,5 +650,26 @@ export const avisoSchema = z.object({
     .transform((v) => v.replace(/^@/, ""))
     .refine((v) => v === "" || /^[A-Za-z0-9_]{1,15}$/.test(v), "Só o @ do perfil, como LevelCripto.")
     .transform((v) => (v === "" ? null : v)),
-  chamadaX: textoOpcional.refine((v) => v === null || v.length <= 150, "Até 150 caracteres."),
+  chamadaX: textoOpcional.refine((v) => v === null || v.length <= 80, "Até 80 caracteres."),
+  /** Um tópico por linha; linhas vazias somem. */
+  destaques: z
+    .string()
+    .default("")
+    .transform((v) => v.split("\n").map((l) => l.trim().replace(/^[-•👉\s]+/u, "")).filter(Boolean))
+    .refine((l) => l.length <= 4, "No máximo 4 tópicos.")
+    .refine((l) => l.every((t) => t.length <= 120), "Cada tópico com até 120 caracteres.")
+    .transform((l) => (l.length === 0 ? null : l.join("\n"))),
+  ticker: z
+    .string()
+    .default("")
+    .transform((v) => v.trim().replace(/^\$/, "").toUpperCase())
+    .refine((v) => v === "" || /^[A-Z0-9]{2,12}$/.test(v), "Só letras e números, como XTEN.")
+    .transform((v) => (v === "" ? null : v)),
+  alerta: textoOpcional.refine((v) => v === null || v.length <= 120, "Até 120 caracteres."),
+  postOficialX: z
+    .string()
+    .default("")
+    .transform((v) => v.trim())
+    .refine((v) => v === "" || idDoPostX(v) !== null, "Cole o link de um post do X (x.com/.../status/...).")
+    .transform((v) => (v === "" ? null : v.replace(/\?.*$/, ""))),
 });

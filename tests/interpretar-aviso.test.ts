@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { LIMITE_DO_X, postDeAviso, tamanhoNoX } from "@/lib/compartilhar-x";
-import { interpretarAviso } from "@/lib/interpretar-aviso";
+import { LIMITE_DO_X, linkParaResponder, postAnuncioDoAviso, postRespostaDaComunidade, tamanhoNoX } from "@/lib/compartilhar-x";
+import { idDoPostX, interpretarAviso } from "@/lib/interpretar-aviso";
 import { avisoSchema } from "@/lib/validators";
 
 const ANUNCIO = `The Extend airdrop is live! Eligible users can claim $EXT until November 15, 2026.
 Check eligibility at https://claim.extend.example/airdrop
-Follow @ExtendFi for updates.`;
+Follow @ExtendFi for updates. https://x.com/ExtendFi/status/1888000000000000001`;
 
 const resposta = {
   titulo: "Extend libera o airdrop do token EXT",
@@ -16,7 +16,11 @@ const resposta = {
   link: "https://claim.extend.example/airdrop",
   projeto: "Extend",
   perfil_x: "ExtendFi",
-  chamada_x: "Airdrop da Extend liberado: confira se você é elegível e faça o claim até 15/11.",
+  chamada_x: "Airdrop EXT da Extend",
+  destaques: ["Claim aberto para usuários elegíveis.", "Prazo até 15/11/2026", "  👉 Sem custo  "],
+  ticker: "$EXT",
+  alerta: "Cuidado com sites e DMs falsos!",
+  post_oficial_x: null,
 };
 
 describe("interpretarAviso", () => {
@@ -52,19 +56,76 @@ describe("interpretarAviso", () => {
   });
 });
 
-describe("postDeAviso", () => {
-  it("marca o projeto, leva o link oficial e o convite", () => {
-    const post = postDeAviso({ chamada: resposta.chamada_x, projeto: { nome: "Extend", perfil: "ExtendFi" }, link: resposta.link });
-    expect(post.startsWith("📢 @ExtendFi: Airdrop da Extend liberado")).toBe(true);
-    expect(post).toContain("https://claim.extend.example/airdrop");
-    expect(post).toContain("Quer fazer parte? Entra aqui:");
+describe("campos novos do aviso", () => {
+  it("ticker sem o $, tópicos limpos e o post oficial achado no texto colado", () => {
+    const { valores } = interpretarAviso(resposta, ANUNCIO)!;
+    expect(valores.ticker).toBe("EXT");
+    expect(valores.destaques.split("\n")).toEqual(["Claim aberto para usuários elegíveis", "Prazo até 15/11/2026", "Sem custo"]);
+    expect(valores.postOficialX).toBe("https://x.com/ExtendFi/status/1888000000000000001");
   });
 
-  it("chamada longa é cortada para caber, sem cortar link nem rodapé", () => {
-    const post = postDeAviso({ chamada: "x".repeat(400), projeto: { nome: "Extend", perfil: "abcdefghijklmno" }, link: resposta.link });
+  it("ticker e post oficial que não estão no anúncio são descartados", () => {
+    const sem = ANUNCIO.replace(/ https:\/\/x\.com\S+/, "");
+    const { valores } = interpretarAviso({ ...resposta, ticker: "XYZ", post_oficial_x: "https://x.com/Outro/status/123456789" }, sem)!;
+    expect(valores.ticker).toBe("");
+    expect(valores.postOficialX).toBe("");
+  });
+
+  it("idDoPostX lê x.com e twitter.com, e recusa o resto", () => {
+    expect(idDoPostX("https://x.com/extendedapp/status/2113673873862582750?s=46")).toBe("2113673873862582750");
+    expect(idDoPostX("https://twitter.com/a/status/123456")).toBe("123456");
+    expect(idDoPostX("https://x.com/extendedapp")).toBeNull();
+    expect(idDoPostX("https://example.com/a/status/123456")).toBeNull();
+  });
+});
+
+describe("post do X em duas partes", () => {
+  const base = {
+    chamada: "Airdrop XTEN da Extended",
+    destaques: [
+      "30% do supply (300M XTEN) para quem participou do programa de pontos",
+      "Sem custo: o claim é na carteira Arc",
+      "White paper (MiCA) sai em 31/10",
+    ],
+    alerta: "O claim ainda não abriu. Cuidado com sites e DMs falsos!",
+    ticker: "XTEN",
+    perfilProjeto: "extendedapp",
+    postOficialX: "https://x.com/extendedapp/status/2113673873862582750",
+    link: "https://extended.example/airdrop",
+  };
+
+  it("parte 1 no formato do anúncio, citando o post oficial no fim", () => {
+    const post = postAnuncioDoAviso(base);
+    expect(post).toBe(
+      "Airdrop XTEN da Extended 🪂\n\n" +
+        "👉 30% do supply (300M XTEN) para quem participou do programa de pontos\n" +
+        "👉 Sem custo: o claim é na carteira Arc\n" +
+        "👉 White paper (MiCA) sai em 31/10\n\n" +
+        "⚠️ O claim ainda não abriu. Cuidado com sites e DMs falsos!\n" +
+        "#XTEN #Airdrop\n" +
+        "https://x.com/extendedapp/status/2113673873862582750",
+    );
+  });
+
+  it("sem post oficial, marca o @ do projeto e leva o link oficial", () => {
+    const post = postAnuncioDoAviso({ ...base, postOficialX: null });
+    expect(post.startsWith("Airdrop XTEN da Extended (@extendedapp) 🪂")).toBe(true);
+    expect(post.endsWith("https://extended.example/airdrop")).toBe(true);
+  });
+
+  it("tópicos demais saem do último para o primeiro, para caber nos 280", () => {
+    const longo = "x".repeat(110);
+    const post = postAnuncioDoAviso({ ...base, destaques: [longo, longo, longo, longo] });
     expect(tamanhoNoX(post)).toBeLessThanOrEqual(LIMITE_DO_X);
-    expect(post).toContain("…");
-    expect(post).toContain(resposta.link);
-    expect(post).toContain("https://www.levelcripto.com.br/");
+    expect(post).toContain("⚠️");
+    expect(post).toContain(base.postOficialX);
+  });
+
+  it("parte 2 é a divulgação, e abre como resposta ao anúncio", () => {
+    const resposta = postRespostaDaComunidade();
+    expect(tamanhoNoX(resposta)).toBeLessThanOrEqual(LIMITE_DO_X);
+    expect(resposta).toContain("@LevelCripto");
+    expect(resposta).toContain("https://www.levelcripto.com.br/");
+    expect(linkParaResponder(resposta, "2113673873862582750")).toMatch(/&in_reply_to=2113673873862582750$/);
   });
 });

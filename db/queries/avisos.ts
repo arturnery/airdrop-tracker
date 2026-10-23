@@ -18,8 +18,15 @@ export type Aviso = {
   projeto: string | null;
   perfilX: string | null;
   chamadaX: string | null;
+  /** Um tópico por linha. */
+  destaques: string | null;
+  ticker: string | null;
+  alerta: string | null;
+  postOficialX: string | null;
   /** ISO 8601 */
   publicadoEm: string;
+  /** ISO 8601, quando foi editado depois de publicado. */
+  atualizadoEm: string | null;
 };
 
 /** Os avisos de uma área, do mais recente ao mais antigo. Iguais para todos. */
@@ -35,11 +42,20 @@ export async function listarAvisos(area: AreaDoAviso): Promise<Aviso[]> {
       projeto: schema.avisos.projeto,
       perfilX: schema.avisos.perfilX,
       chamadaX: schema.avisos.chamadaX,
+      destaques: schema.avisos.destaques,
+      ticker: schema.avisos.ticker,
+      alerta: schema.avisos.alerta,
+      postOficialX: schema.avisos.postOficialX,
       publicadoEm: schema.avisos.publicadoEm,
+      atualizadoEm: schema.avisos.atualizadoEm,
     })
     .from(schema.avisos)
     .where(eq(schema.avisos.area, area))
     .orderBy(desc(schema.avisos.publicadoEm))
     .limit(100);
-  return linhas.map((l) => ({ ...l, publicadoEm: l.publicadoEm.toISOString() }));
+  return linhas.map((l) => ({
+    ...l,
+    publicadoEm: l.publicadoEm.toISOString(),
+    atualizadoEm: l.atualizadoEm?.toISOString() ?? null,
+  }));
 }

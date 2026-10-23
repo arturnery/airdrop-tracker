@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Pencil, Sparkles } from "lucide-react";
 
 import { interpretarAnuncio } from "@/actions/avisos";
 import { CampoData } from "@/components/forms/campo-data";
@@ -24,35 +24,58 @@ import { avisoSchema, erros } from "@/lib/validators";
 const texto = (dados: FormData, campo: string) => String(dados.get(campo) ?? "");
 
 /**
- * Publicar um aviso no mural de Airdrops. Campos não controlados (lidos do
- * formulário ao enviar): o diálogo desmonta ao fechar e volta vazio, sem o
- * risco de reabrir com o aviso anterior.
+ * Criar ou editar um aviso do mural de Airdrops. Campos não controlados
+ * (lidos do formulário ao enviar): o diálogo desmonta ao fechar e volta
+ * vazio, sem o risco de reabrir com o aviso anterior.
+ *
+ * A ordem dos campos é a ordem em que aparecem no card e no post do X:
+ * projeto, título, tópicos, alerta; depois o detalhe (resumo, passos, prazo)
+ * e por fim o que só o X usa.
  */
 export function NovoAviso({
   inicial,
   avisos,
   abertoAoMontar = false,
   aoFechar,
+  editarId,
 }: {
-  /** Preenchido pela IA a partir do anúncio colado. */
-  inicial?: ValoresAviso;
+  /** Preenchido pela IA a partir do anúncio colado, ou o aviso que está sendo editado. */
+  inicial?: Partial<ValoresAviso>;
   avisos?: string[];
   abertoAoMontar?: boolean;
   aoFechar?: () => void;
+  /** Com id, o formulário edita o aviso em vez de publicar um novo. */
+  editarId?: string;
 }) {
   const { acoes } = useDados();
+  const editando = Boolean(editarId);
   return (
     <Formulario
-      titulo={inicial ? "Confira o aviso" : "Novo aviso"}
+      titulo={editando ? "Editar aviso" : inicial ? "Confira o aviso" : "Novo aviso"}
       descricao={
-        inicial
-          ? "Preenchido pela IA a partir do anúncio. Nada foi publicado ainda: confira, principalmente o link e o prazo."
-          : "Aparece para toda a comunidade no mural de Airdrops."
+        editando
+          ? "As mudanças aparecem para todos assim que você salvar."
+          : inicial
+            ? "Preenchido pela IA a partir do anúncio. Nada foi publicado ainda: confira, principalmente o link, o prazo e os números."
+            : "Aparece para toda a comunidade no mural de Airdrops."
       }
-      gatilho={abertoAoMontar ? undefined : <BotaoNovo>Novo aviso</BotaoNovo>}
+      gatilho={
+        abertoAoMontar ? undefined : editando ? (
+          <button
+            type="button"
+            aria-label="Editar aviso"
+            title="Editar aviso"
+            className="text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <Pencil className="size-4" aria-hidden="true" />
+          </button>
+        ) : (
+          <BotaoNovo>Novo aviso</BotaoNovo>
+        )
+      }
       abertoAoMontar={abertoAoMontar}
       aoFechar={aoFechar}
-      rotuloEnvio="Publicar aviso"
+      rotuloEnvio={editando ? "Salvar" : "Publicar aviso"}
       aoEnviar={(dados) => {
         const bruto = {
           titulo: texto(dados, "titulo"),
@@ -63,10 +86,14 @@ export function NovoAviso({
           projeto: texto(dados, "projeto"),
           perfilX: texto(dados, "perfilX"),
           chamadaX: texto(dados, "chamadaX"),
+          destaques: texto(dados, "destaques"),
+          ticker: texto(dados, "ticker"),
+          alerta: texto(dados, "alerta"),
+          postOficialX: texto(dados, "postOficialX"),
         };
         const resultado = avisoSchema.safeParse(bruto);
         if (!resultado.success) return erros(resultado);
-        return acoes.publicarAviso(bruto);
+        return editarId ? acoes.atualizarAviso(editarId, bruto) : acoes.publicarAviso(bruto);
       }}
     >
       {({ erros: e }) => (
@@ -78,8 +105,28 @@ export function NovoAviso({
               ))}
             </ul>
           ) : null}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <CampoTexto label="Projeto" name="projeto" defaultValue={inicial?.projeto} erro={e.projeto} placeholder="Extended" />
+            <CampoTexto label="Ticker" name="ticker" defaultValue={inicial?.ticker} erro={e.ticker} placeholder="XTEN" />
+            <CampoTexto label="@ do projeto no X" name="perfilX" defaultValue={inicial?.perfilX} erro={e.perfilX} placeholder="extendedapp" />
+          </div>
           <CampoTexto label="Título" name="titulo" obrigatorio defaultValue={inicial?.titulo} erro={e.titulo} />
-          <CampoArea label="Resumo" name="resumo" obrigatorio defaultValue={inicial?.resumo} erro={e.resumo} rows={4} />
+          <CampoArea
+            label="Tópicos principais"
+            name="destaques"
+            defaultValue={inicial?.destaques}
+            erro={e.destaques}
+            rows={4}
+            ajuda="Um por linha, até 4. Aparecem no card e viram os 👉 do post."
+          />
+          <CampoTexto
+            label="Alerta"
+            name="alerta"
+            defaultValue={inicial?.alerta}
+            erro={e.alerta}
+            placeholder="O claim ainda não abriu. Cuidado com sites e DMs falsos!"
+          />
+          <CampoArea label="Resumo" name="resumo" obrigatorio defaultValue={inicial?.resumo} erro={e.resumo} rows={3} />
           <CampoArea
             label="O que fazer"
             name="acao"
@@ -92,23 +139,25 @@ export function NovoAviso({
             <CampoData label="Prazo" name="prazo" defaultValue={inicial?.prazo || undefined} erro={e.prazo} />
             <CampoTexto label="Link oficial" name="link" defaultValue={inicial?.link} erro={e.link} placeholder="https://" />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CampoTexto label="Projeto" name="projeto" defaultValue={inicial?.projeto} erro={e.projeto} />
+          <fieldset className="border-border space-y-4 rounded-md border p-3">
+            <legend className="text-muted-foreground px-1 text-xs font-medium">Só no post do X</legend>
             <CampoTexto
-              label="@ do projeto no X"
-              name="perfilX"
-              defaultValue={inicial?.perfilX}
-              erro={e.perfilX}
-              placeholder="ExtendOfficial"
+              label="Post oficial no X"
+              name="postOficialX"
+              defaultValue={inicial?.postOficialX}
+              erro={e.postOficialX}
+              placeholder="https://x.com/extendedapp/status/..."
+              ajuda="O post da comunidade sai citando este, o que mostra que a notícia veio da fonte."
             />
-          </div>
-          <CampoTexto
-            label="Chamada para o X"
-            name="chamadaX"
-            defaultValue={inicial?.chamadaX}
-            erro={e.chamadaX}
-            ajuda="Uma frase, sem link. O post junta o @ do projeto, o link e o convite da comunidade."
-          />
+            <CampoTexto
+              label="Título do post"
+              name="chamadaX"
+              defaultValue={inicial?.chamadaX}
+              erro={e.chamadaX}
+              placeholder="Airdrop XTEN da Extended"
+              ajuda="Curto, sem emoji: o 🪂 é colocado no fim."
+            />
+          </fieldset>
         </>
       )}
     </Formulario>

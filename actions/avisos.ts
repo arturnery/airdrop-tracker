@@ -14,7 +14,7 @@ import { perguntar, type Motivo } from "@/lib/perguntar-ia";
 import { avisoSchema } from "@/lib/validators";
 
 import { exigirAdministrador } from "./index";
-import { executar, type ResultadoAcao } from "./_core";
+import { ErroDeRegra, executar, type ResultadoAcao } from "./_core";
 
 /**
  * Avisos para a comunidade. Só quem administra publica; todos leem no mural
@@ -27,6 +27,24 @@ export async function publicarAviso(entrada: unknown): Promise<ResultadoAcao> {
   return executar(avisoSchema, entrada, async (dados, userId) => {
     await exigirAdministrador(userId);
     await db.insert(schema.avisos).values({ ...dados, area: "airdrops", publicadoPor: userId });
+  }, ROTAS);
+}
+
+/**
+ * Edita um aviso publicado. Cada campo é regravado inteiro (o formulário
+ * manda todos), então um campo esvaziado vira `null` de verdade, e não fica
+ * com o valor antigo.
+ */
+export async function atualizarAviso(id: string, entrada: unknown): Promise<ResultadoAcao> {
+  return executar(avisoSchema, entrada, async (dados, userId) => {
+    await exigirAdministrador(userId);
+    if (!z.uuid().safeParse(id).success) throw new ErroDeRegra("geral", "Aviso inválido.");
+    const alterados = await db
+      .update(schema.avisos)
+      .set({ ...dados, atualizadoEm: new Date() })
+      .where(eq(schema.avisos.id, id))
+      .returning({ id: schema.avisos.id });
+    if (alterados.length === 0) throw new ErroDeRegra("geral", "Esse aviso não existe mais.");
   }, ROTAS);
 }
 

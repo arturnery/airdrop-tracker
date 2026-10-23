@@ -3814,3 +3814,24 @@ Em airdrop, o golpe mais comum é o link falso de claim. Por isso o link sugerid
 fica se estiver escrito no anúncio, letra por letra, e o mesmo vale para o @ do projeto e o dia
 do prazo. Testado com um anúncio de exemplo: link, @ e prazo conferidos, aviso publicado em 20 s,
 e o membro vê o mural sem os botões de quem publica.
+
+## Marco 61: Avisos editáveis, card redesenhado e o post do X em duas partes
+
+Três pedidos depois de usar o mural: editar um aviso publicado, um card menos cru, e um post do
+X melhor, em duas partes (o anúncio, e a divulgação como resposta), com um exemplo de referência
+que citava o post oficial do projeto.
+
+O card foi refeito pela ordem de leitura: identidade e prazo, título, os fatos em tópicos, o
+alerta, e só depois o resumo e os passos. Antes era um parágrafo corrido com um quadro de passos
+embaixo. O mais recente abre em destaque, e os anteriores em duas colunas.
+
+O post da referência mostrava o formato que funciona (título, tópicos, alerta, hashtags) e a
+citação do post oficial, que dá confiança. A citação sai de graça: um link de post do X no fim
+do texto vira citação. A resposta foi a parte com limitação: o link de publicação abre um post
+de cada vez, e responder exige o id do post. A janela de compartilhar virou um passo a passo,
+publicar o anúncio, colar o link dele e abrir a resposta já ligada.
+
+No teste com a IA, a primeira versão repetia o alerta nos tópicos e tratava a data das
+tokenomics como prazo. O prompt passou a separar as duas coisas, e a conferência tira o ponto
+final dos tópicos. O modelo grátis ainda escorrega no português às vezes, e o formulário de
+conferência existe para isso.
