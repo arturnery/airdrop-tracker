@@ -3840,3 +3840,11 @@ O formato do post mudou mais uma vez, a pedido, para o padrão que a comunidade 
 "Anúncio do airdrop da @projeto 🪂" e três setas, com o que será distribuído, a data prevista e
 como o token chega junto do cuidado contra golpe. Saíram as hashtags e a linha de alerta
 separada: o alerta virou a terceira seta. O prompt pede exatamente esses dois tópicos e o alerta.
+
+### Um segundo administrador
+
+O professor que publica as operações de trade precisou de acesso de admin. A tela de membros não
+promove ninguém, de propósito (uma sessão roubada de admin não pode criar outros admins), então
+entrou `scripts/promover-admin.ts`: confere a conta, só altera com `--confirmar`, e roda com
+backup antes. Como o papel vai no token da sessão, vale a partir do próximo login. A permissão
+só de trade ("professor"), mais estreita que admin, continua prevista.
