@@ -1021,3 +1021,15 @@ export const iaSaude = pgTable("ia_saude", {
   /** Falhas desde o último sucesso. Zera quando o modelo volta a responder. */
   falhasSeguidas: integer("falhas_seguidas").notNull().default(0),
 });
+
+/**
+ * Configurações do site que quem administra muda pela tela, uma por chave
+ * (hoje, o link da Lista do X do feed de projetos). Valor em texto; cada
+ * chave é validada na ação que a grava.
+ */
+export const configuracoes = pgTable("configuracoes", {
+  chave: text("chave").primaryKey(),
+  valor: text("valor").notNull(),
+  atualizadoEm: timestamp("atualizado_em", { withTimezone: true }).notNull().defaultNow(),
+  atualizadoPor: uuid("atualizado_por").references(() => users.id, { onDelete: "set null" }),
+});

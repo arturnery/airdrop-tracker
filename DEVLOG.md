@@ -3876,3 +3876,19 @@ O detalhe que precisou de teste: na disputa, quem perde é cancelado quando outr
 esse cancelamento não pode virar "falha", senão todo modelo mais lento apareceria como quebrado.
 O teste reinstala o defeito (registrar também os cancelados) e confere que ele falha. E a
 gravação roda depois da resposta (`after`), para não atrasar o pedido nem ser cortada na Vercel.
+
+## Marco 65: Feed do X
+
+O pedido: acompanhar pela ferramenta os posts do X dos projetos que a comunidade farma (todos,
+menos os distribuídos e descartados). A API do X cobra por post lido, então o caminho foi o grátis:
+uma Lista pública no X, mostrada no site pelo embed oficial.
+
+Antes de construir, o embed foi testado num navegador sem login no X, como estaria um membro
+qualquer, e o X respondeu "Rate limit exceeded": o embed só funciona para quem está logado no X.
+Isso mudou o desenho. Em vez de uma página que é só o feed (e fica vazia para quem não está
+logado), a página traz o feed com a explicação e o botão para abrir a Lista no X logo abaixo, e ao
+lado o perfil de cada projeto. Como o iframe é de outro domínio, não dá para detectar se o feed
+apareceu; a explicação fica sempre visível.
+
+Para quem administra, a própria página guia a montagem: criar a Lista no X, "Copiar todos os @"
+dos projetos ativos, colar o link. Os projetos sem X cadastrado aparecem listados, para completar.

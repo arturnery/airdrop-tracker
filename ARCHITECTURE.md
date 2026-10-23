@@ -2177,3 +2177,25 @@ Campos que alimentam o post: `destaques` (um por linha), `ticker`, `alerta` e `p
 A IA preenche os quatro; o ticker e o post oficial passam pela mesma conferência contra
 invenção (precisam estar no texto colado), e o prompt separa prazo para agir de data de
 lançamento.
+
+## 26. Feed do X
+
+Página em Airdrops → Feed do X (`/feed-x`), igual para todos: o que os projetos que a comunidade
+farma estão postando no X.
+
+**Por que uma Lista do X, e não a API.** Ler posts pela API do X é pago desde 2026 (cobrança por
+post lido, sem plano gratuito para leitura). O caminho grátis é o embed oficial de Listas: quem
+administra mantém uma Lista pública no X com os perfis dos projetos, e o site a mostra com o
+`widgets.js` do X. O link da Lista fica em `configuracoes` (chave `lista_x`), gravado pela própria
+página por quem administra (`salvarListaDoX`, que aceita x.com e twitter.com e guarda o link
+canônico).
+
+**O limite do embed.** O X só mostra o feed embutido a quem está logado no X naquele navegador;
+para os outros, o iframe diz "Rate limit exceeded". Como o iframe é de outro domínio, o site não
+tem como saber se o feed apareceu. Por isso a página sempre traz, logo abaixo do feed, a
+explicação e o botão "Abrir a Lista no X", e ao lado o perfil de cada projeto, com link direto:
+a página nunca fica vazia, com ou sem o embed.
+
+**Quais projetos** (`lib/feed-x.ts`): os destaques publicados, menos distribuídos e descartados;
+o @ sai do endereço do X cadastrado (`perfilDoX`). Para quem administra, a página lista os
+projetos ainda sem X e oferece "Copiar todos os @", para montar a Lista no X de uma vez.

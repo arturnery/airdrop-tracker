@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-512%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-516%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -159,6 +159,9 @@ senhas temporárias, mas não vê o farming de ninguém.
 - **Compartilhar no X.** Em pontos, volume e resultado de cada projeto, um botão abre o X
   com o post pronto: a evolução do período, o @ do projeto e a divulgação da comunidade
   Level Cripto Pro. Sem API do X: é o link de publicação, e quem publica é a pessoa.
+- **Feed do X (Airdrops).** Os posts dos projetos que a comunidade farma, pela Lista pública do
+  X mostrada no site (embed oficial, grátis), e o perfil de cada projeto ativo ao lado. Quem
+  administra monta a Lista com um "copiar todos os @" e cola o link na própria página.
 - **Mural de avisos (Airdrops).** Quem administra cola o anúncio de um projeto e a IA monta
   o aviso: título, resumo, o que fazer, prazo e link oficial. Link, @ do projeto e prazo só
   ficam se estiverem no texto colado; o que a IA inventar é descartado com aviso, porque link
@@ -633,7 +636,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 512 testes
+npm test              # 516 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint

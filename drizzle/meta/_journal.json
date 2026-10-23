@@ -176,6 +176,13 @@
       "when": 1792788608768,
       "tag": "0024_ia_saude",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792790490204,
+      "tag": "0025_configuracoes",
+      "breakpoints": true
     }
   ]
 }
