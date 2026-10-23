@@ -127,6 +127,26 @@ export function postDeResultado(dados: {
   return `${linha}${roi}\n\n${rodape()}`;
 }
 
+/**
+ * Post de um aviso da comunidade: a chamada escrita para o X, o projeto
+ * marcado e o link oficial do anúncio. A chamada é cortada se precisar, para
+ * o post caber nos 280 com o rodapé: o rodapé e o link não são cortados.
+ */
+export function postDeAviso(dados: {
+  chamada: string;
+  projeto: ProjetoDoPost | null;
+  link: string | null;
+}): string {
+  const marca = dados.projeto ? ` ${marcar(dados.projeto)}` : "";
+  const link = dados.link ? `\n${dados.link}` : "";
+  const montar = (chamada: string) => `📢${marca ? marca + ":" : ""} ${chamada}${link}\n\n${rodape()}`;
+  let chamada = dados.chamada.trim();
+  while (chamada.length > 0 && tamanhoNoX(montar(chamada)) > LIMITE_DO_X) {
+    chamada = chamada.slice(0, -2).trimEnd() + "…";
+  }
+  return montar(chamada);
+}
+
 /** Tamanho do post como o X conta: cada link vale 23 caracteres. */
 export function tamanhoNoX(texto: string): number {
   const links = texto.match(/https?:\/\/\S+/g) ?? [];

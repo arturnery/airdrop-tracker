@@ -3783,3 +3783,34 @@ apareciam como o mesmo projeto.
 As contas de teste não tinham nenhum destaque adicionado com medição, e o ranking abria todo
 zerado. O script do admin de teste passou a deixar duas semanas de pontos e volume no
 destaque "Astra Points", no projeto de origem do admin e numa adoção pela conta demo.
+
+## Marco 59: Mural de avisos, e cada IA com a sua tarefa
+
+O pedido: colar o anúncio de um airdrop (o exemplo foi o da Extend) e a IA montar o texto para
+a comunidade, com a opção de compartilhar no X; o mural fica dentro de Airdrops, porque cada
+tipo de notícia tem a sua área. E duas perguntas: dá para escolher qual IA faz o quê, e dá
+para usar o Grok?
+
+### Qual IA faz o quê
+
+A configuração era uma só para tudo. Virou uma por tarefa (`lib/alvos-ia.ts`): o lançamento
+por frase continua com todos os modelos em disputa, o print de operação fica só com o Gemini
+(o único que lê imagem), e os avisos usam modelos do OpenRouter, como pedido, para não gastar
+a cota do Gemini com o que texto resolve. O Grok funciona, mas a API é paga por uso; como fala
+o mesmo formato, entra só trocando variáveis.
+
+### O modelo grátis que tinha saído do ar
+
+Ao testar os avisos, o modelo grátis do OpenRouter respondeu 404: ele saiu do ar em algum
+momento, e ninguém percebeu, porque no lançamento por frase ele disputava com o Gemini, que
+seguia vencendo. A redundância escondeu a falha. Testei os modelos grátis disponíveis com o
+pedido real do aviso: um respondia bem e caiu minutos depois, outro traduzia "Extend" como
+"estendido". Ficaram dois em disputa nos avisos, e o teto de resposta subiu para 8.000 tokens,
+porque o primeiro teste foi cortado no meio do JSON (o raciocínio do modelo conta no teto).
+
+### Conferência contra invenção
+
+Em airdrop, o golpe mais comum é o link falso de claim. Por isso o link sugerido pela IA só
+fica se estiver escrito no anúncio, letra por letra, e o mesmo vale para o @ do projeto e o dia
+do prazo. Testado com um anúncio de exemplo: link, @ e prazo conferidos, aviso publicado em 20 s,
+e o membro vê o mural sem os botões de quem publica.

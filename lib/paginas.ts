@@ -10,6 +10,7 @@ import {
   ChartLine,
   Sprout,
   Medal,
+  Megaphone,
   Trophy,
   Sparkles,
   Upload,
@@ -33,6 +34,7 @@ export type PaginaInfo = { padrao: string; rotulo: string; icon: LucideIcon };
 
 export const PAGINAS: PaginaInfo[] = [
   { padrao: "/comunidade/calendario", rotulo: "Calendário", icon: CalendarDays },
+  { padrao: "/avisos", rotulo: "Avisos", icon: Megaphone },
   { padrao: "/ranking/pontos", rotulo: "Ranking de pontos e volume", icon: Medal },
   { padrao: "/ranking", rotulo: "Ranking de resultados", icon: Trophy },
   { padrao: "/trade/operacoes", rotulo: "Operações", icon: ChartCandlestick },

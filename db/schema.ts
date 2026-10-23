@@ -956,3 +956,40 @@ export const entradasTrade = pgTable(
   },
   (t) => [unique("entradas_sinal_usuario_unq").on(t.sinalId, t.userId)],
 );
+
+// ------------------------------------------------------------------- avisos
+
+/**
+ * Cada aviso pertence a uma área, e cada área tem o seu mural: notícia de
+ * airdrop não se mistura com a de mercado ou de trade. Por enquanto só existe
+ * o mural de Airdrops; uma área nova é um valor a mais aqui e um mural a mais
+ * no menu.
+ */
+export const areaAvisoEnum = pgEnum("area_aviso", ["airdrops"]);
+
+/**
+ * Avisos publicados para a comunidade (ARCHITECTURE §24). Quem administra
+ * escreve, ou cola o anúncio do projeto e a IA prepara o texto; todos leem.
+ *
+ * `chamadaX` é a frase do post do X; o post inteiro (com o @ do projeto, o
+ * link e o rodapé da comunidade) é montado na hora, em `lib/compartilhar-x`,
+ * para o rodapé mudar num lugar só.
+ */
+export const avisos = pgTable(
+  "avisos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    area: areaAvisoEnum("area").notNull(),
+    titulo: text("titulo").notNull(),
+    resumo: text("resumo").notNull(),
+    acao: text("acao"),
+    prazo: date("prazo"),
+    link: text("link"),
+    projeto: text("projeto"),
+    perfilX: text("perfil_x"),
+    chamadaX: text("chamada_x"),
+    publicadoPor: uuid("publicado_por").references(() => users.id, { onDelete: "set null" }),
+    publicadoEm: timestamp("publicado_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("avisos_area_publicado_idx").on(t.area, t.publicadoEm)],
+);

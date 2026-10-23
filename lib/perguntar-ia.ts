@@ -72,6 +72,12 @@ export type Pedido<T> = {
   alvos: Alvo[];
   prazoMs?: number;
   pausaMs?: number;
+  /**
+   * Teto da resposta, em tokens. O padrão serve a um JSON curto; texto mais
+   * longo (o aviso, com resumo e passos) precisa de mais, porque em modelo que
+   * raciocina o raciocínio também conta aqui, e a resposta é cortada no meio.
+   */
+  maxTokens?: number;
   /** Trocável nos testes, que simulam cada modelo sem rede. */
   buscar?: typeof fetch;
 };
@@ -82,6 +88,7 @@ export async function perguntar<T>({
   alvos: configurados,
   prazoMs = PRAZO_TOTAL_MS,
   pausaMs = PAUSA_ENTRE_RODADAS_MS,
+  maxTokens = 2000,
   buscar = fetch,
 }: Pedido<T>): Promise<{ ok: true; resultado: T } | { ok: false; motivo: Motivo }> {
   const total = AbortSignal.timeout(prazoMs);
@@ -101,7 +108,7 @@ export async function perguntar<T>({
     const sinal = AbortSignal.any([total, cancelar.signal]);
     try {
       const resultado = await Promise.any(
-        alvos.map((alvo) => perguntarAoModelo(alvo, buscar, mensagens, interpretar, sinal)),
+        alvos.map((alvo) => perguntarAoModelo(alvo, buscar, mensagens, interpretar, sinal, maxTokens)),
       );
       return { ok: true, resultado };
     } catch (agregado) {
@@ -147,6 +154,7 @@ async function perguntarAoModelo<T>(
   mensagens: Mensagens,
   interpretar: (json: unknown) => T | null,
   sinal: AbortSignal,
+  maxTokens: number,
 ): Promise<T> {
   let resposta: Response;
   try {
@@ -164,7 +172,7 @@ async function perguntarAoModelo<T>(
         // Folgado de propósito: em modelos que raciocinam antes de responder
         // (Gemini, por exemplo), o raciocínio conta neste teto, e um teto
         // justo para o JSON cortaria a resposta antes de ela começar.
-        max_tokens: 2000,
+        max_tokens: maxTokens,
       }),
       signal: sinal,
     });

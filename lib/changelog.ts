@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.24",
+    data: "2026-10-23",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto:
+          "Novo mural de Avisos na área Airdrops: os anúncios importantes de cada projeto, com o resumo, o que fazer, o prazo e o link oficial. Dá para compartilhar cada aviso no X.",
+      },
+    ],
+  },
+  {
     versao: "1.23",
     data: "2026-10-23",
     mudancas: [

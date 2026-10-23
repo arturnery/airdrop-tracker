@@ -52,6 +52,17 @@ const envSchema = z.object({
   IA2_BASE_URL: z.preprocess(vazioComoAusente, z.url().optional()),
   IA2_MODELO: z.preprocess(vazioComoAusente, z.string().optional()),
   /*
+   * IA dos avisos (anúncio colado vira texto para a comunidade). Opcional:
+   * sem estas, os avisos usam o segundo provedor (IA2_*), que é só texto.
+   * O Gemini (IA_*) fica de fora de propósito: ele é reservado aos prints de
+   * operação, os únicos que precisam de um modelo que lê imagem.
+   */
+  IA_AVISO_API_KEY: z.preprocess(vazioComoAusente, z.string().optional()),
+  IA_AVISO_BASE_URL: z.preprocess(vazioComoAusente, z.url().optional()),
+  IA_AVISO_MODELO: z.preprocess(vazioComoAusente, z.string().optional()),
+  /** Consultado junto com o modelo dos avisos, no mesmo provedor. */
+  IA_AVISO_MODELO_RESERVA: z.preprocess(vazioComoAusente, z.string().optional()),
+  /*
    * Webhook do canal do Discord onde os sinais de trade são avisados.
    * Opcional: sem ele, o sinal é publicado só no site. Só o endereço de
    * webhook do Discord é aceito, para um erro de cópia não mandar os sinais

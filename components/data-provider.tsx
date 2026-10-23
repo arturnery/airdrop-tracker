@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 
 import * as A from "@/actions";
 import * as Comunidade from "@/actions/comunidade";
+import * as Avisos from "@/actions/avisos";
 import * as Trade from "@/actions/trade";
 import * as M from "@/lib/mutations";
 import type { Dataset } from "@/lib/dataset";
@@ -96,6 +97,8 @@ type Acoes = {
   reenviarSinalDiscord: Acao<[string]>;
   entrarNaOperacao: Acao<[unknown]>;
   sairDaOperacao: Acao<[string]>;
+  publicarAviso: Acao<[unknown]>;
+  excluirAviso: Acao<[string]>;
 };
 
 type Contexto = {
@@ -262,6 +265,8 @@ export function DataProvider({
       reenviarSinalDiscord: envolver(Trade.reenviarSinalDiscord),
       entrarNaOperacao: envolver(Trade.entrarNaOperacao),
       sairDaOperacao: envolver(Trade.sairDaOperacao),
+      publicarAviso: envolver(Avisos.publicarAviso),
+      excluirAviso: envolver(Avisos.excluirAviso),
     }),
     [envolver, alternarTarefa],
   );

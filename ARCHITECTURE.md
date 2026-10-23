@@ -1822,7 +1822,7 @@ Cada alvo é um par modelo e provedor, com endereço e chave próprios. Configur
 |---|---|
 | Gemini `3.5-flash-lite` | `IA_API_KEY`, `IA_BASE_URL`, `IA_MODELO` |
 | Gemini `3.1-flash-lite` | o mesmo provedor, `IA_MODELO_RESERVA` |
-| OpenRouter `nemotron-3-super` (gratuito) | `IA2_API_KEY`, `IA2_BASE_URL`, `IA2_MODELO` |
+| OpenRouter `nemotron-3.5-super-vl` (gratuito) | `IA2_API_KEY`, `IA2_BASE_URL`, `IA2_MODELO` |
 
 Todos são consultados ao mesmo tempo. Cada tentativa só resolve depois de passar pela
 conferência, para que uma resposta inútil não vença e cancele a boa que chegaria depois. O
@@ -1859,6 +1859,27 @@ endereço e chave corretos por alvo.
   formulário, e a pessoa resolve ali.
 - Métrica de acerto (sugestões salvas sem edição), que seria a forma objetiva de comparar
   modelos depois da escolha inicial.
+
+### 18.8. Qual IA faz o quê
+
+Cada tarefa tem os seus modelos (`lib/alvos-ia.ts`), e trocar um é mudar uma variável:
+
+| Tarefa | Modelos | Por quê |
+|---|---|---|
+| Lançar com IA (frase) | Gemini principal e reserva + 2º provedor | texto curto, quanto mais competidores, mais rápido |
+| Ler print de operação | só os Gemini | os únicos que leem imagem |
+| Montar aviso (anúncio) | `IA_AVISO_*`, ou o 2º provedor | só texto; o Gemini fica reservado aos prints |
+
+Os avisos usam dois modelos grátis do OpenRouter em disputa (`nemotron-3.5-super-vl` e
+`flint-v1.0`). Modelo grátis sai do ar sem aviso: o `nemotron-3-super`, que era o 2º
+provedor do lançamento, passou a responder 404 e a disputa escondeu a falha, porque o Gemini
+seguia vencendo. Foi descoberto ao ligar os avisos, que dependiam só dele. Os avisos pedem
+até 8.000 tokens de resposta (o padrão é 2.000): o resumo e os passos são mais longos, e nos
+modelos que raciocinam o raciocínio conta nesse teto.
+
+Grok foi avaliado: a API da xAI é paga por uso (centavos por aviso), sem plano gratuito
+confiável. Como é compatível com o formato da OpenAI, entra só com `IA_AVISO_*` apontando
+para `https://api.x.ai/v1`, sem código novo.
 
 ## 19. Comunidade
 
@@ -2107,3 +2128,23 @@ sem custo, e nenhum número sai do sistema sem o clique dela.
 anexar imagem por ele. Por isso o botão abre antes uma janela com a prévia do post e o lembrete
 de anexar o print (dos pontos, do volume ou do resultado), e só então o botão "Abrir o X".
 Lembrar antes de abrir o X, e não depois, é o que faz o lembrete servir para alguma coisa.
+
+## 24. Mural de avisos
+
+Notícias para a comunidade, cada uma no mural da sua área: notícia de airdrop não se mistura
+com a de mercado ou de trade. Hoje existe o mural de **Airdrops** (`/avisos`, no grupo
+Airdrops do menu); `avisos.area` é um enum que ganha um valor a cada área nova.
+
+**Publicação.** Só quem administra (`exigirAdministrador` em `actions/avisos.ts`). Pode
+escrever à mão ou usar "Aviso com IA": cola o texto do anúncio, a IA (tarefa `aviso`, §18.8)
+devolve título, resumo, o que fazer, prazo, link, projeto, @ do X e a chamada do post, e o
+formulário abre para conferência. Nada é publicado sem o clique. Link de post do X não
+serve de entrada: o X bloqueia a leitura automática sem a API paga, então cola-se o texto.
+
+**Contra invenção** (`lib/interpretar-aviso.ts`). O link só fica se estiver escrito no
+anúncio; o @ só se aparecer nele; o prazo só se o dia aparecer. O que não passa vira campo em
+branco com um aviso na conferência. O motivo é concreto: um link plausível "completado" pela
+IA mandaria a comunidade para um site falso de claim.
+
+**X.** Todo membro pode compartilhar um aviso: `postDeAviso` junta a chamada, o @ do projeto,
+o link oficial e o rodapé da comunidade, cortando só a chamada se precisar caber nos 280.

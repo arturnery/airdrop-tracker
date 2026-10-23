@@ -18,6 +18,7 @@ import {
   Sprout,
   Trophy,
   Medal,
+  Megaphone,
   Upload,
   Wallet,
 } from "lucide-react";
@@ -65,6 +66,7 @@ const grupos: { titulo: string; itens: Item[] }[] = [
           { href: "/ranking/pontos", label: "Pontos / Volume", icon: Medal },
         ],
       },
+      { href: "/avisos", label: "Avisos", icon: Megaphone },
       { href: "/historico", label: "Histórico", icon: History },
       { href: "/importar", label: "Importar", icon: Upload },
     ],
@@ -156,6 +158,7 @@ const tons: Record<string, string> = {
   "/": "bg-chart-1/15 text-chart-1",
   "/comunidade/calendario": "bg-chart-5/15 text-chart-5",
   "/ranking": "bg-chart-4/15 text-chart-4",
+  "/avisos": "bg-chart-5/15 text-chart-5",
   "/ranking/pontos": "bg-chart-3/15 text-chart-3",
   "/trade/operacoes": "bg-chart-4/15 text-chart-4",
   "/trade/resultados": "bg-chart-2/15 text-chart-2",

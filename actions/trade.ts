@@ -9,11 +9,12 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { reservarUsoDaIA } from "@/db/queries/uso-ia";
 import { getCurrentUserId } from "@/lib/auth";
+import { alvosDa } from "@/lib/alvos-ia";
 import { env } from "@/lib/env";
 import { interpretarSinal, montarMensagensSinal, type SugestaoSinal } from "@/lib/interpretar-sinal";
 import { precoDaSaida, type Sinal } from "@/lib/sinais";
 import { montarMensagemDiscord } from "@/lib/sinais-discord";
-import { perguntar, type Alvo, type Motivo } from "@/lib/perguntar-ia";
+import { perguntar, type Motivo } from "@/lib/perguntar-ia";
 import { entradaTradeSchema, erros, fecharSinalSchema, sinalSchema } from "@/lib/validators";
 import { toDbNumeric } from "@/lib/money";
 
@@ -344,9 +345,7 @@ export async function interpretarPrint(imagem: unknown): Promise<ResultadoPrint>
       };
     }
 
-    const principal = { baseUrl: env.IA_BASE_URL, chave: env.IA_API_KEY };
-    const alvos: Alvo[] = [{ ...principal, modelo: env.IA_MODELO }];
-    if (env.IA_MODELO_RESERVA) alvos.push({ ...principal, modelo: env.IA_MODELO_RESERVA });
+    const alvos = alvosDa("print");
 
     const desfecho = await perguntar({
       mensagens: montarMensagensSinal(valida.data),

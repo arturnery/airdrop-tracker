@@ -630,3 +630,24 @@ export const entradaTradeSchema = z.object({
     return lido.value;
   }),
 });
+
+/**
+ * Aviso para a comunidade, do formulário (ou do que a IA preencheu nele).
+ * O link passa pela mesma regra dos sites de projeto: só http(s), e endereço
+ * sem protocolo ganha `https://`.
+ */
+export const avisoSchema = z.object({
+  titulo: z.string().trim().min(1, "Dê um título ao aviso.").max(80, "Até 80 caracteres."),
+  resumo: z.string().trim().min(1, "Escreva o resumo.").max(1200, "Até 1.200 caracteres."),
+  acao: textoOpcional.refine((v) => v === null || v.length <= 800, "Até 800 caracteres."),
+  prazo: dataIso.nullable().or(z.literal("").transform(() => null)),
+  link: urlOpcional,
+  projeto: textoOpcional.refine((v) => v === null || v.length <= 60, "Até 60 caracteres."),
+  perfilX: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/^@/, ""))
+    .refine((v) => v === "" || /^[A-Za-z0-9_]{1,15}$/.test(v), "Só o @ do perfil, como LevelCripto.")
+    .transform((v) => (v === "" ? null : v)),
+  chamadaX: textoOpcional.refine((v) => v === null || v.length <= 150, "Até 150 caracteres."),
+});

@@ -7,6 +7,7 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { getCurrentUserId } from "@/lib/auth";
 import { dataDeHoje } from "@/lib/dates";
+import { alvosDa } from "@/lib/alvos-ia";
 import { env } from "@/lib/env";
 import {
   interpretarResposta,
@@ -14,7 +15,7 @@ import {
   type ContextoIA,
   type Sugestao,
 } from "@/lib/interpretar-lancamento";
-import { MENSAGEM_DE_FALHA, perguntar, type Alvo } from "@/lib/perguntar-ia";
+import { MENSAGEM_DE_FALHA, perguntar } from "@/lib/perguntar-ia";
 import { LIMITE_POR_PESSOA, reservarUsoDaIA } from "@/db/queries/uso-ia";
 
 /**
@@ -72,7 +73,7 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
     const desfecho = await perguntar({
       mensagens: montarMensagens(texto.data, ctx),
       interpretar: (json) => interpretarResposta(json, ctx),
-      alvos: alvosConfigurados(),
+      alvos: alvosDa("lancamento"),
     });
     if (desfecho.ok) {
       /*
@@ -98,20 +99,6 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
   }
 }
 
-/**
- * Os modelos a consultar: o principal e o reserva no provedor principal
- * (`IA_*`), e o modelo de um segundo provedor (`IA2_*`), quando houver.
- */
-function alvosConfigurados(): Alvo[] {
-  const alvos: Alvo[] = [];
-  const principal = { baseUrl: env.IA_BASE_URL, chave: env.IA_API_KEY! };
-  alvos.push({ ...principal, modelo: env.IA_MODELO });
-  if (env.IA_MODELO_RESERVA) alvos.push({ ...principal, modelo: env.IA_MODELO_RESERVA });
-  if (env.IA2_API_KEY && env.IA2_BASE_URL && env.IA2_MODELO) {
-    alvos.push({ baseUrl: env.IA2_BASE_URL, chave: env.IA2_API_KEY, modelo: env.IA2_MODELO });
-  }
-  return alvos;
-}
 
 async function carregarContexto(userId: string): Promise<ContextoIA> {
   const [projetos, contas, vinculos, pontos, volumes] = await Promise.all([
