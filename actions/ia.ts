@@ -1,5 +1,6 @@
 "use server";
 
+import { registrarTentativa } from "@/db/queries/saude-ia";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -74,6 +75,7 @@ export async function interpretarLancamento(entrada: unknown): Promise<Resultado
       mensagens: montarMensagens(texto.data, ctx),
       interpretar: (json) => interpretarResposta(json, ctx),
       alvos: alvosDa("lancamento"),
+      aoTentar: registrarTentativa,
     });
     if (desfecho.ok) {
       /*

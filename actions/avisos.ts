@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { reservarUsoDaIA } from "@/db/queries/uso-ia";
+import { registrarTentativa } from "@/db/queries/saude-ia";
 import { alvosDa } from "@/lib/alvos-ia";
 import { getCurrentUserId } from "@/lib/auth";
 import { dataDeHoje } from "@/lib/dates";
@@ -104,6 +105,7 @@ export async function interpretarAnuncio(anuncio: unknown): Promise<ResultadoAnu
       interpretar: (json) => interpretarAviso(json, valido.data),
       alvos,
       maxTokens: 8000,
+      aoTentar: registrarTentativa,
     });
     return desfecho.ok ? { ok: true, sugestao: desfecho.resultado } : { ok: false, erro: MENSAGEM[desfecho.motivo] };
   } catch (erro) {

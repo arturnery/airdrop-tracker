@@ -60,6 +60,11 @@ export type Mensagens = { role: "system" | "user"; content: string | Parte[] }[]
  */
 export type Alvo = { modelo: string; baseUrl: string; chave: string };
 
+/** Como terminou a tentativa num modelo: para a saúde das IAs (`ia_saude`). */
+export type Desfecho =
+  | { ok: true }
+  | { ok: false; tipo: "passageira" | "definitiva" | "resposta"; detalhe: string };
+
 export type Pedido<T> = {
   mensagens: Mensagens;
   /**
@@ -78,6 +83,12 @@ export type Pedido<T> = {
    * raciocina o raciocínio também conta aqui, e a resposta é cortada no meio.
    */
   maxTokens?: number;
+  /**
+   * Avisado do desfecho de cada tentativa, para registrar a saúde de cada
+   * modelo. Quem só perdeu a corrida (cancelado porque outro respondeu antes)
+   * não é avisado: isso não é falha, e contaria como uma.
+   */
+  aoTentar?: (alvo: Alvo, desfecho: Desfecho) => void;
   /** Trocável nos testes, que simulam cada modelo sem rede. */
   buscar?: typeof fetch;
 };
@@ -90,6 +101,7 @@ export async function perguntar<T>({
   pausaMs = PAUSA_ENTRE_RODADAS_MS,
   maxTokens = 2000,
   buscar = fetch,
+  aoTentar,
 }: Pedido<T>): Promise<{ ok: true; resultado: T } | { ok: false; motivo: Motivo }> {
   const total = AbortSignal.timeout(prazoMs);
   let alvos = configurados.filter(
@@ -108,7 +120,22 @@ export async function perguntar<T>({
     const sinal = AbortSignal.any([total, cancelar.signal]);
     try {
       const resultado = await Promise.any(
-        alvos.map((alvo) => perguntarAoModelo(alvo, buscar, mensagens, interpretar, sinal, maxTokens)),
+        alvos.map((alvo) =>
+          perguntarAoModelo(alvo, buscar, mensagens, interpretar, sinal, maxTokens).then(
+            (resultado) => {
+              aoTentar?.(alvo, { ok: true });
+              return resultado;
+            },
+            (erro: unknown) => {
+              const perdeuACorrida = cancelar.signal.aborted && !total.aborted;
+              if (!perdeuACorrida) {
+                const falha = erro instanceof FalhaDaIA ? erro : new FalhaDaIA("passageira", String(erro));
+                aoTentar?.(alvo, { ok: false, tipo: falha.tipo, detalhe: total.aborted ? "sem resposta no prazo" : falha.message });
+              }
+              throw erro;
+            },
+          ),
+        ),
       );
       return { ok: true, resultado };
     } catch (agregado) {

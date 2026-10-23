@@ -169,6 +169,13 @@
       "when": 1792785632292,
       "tag": "0023_avisos_formato_x",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792788608768,
+      "tag": "0024_ia_saude",
+      "breakpoints": true
     }
   ]
 }

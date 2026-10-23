@@ -1881,6 +1881,17 @@ Grok foi avaliado: a API da xAI é paga por uso (centavos por aviso), sem plano 
 confiável. Como é compatível com o formato da OpenAI, entra só com `IA_AVISO_*` apontando
 para `https://api.x.ai/v1`, sem código novo.
 
+### 18.9. Saúde das IAs
+
+A disputa entre modelos esconde falha: um modelo grátis que sai do ar continua "funcionando"
+enquanto outro ganha a corrida, e só aparece quando uma tarefa depende só dele (foi assim que o
+`nemotron-3-super` ficou fora do ar sem ninguém notar). `perguntar()` passou a avisar o desfecho
+de cada tentativa (`aoTentar`), sem contar quem perdeu a corrida, e as três ações de IA gravam
+esse desfecho em `ia_saude` (uma linha por modelo: último sucesso, última falha, tipo, detalhe e
+falhas seguidas), depois da resposta (`after`). O quadro "Saúde das IAs", na página de Suporte e
+só para quem administra, mostra cada modelo configurado com as tarefas em que entra e o estado:
+respondendo, instável, falhando ou fora do ar (falha definitiva, como 404 ou cota).
+
 ## 19. Comunidade
 
 Até aqui o sistema era a carteira de cada um: todo dado tem dono e ninguém vê o de outro. A

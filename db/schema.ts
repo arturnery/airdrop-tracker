@@ -1002,3 +1002,22 @@ export const avisos = pgTable(
   },
   (t) => [index("avisos_area_publicado_idx").on(t.area, t.publicadoEm)],
 );
+
+/**
+ * A saúde de cada modelo de IA: quando respondeu bem pela última vez e, se
+ * está falhando, desde quando e com qual erro (ARCHITECTURE §18.9).
+ *
+ * Existe porque a disputa entre modelos esconde falha: um modelo grátis que
+ * sai do ar continua "funcionando" enquanto outro ganha a corrida, e ninguém
+ * percebe. Uma linha por modelo, atualizada a cada tentativa; quem administra
+ * vê o quadro na página de Suporte.
+ */
+export const iaSaude = pgTable("ia_saude", {
+  modelo: text("modelo").primaryKey(),
+  ultimoOk: timestamp("ultimo_ok", { withTimezone: true }),
+  ultimaFalha: timestamp("ultima_falha", { withTimezone: true }),
+  tipoFalha: text("tipo_falha"),
+  detalheFalha: text("detalhe_falha"),
+  /** Falhas desde o último sucesso. Zera quando o modelo volta a responder. */
+  falhasSeguidas: integer("falhas_seguidas").notNull().default(0),
+});

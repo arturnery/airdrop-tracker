@@ -188,3 +188,41 @@ describe("perguntar", () => {
     ]);
   });
 });
+
+describe("aoTentar: a saúde de cada modelo", () => {
+  const comRegistro = (buscar: typeof fetch, modelos: string[]) => {
+    const desfechos: string[] = [];
+    const pedido = perguntar({
+      mensagens: [],
+      interpretar: (json) => interpretarResposta(json, ctx),
+      alvos: modelos.map((m) => alvo(m)),
+      prazoMs: 2_000,
+      pausaMs: 10,
+      buscar,
+      aoTentar: (a, d) => desfechos.push(`${a.modelo}:${d.ok ? "ok" : d.tipo}`),
+    });
+    return { pedido, desfechos };
+  };
+
+  it("registra o sucesso e a falha definitiva", async () => {
+    const { buscar } = simular({ a: { tipo: "status", status: 404 }, b: { tipo: "responde", conteudo: BOA } });
+    const { pedido, desfechos } = comRegistro(buscar, ["a", "b"]);
+    await pedido;
+    expect(desfechos.sort()).toEqual(["a:definitiva", "b:ok"]);
+  });
+
+  it("quem só perdeu a corrida não conta como falha", async () => {
+    const { buscar } = simular({ a: { tipo: "responde", conteudo: BOA }, b: { tipo: "trava" } });
+    const { pedido, desfechos } = comRegistro(buscar, ["a", "b"]);
+    await pedido;
+    await new Promise((r) => setTimeout(r, 20));
+    expect(desfechos).toEqual(["a:ok"]);
+  });
+
+  it("resposta fora do formato conta como falha de resposta", async () => {
+    const { buscar } = simular({ a: { tipo: "responde", conteudo: "texto solto" } });
+    const { pedido, desfechos } = comRegistro(buscar, ["a"]);
+    await pedido;
+    expect(desfechos).toEqual(["a:resposta"]);
+  });
+});

@@ -3863,3 +3863,16 @@ com a de membro, no computador e a 390 px. Uma falha: o mural de Avisos, só par
 com 422 px no celular. Duas causas somadas: o prazo e os botões de editar e excluir espremiam o
 cabeçalho do card, e um link colado nos passos ("O que fazer") não quebrava a linha. No
 celular o prazo ganhou uma linha própria, e textos longos quebram onde precisar.
+
+## Marco 63: Saúde das IAs
+
+O catálogo de erros ganhou, no Marco 59, a regra de que redundância precisa de monitoramento:
+o modelo grátis do lançamento por frase ficou fora do ar sem ninguém perceber, porque a disputa
+escondia a falha. Esta é a aplicação dela. Cada tentativa num modelo agora registra o desfecho
+numa tabela pequena (`ia_saude`), e o quadro em Suporte mostra, por modelo, se está respondendo
+ou desde quando falha e com qual erro.
+
+O detalhe que precisou de teste: na disputa, quem perde é cancelado quando outro responde, e
+esse cancelamento não pode virar "falha", senão todo modelo mais lento apareceria como quebrado.
+O teste reinstala o defeito (registrar também os cancelados) e confere que ele falha. E a
+gravação roda depois da resposta (`after`), para não atrasar o pedido nem ser cortada na Vercel.

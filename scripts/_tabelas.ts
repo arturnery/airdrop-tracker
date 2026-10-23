@@ -42,6 +42,7 @@ export const TABELAS = [
   "sinais_trade",
   "entradas_trade",
   "avisos",
+  "ia_saude",
 ] as const;
 
 /**

@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { reservarUsoDaIA } from "@/db/queries/uso-ia";
+import { registrarTentativa } from "@/db/queries/saude-ia";
 import { getCurrentUserId } from "@/lib/auth";
 import { alvosDa } from "@/lib/alvos-ia";
 import { env } from "@/lib/env";
@@ -351,6 +352,7 @@ export async function interpretarPrint(imagem: unknown): Promise<ResultadoPrint>
       mensagens: montarMensagensSinal(valida.data),
       interpretar: interpretarSinal,
       alvos,
+      aoTentar: registrarTentativa,
     });
     return desfecho.ok
       ? { ok: true, sugestao: desfecho.resultado }

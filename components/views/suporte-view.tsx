@@ -55,7 +55,14 @@ function linkDeResposta(relato: FeedbackRow) {
   return `mailto:${relato.autorEmail}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
 }
 
-export function SuporteView({ relatos }: { relatos: FeedbackRow[] }) {
+export function SuporteView({
+  relatos,
+  saude,
+}: {
+  relatos: FeedbackRow[];
+  /** O quadro "Saúde das IAs", montado no servidor. */
+  saude?: React.ReactNode;
+}) {
   const [filtro, setFiltro] = useState<FeedbackRow["tipo"] | null>(null);
   const [salvando, iniciar] = useTransition();
 
@@ -83,6 +90,8 @@ export function SuporteView({ relatos }: { relatos: FeedbackRow[] }) {
         title="Suporte"
         description="Relatos enviados pelo sistema. A resposta sai por e-mail."
       />
+
+      {saude}
 
       <section aria-label="Resumo dos relatos" className="grid gap-4 sm:grid-cols-3">
         <StatCard
