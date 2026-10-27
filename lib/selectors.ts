@@ -10,10 +10,12 @@ import {
   summarizeFinancials,
   tokenPositionsByPair,
 } from "./finance";
-import { addCents, cents, fromDbNumeric, percentOf, subtractCents, ZERO, type Cents } from "./money";
+import { addCents, cents, formatUsd, fromDbNumeric, percentOf, subtractCents, ZERO, type Cents } from "./money";
 import { apenasProximaDeCada } from "./tarefas";
 import {
   addPoints,
+  formatPoints,
+  formatPointsDelta,
   fromDbPoints,
   percentGrowth,
   subtractPoints,
@@ -913,6 +915,56 @@ export function selectAtividade(ds: Dataset, limite?: number): AtividadeRow[] {
       titulo: "Airdrop recebido",
       detalhe: `${c.tokenAmount} ${c.tokenSymbol}`,
       valor: fromDbNumeric(c.valueUsd),
+    });
+  }
+
+  /*
+   * Medições de pontos e de volume: o acumulado que a plataforma mostrava
+   * naquele dia, com o quanto cresceu desde a medição anterior da mesma conta
+   * no mesmo projeto. Sem valor em dólar na coluna: volume não é caixa, e
+   * ponto não é dinheiro.
+   */
+  const anterior = <T extends { id: string; projectId: string; accountId: string; takenAt: string }>(lista: T[], m: T) =>
+    lista
+      .filter((x) => x.projectId === m.projectId && x.accountId === m.accountId && x.takenAt < m.takenAt)
+      .sort((a, b) => b.takenAt.localeCompare(a.takenAt))[0];
+
+  for (const p of ds.pointsSnapshots) {
+    const projeto = nomeProjeto(p.projectId);
+    if (!projeto) continue;
+    const total = fromDbPoints(p.points);
+    const antes = anterior(ds.pointsSnapshots, p);
+    const unidade = (projeto.pointsLabel ?? "pontos").toLowerCase();
+    const delta = antes ? subtractPoints(total, fromDbPoints(antes.points)) : null;
+    linhas.push({
+      id: `pts-${p.id}`,
+      tipo: "pontos",
+      data: p.takenAt,
+      projetoSlug: projeto.slug,
+      projetoNome: projeto.name,
+      contaLabel: labelDaConta(ds, p.accountId),
+      titulo: "Pontos atualizados",
+      detalhe: `${formatPoints(total)} ${unidade}${delta !== null ? ` (${formatPointsDelta(delta)} desde a anterior)` : " (primeira medição)"}${p.note ? ` · ${p.note}` : ""}`,
+      valor: null,
+    });
+  }
+
+  for (const v of ds.volumeSnapshots) {
+    const projeto = nomeProjeto(v.projectId);
+    if (!projeto) continue;
+    const total = fromDbNumeric(v.volumeUsd);
+    const antes = anterior(ds.volumeSnapshots, v);
+    const delta = antes ? subtractCents(total, fromDbNumeric(antes.volumeUsd)) : null;
+    linhas.push({
+      id: `vol-${v.id}`,
+      tipo: "volume",
+      data: v.takenAt,
+      projetoSlug: projeto.slug,
+      projetoNome: projeto.name,
+      contaLabel: labelDaConta(ds, v.accountId),
+      titulo: "Volume atualizado",
+      detalhe: `Total ${formatUsd(total)}${delta !== null ? ` (${formatUsd(delta, { signDisplay: "always" })} desde a anterior)` : " (primeira medição)"}${v.note ? ` · ${v.note}` : ""}`,
+      valor: null,
     });
   }
 

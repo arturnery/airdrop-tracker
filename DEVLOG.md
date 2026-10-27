@@ -3892,3 +3892,21 @@ apareceu; a explicação fica sempre visível.
 
 Para quem administra, a própria página guia a montagem: criar a Lista no X, "Copiar todos os @"
 dos projetos ativos, colar o link. Os projetos sem X cadastrado aparecem listados, para completar.
+
+## Marco 66: Medições no Histórico e contas separadas no ranking
+
+Dois pedidos vindos do uso. O Histórico geral não mostrava quando pontos e volume eram
+atualizados: só depósitos, retiradas, trades e airdrops. Agora `selectAtividade` também lê as
+medições, uma linha por medição, com a diferença para a anterior do mesmo projeto e da mesma
+conta ("+3.500 desde a anterior", ou "primeira medição"). A diferença é por conta porque é assim
+que as medições existem: comparar com a medição de outra conta daria um salto que não aconteceu.
+O filtro novo é Pontos; volume entra no filtro Volume que já existia.
+
+No ranking de Pontos / Volume, quem tinha duas contas aparecia com tudo somado numa linha só. A
+soma continua sendo o que ordena (é o número da página do projeto), mas o nome virou um botão
+que abre uma linha por conta. Cada linha leva só o rótulo da conta: o endereço da carteira não
+sai do servidor, e o teste confere isso.
+
+O script de dados de teste passou a medir o destaque de teste em duas contas, para a tela ter o
+caso que motivou a mudança.
+

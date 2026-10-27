@@ -18,6 +18,7 @@ const tiposDisponiveis: { valor: TipoAtividade; rotulo: string }[] = [
   { valor: "rendimento", rotulo: "Rendimentos" },
   { valor: "trade", rotulo: "Trades" },
   { valor: "volume", rotulo: "Volume" },
+  { valor: "pontos", rotulo: "Pontos" },
   { valor: "taxa", rotulo: "Taxas" },
   { valor: "recebimento", rotulo: "Airdrops" },
   { valor: "tarefa", rotulo: "Tarefas" },
@@ -111,7 +112,7 @@ export function HistoricoView() {
       {todas.length === 0 ? (
         <EmptyState
           title="Nada registrado ainda"
-          description="Depósitos, saldos, tarefas concluídas e airdrops recebidos aparecem aqui conforme você registra."
+          description="Depósitos, medições de pontos e volume, tarefas concluídas e airdrops recebidos aparecem aqui conforme você registra."
         />
       ) : dias.length === 0 ? (
         <EmptyState

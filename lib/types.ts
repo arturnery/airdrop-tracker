@@ -282,6 +282,7 @@ export type TipoAtividade =
   | "rendimento"
   | "taxa"
   | "volume"
+  | "pontos"
   | "recebimento"
   | "tarefa";
 

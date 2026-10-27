@@ -211,3 +211,24 @@ describe("airdropsRecentes", () => {
     ]);
   });
 });
+
+describe("contas de cada membro no ranking de pontos e volume", () => {
+  it("duas contas aparecem separadas, e o total do membro é a soma delas", () => {
+    const base = adotou(membro("ana", "Ana", { pontos: [["2026-03-01", "1000"]], volume: [["2026-03-01", "5000"]] }), "cat-lighter");
+    const pid = base.ds.projects[0]!.id;
+    const ds = {
+      ...base.ds,
+      accounts: [...base.ds.accounts, { id: "ana-b", label: "Rabby 2", walletAddress: "0xsegredo", email: null, isActive: true }],
+      projectAccounts: [...base.ds.projectAccounts, { projectId: pid, accountId: "ana-b", status: "ativa" as const, startedAt: "2026-01-01" }],
+      pointsSnapshots: [...base.ds.pointsSnapshots, { id: "pb", projectId: pid, accountId: "ana-b", takenAt: "2026-03-05", points: "3000", note: null }],
+    };
+    const [projeto] = rankingDePontos([{ ...base, ds }], [lighter]);
+    const linha = projeto!.linhas[0]!;
+    expect(linha.contas.map((c) => c.conta)).toEqual(["Rabby 2", "conta"]);
+    expect(linha.contas.reduce((t, c) => t + (c.pontos ?? 0), 0)).toBe(linha.pontos);
+    expect(linha.contas.find((c) => c.conta === "conta")).toMatchObject({ volume: 500000 });
+    expect(linha.contas.find((c) => c.conta === "Rabby 2")).toMatchObject({ volume: null, atualizadoEm: "2026-03-05" });
+    // Só o nome da conta: o endereço da carteira não vai para o ranking.
+    expect(JSON.stringify(linha)).not.toContain("0xsegredo");
+  });
+});

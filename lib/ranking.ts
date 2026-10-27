@@ -102,6 +102,18 @@ export type LinhaDePontos = {
   volume: Cents | null;
   /** aaaa-mm-dd da medição mais recente do membro neste projeto, de pontos ou volume. */
   atualizadoEm: string | null;
+  /**
+   * As contas do membro que somam esse total, cada uma com o próprio número.
+   * Vai só o nome que a pessoa deu à conta, nunca o endereço da carteira.
+   */
+  contas: ContaNoRanking[];
+};
+
+export type ContaNoRanking = {
+  conta: string;
+  pontos: Points | null;
+  volume: Cents | null;
+  atualizadoEm: string | null;
 };
 
 export type OrdemDoRanking = "pontos" | "volume";
@@ -179,12 +191,36 @@ export function rankingDePontos(membros: Membro[], destaques: DestaqueAtivo[]): 
         pontos,
         volume,
         atualizadoEm: datas.at(-1) ?? null,
+        contas: contasDoMembro(programa?.contas ?? [], vol.contas),
       });
     }
   }
   return [...porProjeto.values()]
     .map((r) => ({ ...r, linhas: ordenarRanking(r.linhas, r.temPontos || !r.temVolume ? "pontos" : "volume") }))
     .sort((a, b) => b.linhas.length - a.linhas.length || a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+/**
+ * As contas de um membro num projeto, juntando o que ele mede de pontos e de
+ * volume em cada uma (pela conta, não pela posição na lista). Só entram as
+ * contas com alguma medição; da maior para a menor em pontos, depois volume.
+ */
+function contasDoMembro(
+  pontos: { contaId: string; label: string; total: Points | null; atualizadoEm: string | null }[],
+  volume: { contaId: string; label: string; total: Cents | null; atualizadoEm: string | null }[],
+): ContaNoRanking[] {
+  const porConta = new Map<string, ContaNoRanking>();
+  for (const p of pontos) {
+    if (p.total === null) continue;
+    porConta.set(p.contaId, { conta: p.label, pontos: p.total, volume: null, atualizadoEm: p.atualizadoEm });
+  }
+  for (const v of volume) {
+    if (v.total === null) continue;
+    const atual = porConta.get(v.contaId) ?? { conta: v.label, pontos: null, volume: null, atualizadoEm: null };
+    const datas = [atual.atualizadoEm, v.atualizadoEm].filter((d): d is string => Boolean(d)).sort();
+    porConta.set(v.contaId, { ...atual, volume: v.total, atualizadoEm: datas.at(-1) ?? null });
+  }
+  return [...porConta.values()].sort((a, b) => (b.pontos ?? 0) - (a.pontos ?? 0) || (b.volume ?? 0) - (a.volume ?? 0));
 }
 
 /**

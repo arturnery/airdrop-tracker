@@ -176,7 +176,11 @@ async function criarDestaqueDeTeste(db: ReturnType<typeof drizzle<typeof schema>
   }
 }
 
-/** Duas medições de pontos e de volume, com uma semana entre elas, na primeira conta do dono. */
+/**
+ * Duas medições de pontos e de volume, com uma semana entre elas, na primeira
+ * conta do dono, e uma medição de pontos numa segunda conta: assim o ranking
+ * mostra um membro com contas separadas, que abrem ao clicar no nome.
+ */
 async function medirNoDestaque(
   db: ReturnType<typeof drizzle<typeof schema>>,
   userId: string,
@@ -184,11 +188,12 @@ async function medirNoDestaque(
   pontos: [string, string],
   volume: [string, string],
 ) {
-  const [conta] = await db
+  const contas = await db
     .select({ id: schema.accounts.id })
     .from(schema.accounts)
     .where(eq(schema.accounts.userId, userId))
-    .limit(1);
+    .limit(2);
+  const [conta, segunda] = contas;
   if (!conta) return;
   const hoje = new Date();
   const dia = (atras: number) => new Date(hoje.getTime() - atras * 86_400_000).toISOString().slice(0, 10);
@@ -196,6 +201,10 @@ async function medirNoDestaque(
   for (const [i, atras] of [14, 7].entries()) {
     await db.insert(schema.pointsSnapshots).values({ userId, projectId, accountId: conta.id, takenAt: dia(atras), points: pontos[i]! });
     await db.insert(schema.volumeSnapshots).values({ userId, projectId, accountId: conta.id, takenAt: dia(atras), volumeUsd: volume[i]! });
+  }
+  if (segunda) {
+    await db.insert(schema.projectAccounts).values({ projectId, accountId: segunda.id, startedAt: dia(14) });
+    await db.insert(schema.pointsSnapshots).values({ userId, projectId, accountId: segunda.id, takenAt: dia(3), points: String(Math.round(Number(pontos[1]) / 3)) });
   }
 }
 

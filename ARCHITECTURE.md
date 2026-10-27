@@ -2110,6 +2110,9 @@ as duas coisas diretamente.
   (`selectProgramasDePontos` e `selectVolumeDoProjeto`); entra quem mediu pelo menos um dos
   dois. A ordem padrão é por pontos quando o projeto tem programa, senão por volume, e com os
   dois dá para escolher. Quem não mede a grandeza escolhida fica no fim, sem posição.
+- Contas separadas: quem mede o mesmo projeto em mais de uma conta tem uma linha com o total
+  (o que ordena) e, ao clicar no nome, uma linha por conta (`contasDoMembro`), com rótulo, data,
+  pontos e volume de cada uma. Só o rótulo da conta sai do servidor, nunca o endereço da carteira.
 
 - O feed junta os recebimentos do mesmo membro, projeto e dia numa linha.
 

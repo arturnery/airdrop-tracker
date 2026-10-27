@@ -49,6 +49,22 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.27",
+    data: "2026-10-27",
+    mudancas: [
+      {
+        tipo: "melhoria",
+        texto:
+          "O Histórico agora mostra cada atualização de pontos e de volume, com quanto mudou desde a medição anterior, e ganhou o filtro Pontos.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "No ranking de Pontos / Volume, quem mede o projeto em mais de uma conta tem as contas separadas: clique no nome para ver os números de cada uma.",
+      },
+    ],
+  },
+  {
     versao: "1.26",
     data: "2026-10-23",
     mudancas: [

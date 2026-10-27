@@ -15,13 +15,32 @@ const HOJE = "2026-07-30";
 describe("selectAtividade", () => {
   const feed = selectAtividade(base());
 
-  it("junta lançamentos, saldos e tarefas concluídas num só feed", () => {
+  it("junta lançamentos, medições de pontos e volume, airdrops e tarefas concluídas num só feed", () => {
     const ds = base();
     const esperado =
       ds.transactions.length +
       ds.airdropClaims.length +
+      ds.pointsSnapshots.length +
+      ds.volumeSnapshots.length +
       ds.taskOccurrences.filter((o) => o.completedAt).length;
     expect(feed).toHaveLength(esperado);
+  });
+
+  it("medição mostra o total e o quanto cresceu desde a anterior da mesma conta", () => {
+    const ds = base();
+    const medidas = [...ds.pointsSnapshots].sort((a, b) => a.takenAt.localeCompare(b.takenAt));
+    // Uma conta com duas medições no mesmo projeto.
+    const segunda = medidas.find((m) =>
+      medidas.some((x) => x.projectId === m.projectId && x.accountId === m.accountId && x.takenAt < m.takenAt),
+    )!;
+    const linha = feed.find((f) => f.id === `pts-${segunda.id}`)!;
+    expect(linha).toMatchObject({ tipo: "pontos", titulo: "Pontos atualizados", valor: null });
+    expect(linha.detalhe).toMatch(/desde a anterior/);
+    const primeira = feed.filter((f) => f.tipo === "pontos").find((f) => f.detalhe?.includes("primeira medição"));
+    expect(primeira).toBeDefined();
+    const volume = feed.find((f) => f.id.startsWith("vol-"))!;
+    expect(volume).toMatchObject({ titulo: "Volume atualizado", valor: null });
+    expect(volume.detalhe).toMatch(/^Total \$/);
   });
 
   it("ordena do mais recente para o mais antigo", () => {

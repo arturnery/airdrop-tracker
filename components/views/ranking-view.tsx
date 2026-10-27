@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Medal, Trophy } from "lucide-react";
+import { ChevronDown, Medal, Trophy } from "lucide-react";
 
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { Money } from "@/components/money";
 import { formatDateShort } from "@/lib/dates";
 import { formatPoints } from "@/lib/points";
-import { ordenarRanking, type AirdropRecente, type LinhaDeResultado, type OrdemDoRanking, type RankingDoProjeto } from "@/lib/ranking";
+import { ordenarRanking, type AirdropRecente, type LinhaDePontos, type LinhaDeResultado, type OrdemDoRanking, type RankingDoProjeto } from "@/lib/ranking";
 import { cn } from "@/lib/utils";
 
 /**
@@ -256,30 +256,74 @@ export function RankingPontosView({
             ) : null}
             <ol>
               {linhas.map((l) => (
-                <li
-                  key={l.userId}
-                  className={cn(
-                    "border-border grid grid-cols-[2rem_minmax(0,1fr)_5.5rem_6.5rem] items-center gap-3 border-b px-4 py-3 text-sm last:border-b-0 sm:grid-cols-[2rem_minmax(0,1fr)_6rem_8rem_8rem]",
-                    l.userId === meuId && "bg-secondary/40",
-                  )}
-                >
-                  {l.posicao > 0 ? <Posicao n={l.posicao} /> : <span className="text-muted-foreground text-center text-xs">-</span>}
-                  <Nome nome={l.nome} eu={l.userId === meuId} />
-                  <span className="text-muted-foreground hidden text-right text-xs sm:block">
-                    {l.atualizadoEm ? formatDateShort(l.atualizadoEm) : "-"}
-                  </span>
-                  <span className={cn("text-right tabular-nums", ordem === "pontos" ? "font-semibold" : "text-muted-foreground")}>
-                    {l.pontos !== null ? formatPoints(l.pontos) : "-"}
-                  </span>
-                  <span className={cn("text-right tabular-nums", ordem === "volume" ? "font-semibold" : "text-muted-foreground")}>
-                    {l.volume !== null ? <Money value={l.volume} /> : "-"}
-                  </span>
-                </li>
+                <LinhaDePontosDoMembro key={l.userId} l={l} eu={l.userId === meuId} ordem={ordem} />
               ))}
             </ol>
           </section>
         </>
       )}
     </>
+  );
+}
+
+const GRADE_PONTOS =
+  "grid grid-cols-[2rem_minmax(0,1fr)_5.5rem_6.5rem] items-center gap-3 sm:grid-cols-[2rem_minmax(0,1fr)_6rem_8rem_8rem]";
+
+/**
+ * Uma linha do ranking de pontos e volume: o total do membro e, quando ele
+ * mede em mais de uma conta, o nome vira um botão que abre as contas, cada
+ * uma com o próprio número. As contas aparecem recuadas, abaixo, sem posição
+ * própria: o ranking é entre pessoas.
+ */
+function LinhaDePontosDoMembro({ l, eu, ordem }: { l: LinhaDePontos; eu: boolean; ordem: OrdemDoRanking | null }) {
+  const [aberto, setAberto] = useState(false);
+  const variasContas = l.contas.length > 1;
+  const idContas = `contas-${l.userId}`;
+  return (
+    <li className={cn("border-border border-b px-4 py-3 text-sm last:border-b-0", eu && "bg-secondary/40")}>
+      <div className={GRADE_PONTOS}>
+        {l.posicao > 0 ? <Posicao n={l.posicao} /> : <span className="text-muted-foreground text-center text-xs">-</span>}
+        {variasContas ? (
+          <button
+            type="button"
+            aria-expanded={aberto}
+            aria-controls={idContas}
+            onClick={() => setAberto((a) => !a)}
+            className="focus-visible:ring-ring hover:text-foreground flex min-w-0 items-center gap-1.5 rounded-sm text-left focus-visible:ring-2 focus-visible:outline-none"
+            title={aberto ? "Esconder as contas" : "Ver as contas"}
+          >
+            <Nome nome={l.nome} eu={eu} />
+            <span className="text-muted-foreground shrink-0 text-xs">{l.contas.length} contas</span>
+            <ChevronDown
+              className={cn("text-muted-foreground size-3.5 shrink-0 transition-transform motion-reduce:transition-none", aberto && "rotate-180")}
+              aria-hidden="true"
+            />
+          </button>
+        ) : (
+          <Nome nome={l.nome} eu={eu} />
+        )}
+        <span className="text-muted-foreground hidden text-right text-xs sm:block">
+          {l.atualizadoEm ? formatDateShort(l.atualizadoEm) : "-"}
+        </span>
+        <span className={cn("text-right tabular-nums", ordem === "pontos" ? "font-semibold" : "text-muted-foreground")}>
+          {l.pontos !== null ? formatPoints(l.pontos) : "-"}
+        </span>
+        <span className={cn("text-right tabular-nums", ordem === "volume" ? "font-semibold" : "text-muted-foreground")}>
+          {l.volume !== null ? <Money value={l.volume} /> : "-"}
+        </span>
+      </div>
+      {variasContas && aberto ? (
+        <ul id={idContas} aria-label={`Contas de ${l.nome}`} className="border-border mt-2 ml-11 space-y-1.5 border-l pl-3">
+          {l.contas.map((c) => (
+            <li key={c.conta} className={cn(GRADE_PONTOS, "!grid-cols-[minmax(0,1fr)_5.5rem_6.5rem] text-xs sm:!grid-cols-[minmax(0,1fr)_6rem_8rem_8rem]")}>
+              <span className="text-muted-foreground min-w-0 truncate">{c.conta}</span>
+              <span className="text-muted-foreground hidden text-right sm:block">{c.atualizadoEm ? formatDateShort(c.atualizadoEm) : "-"}</span>
+              <span className="text-right tabular-nums">{c.pontos !== null ? formatPoints(c.pontos) : "-"}</span>
+              <span className="text-right tabular-nums">{c.volume !== null ? <Money value={c.volume} /> : "-"}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </li>
   );
 }

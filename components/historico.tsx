@@ -7,6 +7,7 @@ import {
   Check,
   Fuel,
   Gift,
+  Medal,
   Repeat,
   Sprout,
   TrendingUp,
@@ -32,6 +33,7 @@ const icones: Record<TipoAtividade, typeof ArrowDownLeft> = {
   rendimento: Sprout,
   taxa: Fuel,
   volume: Repeat,
+  pontos: Medal,
   recebimento: Gift,
   tarefa: Check,
 };
@@ -43,6 +45,7 @@ const coresIcone: Record<TipoAtividade, string> = {
   rendimento: "text-positive bg-positive/10",
   taxa: "text-negative bg-negative/10",
   volume: "text-muted-foreground bg-secondary",
+  pontos: "text-chart-3 bg-chart-3/10",
   recebimento: "text-positive bg-positive/10",
   tarefa: "text-positive bg-positive/10",
 };

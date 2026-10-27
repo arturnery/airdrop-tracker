@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-516%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-518%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -636,7 +636,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 516 testes
+npm test              # 518 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint
