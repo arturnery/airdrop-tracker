@@ -2207,7 +2207,8 @@ projetos ainda sem X e oferece "Copiar todos os @", para montar a Lista no X de 
 
 **Para quem administra.** Cadastros na fila e pedidos de senha em aberto viram um número no item
 Membros e no sino da barra superior, que passa a levar à tela de membros
-(`contarPendenciasDeMembros`, só consultado para admin). Ficou só no site, por escolha: um
+(`contarPendenciasDeMembros`, só consultado para admin). Pedido de senha de admin não conta: a
+tela não mostra admins, e o número ficaria sem ter como ser zerado. Ficou só no site, por escolha: um
 e-mail a cada cadastro não foi pedido.
 
 **Para quem foi aprovado.** Aprovar envia um e-mail ao endereço do cadastro avisando que o acesso

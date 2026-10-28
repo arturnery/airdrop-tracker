@@ -74,7 +74,11 @@ export async function listarMembros(hoje: string): Promise<MemberRow[]> {
  * e pedidos de senha em aberto. É o número do item Membros e do sino.
  *
  * Duas contagens em vez da lista inteira: o layout chama isto a cada
- * navegação de quem administra. Admin não entra na fila, como em `listarMembros`.
+ * navegação de quem administra.
+ *
+ * Admin fica fora das duas, como em `listarMembros`: a tela não mostra admins,
+ * então um pedido de senha de admin (resolvido pelo terminal, não pela tela)
+ * virava um número que ninguém conseguia zerar.
  */
 export async function contarPendenciasDeMembros(): Promise<number> {
   const [fila, senhas] = await Promise.all([
@@ -85,7 +89,8 @@ export async function contarPendenciasDeMembros(): Promise<number> {
     db
       .select({ total: sql<number>`count(distinct ${schema.passwordResetRequests.userId})::int` })
       .from(schema.passwordResetRequests)
-      .where(isNull(schema.passwordResetRequests.resolvedAt)),
+      .innerJoin(schema.users, eq(schema.users.id, schema.passwordResetRequests.userId))
+      .where(and(isNull(schema.passwordResetRequests.resolvedAt), ne(schema.users.role, "admin"))),
   ]);
   return (fila[0]?.total ?? 0) + (senhas[0]?.total ?? 0);
 }
