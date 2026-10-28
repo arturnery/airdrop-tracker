@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, isNull, ne } from "drizzle-orm";
+import { and, asc, eq, isNull, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -67,4 +67,25 @@ export async function listarMembros(hoje: string): Promise<MemberRow[]> {
       senhaTemporaria: u.mustChangePassword,
     };
   });
+}
+
+/**
+ * Quantas coisas esperam quem administra na tela de membros: cadastros na fila
+ * e pedidos de senha em aberto. É o número do item Membros e do sino.
+ *
+ * Duas contagens em vez da lista inteira: o layout chama isto a cada
+ * navegação de quem administra. Admin não entra na fila, como em `listarMembros`.
+ */
+export async function contarPendenciasDeMembros(): Promise<number> {
+  const [fila, senhas] = await Promise.all([
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(schema.users)
+      .where(and(eq(schema.users.status, "pendente"), ne(schema.users.role, "admin"))),
+    db
+      .select({ total: sql<number>`count(distinct ${schema.passwordResetRequests.userId})::int` })
+      .from(schema.passwordResetRequests)
+      .where(isNull(schema.passwordResetRequests.resolvedAt)),
+  ]);
+  return (fila[0]?.total ?? 0) + (senhas[0]?.total ?? 0);
 }

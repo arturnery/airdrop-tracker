@@ -62,6 +62,10 @@ export const changelog: Versao[] = [
         texto:
           "No ranking de Pontos / Volume, quem mede o projeto em mais de uma conta tem as contas separadas: clique no nome para ver os números de cada uma.",
       },
+      {
+        tipo: "novidade",
+        texto: "Quando o seu cadastro é aprovado, você recebe um e-mail avisando que o acesso foi liberado.",
+      },
     ],
   },
   {

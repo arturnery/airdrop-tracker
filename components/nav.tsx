@@ -183,6 +183,7 @@ export function Nav({
   ehAdmin = false,
   feedbackNaoLido = 0,
   sinaisNovos = 0,
+  membrosPendentes = 0,
   recolhida = false,
 }: {
   ehAdmin?: boolean;
@@ -190,6 +191,8 @@ export function Nav({
   feedbackNaoLido?: number;
   /** Sinais de trade publicados desde a última visita à página de sinais. */
   sinaisNovos?: number;
+  /** Cadastros e pedidos de senha esperando; só chega preenchido para quem administra. */
+  membrosPendentes?: number;
   /** Barra estreita: sobram os ícones, os rótulos viram texto acessível. */
   recolhida?: boolean;
 }) {
@@ -199,8 +202,8 @@ export function Nav({
   const urgentes = selectPendingTasks(dataset, hoje).filter(
     (t) => t.urgencia === "atrasada" || t.urgencia === "hoje",
   ).length;
-  // A contagem de membros pendentes não entra aqui: ela vive em `users` e é
-  // dado de administração, que não deve ser carregado em toda navegação.
+  // A contagem de membros pendentes vem pronta do layout, e só para quem
+  // administra: ela lê `users` inteira, dado que membro nenhum deve carregar.
   const contagem = (href: string) =>
     href === "/tarefas"
       ? urgentes
@@ -208,7 +211,9 @@ export function Nav({
         ? feedbackNaoLido
         : href === "/trade/operacoes"
           ? sinaisNovos
-          : 0;
+          : href === "/membros"
+            ? membrosPendentes
+            : 0;
 
   // Sinal é aviso de algo novo, não pendência: o selo leva um sininho.
   const comSino = (href: string) => href === "/trade/operacoes";

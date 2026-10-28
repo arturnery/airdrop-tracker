@@ -30,6 +30,10 @@ import {
 } from "@/lib/validators";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+
+import { enviarEmail, type EnvioDeEmail } from "@/lib/email";
+import { emailDeAprovacao } from "@/lib/email-aprovacao";
 
 import { getCurrentUserId } from "@/lib/auth";
 import { gerarHash } from "@/lib/senha";
@@ -1216,10 +1220,21 @@ export async function exigirAdministrador(userId: string) {
   }
 }
 
-export async function revisarMembro(entrada: unknown): Promise<ResultadoAcao> {
-  return executar(revisaoSchema, entrada, async (dados, userId) => {
+/**
+ * Aprovar também avisa a pessoa por e-mail, no endereço do cadastro
+ * (ARCHITECTURE §27). O e-mail sai **depois** de a aprovação estar gravada e
+ * só quando ela acabou de acontecer: aprovar de novo quem já tinha acesso não
+ * manda um segundo. O resultado do envio volta para a tela, porque quem
+ * administra precisa saber se a pessoa foi avisada ou se precisa avisar por
+ * outro canal.
+ */
+export async function revisarMembro(
+  entrada: unknown,
+): Promise<ResultadoAcao & { email?: EnvioDeEmail & { para: string } }> {
+  let aprovado: { name: string; email: string } | undefined;
+  const resultado = await executar(revisaoSchema, entrada, async (dados, userId) => {
     await exigirAdministrador(userId);
-    await db
+    const [mudou] = await db
       .update(schema.users)
       .set({
         status: dados.status,
@@ -1227,8 +1242,23 @@ export async function revisarMembro(entrada: unknown): Promise<ResultadoAcao> {
         reviewedAt: sql`now()`,
       })
       // Nunca sobre um admin: evita rebaixar a si mesmo por engano.
-      .where(and(eq(schema.users.id, dados.id), ne(schema.users.role, "admin")));
+      .where(and(eq(schema.users.id, dados.id), ne(schema.users.role, "admin"), ne(schema.users.status, dados.status)))
+      .returning({ name: schema.users.name, email: schema.users.email });
+    if (dados.status === "aprovado") aprovado = mudou;
   }, [{ caminho: "/membros", tipo: "page" }]);
+
+  if (!resultado.ok || !aprovado) return resultado;
+  const envio = await enviarEmail(emailDeAprovacao({ ...aprovado, nome: aprovado.name, site: await enderecoDoSite() }));
+  return { ...resultado, email: { ...envio, para: aprovado.email } };
+}
+
+/** O endereço do site pelo próprio pedido, para o link do e-mail valer em produção e em teste. */
+async function enderecoDoSite(): Promise<string | null> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (!host) return null;
+  const protocolo = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${protocolo}://${host}`;
 }
 
 /** Devolve para a fila: serve tanto para revogar acesso quanto reconsiderar. */
@@ -1245,7 +1275,7 @@ export async function reabrirMembro(id: string): Promise<ResultadoAcao> {
 /**
  * Gera uma senha temporária para um membro.
  *
- * Existe porque não há envio de e-mail: quem esquece a senha fala com o
+ * Existe porque a senha não vai por e-mail (só o aviso de aprovação vai, §27): quem esquece a senha fala com o
  * administrador, que gera uma provisória e entrega por onde já conversa com a
  * comunidade. Para um grupo em que as pessoas se conhecem, isso é mais
  * confiável que um link por e-mail, que pode cair em spam ou ser interceptado.

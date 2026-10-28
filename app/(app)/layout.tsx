@@ -3,6 +3,7 @@ import { TrocaObrigatoria } from "@/components/views/troca-obrigatoria";
 import { carregarUsuario } from "@/db/queries/usuario";
 import { contarNaoLidos } from "@/actions/feedback";
 import { contarSinaisNovos } from "@/db/queries/trade";
+import { contarPendenciasDeMembros } from "@/db/queries/membros";
 import { exigirSessao } from "@/lib/auth";
 import { contarNovidadesNaoVistas } from "@/lib/changelog";
 
@@ -37,6 +38,8 @@ export default async function AppLayout({
    * quem nunca vai ver o número.
    */
   const naoLidos = sessao.papel === "admin" ? await contarNaoLidos() : 0;
+  // Cadastros e pedidos de senha esperando: o aviso de "alguém se cadastrou".
+  const membrosPendentes = sessao.papel === "admin" ? await contarPendenciasDeMembros() : 0;
 
   const novidadesNaoVistas = contarNovidadesNaoVistas(
     usuario?.novidadesVistasVersao ?? null,
@@ -71,6 +74,7 @@ export default async function AppLayout({
       feedbackNaoLido={naoLidos}
       novidadesNaoVistas={novidadesNaoVistas}
       sinaisNovos={sinaisNovos}
+      membrosPendentes={membrosPendentes}
     >
       {children}
     </CascaApp>

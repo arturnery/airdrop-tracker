@@ -29,6 +29,7 @@ export function CascaApp({
   feedbackNaoLido,
   novidadesNaoVistas,
   sinaisNovos,
+  membrosPendentes,
   children,
 }: {
   nome: string;
@@ -36,6 +37,7 @@ export function CascaApp({
   feedbackNaoLido: number;
   novidadesNaoVistas: number;
   sinaisNovos: number;
+  membrosPendentes: number;
   children: ReactNode;
 }) {
   const recolhida = useBarraRecolhida();
@@ -130,6 +132,7 @@ export function CascaApp({
               ehAdmin={ehAdmin}
               feedbackNaoLido={feedbackNaoLido}
               sinaisNovos={sinaisNovos}
+              membrosPendentes={membrosPendentes}
               recolhida={recolhida}
             />
           </div>
@@ -140,7 +143,7 @@ export function CascaApp({
         </aside>
 
         <main id="conteudo" className="flex min-h-screen flex-col">
-          <BarraSuperior />
+          <BarraSuperior membrosPendentes={membrosPendentes} />
           <div className="px-6 py-8 lg:px-10 lg:py-10">
             <div className="mx-auto w-full max-w-6xl">{children}</div>
           </div>

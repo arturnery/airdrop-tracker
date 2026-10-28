@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-518%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-522%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -587,6 +587,7 @@ cp .env.example .env.local
 | `IA2_API_KEY`, `IA2_BASE_URL`, `IA2_MODELO` | Opcional: um segundo provedor, consultado junto | Ex.: OpenRouter, `https://openrouter.ai/api/v1` |
 | `IA_AVISO_MODELO`, `IA_AVISO_MODELO_RESERVA` | Opcional: os modelos que montam os avisos (só texto); sem eles, usa o `IA2_*` | Ex.: `nvidia/nemotron-3.5-super-vl:free` e `recursive/flint-v1.0:free` |
 | `DISCORD_WEBHOOK_SINAIS` | Opcional: canal do Discord avisado a cada sinal de trade | Discord → configurações do canal → Integrações → Webhooks |
+| `GMAIL_USUARIO`, `GMAIL_SENHA_APP` | Opcional: conta do Gmail que envia o e-mail de acesso liberado | Conta do Google → Segurança → Senhas de app |
 
 Sem as variáveis de IA, o sistema sobe normalmente e só o botão "Lançar com IA" responde que
 o recurso não está configurado.
@@ -636,7 +637,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 518 testes
+npm test              # 522 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint

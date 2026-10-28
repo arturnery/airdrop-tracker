@@ -3910,3 +3910,21 @@ sai do servidor, e o teste confere isso.
 O script de dados de teste passou a medir o destaque de teste em duas contas, para a tela ter o
 caso que motivou a mudança.
 
+## Marco 67: Aviso de cadastro e e-mail de aprovação
+
+Pedido: saber quando alguém se cadastra, e avisar a pessoa por e-mail quando o acesso for
+aprovado. O sistema não enviava e-mail nenhum até aqui, de propósito (ver a recuperação de
+senha). Para um aviso de aprovação a conta muda: é uma mensagem por pessoa, e sem ela quem se
+cadastrou fica voltando na tela de espera.
+
+Duas escolhas de serviço foram postas na mesa: um serviço de envio (exige mexer no DNS do
+domínio) ou uma conta do Gmail com senha de app (pronto em minutos, 500 por dia). Ficou o Gmail.
+O aviso para quem administra ficou só no site: o número no item Membros e no sino, que até
+aqui era só um lugar reservado.
+
+O cuidado principal foi o envio não ser "dispara e esquece". A aprovação é gravada primeiro e
+não depende do e-mail; o resultado do envio volta para a tela, e quem administra lê se a pessoa
+foi avisada, se o Gmail recusou (com o motivo) ou se o envio nem está configurado. O aviso fica
+no nível da página porque a linha aprovada sai da fila, a mesma lição da senha temporária que
+sumia antes de ser copiada.
+

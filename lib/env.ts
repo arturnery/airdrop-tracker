@@ -78,6 +78,17 @@ const envSchema = z.object({
       )
       .optional(),
   ),
+  /*
+   * Conta do Gmail que envia o e-mail de "acesso liberado" (`lib/email.ts`).
+   * Opcional: sem as duas, a aprovação funciona e a tela de membros avisa
+   * que o e-mail não foi enviado. A senha é a "senha de app" de 16 letras do
+   * Google, não a senha da conta; os espaços com que o Google a mostra caem.
+   */
+  GMAIL_USUARIO: z.preprocess(vazioComoAusente, z.email("GMAIL_USUARIO precisa ser um e-mail").optional()),
+  GMAIL_SENHA_APP: z.preprocess(
+    (v) => (typeof v === "string" ? vazioComoAusente(v.replace(/\s+/g, "")) : v),
+    z.string().optional(),
+  ),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),

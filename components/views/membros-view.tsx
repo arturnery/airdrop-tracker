@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Clock, Copy, KeyRound, ShieldCheck, Undo2, UserCheck, X } from "lucide-react";
+import { Check, Clock, Copy, KeyRound, Mail, ShieldCheck, TriangleAlert, Undo2, UserCheck, X } from "lucide-react";
 
 import { reabrirMembro, redefinirSenhaDeMembro, revisarMembro } from "@/actions";
 import { ConfirmarExclusao } from "@/components/forms/confirmar-exclusao";
@@ -55,15 +55,39 @@ function StatusBadge({ status }: { status: MemberStatus }) {
   );
 }
 
+/** O que a página conta depois de uma aprovação: se a pessoa foi avisada por e-mail. */
+type AvisoDeAprovacao = {
+  nome: string;
+  email: Awaited<ReturnType<typeof revisarMembro>>["email"] | null;
+};
+
+function textoDoAviso({ nome, email }: AvisoDeAprovacao): { texto: string; atencao: boolean } {
+  if (email?.estado === "enviado") return { texto: `Acesso liberado para ${nome}. Enviamos o aviso para ${email.para}.`, atencao: false };
+  if (email?.estado === "falhou")
+    return { texto: `Acesso liberado para ${nome}, mas o e-mail não saiu: ${email.motivo}. Avise a pessoa por outro canal.`, atencao: true };
+  if (email?.estado === "desligado")
+    return { texto: `Acesso liberado para ${nome}. O envio de e-mail não está configurado, então avise a pessoa por outro canal.`, atencao: true };
+  return { texto: `Acesso liberado para ${nome}.`, atencao: false };
+}
+
 /** Linha de um cadastro aguardando decisão. */
-function LinhaPendente({ membro, hoje }: { membro: MemberRow; hoje: string }) {
+function LinhaPendente({
+  membro,
+  hoje,
+  aoAprovar,
+}: {
+  membro: MemberRow;
+  hoje: string;
+  aoAprovar: (aviso: AvisoDeAprovacao) => void;
+}) {
   const [recusando, setRecusando] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [enviando, iniciar] = useTransition();
 
   const decidir = (status: "aprovado" | "recusado", note: string | null) =>
     iniciar(async () => {
-      await revisarMembro({ id: membro.id, status, note });
+      const r = await revisarMembro({ id: membro.id, status, note });
+      if (r.ok && status === "aprovado") aoAprovar({ nome: membro.nome, email: r.email ?? null });
     });
 
   return (
@@ -288,6 +312,9 @@ export function MembrosView({
    * membro sai da lista de pendentes e aquela linha é desmontada. O diálogo
    * precisa sobreviver a isso.
    */
+  // Pelo mesmo motivo, o aviso da aprovação vive aqui: a linha aprovada some.
+  const [avisoAprovacao, setAvisoAprovacao] = useState<AvisoDeAprovacao | null>(null);
+
   const [senhaGerada, setSenhaGerada] = useState<{
     senha: string;
     nome: string;
@@ -307,6 +334,28 @@ export function MembrosView({
         title="Membros"
         description="Quem pediu acesso e quem já tem. Aprovações são manuais."
       />
+
+      {avisoAprovacao ? (
+        <div
+          role="status"
+          className={cn(
+            "mb-6 flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-sm",
+            textoDoAviso(avisoAprovacao).atencao ? "border-caution/40 bg-caution/5" : "border-border bg-card",
+          )}
+        >
+          <p className="flex items-start gap-2">
+            {textoDoAviso(avisoAprovacao).atencao ? (
+              <TriangleAlert className="text-caution mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <Mail className="text-brand-legivel mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            )}
+            {textoDoAviso(avisoAprovacao).texto}
+          </p>
+          <Button variant="ghost" size="sm" className="h-7 shrink-0" onClick={() => setAvisoAprovacao(null)}>
+            Fechar
+          </Button>
+        </div>
+      ) : null}
 
       <section aria-label="Resumo de membros" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -426,7 +475,7 @@ export function MembrosView({
         ) : (
           <ul className="border-border divide-border divide-y rounded-lg border">
             {pendentes.map((membro) => (
-              <LinhaPendente key={membro.id} membro={membro} hoje={hoje} />
+              <LinhaPendente key={membro.id} membro={membro} hoje={hoje} aoAprovar={setAvisoAprovacao} />
             ))}
           </ul>
         )}

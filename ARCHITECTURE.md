@@ -2202,3 +2202,27 @@ a página nunca fica vazia, com ou sem o embed.
 **Quais projetos** (`lib/feed-x.ts`): os destaques publicados, menos distribuídos e descartados;
 o @ sai do endereço do X cadastrado (`perfilDoX`). Para quem administra, a página lista os
 projetos ainda sem X e oferece "Copiar todos os @", para montar a Lista no X de uma vez.
+
+## 27. Aviso de cadastro e e-mail de aprovação
+
+**Para quem administra.** Cadastros na fila e pedidos de senha em aberto viram um número no item
+Membros e no sino da barra superior, que passa a levar à tela de membros
+(`contarPendenciasDeMembros`, só consultado para admin). Ficou só no site, por escolha: um
+e-mail a cada cadastro não foi pedido.
+
+**Para quem foi aprovado.** Aprovar envia um e-mail ao endereço do cadastro avisando que o acesso
+está liberado, com o link de entrar montado a partir do próprio pedido (vale em produção e em
+teste). O envio é pela conta do Gmail com senha de app (`lib/email.ts`, nodemailer), sem serviço
+de envio: não exige DNS do domínio, e o volume fica muito abaixo do limite de 500 por dia.
+
+- O e-mail sai depois de a aprovação estar gravada, e só quando o status de fato mudou: o
+  `UPDATE` exige status diferente e devolve a linha, então aprovar de novo não manda outro.
+- `enviarEmail` nunca lança. Uma falha não desfaz a aprovação; o resultado (enviado, falhou com
+  o motivo, ou desligado por falta das variáveis) volta para a tela, que diz a quem administra
+  se precisa avisar a pessoa por outro canal. O aviso mora na página, não na linha aprovada,
+  porque a linha some da fila ao aprovar (o mesmo motivo do diálogo da senha temporária).
+- Conexão com o Gmail tem limite de tempo, para não segurar a resposta da aprovação.
+- O texto (`lib/email-aprovacao.ts`) vai em texto e HTML simples, sem imagem, e escapa o nome que a
+  pessoa digitou.
+- Recusa não manda e-mail. A senha temporária continua sem ir por e-mail.
+
