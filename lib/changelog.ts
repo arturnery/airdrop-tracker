@@ -49,6 +49,17 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.28",
+    data: "2026-11-18",
+    mudancas: [
+      {
+        tipo: "correcao",
+        texto:
+          "O Feed do X não mostrava a Lista cadastrada. Corrigido, e a página agora avisa logo no topo que é preciso estar logado no X neste navegador para ver o feed.",
+      },
+    ],
+  },
+  {
     versao: "1.27",
     data: "2026-10-27",
     mudancas: [

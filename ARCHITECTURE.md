@@ -2203,6 +2203,12 @@ a página nunca fica vazia, com ou sem o embed.
 o @ sai do endereço do X cadastrado (`perfilDoX`). Para quem administra, a página lista os
 projetos ainda sem X e oferece "Copiar todos os @", para montar a Lista no X de uma vez.
 
+**O feed é criado pelo número da Lista** (`createTimeline`, `sourceType: "list"`). O link
+`a.twitter-timeline` com `x.com/i/lists/<id>` fazia o widgets.js pedir a lista como usuário "i",
+e o X respondia 429. O aviso de que é preciso estar logado no X fica no topo do feed. Montar o
+feed no servidor foi considerado e descartado por decisão de produto: o site não guarda posts.
+
+
 ## 27. Aviso de cadastro e e-mail de aprovação
 
 **Para quem administra.** Cadastros na fila e pedidos de senha em aberto viram um número no item

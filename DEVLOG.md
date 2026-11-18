@@ -3928,3 +3928,15 @@ foi avisada, se o Gmail recusou (com o motivo) ou se o envio nem está configura
 no nível da página porque a linha aprovada sai da fila, a mesma lição da senha temporária que
 sumia antes de ser copiada.
 
+## Marco 68: A Lista do X que não aparecia
+
+Relato: a Lista foi cadastrada e o feed não apareceu. Reproduzido no navegador, a causa estava
+na rede: o widgets.js lia o link canônico de Lista (`x.com/i/lists/<id>`) como usuário "i" e
+lista `<id>`, pedia ao X um endereço que não existe e recebia 429. O feed passou a ser criado
+pelo número da Lista (`createTimeline` com `sourceType: "list"`), e o pedido sai certo.
+
+Mesmo assim o quadro do X quebra ao montar para quem não está logado nele, e isso foi conferido
+numa página HTML pura, fora do site: é do X. Montar o feed no servidor, lendo o mesmo endereço,
+foi proposto e recusado: o site fica como vitrine e manda para o X, sem guardar posts. A página
+ganhou o aviso de que é preciso estar logado no X, no topo do feed e não só no rodapé.
+

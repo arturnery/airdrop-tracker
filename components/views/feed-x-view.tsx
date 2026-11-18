@@ -25,19 +25,37 @@ export function FeedXView({ lista, projetos, ehAdmin }: { lista: string | null; 
       <PageHeader
         icon={Rss}
         title="Feed do X"
-        description="O que os projetos que a comunidade farma estão postando no X, num lugar só."
+        description="O que os projetos que a comunidade farma estão postando no X, num lugar só. Para ver o feed, entre na sua conta do X neste navegador."
       />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section aria-label="Feed da Lista do X" className="bg-card border-border min-w-0 rounded-lg border">
           {lista ? (
             <>
+              {/* O X só mostra a Lista a quem está logado nele: o aviso vem
+                  antes do feed, não depois, para ninguém achar que a página quebrou. */}
+              <div className="border-caution/40 bg-caution/5 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+                <div className="flex min-w-0 items-start gap-2.5">
+                  <IconeX className="mt-0.5 size-4 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">É preciso estar logado no X para ver o feed aqui</p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">
+                      O X só mostra a Lista para quem entrou na conta do X neste navegador. Entre no X e volte a esta página,
+                      ou abra a Lista direto no X.
+                    </p>
+                  </div>
+                </div>
+                <Button asChild size="sm" variant="outline" className="shrink-0">
+                  <a href="https://x.com/login" target="_blank" rel="noopener noreferrer">
+                    Entrar no X
+                  </a>
+                </Button>
+              </div>
               <div className="p-2 sm:p-4">
                 <FeedListaX lista={lista} />
               </div>
               <div className="border-border flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
                 <p className="text-muted-foreground max-w-prose text-xs">
-                  O feed não apareceu, ou mostra &quot;Rate limit exceeded&quot;? O X só exibe o feed para quem está logado no X
-                  neste navegador. Entre no X ou abra a Lista direto por lá.
+                  O feed não apareceu, ou mostra &quot;Rate limit exceeded&quot;? É o X pedindo login. Abra a Lista direto por lá.
                 </p>
                 <Button asChild size="sm" variant="outline" className="gap-1.5">
                   <a href={lista} target="_blank" rel="noopener noreferrer">
