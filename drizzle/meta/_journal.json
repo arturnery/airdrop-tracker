@@ -183,6 +183,13 @@
       "when": 1792790490204,
       "tag": "0025_configuracoes",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1795038680997,
+      "tag": "0026_avisos_discord",
+      "breakpoints": true
     }
   ]
 }

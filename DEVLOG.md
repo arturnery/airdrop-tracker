@@ -3940,3 +3940,17 @@ numa página HTML pura, fora do site: é do X. Montar o feed no servidor, lendo 
 foi proposto e recusado: o site fica como vitrine e manda para o X, sem guardar posts. A página
 ganhou o aviso de que é preciso estar logado no X, no topo do feed e não só no rodapé.
 
+## Marco 69: O Feed do X sai, os avisos vão ao Discord
+
+Mesmo com o link da Lista corrigido, o feed não apareceu para quem estava logado no X. O quadro
+de Lista do X quebra ao montar até numa página em branco, e o login do X raramente chega ao
+iframe. Duas saídas foram postas: ler os posts da Lista no servidor (testado: o endpoint do embed
+devolve ~80 posts sem login) ou desistir do feed. A decisão foi a segunda, por produto: o site
+não guarda posts, e a notícia que importa vira aviso, escolhida por quem administra.
+
+Para o aviso chegar onde a comunidade está, publicar passou a mandá-lo também a um canal do
+Discord. O desenho é o dos sinais de trade, que já tinha resolvido as perguntas difíceis:
+menções desligadas, confirmação de verdade com `?wait=true`, e o envio gravado só quando o
+Discord confirma, com o botão de enviar no card quando não confirmou. Testado com um webhook
+falso: o aviso é publicado, o Discord recusa (404 "Unknown Webhook") e o card mostra a falha.
+

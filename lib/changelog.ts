@@ -49,6 +49,21 @@ export const rotulos: Record<TipoMudanca, string> = {
 /** Mais recente primeiro: é o que interessa a quem abre a página. */
 export const changelog: Versao[] = [
   {
+    versao: "1.29",
+    data: "2026-11-18",
+    mudancas: [
+      {
+        tipo: "novidade",
+        texto: "Os avisos do mural agora saem também no canal de avisos do Discord, assim que são publicados.",
+      },
+      {
+        tipo: "melhoria",
+        texto:
+          "O Feed do X saiu: o X deixou de mostrar as Listas fora do próprio site. As novidades dos projetos passam a chegar pelos Avisos, no site, no Discord e no X.",
+      },
+    ],
+  },
+  {
     versao: "1.28",
     data: "2026-11-18",
     mudancas: [

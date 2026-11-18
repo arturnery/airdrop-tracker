@@ -27,6 +27,8 @@ export type Aviso = {
   publicadoEm: string;
   /** ISO 8601, quando foi editado depois de publicado. */
   atualizadoEm: string | null;
+  /** Se o Discord confirmou o aviso no canal. */
+  discordEnviado: boolean;
 };
 
 /** Os avisos de uma área, do mais recente ao mais antigo. Iguais para todos. */
@@ -48,14 +50,16 @@ export async function listarAvisos(area: AreaDoAviso): Promise<Aviso[]> {
       postOficialX: schema.avisos.postOficialX,
       publicadoEm: schema.avisos.publicadoEm,
       atualizadoEm: schema.avisos.atualizadoEm,
+      discordEnviadoEm: schema.avisos.discordEnviadoEm,
     })
     .from(schema.avisos)
     .where(eq(schema.avisos.area, area))
     .orderBy(desc(schema.avisos.publicadoEm))
     .limit(100);
-  return linhas.map((l) => ({
+  return linhas.map(({ discordEnviadoEm, ...l }) => ({
     ...l,
     publicadoEm: l.publicadoEm.toISOString(),
     atualizadoEm: l.atualizadoEm?.toISOString() ?? null,
+    discordEnviado: discordEnviadoEm !== null,
   }));
 }

@@ -996,6 +996,8 @@ export const avisos = pgTable(
     alerta: text("alerta"),
     /** O post oficial do projeto no X: o post da comunidade sai citando ele. */
     postOficialX: text("post_oficial_x"),
+    /** Quando o Discord confirmou o aviso no canal; nulo é "não saiu" (ou não havia canal). */
+    discordEnviadoEm: timestamp("discord_enviado_em", { withTimezone: true }),
     atualizadoEm: timestamp("atualizado_em", { withTimezone: true }),
     publicadoPor: uuid("publicado_por").references(() => users.id, { onDelete: "set null" }),
     publicadoEm: timestamp("publicado_em", { withTimezone: true }).notNull().defaultNow(),
@@ -1023,9 +1025,11 @@ export const iaSaude = pgTable("ia_saude", {
 });
 
 /**
- * Configurações do site que quem administra muda pela tela, uma por chave
- * (hoje, o link da Lista do X do feed de projetos). Valor em texto; cada
- * chave é validada na ação que a grava.
+ * Configurações do site que quem administra muda pela tela, uma por chave.
+ * Valor em texto; cada chave é validada na ação que a grava. Nasceu para o
+ * link da Lista do X do feed de projetos, que saiu (ARCHITECTURE §26); fica
+ * vazia à espera da próxima configuração, em vez de uma migração só para
+ * apagá-la.
  */
 export const configuracoes = pgTable("configuracoes", {
   chave: text("chave").primaryKey(),

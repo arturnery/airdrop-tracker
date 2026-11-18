@@ -95,6 +95,7 @@ type Acoes = {
   fecharSinal: Acao<[unknown]>;
   reabrirSinal: Acao<[string]>;
   reenviarSinalDiscord: Acao<[string]>;
+  reenviarAvisoDiscord: Acao<[string]>;
   entrarNaOperacao: Acao<[unknown]>;
   sairDaOperacao: Acao<[string]>;
   publicarAviso: Acao<[unknown]>;
@@ -269,6 +270,7 @@ export function DataProvider({
       publicarAviso: envolver(Avisos.publicarAviso),
       atualizarAviso: envolver(Avisos.atualizarAviso),
       excluirAviso: envolver(Avisos.excluirAviso),
+      reenviarAvisoDiscord: envolver(Avisos.reenviarAvisoDiscord),
     }),
     [envolver, alternarTarefa],
   );

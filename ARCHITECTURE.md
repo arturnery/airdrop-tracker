@@ -2181,33 +2181,26 @@ A IA preenche os quatro; o ticker e o post oficial passam pela mesma conferênci
 invenção (precisam estar no texto colado), e o prompt separa prazo para agir de data de
 lançamento.
 
-## 26. Feed do X
+**Discord.** Publicar um aviso também o manda ao canal de avisos (`DISCORD_WEBHOOK_AVISOS`,
+separado do canal de operações de trade), no formato de embed (`lib/avisos-discord.ts`): título
+com link para o mural, resumo, tópicos com "->", alerta, o que fazer, prazo, link e post oficial.
+Mesmo desenho dos sinais: menções desligadas (um "@everyone" colado do anúncio vira texto),
+`?wait=true` para o 200 ser confirmação de publicação, e `discord_enviado_em` gravado só quando
+o Discord confirma. A publicação não depende do Discord; o card mostra a quem administra o aviso
+que ainda não saiu, com o botão de enviar. Editar não reenvia. Avisos de antes do canal
+aparecem como "ainda não saiu" e podem ser enviados pelo mesmo botão.
 
-Página em Airdrops → Feed do X (`/feed-x`), igual para todos: o que os projetos que a comunidade
-farma estão postando no X.
+## 26. Feed do X (removido)
 
-**Por que uma Lista do X, e não a API.** Ler posts pela API do X é pago desde 2026 (cobrança por
-post lido, sem plano gratuito para leitura). O caminho grátis é o embed oficial de Listas: quem
-administra mantém uma Lista pública no X com os perfis dos projetos, e o site a mostra com o
-`widgets.js` do X. O link da Lista fica em `configuracoes` (chave `lista_x`), gravado pela própria
-página por quem administra (`salvarListaDoX`, que aceita x.com e twitter.com e guarda o link
-canônico).
+Existiu de 23/10 a 18/11/2026: uma Lista pública do X mostrada pelo embed oficial. Saiu porque o
+embed do X deixou de funcionar: o quadro de Lista quebra ao montar mesmo numa página HTML pura,
+fora do site, e o login do X raramente chega ao iframe (navegadores bloqueiam cookie de
+terceiros). Ler os posts no servidor pelo endpoint que o embed usa foi testado e funcionava, mas
+foi descartado por decisão de produto: o site não guarda posts.
 
-**O limite do embed.** O X só mostra o feed embutido a quem está logado no X naquele navegador;
-para os outros, o iframe diz "Rate limit exceeded". Como o iframe é de outro domínio, o site não
-tem como saber se o feed apareceu. Por isso a página sempre traz, logo abaixo do feed, a
-explicação e o botão "Abrir a Lista no X", e ao lado o perfil de cada projeto, com link direto:
-a página nunca fica vazia, com ou sem o embed.
-
-**Quais projetos** (`lib/feed-x.ts`): os destaques publicados, menos distribuídos e descartados;
-o @ sai do endereço do X cadastrado (`perfilDoX`). Para quem administra, a página lista os
-projetos ainda sem X e oferece "Copiar todos os @", para montar a Lista no X de uma vez.
-
-**O feed é criado pelo número da Lista** (`createTimeline`, `sourceType: "list"`). O link
-`a.twitter-timeline` com `x.com/i/lists/<id>` fazia o widgets.js pedir a lista como usuário "i",
-e o X respondia 429. O aviso de que é preciso estar logado no X fica no topo do feed. Montar o
-feed no servidor foi considerado e descartado por decisão de produto: o site não guarda posts.
-
+O lugar disso passou a ser o **mural de avisos** (§24): quem administra vê no X o post que
+importa e publica o aviso, que sai no site, no Discord e, pelo botão, no X. A tabela
+`configuracoes` (migração 0025) ficou, sem uso, para a próxima configuração do site.
 
 ## 27. Aviso de cadastro e e-mail de aprovação
 

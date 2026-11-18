@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRight, CalendarClock, ExternalLink, Megaphone, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, CalendarClock, ExternalLink, Megaphone, Send, ShieldAlert } from "lucide-react";
 
 import { CompartilharAvisoX } from "@/components/compartilhar-aviso-x";
 import { AvisoComIA, NovoAviso } from "@/components/forms/aviso";
@@ -24,7 +25,16 @@ import { cn } from "@/lib/utils";
  * chega: de quem é a notícia e até quando vale, o que aconteceu (título e
  * tópicos), o cuidado a tomar, e só então o detalhe e os passos.
  */
-export function AvisosView({ avisos, ehAdmin }: { avisos: Aviso[]; ehAdmin: boolean }) {
+export function AvisosView({
+  avisos,
+  ehAdmin,
+  discordConfigurado = false,
+}: {
+  avisos: Aviso[];
+  ehAdmin: boolean;
+  /** Se há canal do Discord para os avisos: sem ele, o card não cobra envio. */
+  discordConfigurado?: boolean;
+}) {
   const [primeiro, ...anteriores] = avisos;
   return (
     <>
@@ -48,7 +58,7 @@ export function AvisosView({ avisos, ehAdmin }: { avisos: Aviso[]; ehAdmin: bool
         />
       ) : (
         <div className="space-y-6">
-          <CardAviso aviso={primeiro} ehAdmin={ehAdmin} destaque />
+          <CardAviso aviso={primeiro} ehAdmin={ehAdmin} discordConfigurado={discordConfigurado} destaque />
           {anteriores.length > 0 ? (
             <section aria-labelledby="avisos-anteriores">
               <h2 id="avisos-anteriores" className="text-muted-foreground mb-3 text-xs font-medium tracking-wider uppercase">
@@ -57,7 +67,7 @@ export function AvisosView({ avisos, ehAdmin }: { avisos: Aviso[]; ehAdmin: bool
               <ul className="grid gap-4 md:grid-cols-2">
                 {anteriores.map((aviso) => (
                   <li key={aviso.id} className="[&>article]:h-full">
-                    <CardAviso aviso={aviso} ehAdmin={ehAdmin} />
+                    <CardAviso aviso={aviso} ehAdmin={ehAdmin} discordConfigurado={discordConfigurado} />
                   </li>
                 ))}
               </ul>
@@ -92,8 +102,20 @@ function Prazo({ prazo }: { prazo: string }) {
 
 const linhas = (texto: string | null) => (texto ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
 
-function CardAviso({ aviso, ehAdmin, destaque = false }: { aviso: Aviso; ehAdmin: boolean; destaque?: boolean }) {
+function CardAviso({
+  aviso,
+  ehAdmin,
+  discordConfigurado,
+  destaque = false,
+}: {
+  aviso: Aviso;
+  ehAdmin: boolean;
+  discordConfigurado: boolean;
+  destaque?: boolean;
+}) {
   const { acoes } = useDados();
+  const [enviando, setEnviando] = useState(false);
+  const [erroDiscord, setErroDiscord] = useState<string | null>(null);
   const postOficial = urlExterna(aviso.postOficialX);
   // O link oficial costuma ser o próprio post do X: aí fica só o "Post oficial".
   const link = urlExterna(aviso.link) === postOficial ? null : urlExterna(aviso.link);
@@ -214,6 +236,31 @@ function CardAviso({ aviso, ehAdmin, destaque = false }: { aviso: Aviso; ehAdmin
               </li>
             ))}
           </ol>
+        </div>
+      ) : null}
+
+      {/*
+        Só para quem administra: o aviso que ainda não saiu no Discord (o envio
+        falhou, ou o aviso é de antes do canal existir). O mural já tem o aviso;
+        o que falta é o canal, e isso não pode ficar presumido.
+      */}
+      {ehAdmin && discordConfigurado && !aviso.discordEnviado ? (
+        <div className="border-caution/40 bg-caution/10 mt-4 flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs">
+          <span>{erroDiscord ?? "Este aviso ainda não saiu no Discord."}</span>
+          <button
+            type="button"
+            disabled={enviando}
+            onClick={async () => {
+              setEnviando(true);
+              const falha = await acoes.reenviarAvisoDiscord(aviso.id);
+              setErroDiscord(falha ? (Object.values(falha)[0] ?? "Não foi possível enviar.") : null);
+              setEnviando(false);
+            }}
+            className="hover:bg-caution/20 focus-visible:ring-ring inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60"
+          >
+            <Send className="size-3" aria-hidden="true" />
+            {enviando ? "Enviando…" : "Enviar ao Discord"}
+          </button>
         </div>
       ) : null}
 

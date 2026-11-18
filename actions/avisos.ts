@@ -1,6 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -8,6 +9,8 @@ import * as schema from "@/db/schema";
 import { reservarUsoDaIA } from "@/db/queries/uso-ia";
 import { registrarTentativa } from "@/db/queries/saude-ia";
 import { alvosDa } from "@/lib/alvos-ia";
+import { montarMensagemAvisoDiscord, type AvisoParaDiscord } from "@/lib/avisos-discord";
+import { env } from "@/lib/env";
 import { getCurrentUserId } from "@/lib/auth";
 import { dataDeHoje } from "@/lib/dates";
 import { interpretarAviso, MAX_ANUNCIO, montarMensagensAviso, type SugestaoAviso } from "@/lib/interpretar-aviso";
@@ -15,7 +18,7 @@ import { perguntar, type Motivo } from "@/lib/perguntar-ia";
 import { avisoSchema } from "@/lib/validators";
 
 import { exigirAdministrador } from "./index";
-import { ErroDeRegra, executar, type ResultadoAcao } from "./_core";
+import { ErroDeRegra, executar, falha, sucesso, type ResultadoAcao } from "./_core";
 
 /**
  * Avisos para a comunidade. Só quem administra publica; todos leem no mural
@@ -27,8 +30,73 @@ const ROTAS: { caminho: string; tipo: "page" | "layout" }[] = [{ caminho: "/avis
 export async function publicarAviso(entrada: unknown): Promise<ResultadoAcao> {
   return executar(avisoSchema, entrada, async (dados, userId) => {
     await exigirAdministrador(userId);
-    await db.insert(schema.avisos).values({ ...dados, area: "airdrops", publicadoPor: userId });
+    const [criado] = await db
+      .insert(schema.avisos)
+      .values({ ...dados, area: "airdrops", publicadoPor: userId })
+      .returning({ id: schema.avisos.id, publicadoEm: schema.avisos.publicadoEm });
+
+    /*
+     * O Discord não desfaz a publicação se falhar: o aviso já está no mural,
+     * que é a fonte. A falha fica registrada (sem `discordEnviadoEm`) e
+     * aparece no card para quem administra, com o botão de reenviar, em vez
+     * de ser presumido que saiu. Editar depois não reenvia.
+     */
+    if (criado) await avisarNoDiscord(criado.id, { ...dados, publicadoEm: criado.publicadoEm.toISOString() });
   }, ROTAS);
+}
+
+/**
+ * Reenvia ao Discord um aviso que não saiu. Não passa por `executar` porque a
+ * falha aqui não é de banco: a mensagem precisa dizer que foi o Discord.
+ */
+export async function reenviarAvisoDiscord(id: string): Promise<ResultadoAcao> {
+  if (!z.uuid().safeParse(id).success) return falha("geral", "Aviso inválido.");
+  if (!env.DISCORD_WEBHOOK_AVISOS) {
+    return falha("geral", "O Discord não está configurado neste servidor (DISCORD_WEBHOOK_AVISOS).");
+  }
+  try {
+    await exigirAdministrador(await getCurrentUserId());
+  } catch {
+    return falha("geral", "Só quem administra pode reenviar avisos.");
+  }
+
+  const [aviso] = await db.select().from(schema.avisos).where(eq(schema.avisos.id, id)).limit(1);
+  if (!aviso) return falha("geral", "Esse aviso não existe mais.");
+
+  const enviado = await avisarNoDiscord(aviso.id, { ...aviso, publicadoEm: aviso.publicadoEm.toISOString() });
+  if (!enviado) {
+    return falha("geral", "O Discord não confirmou o envio. Confira se o webhook do canal ainda existe e tente de novo.");
+  }
+  for (const rota of ROTAS) revalidatePath(rota.caminho, rota.tipo);
+  return sucesso();
+}
+
+/**
+ * Manda o aviso ao canal e, se o Discord confirmar, grava `discordEnviadoEm`.
+ * `?wait=true` faz o Discord só responder depois de publicar a mensagem,
+ * então um 200 aqui é confirmação de verdade, não "recebido".
+ */
+async function avisarNoDiscord(id: string, aviso: AvisoParaDiscord): Promise<boolean> {
+  const webhook = env.DISCORD_WEBHOOK_AVISOS;
+  if (!webhook) return false;
+  const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  try {
+    const resposta = await fetch(`${webhook}?wait=true`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(montarMensagemAvisoDiscord(aviso, host ? `https://${host}` : null)),
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!resposta.ok) {
+      console.error("[discord avisos] status", resposta.status, (await resposta.text().catch(() => "")).slice(0, 300));
+      return false;
+    }
+    await db.update(schema.avisos).set({ discordEnviadoEm: new Date() }).where(eq(schema.avisos.id, id));
+    return true;
+  } catch (erro) {
+    console.error("[discord avisos]", erro);
+    return false;
+  }
 }
 
 /**

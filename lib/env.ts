@@ -9,6 +9,19 @@ import { z } from "zod";
 const vazioComoAusente = (v: unknown) =>
   typeof v === "string" && v.trim() === "" ? undefined : v;
 
+function webhookDoDiscord(nome: string) {
+  return z.preprocess(
+    vazioComoAusente,
+    z
+      .url()
+      .refine(
+        (u) => /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\//.test(u),
+        `${nome} precisa ser um webhook do Discord (https://discord.com/api/webhooks/...)`,
+      )
+      .optional(),
+  );
+}
+
 const envSchema = z.object({
   DATABASE_URL: z
     .string()
@@ -68,16 +81,9 @@ const envSchema = z.object({
    * webhook do Discord é aceito, para um erro de cópia não mandar os sinais
    * para outro lugar.
    */
-  DISCORD_WEBHOOK_SINAIS: z.preprocess(
-    vazioComoAusente,
-    z
-      .url()
-      .refine(
-        (u) => /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\//.test(u),
-        "DISCORD_WEBHOOK_SINAIS precisa ser um webhook do Discord (https://discord.com/api/webhooks/...)",
-      )
-      .optional(),
-  ),
+  DISCORD_WEBHOOK_SINAIS: webhookDoDiscord("DISCORD_WEBHOOK_SINAIS"),
+  /** Canal onde cada aviso publicado no mural sai também (`actions/avisos.ts`). Opcional. */
+  DISCORD_WEBHOOK_AVISOS: webhookDoDiscord("DISCORD_WEBHOOK_AVISOS"),
   /*
    * Conta do Gmail que envia o e-mail de "acesso liberado" (`lib/email.ts`).
    * Opcional: sem as duas, a aprovação funciona e a tela de membros avisa

@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black)
 ![LLM](https://img.shields.io/badge/LLM-Gemini%20%2B%20OpenRouter-4285F4?logo=googlegemini&logoColor=white)
-![Tests](https://img.shields.io/badge/testes-522%20passando-3FB950)
+![Tests](https://img.shields.io/badge/testes-523%20passando-3FB950)
 ![License](https://img.shields.io/badge/licen%C3%A7a-MIT-3FB950)
 
 Controle financeiro para quem farma airdrops em várias carteiras ao mesmo tempo: quanto foi
@@ -159,13 +159,11 @@ senhas temporárias, mas não vê o farming de ninguém.
 - **Compartilhar no X.** Em pontos, volume e resultado de cada projeto, um botão abre o X
   com o post pronto: a evolução do período, o @ do projeto e a divulgação da comunidade
   Level Cripto Pro. Sem API do X: é o link de publicação, e quem publica é a pessoa.
-- **Feed do X (Airdrops).** Os posts dos projetos que a comunidade farma, pela Lista pública do
-  X mostrada no site (embed oficial, grátis), e o perfil de cada projeto ativo ao lado. Quem
-  administra monta a Lista com um "copiar todos os @" e cola o link na própria página.
 - **Mural de avisos (Airdrops).** Quem administra cola o anúncio de um projeto e a IA monta
   o aviso: título, resumo, o que fazer, prazo e link oficial. Link, @ do projeto e prazo só
   ficam se estiverem no texto colado; o que a IA inventar é descartado com aviso, porque link
-  falso é o golpe mais comum em airdrop. Cada aviso pode ser compartilhado no X.
+  falso é o golpe mais comum em airdrop. Cada aviso sai também num canal do Discord, por
+  webhook, e pode ser compartilhado no X.
 - **Livro-razão por projeto e conta.** Aportes, rendimentos, retiradas e taxas como
   lançamentos datados. Não existe registro de saldo: o saldo é resultado, não entrada.
 - **Aportes em token.** Registrar "1 SOL, US$ 50" calcula o preço de entrada sozinho; o
@@ -587,6 +585,7 @@ cp .env.example .env.local
 | `IA2_API_KEY`, `IA2_BASE_URL`, `IA2_MODELO` | Opcional: um segundo provedor, consultado junto | Ex.: OpenRouter, `https://openrouter.ai/api/v1` |
 | `IA_AVISO_MODELO`, `IA_AVISO_MODELO_RESERVA` | Opcional: os modelos que montam os avisos (só texto); sem eles, usa o `IA2_*` | Ex.: `nvidia/nemotron-3.5-super-vl:free` e `recursive/flint-v1.0:free` |
 | `DISCORD_WEBHOOK_SINAIS` | Opcional: canal do Discord avisado a cada sinal de trade | Discord → configurações do canal → Integrações → Webhooks |
+| `DISCORD_WEBHOOK_AVISOS` | Opcional: canal do Discord onde sai cada aviso do mural | Discord → configurações do canal → Integrações → Webhooks |
 | `GMAIL_USUARIO`, `GMAIL_SENHA_APP` | Opcional: conta do Gmail que envia o e-mail de acesso liberado | Conta do Google → Segurança → Senhas de app |
 
 Sem as variáveis de IA, o sistema sobe normalmente e só o botão "Lançar com IA" responde que
@@ -637,7 +636,7 @@ npx tsx scripts/limpar-dados.ts --producao --confirmar   # produção, apaga
 ## Testes
 
 ```bash
-npm test              # 522 testes
+npm test              # 523 testes
 npm run test:watch    # modo observação
 npm run check         # typecheck sem emitir
 npm run lint

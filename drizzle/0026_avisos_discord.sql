@@ -1,0 +1,1 @@
+ALTER TABLE "avisos" ADD COLUMN "discord_enviado_em" timestamp with time zone;
